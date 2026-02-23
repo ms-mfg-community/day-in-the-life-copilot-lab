@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "session-broker": {
+      "description": "Multi-session coordination and agent teams for GitHub Copilot CLI — session registry, messaging, conflict detection, team management, task boards",
+      "type": "http",
+      "url": "http://localhost:3456/mcp"
+    }
+  }
+}

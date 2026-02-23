@@ -1,0 +1,94 @@
+@{
+    ViewData["Title"] = "Admin Notifications";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>@ViewData["Title"]</h2>
+        <p class="text-muted">Real-time notifications for entity operations across the system.</p>
+        
+        <div class="alert alert-info" role="alert">
+            <strong>Real-time Notifications</strong><br />
+            As an administrator, you will receive notifications in the top-right corner when any entity (students, courses, instructors, departments) is created, updated, or deleted by any user in the system.
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-bell"></i> Notification Settings
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Monitored Operations</h4>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <span class="badge bg-success">CREATE</span>
+                                Creating new students, courses, instructors, or departments
+                            </li>
+                            <li class="list-group-item">
+                                <span class="badge bg-primary">UPDATE</span>
+                                Modifying existing records
+                            </li>
+                            <li class="list-group-item">
+                                <span class="badge bg-warning">DELETE</span>
+                                Removing records from the system
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Monitored Entities</h4>
+                        <ul class="list-group">
+                            <li class="list-group-item"><i class="bi bi-person"></i> Students</li>
+                            <li class="list-group-item"><i class="bi bi-book"></i> Courses</li>
+                            <li class="list-group-item"><i class="bi bi-mortarboard"></i> Instructors</li>
+                            <li class="list-group-item"><i class="bi bi-building"></i> Departments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-gear"></i> Technology Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Note:</strong> This notification system uses ASP.NET Core SignalR as the underlying technology for real-time message delivery.
+                </div>
+                
+                <h4>Features:</h4>
+                <ul>
+                    <li><strong>Real-time delivery</strong> - Notifications appear immediately when operations occur</li>
+                    <li><strong>Reliable messaging</strong> - SignalR ensures messages are delivered reliably</li>
+                    <li><strong>Admin-only</strong> - Only administrators receive these notifications</li>
+                    <li><strong>Auto-dismiss</strong> - Notifications automatically disappear after 8 seconds</li>
+                    <li><strong>User-friendly</strong> - Click the × to dismiss notifications manually</li>
+                </ul>
+                
+                <h4>Technical Information:</h4>
+                <p><strong>Connection Method:</strong> WebSockets with fallback options</p>
+                <p><strong>Max Visible Notifications:</strong> 5 at a time</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">Quick Test</h3>
+            </div>
+            <div class="card-body">
+                <p>To test the notification system, try performing any of the following operations:</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a asp-controller="Student" asp-action="Create" class="btn btn-primary">Create a new student</a>
+                    <a asp-controller="Course" asp-action="Create" class="btn btn-success">Create a new course</a>
+                    <a asp-controller="Instructor" asp-action="Create" class="btn btn-info">Create a new instructor</a>
+                    <a asp-controller="Department" asp-action="Create" class="btn btn-secondary">Create a new department</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

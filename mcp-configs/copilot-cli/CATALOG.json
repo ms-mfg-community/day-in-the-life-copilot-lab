@@ -1,0 +1,136 @@
+{
+  "_comment": "═══════════════════════════════════════════════════════════════════════════════",
+  "_format": "GITHUB COPILOT CLI FORMAT",
+  "_usage": "This is a reference catalog for GitHub Copilot CLI (~/.copilot/mcp-config.json)",
+  "_instructions": "Cherry-pick entries from 'mcpServers' into your ~/.copilot/mcp-config.json as needed",
+  "_key_differences": "Uses 'mcpServers' (not 'servers'), 'local' type for commands (not 'stdio'), REQUIRES 'tools' array",
+  "_comment2": "═══════════════════════════════════════════════════════════════════════════════",
+
+  "mcpServers": {
+    "context7": {
+      "description": "Up-to-date documentation and code examples for any library",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "tools": ["*"]
+    },
+    "memory": {
+      "description": "Knowledge graph for persisting entities and relations across sessions",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tools": ["*"]
+    },
+    "sequential-thinking": {
+      "description": "Structured chain-of-thought reasoning for complex problems",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "tools": ["*"]
+    },
+    "workiq": {
+      "description": "Microsoft Work IQ for enterprise productivity insights",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@microsoft/workiq", "mcp"],
+      "tools": ["*"]
+    },
+    "github": {
+      "description": "GitHub API access for issues, PRs, repos, and code search",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "tools": ["*"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-token>"
+      }
+    },
+    "filesystem": {
+      "description": "Read/write access to specified directories on the local filesystem",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"],
+      "tools": ["*"]
+    },
+    "postgres": {
+      "description": "PostgreSQL database access for queries and schema inspection",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "tools": ["*"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "<your-connection-string>"
+      }
+    },
+    "playwright": {
+      "description": "Browser automation for testing, scraping, and screenshots",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
+      "tools": ["*"]
+    },
+    "brave-search": {
+      "description": "Web search via Brave Search API",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "tools": ["*"],
+      "env": {
+        "BRAVE_API_KEY": "<your-api-key>"
+      }
+    },
+    "fetch": {
+      "description": "HTTP fetch for retrieving and processing web content",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "tools": ["*"]
+    },
+    "lsp-typescript": {
+      "description": "TypeScript language intelligence — type info, diagnostics, definitions, references, type tracing",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "ts-lsp-mcp", "serve", "--stdio"],
+      "tools": ["*"],
+      "prerequisites": "tsconfig.json in project root"
+    },
+    "lsp-python": {
+      "description": "Python language intelligence — type checking, diagnostics, definitions, references",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "cclsp@latest"],
+      "tools": ["*"],
+      "prerequisites": "basedpyright installed (npm i -g basedpyright), cclsp.json config in project root"
+    },
+    "microsoft-learn": {
+      "description": "Official Microsoft Learn MCP - Azure and Microsoft documentation search, fetch, and code samples",
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "tools": ["*"]
+    },
+    "session-broker": {
+      "description": "Multi-session coordination for GitHub Copilot CLI — session registry, messaging, conflict detection, heartbeat monitoring",
+      "type": "http",
+      "url": "http://localhost:3456/mcp",
+      "tools": [
+        "register_session",
+        "deregister_session",
+        "list_sessions",
+        "get_state",
+        "set_state",
+        "send_message",
+        "get_messages",
+        "declare_intent",
+        "release_intent",
+        "check_conflicts",
+        "clear_story_context",
+        "clear_session_context",
+        "clear_all",
+        "heartbeat",
+        "detect_zombies",
+        "cleanup_zombies"
+      ],
+      "note": "Start broker first: cd src/session-broker && node index.js"
+    }
+  }
+}

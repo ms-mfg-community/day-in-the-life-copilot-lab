@@ -1,0 +1,279 @@
+using Azure.Messaging.ServiceBus;
+using ContosoUniversity.Core.Interfaces;
+using ContosoUniversity.Core.Models;
+using ContosoUniversity.Infrastructure.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using System.Text;
+
+namespace ContosoUniversity.Infrastructure.Services
+{
+    public class ServiceBusNotificationService : INotificationService, IAsyncDisposable
+    {
+        private readonly ILogger<ServiceBusNotificationService> _logger;
+        private readonly ContosoUniversity.Infrastructure.Configuration.ServiceBusOptions _options;
+        private readonly bool _isDevelopment;
+        private ServiceBusClient? _client;
+        private ServiceBusSender? _sender;
+        private ServiceBusReceiver? _receiver;
+
+        // For local development, we'll store notifications in memory
+        private static readonly List<Notification> _localNotifications = new List<Notification>();
+        private static int _nextId = 1;
+
+        public ServiceBusNotificationService(
+            IOptions<ContosoUniversity.Infrastructure.Configuration.ServiceBusOptions> options,
+            ILogger<ServiceBusNotificationService> logger)
+        {
+            _options = options.Value;
+            _logger = logger;
+            
+            // Check if we're in development mode
+            _isDevelopment = string.IsNullOrEmpty(_options.ConnectionString) || 
+                             _options.ConnectionString.Contains("UseDevelopmentStorage=true");
+
+            if (!_isDevelopment)
+            {
+                try
+                {
+                    _client = new ServiceBusClient(_options.ConnectionString);
+                    _sender = _client.CreateSender(_options.QueueName);
+                    _receiver = _client.CreateReceiver(_options.QueueName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Failed to initialize Service Bus, falling back to local mode: {Message}", ex.Message);
+                    _isDevelopment = true;
+                }
+            }
+        }
+
+        public void SendNotification(string entityType, string entityId, EntityOperation operation, string? userName = null)
+        {
+            SendNotification(entityType, entityId, null, operation, userName);
+        }
+
+        public void SendNotification(string entityType, string entityId, string? entityDisplayName, EntityOperation operation, string? userName = null)
+        {
+            try
+            {
+                var notification = new Notification
+                {
+                    Id = _isDevelopment ? System.Threading.Interlocked.Increment(ref _nextId) : 0,
+                    EntityType = entityType,
+                    EntityId = entityId,
+                    Operation = operation.ToString(),
+                    Message = GenerateMessage(entityType, entityId, entityDisplayName, operation),
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userName ?? "System",
+                    IsRead = false
+                };
+
+                if (_isDevelopment)
+                {
+                    // For development, just add to in-memory list
+                    lock (_localNotifications)
+                    {
+                        _localNotifications.Add(notification);
+                    }
+                    _logger.LogInformation("Local mode: Notification added: {EntityType} {Operation}", entityType, operation);
+                    return;
+                }
+
+                var jsonMessage = JsonConvert.SerializeObject(notification);
+                var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(jsonMessage))
+                {
+                    Subject = $"{entityType} {operation}",
+                    ApplicationProperties = { { "EntityType", entityType }, { "Operation", operation.ToString() } }
+                };
+
+                _sender!.SendMessageAsync(message).GetAwaiter().GetResult();
+                _logger.LogInformation("Sent notification: {EntityType} {Operation}", entityType, operation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send notification: {Message}", ex.Message);
+            }
+        }
+
+        public async Task SendNotificationAsync(string entityType, string entityId, EntityOperation operation, string? userName = null)
+        {
+            await SendNotificationAsync(entityType, entityId, null, operation, userName);
+        }
+
+        public async Task SendNotificationAsync(string entityType, string entityId, string? entityDisplayName, EntityOperation operation, string? userName = null)
+        {
+            try
+            {
+                var notification = new Notification
+                {
+                    Id = _isDevelopment ? System.Threading.Interlocked.Increment(ref _nextId) : 0,
+                    EntityType = entityType,
+                    EntityId = entityId,
+                    Operation = operation.ToString(),
+                    Message = GenerateMessage(entityType, entityId, entityDisplayName, operation),
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userName ?? "System",
+                    IsRead = false
+                };
+
+                if (_isDevelopment)
+                {
+                    // For development, just add to in-memory list
+                    lock (_localNotifications)
+                    {
+                        _localNotifications.Add(notification);
+                    }
+                    _logger.LogInformation("Local mode: Notification added: {EntityType} {Operation}", entityType, operation);
+                    return;
+                }
+
+                var jsonMessage = JsonConvert.SerializeObject(notification);
+                var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(jsonMessage))
+                {
+                    Subject = $"{entityType} {operation}",
+                    ApplicationProperties = { { "EntityType", entityType }, { "Operation", operation.ToString() } }
+                };
+
+                await _sender!.SendMessageAsync(message);
+                _logger.LogInformation("Sent notification: {EntityType} {Operation}", entityType, operation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send notification: {Message}", ex.Message);
+            }
+        }
+
+        public Notification? ReceiveNotification()
+        {
+            try
+            {
+                if (_isDevelopment)
+                {
+                    lock (_localNotifications)
+                    {
+                        return _localNotifications.FirstOrDefault(n => !n.IsRead);
+                    }
+                }
+
+                var message = _receiver!.ReceiveMessageAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                if (message == null)
+                {
+                    return null;
+                }
+
+                var notification = JsonConvert.DeserializeObject<Notification>(Encoding.UTF8.GetString(message.Body));
+                _receiver.CompleteMessageAsync(message).GetAwaiter().GetResult();
+
+                return notification;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to receive notification: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public async Task<Notification?> ReceiveNotificationAsync()
+        {
+            try
+            {
+                if (_isDevelopment)
+                {
+                    lock (_localNotifications)
+                    {
+                        return _localNotifications.FirstOrDefault(n => !n.IsRead);
+                    }
+                }
+
+                var message = await _receiver!.ReceiveMessageAsync(TimeSpan.FromSeconds(5));
+                if (message == null)
+                {
+                    return null;
+                }
+
+                var notification = JsonConvert.DeserializeObject<Notification>(Encoding.UTF8.GetString(message.Body));
+                await _receiver.CompleteMessageAsync(message);
+
+                return notification;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to receive notification: {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        public void MarkAsRead(int notificationId)
+        {
+            try
+            {
+                if (_isDevelopment)
+                {
+                    lock (_localNotifications)
+                    {
+                        var notification = _localNotifications.FirstOrDefault(n => n.Id == notificationId);
+                        if (notification != null)
+                        {
+                            notification.IsRead = true;
+                            notification.ReadAt = DateTime.UtcNow;
+                        }
+                    }
+                    return;
+                }
+
+                _logger.LogWarning("MarkAsRead not implemented for Azure Service Bus in this version");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to mark notification as read: {Message}", ex.Message);
+            }
+        }
+
+        public async Task MarkAsReadAsync(int notificationId)
+        {
+            MarkAsRead(notificationId);
+            await Task.CompletedTask;
+        }
+
+        private string GenerateMessage(string entityType, string entityId, string? entityDisplayName, EntityOperation operation)
+        {
+            var displayText = string.IsNullOrEmpty(entityDisplayName) 
+                ? $"{entityType} {entityId}" 
+                : $"{entityType} '{entityDisplayName}'";
+
+            return operation switch
+            {
+                EntityOperation.Create => $"New {displayText} has been created",
+                EntityOperation.Update => $"{displayText} has been updated",
+                EntityOperation.Delete => $"{displayText} has been deleted",
+                _ => $"{operation} operation performed on {displayText}"
+            };
+        }
+
+        public void Dispose()
+        {
+            if (_client != null)
+            {
+                _client.DisposeAsync().GetAwaiter().GetResult();
+                _client = null;
+            }
+            _sender = null;
+            _receiver = null;
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_client != null)
+            {
+                await _client.DisposeAsync();
+                _client = null;
+            }
+            _sender = null;
+            _receiver = null;
+            GC.SuppressFinalize(this);
+        }
+    }
+}

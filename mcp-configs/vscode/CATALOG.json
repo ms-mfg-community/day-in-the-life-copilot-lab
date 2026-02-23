@@ -1,0 +1,105 @@
+{
+  "_comment": "═══════════════════════════════════════════════════════════════════════════════",
+  "_format": "VSCODE / VISUAL STUDIO FORMAT",
+  "_usage": "This is a reference catalog for VSCode (.vscode/mcp.json or %USERPROFILE%\\.mcp.json)",
+  "_instructions": "Cherry-pick entries from 'servers' into your .vscode/mcp.json as needed",
+  "_key_differences": "Uses 'servers' (not 'mcpServers'), 'stdio' type for commands (not 'local'), tools array NOT required",
+  "_comment2": "═══════════════════════════════════════════════════════════════════════════════",
+
+  "servers": {
+    "context7": {
+      "description": "Up-to-date documentation and code examples for any library",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "memory": {
+      "description": "Knowledge graph for persisting entities and relations across sessions",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "sequential-thinking": {
+      "description": "Structured chain-of-thought reasoning for complex problems",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "workiq": {
+      "description": "Microsoft Work IQ for enterprise productivity insights",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@microsoft/workiq", "mcp"]
+    },
+    "github": {
+      "description": "GitHub API access for issues, PRs, repos, and code search",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-token>"
+      }
+    },
+    "filesystem": {
+      "description": "Read/write access to specified directories on the local filesystem",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+    },
+    "postgres": {
+      "description": "PostgreSQL database access for queries and schema inspection",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "<your-connection-string>"
+      }
+    },
+    "playwright": {
+      "description": "Browser automation for testing, scraping, and screenshots",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
+    },
+    "brave-search": {
+      "description": "Web search via Brave Search API",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "<your-api-key>"
+      }
+    },
+    "fetch": {
+      "description": "HTTP fetch for retrieving and processing web content",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+    "lsp-typescript": {
+      "description": "TypeScript language intelligence — type info, diagnostics, definitions, references, type tracing",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "ts-lsp-mcp", "serve", "--stdio"],
+      "prerequisites": "tsconfig.json in project root"
+    },
+    "lsp-python": {
+      "description": "Python language intelligence — type checking, diagnostics, definitions, references",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "cclsp@latest"],
+      "prerequisites": "basedpyright installed (npm i -g basedpyright), cclsp.json config in project root"
+    },
+    "microsoft-learn": {
+      "description": "Official Microsoft Learn MCP - Azure and Microsoft documentation search, fetch, and code samples",
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp"
+    },
+    "session-broker": {
+      "description": "Multi-session coordination for GitHub Copilot CLI — session registry, messaging, conflict detection, heartbeat monitoring",
+      "type": "http",
+      "url": "http://localhost:3456/mcp",
+      "note": "Start broker first: cd src/session-broker && node index.js"
+    }
+  }
+}

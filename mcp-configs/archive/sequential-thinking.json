@@ -1,0 +1,16 @@
+{
+  "name": "sequential-thinking",
+  "description": "Dynamic problem-solving through structured chain-of-thought reasoning",
+  "package": "@modelcontextprotocol/server-sequential-thinking",
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    "tools": ["*"]
+  }
+}

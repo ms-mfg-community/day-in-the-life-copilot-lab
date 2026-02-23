@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Debug Claims";
+}
+
+<h2>Authentication Debug Information</h2>
+
+<div class="card">
+    <div class="card-header">
+        <h3>User Authentication Status</h3>
+    </div>
+    <div class="card-body">
+        <p><strong>Is Authenticated:</strong> @ViewBag.IsAuthenticated</p>
+        <p><strong>Name:</strong> @ViewBag.Name</p>
+        
+        <h4>Roles:</h4>
+        <ul>
+            @foreach(var role in ViewBag.Roles)
+            {
+                <li>@role</li>
+            }
+        </ul>
+        
+        <h4>All Claims:</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var claim in ViewBag.Claims)
+                {
+                    <tr>
+                        <td>@claim.Type</td>
+                        <td>@claim.Value</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+packages/
+*.nupkg
+
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
+# Test coverage
+coverage/
+TestResults/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.github/logs/
+
+# npm pack artifacts
+*.tgz
+
+# GitHub Sessions
+docs/.github/*

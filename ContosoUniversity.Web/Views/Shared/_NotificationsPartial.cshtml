@@ -1,0 +1,18 @@
+@{
+    // For local testing, we'll always show notifications
+    bool isAdmin = true;
+    bool isSignedIn = true;
+}
+
+@if (isAdmin && isSignedIn)
+{
+    <link rel="stylesheet" href="~/css/notifications.css" />
+    <script src="~/js/notifications.js"></script>
+    
+    <script>
+        // Add admin-user class to body for notifications.js to detect
+        document.body.classList.add('admin-user');
+    </script>
+    
+    @await Component.InvokeAsync("Notifications", new { maxNotifications = 5 })
+}

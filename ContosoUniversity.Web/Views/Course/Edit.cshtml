@@ -1,0 +1,65 @@
+@model ContosoUniversity.Core.Models.Course
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h2>Edit</h2>
+
+<form asp-action="Edit" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="CourseID" />
+    <input type="hidden" asp-for="TeachingMaterialImagePath" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Course</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="CourseID" class="form-label"></label>
+                        <input asp-for="CourseID" class="form-control" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Credits" class="form-label"></label>
+                        <input asp-for="Credits" class="form-control" />
+                        <span asp-validation-for="Credits" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="DepartmentID" class="form-label">Department</label>
+                        <select asp-for="DepartmentID" asp-items="ViewBag.DepartmentID" class="form-select">
+                            <option value="">-- Select Department --</option>
+                        </select>
+                        <span asp-validation-for="DepartmentID" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teachingMaterialImage" class="form-label">Teaching Material Image</label>
+                        @if (!string.IsNullOrEmpty(Model.TeachingMaterialImagePath))
+                        {
+                            <div class="mb-2">
+                                <img src="@Url.Content(Model.TeachingMaterialImagePath)" alt="Current Image" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; padding: 5px;" />
+                                <p class="mt-1"><small>Current image. Upload a new one to replace.</small></p>
+                            </div>
+                        }
+                        <input type="file" id="teachingMaterialImage" name="teachingMaterialImage" class="form-control" accept="image/*" />
+                        <small class="form-text text-muted">Max file size: 5MB. Allowed file types: .jpg, .jpeg, .png</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Save</button> |
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

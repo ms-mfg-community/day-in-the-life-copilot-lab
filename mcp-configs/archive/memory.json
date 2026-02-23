@@ -1,0 +1,16 @@
+{
+  "name": "memory",
+  "description": "Knowledge graph for persisting entities, relations, and observations across sessions",
+  "package": "@modelcontextprotocol/server-memory",
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-memory"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-memory"],
+    "tools": ["*"]
+  }
+}

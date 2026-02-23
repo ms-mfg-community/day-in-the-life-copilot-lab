@@ -1,0 +1,5 @@
+{
+  "description": "Official Microsoft Learn MCP Server - Azure and Microsoft documentation search, fetch, and code samples",
+  "type": "http",
+  "url": "https://learn.microsoft.com/api/mcp"
+}

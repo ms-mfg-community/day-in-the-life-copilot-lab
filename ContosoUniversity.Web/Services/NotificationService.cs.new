@@ -1,0 +1,399 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Text.Json;
+using Azure.Messaging.ServiceBus;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using ContosoUniversity.Core.Models;
+using ContosoUniversity.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using ContosoUniversity.Core.Interfaces;
+using System.Linq;
+
+namespace ContosoUniversity.Web.Services
+{
+    public class NotificationService : INotificationService, IAsyncDisposable
+    {
+        private readonly string _connectionString;
+        private readonly string _queueName;
+        private readonly ILogger<NotificationService> _logger;
+        private readonly IDbContextFactory<SchoolContext>? _contextFactory;
+        private ServiceBusClient? _client;
+        private ServiceBusSender? _sender;
+        private ServiceBusProcessor? _processor;
+        private bool _initialized = false;
+        private bool _isDevelopment = false;
+
+        // For local development, we'll store notifications in memory
+        private static readonly List<Notification> _localNotifications = new List<Notification>();
+
+        public NotificationService(
+            IConfiguration configuration, 
+            ILogger<NotificationService> logger,
+            IDbContextFactory<SchoolContext>? contextFactory = null)
+        {
+            _connectionString = configuration["ServiceBus:ConnectionString"] ?? "UseDevelopmentStorage=true";
+            _queueName = configuration["ServiceBus:QueueName"] ?? "contoso-university-notifications";
+            _logger = logger;
+            _contextFactory = contextFactory;
+            
+            // Check if we're in development mode
+            _isDevelopment = string.IsNullOrEmpty(_connectionString) || 
+                             _connectionString.Contains("UseDevelopmentStorage=true");
+            
+            // Initialize immediately for local development
+            if (_isDevelopment)
+            {
+                _initialized = true;
+                _logger.LogInformation("Notification Service initialized in local development mode");
+            }
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (_initialized)
+                return;
+
+            if (_isDevelopment)
+            {
+                _logger.LogInformation("Notification Service initialized in local development mode");
+                _initialized = true;
+                return;
+            }
+
+            try
+            {
+                // Create the clients that we'll use for sending and processing messages.
+                _client = new ServiceBusClient(_connectionString);
+                _sender = _client.CreateSender(_queueName);
+
+                // Create a processor that we'll use to process the messages
+                _processor = _client.CreateProcessor(_queueName, new ServiceBusProcessorOptions());
+
+                // Add handler to process messages
+                _processor.ProcessMessageAsync += MessageHandler;
+
+                // Add handler to process any errors
+                _processor.ProcessErrorAsync += ErrorHandler;
+
+                // Start processing
+                await _processor.StartProcessingAsync();
+
+                _logger.LogInformation("Notification Service initialized and started processing messages");
+                _initialized = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize Notification Service");
+                _isDevelopment = true; // Fallback to local mode on error
+                _initialized = true;
+            }
+        }
+
+        // Implement INotificationService methods
+        public void SendNotification(string entityType, string entityId, EntityOperation operation, string? userName = null)
+        {
+            SendNotification(entityType, entityId, null, operation, userName);
+        }
+
+        public void SendNotification(string entityType, string entityId, string? entityDisplayName, EntityOperation operation, string? userName = null)
+        {
+            var message = GenerateMessage(entityType, entityId, entityDisplayName, operation);
+            
+            var notification = new Notification
+            {
+                Id = 0, // Will be assigned by DB
+                EntityType = entityType,
+                EntityId = entityId,
+                Operation = operation.ToString(),
+                Message = message,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userName ?? "System",
+                IsRead = false
+            };
+
+            if (_isDevelopment)
+            {
+                // For development, just add to in-memory list
+                lock (_localNotifications)
+                {
+                    // Assign a local ID
+                    notification.Id = _localNotifications.Count > 0 
+                        ? _localNotifications.Max(n => n.Id) + 1 
+                        : 1;
+                        
+                    _localNotifications.Add(notification);
+                }
+                _logger.LogInformation("Local notification sent: {EntityType} {Operation}", entityType, operation);
+                return;
+            }
+
+            try
+            {
+                // Use fire and forget for the async operation
+                _ = SendNotificationAsync(notification);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send notification: {Message}", ex.Message);
+            }
+        }
+
+        private async Task SendNotificationAsync(Notification notification)
+        {
+            if (!_initialized && !_isDevelopment)
+                await InitializeAsync();
+
+            try
+            {
+                if (_isDevelopment)
+                {
+                    // For development, just add to in-memory list (already handled in SendNotification)
+                    return;
+                }
+
+                // Convert the notification to JSON and send it as a message
+                var jsonMessage = JsonSerializer.Serialize(notification);
+                var serviceBusMessage = new ServiceBusMessage(jsonMessage)
+                {
+                    Subject = $"{notification.EntityType} {notification.Operation}",
+                    ApplicationProperties = 
+                    { 
+                        { "EntityType", notification.EntityType }, 
+                        { "Operation", notification.Operation } 
+                    }
+                };
+
+                await _sender!.SendMessageAsync(serviceBusMessage);
+                _logger.LogInformation("Notification sent: {EntityType} {Operation}", 
+                    notification.EntityType, notification.Operation);
+
+                // Store the notification in the database if available
+                if (_contextFactory != null)
+                {
+                    using var context = await _contextFactory.CreateDbContextAsync();
+                    await context.Set<Notification>().AddAsync(notification);
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send notification: {Message}", ex.Message);
+            }
+        }
+
+        public Notification? ReceiveNotification()
+        {
+            if (_isDevelopment)
+            {
+                lock (_localNotifications)
+                {
+                    return _localNotifications.FirstOrDefault(n => !n.IsRead);
+                }
+            }
+            
+            // In production, we'd query the database for unread notifications
+            return null;
+        }
+
+        public void MarkAsRead(int notificationId)
+        {
+            if (_isDevelopment)
+            {
+                lock (_localNotifications)
+                {
+                    var notification = _localNotifications.FirstOrDefault(n => n.Id == notificationId);
+                    if (notification != null)
+                    {
+                        notification.IsRead = true;
+                        notification.ReadAt = DateTime.UtcNow;
+                        _logger.LogInformation("Notification {Id} marked as read", notificationId);
+                    }
+                }
+                return;
+            }
+            
+            // In production, we'd update the database
+            if (_contextFactory != null)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var context = await _contextFactory.CreateDbContextAsync();
+                        var notification = await context.Set<Notification>().FindAsync(notificationId);
+                        if (notification != null)
+                        {
+                            notification.IsRead = true;
+                            notification.ReadAt = DateTime.UtcNow;
+                            await context.SaveChangesAsync();
+                            _logger.LogInformation("Notification {Id} marked as read", notificationId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error marking notification as read: {Id}", notificationId);
+                    }
+                });
+            }
+        }
+
+        public void MarkAsRead(string notificationIdStr)
+        {
+            if (int.TryParse(notificationIdStr, out int notificationId))
+            {
+                MarkAsRead(notificationId);
+            }
+        }
+
+        public IEnumerable<Notification> GetNotifications(int count = 10)
+        {
+            if (_isDevelopment)
+            {
+                lock (_localNotifications)
+                {
+                    return _localNotifications
+                        .OrderByDescending(n => n.CreatedAt)
+                        .Take(count)
+                        .ToList();
+                }
+            }
+            
+            // In production, we'd query the database for notifications
+            return Enumerable.Empty<Notification>();
+        }
+
+        public IEnumerable<Notification> GetUnreadNotifications(int count = 10)
+        {
+            if (_isDevelopment)
+            {
+                lock (_localNotifications)
+                {
+                    return _localNotifications
+                        .Where(n => !n.IsRead)
+                        .OrderByDescending(n => n.CreatedAt)
+                        .Take(count)
+                        .ToList();
+                }
+            }
+            
+            // In production, we'd query the database for unread notifications
+            return Enumerable.Empty<Notification>();
+        }
+
+        public void MarkAllAsRead()
+        {
+            if (_isDevelopment)
+            {
+                lock (_localNotifications)
+                {
+                    foreach (var notification in _localNotifications.Where(n => !n.IsRead))
+                    {
+                        notification.IsRead = true;
+                        notification.ReadAt = DateTime.UtcNow;
+                    }
+                    _logger.LogInformation("All notifications marked as read");
+                }
+                return;
+            }
+            
+            // In production, we'd update the database
+            if (_contextFactory != null)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var context = await _contextFactory.CreateDbContextAsync();
+                        var unreadNotifications = await context.Set<Notification>()
+                            .Where(n => !n.IsRead)
+                            .ToListAsync();
+                            
+                        foreach (var notification in unreadNotifications)
+                        {
+                            notification.IsRead = true;
+                            notification.ReadAt = DateTime.UtcNow;
+                        }
+                        
+                        await context.SaveChangesAsync();
+                        _logger.LogInformation("All notifications marked as read");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error marking all notifications as read");
+                    }
+                });
+            }
+        }
+
+        private string GenerateMessage(string entityType, string entityId, string? entityDisplayName, EntityOperation operation)
+        {
+            var entityName = string.IsNullOrEmpty(entityDisplayName) ? entityId : entityDisplayName;
+            return operation switch
+            {
+                EntityOperation.CREATE => $"New {entityType} '{entityName}' was created",
+                EntityOperation.UPDATE => $"{entityType} '{entityName}' was updated",
+                EntityOperation.DELETE => $"{entityType} '{entityName}' was deleted",
+                _ => $"{operation} operation performed on {entityType} '{entityName}'"
+            };
+        }
+
+        // Process messages from the Azure Service Bus queue
+        private async Task MessageHandler(ProcessMessageEventArgs args)
+        {
+            string body = args.Message.Body.ToString();
+            _logger.LogInformation("Received message: {Body}", body);
+
+            // Save notification to database
+            try
+            {
+                var notification = JsonSerializer.Deserialize<Notification>(body);
+                if (notification != null && _contextFactory != null)
+                {
+                    using var context = await _contextFactory.CreateDbContextAsync();
+                    await context.Set<Notification>().AddAsync(notification);
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing notification message");
+            }
+
+            // Complete the message
+            await args.CompleteMessageAsync(args.Message);
+        }
+
+        // Error handler for the Service Bus processor
+        private Task ErrorHandler(ProcessErrorEventArgs args)
+        {
+            _logger.LogError(args.Exception, "Error handling message");
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            DisposeAsync().AsTask().Wait();
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_processor != null)
+            {
+                await _processor.DisposeAsync();
+            }
+
+            if (_sender != null)
+            {
+                await _sender.DisposeAsync();
+            }
+
+            if (_client != null)
+            {
+                await _client.DisposeAsync();
+            }
+        }
+    }
+}

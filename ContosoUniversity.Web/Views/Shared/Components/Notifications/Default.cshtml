@@ -1,0 +1,17 @@
+@model IEnumerable<ContosoUniversity.Web.Models.NotificationViewModel>
+
+@if (Model != null && Model.Any())
+{
+    <div class="notifications-container">
+        @foreach (var notification in Model)
+        {
+            <div class="notification @notification.Type.ToString().ToLower()">
+                <div class="notification-header">
+                    <span class="notification-title">@notification.Title</span>
+                    <span class="notification-date">@notification.CreatedAt.ToString("MMM dd, yyyy")</span>
+                </div>
+                <div class="notification-body">@notification.Message</div>
+            </div>
+        }
+    </div>
+}

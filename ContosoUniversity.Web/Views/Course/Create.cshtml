@@ -1,0 +1,57 @@
+@model ContosoUniversity.Core.Models.Course
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h2>Create</h2>
+
+<form asp-action="Create" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Course</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="CourseID" class="form-label"></label>
+                        <input asp-for="CourseID" class="form-control" />
+                        <span asp-validation-for="CourseID" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Credits" class="form-label"></label>
+                        <input asp-for="Credits" class="form-control" />
+                        <span asp-validation-for="Credits" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="DepartmentID" class="form-label">Department</label>
+                        <select asp-for="DepartmentID" asp-items="ViewBag.DepartmentID" class="form-select">
+                            <option value="">-- Select Department --</option>
+                        </select>
+                        <span asp-validation-for="DepartmentID" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teachingMaterialImage" class="form-label">Teaching Material Image</label>
+                        <input type="file" id="teachingMaterialImage" name="teachingMaterialImage" class="form-control" accept="image/*" />
+                        <small class="form-text text-muted">Max file size: 5MB. Allowed file types: .jpg, .jpeg, .png</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Create</button> |
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

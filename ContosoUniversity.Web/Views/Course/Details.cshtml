@@ -1,0 +1,55 @@
+@model ContosoUniversity.Core.Models.Course
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Course</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.CourseID)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.CourseID)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Title)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Title)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Credits)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Credits)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Department.Name)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Department.Name)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.TeachingMaterialImagePath)
+        </dt>
+        <dd class="col-sm-9">
+            @if (!string.IsNullOrEmpty(Model.TeachingMaterialImagePath))
+            {
+                <img src="@Url.Content(Model.TeachingMaterialImagePath)" alt="Teaching Material" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; padding: 5px;" />
+            }
+            else
+            {
+                <em>No image uploaded</em>
+            }
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.CourseID" class="btn btn-primary">Edit</a> |
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

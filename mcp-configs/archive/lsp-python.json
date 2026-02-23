@@ -1,0 +1,36 @@
+{
+  "name": "lsp-python",
+  "description": "Python language intelligence — type checking, diagnostics, definitions, references",
+  "package": "cclsp",
+  "prerequisites": "Node.js 18+, basedpyright installed (npm i -g basedpyright), Python project",
+  "setup": "Run 'npx cclsp@latest setup' for interactive configuration, or create a cclsp.json in your project root (see cclsp_config below)",
+  "cclsp_config": {
+    "_comment": "Place this as cclsp.json in your project root to configure the Python LSP server",
+    "servers": [
+      {
+        "extensions": ["py"],
+        "command": ["basedpyright-langserver", "--stdio"],
+        "rootDir": "."
+      }
+    ]
+  },
+  "tools_exposed": [
+    "find_definition",
+    "find_references",
+    "rename_symbol",
+    "rename_symbol_strict",
+    "get_diagnostics",
+    "restart_server"
+  ],
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "cclsp@latest"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "cclsp@latest"],
+    "tools": ["*"]
+  }
+}

@@ -1,0 +1,52 @@
+@model ContosoUniversity.Core.Models.Department
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h2>Create</h2>
+
+<form asp-action="Create">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Department</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Budget" class="form-label"></label>
+                        <input asp-for="Budget" class="form-control" />
+                        <span asp-validation-for="Budget" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="StartDate" class="form-label"></label>
+                        <input asp-for="StartDate" class="form-control" type="date" />
+                        <span asp-validation-for="StartDate" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="InstructorID" class="form-label">Administrator</label>
+                        <select asp-for="InstructorID" asp-items="ViewBag.InstructorID" class="form-select">
+                            <option value="">-- Select Administrator --</option>
+                        </select>
+                        <span asp-validation-for="InstructorID" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Create</button> |
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

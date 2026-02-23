@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "memory": {
+      "description": "Knowledge graph for persisting entities and relations across sessions",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}

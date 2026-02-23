@@ -1,0 +1,144 @@
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using ContosoUniversity.Core.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace ContosoUniversity.Infrastructure.Services
+{
+    public class BlobStorageService : IFileStorageService
+    {
+        private readonly ILogger<BlobStorageService> _logger;
+        private readonly BlobStorageOptions _options;
+        private readonly bool _isDevelopment;
+        private BlobServiceClient? _blobServiceClient;
+        
+        // For local storage during development
+        private static readonly Dictionary<string, byte[]> _localFiles = new Dictionary<string, byte[]>();
+
+        public BlobStorageService(
+            IOptions<BlobStorageOptions> options, 
+            ILogger<BlobStorageService> logger)
+        {
+            _options = options.Value;
+            _logger = logger;
+            
+            // Check if we're in development mode
+            _isDevelopment = string.IsNullOrEmpty(_options.ConnectionString) || 
+                             _options.ConnectionString.Contains("UseDevelopmentStorage=true");
+
+            if (!_isDevelopment)
+            {
+                try 
+                {
+                    _blobServiceClient = new BlobServiceClient(_options.ConnectionString);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Failed to initialize Blob Storage, falling back to local mode: {Message}", ex.Message);
+                    _isDevelopment = true;
+                }
+            }
+        }
+
+        public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
+        {
+            try
+            {
+                var uniqueFileName = $"{Path.GetFileNameWithoutExtension(fileName)}_{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+                
+                if (_isDevelopment)
+                {
+                    // For development, save to in-memory dictionary
+                    using var ms = new MemoryStream();
+                    await fileStream.CopyToAsync(ms);
+                    lock (_localFiles)
+                    {
+                        _localFiles[uniqueFileName] = ms.ToArray();
+                    }
+                    
+                    _logger.LogInformation("Local mode: File {FileName} saved as {LocalName}", fileName, uniqueFileName);
+                    return $"http://localhost/local-files/{uniqueFileName}";
+                }
+                
+                var containerClient = _blobServiceClient!.GetBlobContainerClient(_options.ContainerName);
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+
+                var blobClient = containerClient.GetBlobClient(uniqueFileName);
+
+                var blobHttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = contentType
+                };
+
+                await blobClient.UploadAsync(fileStream, new BlobUploadOptions { HttpHeaders = blobHttpHeaders });
+                _logger.LogInformation("File {FileName} uploaded to blob storage as {BlobName}", fileName, uniqueFileName);
+
+                return blobClient.Uri.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading file {FileName}: {Message}", fileName, ex.Message);
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteFileAsync(string fileUrl)
+        {
+            try
+            {
+                string blobName = Path.GetFileName(fileUrl);
+
+                if (_isDevelopment)
+                {
+                    // For development, remove from in-memory dictionary
+                    lock (_localFiles)
+                    {
+                        if (_localFiles.Remove(blobName))
+                        {
+                            _logger.LogInformation("Local mode: File {BlobName} deleted", blobName);
+                            return true;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Local mode: File {BlobName} not found for deletion", blobName);
+                            return false;
+                        }
+                    }
+                }
+                
+                var containerClient = _blobServiceClient!.GetBlobContainerClient(_options.ContainerName);
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                bool result = await blobClient.DeleteIfExistsAsync();
+                if (result)
+                {
+                    _logger.LogInformation("File {BlobName} deleted from blob storage", blobName);
+                }
+                else
+                {
+                    _logger.LogWarning("File {BlobName} not found in blob storage", blobName);
+                }
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting file {FileUrl}: {Message}", fileUrl, ex.Message);
+                return false;
+            }
+        }
+
+        public string GetFileUrl(string fileName)
+        {
+            if (_isDevelopment)
+            {
+                return $"http://localhost/local-files/{fileName}";
+            }
+
+            var containerClient = _blobServiceClient!.GetBlobContainerClient(_options.ContainerName);
+            var blobClient = containerClient.GetBlobClient(fileName);
+            return blobClient.Uri.ToString();
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "session-broker": {
+      "description": "Multi-session coordination and agent teams for GitHub Copilot CLI — session registry, messaging, conflict detection, team management, task boards",
+      "type": "http",
+      "url": "http://localhost:3456/mcp",
+      "tools": [
+        "register_session",
+        "deregister_session",
+        "list_sessions",
+        "get_state",
+        "set_state",
+        "send_message",
+        "get_messages",
+        "declare_intent",
+        "release_intent",
+        "check_conflicts",
+        "clear_story_context",
+        "clear_session_context",
+        "clear_all",
+        "heartbeat",
+        "detect_zombies",
+        "cleanup_zombies",
+        "search_sessions",
+        "index_session",
+        "get_index_stats",
+        "create_team",
+        "disband_team",
+        "list_teams",
+        "join_team",
+        "leave_team",
+        "list_team_members",
+        "create_task",
+        "get_task",
+        "list_tasks",
+        "update_task"
+      ]
+    }
+  }
+}

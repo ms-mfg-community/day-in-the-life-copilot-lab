@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "tools": ["*"]
+    },
+    "memory": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tools": ["*"]
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "tools": ["*"]
+    },
+    "workiq": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@microsoft/workiq", "mcp"],
+      "tools": ["*"]
+    },
+    "microsoft-learn": {
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "tools": ["*"]
+    },
+    "fetch": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "tools": ["*"]
+    }
+  }
+}

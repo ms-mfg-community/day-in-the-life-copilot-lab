@@ -1,0 +1,16 @@
+{
+  "name": "context7",
+  "description": "Up-to-date documentation and code examples for any library via Context7",
+  "package": "@upstash/context7-mcp",
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@upstash/context7-mcp"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@upstash/context7-mcp"],
+    "tools": ["*"]
+  }
+}

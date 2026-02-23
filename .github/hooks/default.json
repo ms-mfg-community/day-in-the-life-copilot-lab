@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "./.github/skills/continuous-learning-v2/agents/start-observer.sh --once",
+        "timeoutSec": 15,
+        "comment": "Analyze observations from previous session for patterns"
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/user-prompt-submitted.sh",
+        "powershell": "./scripts/hooks/user-prompt-submitted.ps1",
+        "timeoutSec": 5,
+        "comment": "Log user prompts for audit trail"
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/observe.sh pre",
+        "powershell": "./scripts/hooks/observe.ps1 pre",
+        "timeoutSec": 5,
+        "comment": "Log tool usage for continuous-learning-v2 instinct detection"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/pre-tool-use-long-running.sh",
+        "powershell": "./scripts/hooks/pre-tool-use-long-running.ps1",
+        "timeoutSec": 5,
+        "comment": "Warn about long-running commands (npm, pnpm, yarn, cargo, docker)"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/pre-tool-use-doc-blocker.sh",
+        "powershell": "./scripts/hooks/pre-tool-use-doc-blocker.ps1",
+        "timeoutSec": 5,
+        "comment": "Block creation of unnecessary .md/.txt documentation files"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/pre-tool-use-secret-scan.sh",
+        "powershell": "./scripts/hooks/pre-tool-use-secret-scan.ps1",
+        "timeoutSec": 10,
+        "comment": "Block commits containing hardcoded secrets or credentials"
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/observe.sh post",
+        "powershell": "./scripts/hooks/observe.ps1 post",
+        "timeoutSec": 5,
+        "comment": "Log tool results for continuous-learning-v2 instinct detection"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/post-tool-use-format.sh",
+        "powershell": "./scripts/hooks/post-tool-use-format.ps1",
+        "timeoutSec": 15,
+        "comment": "Auto-format JS/TS files after edit with Prettier"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/post-tool-use-typecheck.sh",
+        "powershell": "./scripts/hooks/post-tool-use-typecheck.ps1",
+        "timeoutSec": 30,
+        "comment": "Run TypeScript type check after editing .ts/.tsx files"
+      },
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/post-tool-use-console-warn.sh",
+        "powershell": "./scripts/hooks/post-tool-use-console-warn.ps1",
+        "timeoutSec": 5,
+        "comment": "Warn about console.log statements in edited files"
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/error-occurred.sh",
+        "powershell": "./scripts/hooks/error-occurred.ps1",
+        "timeoutSec": 10,
+        "comment": "Log errors with context for debugging"
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+@model ContosoUniversity.Core.Models.Instructor
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Instructor</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.LastName)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.LastName)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.FirstMidName)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.FirstMidName)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.HireDate)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.HireDate)
+        </dd>
+        <dt class="col-sm-3">
+            Office Location
+        </dt>
+        <dd class="col-sm-9">
+            @if (Model.OfficeAssignment != null)
+            {
+                @Html.DisplayFor(model => model.OfficeAssignment.Location)
+            }
+            else
+            {
+                <span>No office assigned</span>
+            }
+        </dd>
+        <dt class="col-sm-3">
+            Courses
+        </dt>
+        <dd class="col-sm-9">
+            @if (Model.CourseAssignments != null && Model.CourseAssignments.Any())
+            {
+                <ul>
+                    @foreach (var course in Model.CourseAssignments)
+                    {
+                        <li>@course.Course.CourseID - @course.Course.Title</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <span>No courses assigned</span>
+            }
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.ID" class="btn btn-primary">Edit</a> |
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

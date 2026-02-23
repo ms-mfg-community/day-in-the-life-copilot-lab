@@ -1,0 +1,16 @@
+{
+  "name": "workiq",
+  "description": "Microsoft Work IQ for enterprise productivity insights",
+  "package": "@microsoft/workiq",
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@microsoft/workiq", "mcp"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@microsoft/workiq", "mcp"],
+    "tools": ["*"]
+  }
+}

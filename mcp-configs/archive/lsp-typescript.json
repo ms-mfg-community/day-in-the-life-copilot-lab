@@ -1,0 +1,28 @@
+{
+  "name": "lsp-typescript",
+  "description": "TypeScript language intelligence — type info, diagnostics, definitions, references, type tracing",
+  "package": "ts-lsp-mcp",
+  "prerequisites": "Node.js 18+, a tsconfig.json in your project",
+  "tools_exposed": [
+    "getTypeAtPosition",
+    "getDefinition",
+    "getReferences",
+    "getHover",
+    "getCompletions",
+    "getDiagnostics",
+    "traceType",
+    "runTypeTests",
+    "checkInlineCode"
+  ],
+  "vscode": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "ts-lsp-mcp", "serve", "--stdio"]
+  },
+  "copilot-cli": {
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "ts-lsp-mcp", "serve", "--stdio"],
+    "tools": ["*"]
+  }
+}

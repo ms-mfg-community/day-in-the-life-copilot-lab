@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "sequential-thinking": {
+      "description": "Structured chain-of-thought reasoning for complex problems",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}

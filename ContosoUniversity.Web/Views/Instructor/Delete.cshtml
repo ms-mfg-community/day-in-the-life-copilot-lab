@@ -1,0 +1,66 @@
+@model ContosoUniversity.Core.Models.Instructor
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>Instructor</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.LastName)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.LastName)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.FirstMidName)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.FirstMidName)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.HireDate)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.HireDate)
+        </dd>
+        <dt class="col-sm-3">
+            Office Location
+        </dt>
+        <dd class="col-sm-9">
+            @if (Model.OfficeAssignment != null)
+            {
+                @Html.DisplayFor(model => model.OfficeAssignment.Location)
+            }
+            else
+            {
+                <span>No office assigned</span>
+            }
+        </dd>
+    </dl>
+    
+    @if (Model.CourseAssignments != null && Model.CourseAssignments.Any())
+    {
+        <div class="alert alert-warning">
+            <p><strong>Warning:</strong> This instructor is assigned to the following courses:</p>
+            <ul>
+                @foreach (var item in Model.CourseAssignments)
+                {
+                    <li>@item.Course.CourseID - @item.Course.Title</li>
+                }
+            </ul>
+            <p>Deleting this instructor will remove them from these courses.</p>
+        </div>
+    }
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="ID" />
+        <button type="submit" class="btn btn-danger">Delete</button> |
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </form>
+</div>

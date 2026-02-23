@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "session-broker": {
+      "type": "http",
+      "url": "http://localhost:3456/mcp",
+      "headers": {
+        "Accept": "text/event-stream"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "context7": {
+      "description": "Up-to-date documentation and code examples for any library",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "tools": ["*"]
+    }
+  }
+}
