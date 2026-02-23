@@ -112,7 +112,8 @@ erDiagram
 | **Hooks** | Pre/post tool-use lifecycle automation | 06 |
 | **Orchestration** | Multi-agent coordination workflows | 07 |
 | **Agentic Workflows** | `gh-aw` CI/CD automation with AI agents | 08, 09 |
-| **Session Management** | Cross-session persistence with Memory MCP | 10 |
+| **Reindex** | Automatic semantic understanding of your codebase | 10 |
+| **Session Management** | Memory MCP for decisions, handoffs, continuous learning | 10 |
 
 ---
 
@@ -125,12 +126,12 @@ erDiagram
 | [Lab 02](labs/lab02.md) | Custom Instructions & AGENTS.md | Instruction hierarchy, modify, extend |
 | [Lab 03](labs/lab03.md) | Creating a .NET Agent | Build `dotnet-dev.agent.md` |
 | [Lab 04](labs/lab04.md) | Skills & Prompts | Create a skill, write a prompt template |
-| [Lab 05](labs/lab05.md) | MCP Server Configuration | Configure Context7, Memory, C# LSP |
+| [Lab 05](labs/lab05.md) | MCP Server Configuration | Configure Context7, Memory, Sequential Thinking |
 | [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks |
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Code Review | AI-powered pull request reviews |
-| [Lab 10](labs/lab10.md) | Session Management & Memory | Memory MCP, continuous learning, handoffs |
+| [Lab 10](labs/lab10.md) | Reindex, Session Management & Memory | Reindex, Memory MCP, continuous learning, handoffs |
 
 **Total: ~3 hours** (10 labs — self-paced or presenter-led)
 
@@ -142,9 +143,9 @@ This repo ships with a rich set of configurations for you to explore and extend:
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **Agents** | 0 (you build them!) | Learners create agents in Labs 03, 07 — see `solutions/` for examples |
+| **Agents** | 2 (+ more you build!) | `planner`, `code-reviewer` — learners create more in Labs 03, 07 |
 | **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
-| **Prompts** | 20 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/handoff`, `/create-agent`, `/create-test` |
+| **Prompts** | 21 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
 | **Hooks** | 7 | Secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
@@ -169,9 +170,9 @@ This repo ships with a rich set of configurations for you to explore and extend:
 ```
 day-in-the-life-copilot-lab/
 ├── .github/
-│   ├── agents/                    # Agent profiles — created during labs
+│   ├── agents/                    # 2 agent profiles — more created during labs
 │   ├── skills/                    # 10 agent skills (SKILL.md)
-│   ├── prompts/                   # 20 prompt templates (.prompt.md)
+│   ├── prompts/                   # 21 prompt templates (.prompt.md)
 │   ├── hooks/                     # Hook configuration (default.json)
 │   ├── instructions/              # 3 path-specific instructions (.instructions.md)
 │   ├── copilot-instructions.md    # Repository-wide instructions

@@ -85,7 +85,7 @@ code .
 | Directory | Contents | Count |
 |-----------|----------|-------|
 | `.github/skills/` | Agent skills (`SKILL.md`) | 10 |
-| `.github/prompts/` | Prompt templates (`.prompt.md`) | 20 |
+| `.github/prompts/` | Prompt templates (`.prompt.md`) | 21 |
 | `.github/hooks/` | Hook configuration | 1 |
 | `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 3 |
 | `.copilot/` | MCP server configuration | 1 |
