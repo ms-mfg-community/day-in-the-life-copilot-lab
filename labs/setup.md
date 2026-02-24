@@ -164,7 +164,7 @@ Get-Content AGENTS.md
 - [ ] Lab 06: Hooks
 - [ ] Lab 07: Multi-Agent Orchestration
 - [ ] Lab 08: gh-aw: PRD Generation
-- [ ] Lab 09: Copilot Code Review
+- [ ] Lab 09: Copilot Coding Agent & Code Review
 - [ ] Lab 10: Session Management & Memory
 ```
 

@@ -1,14 +1,15 @@
-# 9 — Copilot Code Review
+# 9 — Copilot Coding Agent & Code Review
 
-In this lab you will use GitHub's built-in Copilot Code Review to get AI-powered feedback on pull requests. You'll enable automatic reviews, open a PR, and iterate on the feedback — all without writing a single workflow file.
+In this lab you will chain two platform-level agentic features: the **Copilot Coding Agent** to implement a feature from a GitHub Issue, and **Copilot Code Review** to automatically review the resulting pull request. You won't write a single line of code — you'll write an issue, and two AI agents handle the rest.
 
-> ⏱️ Presenter pace: 4 minutes | Self-paced: 15 minutes
+> ⏱️ Presenter pace: 5 minutes | Self-paced: 20 minutes
 
-> 🎤 **Presenter prep:** Before the session, open a PR with a small code change (e.g., add `MaxEnrollment` to Course model) and assign Copilot as a reviewer. When presenting, show the completed review comments — no waiting.
+> 🎤 **Presenter prep:** Before the session, create an issue, assign Copilot, and let the coding agent open a PR that gets auto-reviewed. When presenting, walk through the completed issue → PR → review chain — no waiting.
 
-> 💡 **Enterprise context:** Copilot Code Review is a **platform feature** — zero workflow configuration, zero CI setup. Toggle a ruleset and every PR gets AI-reviewed against your `copilot-instructions.md`. Organization owners can enable it across **all repositories** from Copilot policy settings. It integrates CodeQL, ESLint, and PMD for static analysis. This is the enterprise scale story: your local instructions automatically improve platform-level reviews.
+> 💡 **Enterprise context:** This lab showcases two **platform features** that require zero local tooling. The Coding Agent turns issues into pull requests. Code Review automatically reviews every PR against your `copilot-instructions.md`. Organization owners can enable both across **all repositories** from Copilot policy settings. This is the enterprise scale story: issue → implementation → review, all AI-assisted, all governed by org policies.
 
 References:
+- [About Copilot Coding Agent](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent)
 - [About Copilot Code Review](https://docs.github.com/en/copilot/concepts/agents/code-review)
 - [Configuring automatic code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/configure-automatic-review)
 - [Using Copilot code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review)
@@ -53,92 +54,119 @@ You can configure Copilot to automatically review every pull request using **rep
 
 Organization owners can enable automatic reviews across **all repositories** from the organization's Copilot policy settings. This is ideal for teams who want consistent AI review without per-repo setup.
 
-## 9.3 Open a Pull Request
+## 9.3 Meet the Copilot Coding Agent
 
-Now let's trigger a review by opening a PR with some changes.
+The **Copilot Coding Agent** is a platform-level feature that turns GitHub Issues into pull requests. You describe what you want in an issue, assign Copilot, and the agent:
 
-🖥️ **In your terminal:**
+1. **Creates a branch** from your default branch
+2. **Reads your codebase** — including `copilot-instructions.md`, `AGENTS.md`, and all your custom instructions
+3. **Implements the change** — writes code, adds tests, updates documentation
+4. **Opens a pull request** — with a description of what it did and why
 
-1. Make sure you're on a feature branch (from Lab 08, or create one):
+Key characteristics:
+
+| Feature | Details |
+|---------|---------|
+| **Trigger** | Assign `copilot` to an issue, or mention `@copilot` in an issue comment |
+| **Environment** | Runs in a secure cloud environment (GitHub-hosted) |
+| **Context** | Reads your full repository, custom instructions, and `AGENTS.md` |
+| **Output** | A pull request with code changes, ready for review |
+| **Iteration** | Responds to PR review comments — push back and it will revise |
+| **Plans** | Available on Copilot Pro+, Business, and Enterprise |
+
+> 💡 **Why the Coding Agent?** It bridges the gap between "I know what I want" and "here's the code." Combined with Code Review, you get a full loop: describe → implement → review — without writing code yourself.
+
+### Enable the Coding Agent
+
+🌐 **On GitHub:**
+
+1. Go to your repository → **Settings** → **Copilot** → **Coding agent**
+2. Ensure the coding agent is **enabled**
+3. If you're in an organization, the org owner may need to enable it from **Organization settings** → **Copilot** → **Policies**
+
+> 💡 **Firewall rules:** If your organization uses a GitHub App allowlist or IP restrictions, ensure the Copilot Coding Agent's GitHub App is permitted. See [GitHub's documentation](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent) for details.
+
+## 9.4 Create a GitHub Issue
+
+Instead of making changes locally, let's describe the feature we want in a GitHub Issue and let the Coding Agent implement it.
+
+🌐 **On GitHub** (or use the CLI):
+
+1. Create a new issue in your repository:
+
+```bash
+gh issue create \
+  --title "feat: add MaxEnrollment property to Course model" \
+  --body "## Description
+
+Add a \`MaxEnrollment\` property to the \`Course\` model to support enrollment caps.
+
+## Requirements
+
+- Add a \`MaxEnrollment\` property (int) to \`ContosoUniversity.Core/Models/Course.cs\`
+- Default value should be 30
+- Add XML documentation for the new property
+- Add a unit test verifying the default value
+
+## Context
+
+This is part of the course prerequisites feature. The property will be used to limit the number of students that can enroll in a course."
+```
+
+> 💡 **Issue quality matters.** The more specific your issue description, the better the Coding Agent's implementation. Include requirements, file paths, and context — just like you would for a human developer.
+
+## 9.5 Assign the Coding Agent
+
+Now assign Copilot to the issue and watch it work.
+
+🌐 **On GitHub:**
+
+1. Open the issue you just created
+2. In the **Assignees** panel on the right, click the gear icon
+3. Select **Copilot** from the list of assignees
+4. Copilot will begin working on the issue
+
+Or use the CLI:
 
 **WSL/Bash:**
 ```bash
-git checkout -b feature/add-course-prerequisites 2>/dev/null || git checkout feature/add-course-prerequisites
+# Replace <ISSUE_NUMBER> with your issue number
+gh issue edit <ISSUE_NUMBER> --add-assignee @copilot
 ```
 
-**PowerShell:**
-```powershell
-git checkout -b feature/add-course-prerequisites 2>$null; if (-not $?) { git checkout feature/add-course-prerequisites }
-```
+### What happens next
 
-2. Make a small code change. For example, add a property to the Course model:
+The Coding Agent will:
 
-**WSL/Bash:**
-```bash
-# View the current Course model
-cat ContosoUniversity.Core/Models/Course.cs
-```
+1. **Start a session** — you'll see a status indicator on the issue showing Copilot is working
+2. **Read your codebase** — it examines the project structure, existing models, and your custom instructions
+3. **Create a branch** — named something like `copilot/fix-{issue-number}`
+4. **Make the changes** — implements the requirements from the issue
+5. **Open a pull request** — linked back to the issue, with a description of the changes
 
-**PowerShell:**
-```powershell
-# View the current Course model
-Get-Content ContosoUniversity.Core/Models/Course.cs
-```
+This typically takes **2–5 minutes**.
 
-3. Add a `MaxEnrollment` property (a simple, realistic change):
+> 💡 **Watch it work.** While the Coding Agent runs, you can see its progress on the issue page. It posts status updates as it reads code, plans changes, and implements the solution.
 
-Open the file in your editor and add:
-```csharp
-public int MaxEnrollment { get; set; } = 30;
-```
+🌐 **On GitHub:**
 
-4. Commit and push:
+1. Refresh the issue page to see status updates
+2. Once the PR is created, you'll see a link on the issue
+3. Click through to the PR — if you configured the ruleset in 9.2, **Code Review has already started automatically**
 
-**WSL/Bash:**
-```bash
-git add ContosoUniversity.Core/Models/Course.cs
-git commit -m "feat: add MaxEnrollment property to Course model"
-git push origin feature/add-course-prerequisites
-```
+> 💡 **Two agents, one flow.** The Coding Agent opened the PR, which triggered the Code Review ruleset. You didn't write code, you didn't push, you didn't manually request a review — the platform handled everything.
 
-**PowerShell:**
-```powershell
-git add ContosoUniversity.Core/Models/Course.cs
-git commit -m "feat: add MaxEnrollment property to Course model"
-git push origin feature/add-course-prerequisites
-```
+## 9.6 Review the Automated Feedback
 
-5. Open a PR:
-
-**WSL/Bash:**
-```bash
-gh pr create \
-  --base lab/day-in-the-life-copilot-lab \
-  --title "feat: add course prerequisites and enrollment cap" \
-  --body "Adds MaxEnrollment property to Course model. Part of the course prerequisites feature."
-```
-
-**PowerShell:**
-```powershell
-gh pr create `
-  --base lab/day-in-the-life-copilot-lab `
-  --title "feat: add course prerequisites and enrollment cap" `
-  --body "Adds MaxEnrollment property to Course model. Part of the course prerequisites feature."
-```
-
-Or use the GitHub web UI: **Compare & pull request** → set base to `lab/day-in-the-life-copilot-lab` → **Create pull request**.
-
-> 💡 Copilot code review typically takes 2–5 minutes. If no review appears after 5 minutes, click the re-request button next to Copilot's name on the PR page.
-
-## 9.4 Review the Automated Feedback
-
-If you configured the ruleset in 9.2, Copilot automatically reviews the PR. Otherwise, manually assign **Copilot** as a reviewer on the PR.
+Your PR now has two types of AI activity:
+- The **Coding Agent** created the PR with its implementation
+- **Code Review** automatically reviewed those changes
 
 🌐 **On GitHub:**
 
 1. Go to your PR — you'll see **Copilot** listed under Reviewers
-2. Wait for the review (typically 1-2 minutes)
-3. Copilot posts review comments directly on the changed files:
+2. Examine the code changes the Coding Agent made in the **Files changed** tab
+3. Read the Code Review comments posted on the changed files:
 
 | Feedback type | What You'll See |
 |--------------|----------------|
@@ -149,51 +177,44 @@ If you configured the ruleset in 9.2, Copilot automatically reviews the PR. Othe
 
 4. Many suggestions include **Apply suggestion** buttons — click to accept fixes directly
 
-> 💡 **What review comments look like:** Copilot posts inline comments on specific changed lines — similar to human reviews. Example: "Consider adding range validation for MaxEnrollment to prevent negative values."
+> 💡 **Comment only:** Copilot Code Review never approves or requests changes on a PR. It only comments. This keeps humans in control of the merge decision while providing AI-assisted first-pass review.
 
-> 💡 **Comment only:** Copilot never approves or requests changes on a PR. It only comments. This keeps humans in control of the merge decision while providing AI-assisted first-pass review.
+## 9.7 Iterate Based on Feedback
 
-## 9.5 Iterate Based on Feedback
+Here's where it gets powerful: you can ask the Coding Agent to address the Code Review feedback — creating a fully automated feedback loop.
 
-Let's practice the feedback loop: read the review, make fixes, push, and get re-reviewed.
+🌐 **On GitHub:**
 
-🖥️ **In your terminal:**
+1. Read the Code Review comments on your PR
+2. Leave a comment on the PR tagging `@copilot` with instructions to address the feedback:
 
-1. Read Copilot's review comments on your PR
-
-2. Address a suggestion. For example, add an XML comment:
-```csharp
-/// <summary>
-/// Maximum number of students that can enroll in this course.
-/// </summary>
-public int MaxEnrollment { get; set; } = 30;
+```markdown
+@copilot Please address the review feedback:
+- Add range validation for MaxEnrollment (must be > 0)
+- Add XML documentation if missing
 ```
 
-3. Commit and push:
+3. The Coding Agent will push additional commits to the PR addressing the feedback
+4. If "Review new pushes" is enabled, Code Review will automatically re-review the new commits
 
-**WSL/Bash:**
+> 💡 **The feedback loop:** Issue → Coding Agent → PR → Code Review → feedback comment → Coding Agent iterates → Code Review re-reviews. Humans stay in the loop as reviewers and decision-makers, while AI handles the implementation cycles.
+
+Alternatively, you can apply suggestions directly:
+
+1. Click **Apply suggestion** on a Code Review comment to accept a fix inline
+2. Or check out the branch locally to make manual adjustments:
+
 ```bash
+gh pr checkout <PR_NUMBER>
+# Make your changes
 git add ContosoUniversity.Core/Models/Course.cs
-git commit -m "docs: add XML documentation for MaxEnrollment"
-git push origin feature/add-course-prerequisites
+git commit -m "fix: address review feedback for MaxEnrollment"
+git push
 ```
 
-**PowerShell:**
-```powershell
-git add ContosoUniversity.Core/Models/Course.cs
-git commit -m "docs: add XML documentation for MaxEnrollment"
-git push origin feature/add-course-prerequisites
-```
+## 9.8 How Custom Instructions Enhance Both Agents
 
-4. If "Review new pushes" is enabled, Copilot automatically re-reviews. Otherwise, click the 🔄 button next to Copilot's name in the Reviewers panel to request a re-review.
-
-5. Check the PR for updated review comments
-
-> 💡 **Rapid feedback loop:** Push code → get AI review → fix → push → get re-review. Copilot handles the first-pass review, freeing human reviewers for higher-level design and architecture feedback.
-
-## 9.6 How Custom Instructions Enhance Reviews
-
-Copilot Code Review automatically reads your `copilot-instructions.md` — the same file we explored in Lab 02.
+Both the Coding Agent and Code Review automatically read your `copilot-instructions.md` — the same file we explored in Lab 02.
 
 🖥️ **In your terminal:**
 
@@ -213,22 +234,48 @@ Because our repository has custom instructions covering:
 - Test naming conventions (`MethodName_Condition_ExpectedResult`)
 - Security rules (no hardcoded secrets, parameterized queries)
 
-...Copilot's reviews are **contextually aware** of our project's standards. It doesn't just apply generic best practices — it checks against *our* conventions.
+...both agents are **contextually aware** of our project's standards:
 
-> 💡 **This is the power of the configuration ecosystem.** The instructions you wrote in Lab 02 automatically improve the quality of Copilot's code reviews, agent responses, and completions — everywhere.
+| Agent | How Instructions Help |
+|-------|-----------------------|
+| **Coding Agent** | Implements code that follows your conventions from the start |
+| **Code Review** | Checks changes against your project-specific rules, not just generic best practices |
 
-## 9.7 Compare: Traditional vs AI Code Review
+> 💡 **This is the power of the configuration ecosystem.** The instructions you wrote in Lab 02 automatically improve the quality of the Coding Agent's implementations, Code Review's feedback, local agent responses, and completions — everywhere.
 
-| Aspect | Traditional CI (linters) | Copilot Code Review |
-|--------|-------------------------|---------------------|
-| **Type** | Rule-based (ESLint, StyleCop) | AI-powered reasoning |
-| **Feedback** | "Line 42: unused variable" | "This property should have range validation to prevent negative enrollment caps" |
-| **Context** | Per-file analysis | Understands full project architecture |
-| **Custom rules** | Config files (`.eslintrc`) | Natural language (`copilot-instructions.md`) |
-| **Static analysis** | Separate tools | CodeQL, ESLint, PMD integrated |
-| **Setup** | Install + configure per tool | Toggle a ruleset |
+## 9.9 The Agentic Chain
 
-## 9.8 Going Further: Custom Reviews with gh-aw
+Step back and look at what just happened:
+
+```
+┌──────────────┐     ┌──────────────────┐     ┌───────────────┐     ┌──────────────┐
+│  You write   │ ──► │  Coding Agent    │ ──► │  Code Review  │ ──► │  You review  │
+│  an Issue    │     │  implements +    │     │  checks the   │     │  and merge   │
+│              │     │  opens a PR      │     │  PR changes   │     │              │
+└──────────────┘     └──────────────────┘     └───────────────┘     └──────────────┘
+```
+
+**Three platform features, zero local tooling:**
+
+1. **GitHub Issues** — you describe the work
+2. **Copilot Coding Agent** — AI implements it
+3. **Copilot Code Review** — AI reviews it
+
+The human stays in control: you write the requirements, you review the output, you decide to merge. The AI handles the implementation and first-pass review.
+
+> 💡 **Connect the labs.** Remember Lab 08? The gh-aw workflow generated a PRD from a feature branch. Imagine the full chain: PRD generation (Lab 08) → issue creation → Coding Agent implements → Code Review validates. Each piece is a building block you can compose into your own workflow.
+
+### Compare: Traditional vs Agentic Development
+
+| Aspect | Traditional Workflow | Agentic Workflow (this lab) |
+|--------|---------------------|-----------------------------|
+| **Implementation** | Developer writes code locally | Coding Agent writes code from issue description |
+| **Code review** | Human reviewer (hours/days) | AI review in minutes + human final review |
+| **Feedback loop** | Push → wait → fix → push | Comment `@copilot` → agent iterates → auto re-review |
+| **Context** | Reviewer reads PR diff | AI reads full project + custom instructions |
+| **Setup** | IDE, local env, branch, push | Write an issue, assign Copilot |
+
+## 9.10 Going Further: Custom Reviews with gh-aw
 
 The built-in Copilot Code Review covers most use cases. But if you need **full customization** — a specific review checklist, custom output labels, controlled permissions, or integration with specific tools — GitHub Agentic Workflows (gh-aw) give you that power.
 
@@ -256,31 +303,29 @@ See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for
 
 > 💡 **When to use which?** Use built-in Copilot Code Review for everyday reviews. Use gh-aw when you need a custom review pipeline — domain-specific checklists, labeled outputs, strict permission models, or integration with custom tools.
 
-## 9.9 Final
+## 9.11 Final
 
 <details>
 <summary>Key Takeaways</summary>
 
 | Concept | Details |
 |---------|---------|
+| **Copilot Coding Agent** | Turns GitHub Issues into pull requests with working code |
 | **Copilot Code Review** | Built-in AI reviewer for pull requests |
-| **Setup** | Repository rulesets or manual `@copilot` assignment |
-| **Output** | Review comments only — never approves or blocks |
-| **Context** | Reads `copilot-instructions.md` and full project context |
-| **Static analysis** | CodeQL, ESLint, PMD integrated |
-| **Re-review** | Automatic on push (if configured) or manual re-request |
-| **gh-aw alternative** | For custom checklists, labeled outputs, and advanced control |
+| **The agentic chain** | Issue → Coding Agent → PR → Code Review → human merge |
+| **Custom instructions** | Both agents read `copilot-instructions.md` and `AGENTS.md` |
+| **Iteration** | Comment `@copilot` on PRs to request changes; Code Review auto-re-reviews on push |
+| **Coding Agent setup** | Enable in repo settings → Copilot → Coding agent |
+| **Code Review setup** | Repository rulesets or manual `@copilot` reviewer assignment |
+| **gh-aw alternative** | For custom review checklists, labeled outputs, and advanced control |
 
-**Built-in vs Custom review:**
+**The three review layers:**
 
-| Feature | Built-in Copilot Review | gh-aw Custom Workflow |
-|---------|------------------------|-----------------------|
-| Setup | Toggle in repo settings | Write workflow `.md`, compile with `gh aw` |
-| Custom instructions | `copilot-instructions.md` | Markdown body in workflow |
-| Static analysis | CodeQL, ESLint, PMD built-in | Script your own |
-| Output labels | N/A | `safe-outputs` with custom labels |
-| Permission model | Platform-managed | Explicit `permissions` block |
-| Re-review trigger | Ruleset config | `on: pull_request [synchronize]` |
+| Layer | Tool | When to Use |
+|-------|------|-------------|
+| **Built-in** | Copilot Code Review | Everyday reviews — toggle a ruleset |
+| **Custom** | gh-aw Code Review workflow | Domain-specific checklists, labeled outputs, strict permissions |
+| **Human** | Your team | Architecture decisions, business logic, final merge approval |
 
 </details>
 

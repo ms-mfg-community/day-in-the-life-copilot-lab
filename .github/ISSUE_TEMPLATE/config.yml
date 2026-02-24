@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Lab Instructions
+    url: https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/blob/main/labs/lab08.md
+    about: "See Lab 8 for the GitHub Agentic Workflows exercise"

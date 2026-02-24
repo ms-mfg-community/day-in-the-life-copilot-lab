@@ -63,17 +63,18 @@ Get-Content .github/workflows/generate-prd.md
 
 | Field | Value | Purpose |
 |-------|-------|---------|
-| `on.create.branches` | `feature/**`, `story/**` | Triggers on branch creation matching these patterns |
-| `permissions.contents` | `write` | Agent can create/modify files in the repo |
+| `on.create` | (no filter) | Triggers on any branch or tag creation |
+| `if` | `startsWith(...)` | Only runs for `feature/**` and `story/**` branches |
+| `permissions.contents` | `read` | Agent can read files in the repo |
 | `permissions.issues` | `read` | Agent can read issues for context |
 | `tools.github.toolsets` | `[repos, issues]` | GitHub API tools: read repo contents and issues |
 | `tools.edit` | (enabled) | Agent can create and edit files |
 | `tools.bash` | `["dotnet"]` | Agent can run bash commands with dotnet available |
 | `runtimes.dotnet` | `8.0` | .NET 8 SDK installed in the runner |
-| `strict` | `false` | Agent can perform any output action |
+| `safe-outputs.create-pull-request` | (configured) | Agent creates a PR with the generated PRD |
 | `description` | (text) | Shown in the GitHub Actions UI |
 
-> 💡 The workflow triggers on `feature/**` and `story/**` branch patterns. Only branches matching these patterns will generate a PRD — other branch names like `bugfix/` won't trigger it.
+> 💡 The `create` event fires on any branch or tag creation, but the `if:` condition filters to only `feature/**` and `story/**` branches. Other branch names like `bugfix/` will skip the workflow.
 
 3. Now read the Markdown body — the agent instructions:
 
@@ -141,12 +142,12 @@ This generates `.github/workflows/generate-prd.lock.yml` — a standard GitHub A
 name: Generate PRD for Feature Branch
 on:
   create:
-    branches: ['feature/**', 'story/**']
 permissions:
-  contents: write
+  contents: read
   issues: read
 jobs:
   agent:
+    if: startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/story/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,44 +163,109 @@ jobs:
 
 > 💡 **Lock files:** The `.lock.yml` is committed alongside the `.md` file. GitHub Actions reads the lock file; the `.md` file is the human-readable source. Think of it like `package.json` → `package-lock.json`.
 
-## 8.4 Create a Feature Branch
+> ⚠️ **Why this works without compiling:** This repository ships with `generate-prd.lock.yml` already committed on `main`. For `create` events (branch/tag creation), GitHub Actions looks for workflow files **on the default branch**, not the branch being created. Since the lock file is already on `main`, creating a `feature/**` branch triggers the workflow immediately. If you were writing a *new* gh-aw workflow from scratch, you'd need to compile it and merge the `.lock.yml` to your default branch before the `create` trigger would fire.
 
-Let's trigger the workflow by creating a feature branch.
+## 8.4 Set Up Your Issue Backlog
+
+In a real development workflow, features come from **issues** — not thin air. This repository includes issue form templates and sample stories so you can practice the full issue → branch → PRD pipeline.
+
+> 💡 **Why Issues?** The PRD workflow reads linked issues for richer context. When you create a branch from an issue, the generated PRD includes the issue's user stories, acceptance criteria, and description — not just the branch name.
+
+### Enable Issues on Your Fork
+
+If you forked this repository, Issues may be disabled by default.
 
 🌐 **On GitHub:**
 
-1. Navigate to your forked repository on GitHub
-2. Click the branch dropdown on the repo's main code page
-3. Type `feature/add-course-prerequisites` in the branch name field
-4. Click **Create branch: feature/add-course-prerequisites from lab/day-in-the-life-copilot-lab**
+1. Navigate to your fork's **Settings** tab
+2. Scroll down to the **Features** section  
+3. Check the **Issues** checkbox to enable it
+4. The **Issues** tab now appears in your repository navigation
+
+### Seed Your Backlog
+
+Choose one of these approaches to add feature stories to your Issues:
+
+**Option A — Use the GitHub CLI (fastest):**
+
+```bash
+# Run all 4 commands from docs/sample-issues.md
+# Or create a single issue to start:
+gh issue create \
+  --title "[Feature]: Add Course Prerequisites" \
+  --body "$(cat << 'EOF'
+## Feature Description
+Allow courses to define prerequisite courses that students must complete before enrolling.
+
+## User Stories
+- As an **administrator**, I want to define prerequisite courses for any course
+- As a **student**, I want to see prerequisite courses on the course detail page
+- As the **enrollment system**, I want to validate prerequisites before enrollment
+
+## Acceptance Criteria
+- [ ] Administrators can add prerequisites through the course edit page
+- [ ] Course detail page displays prerequisite courses
+- [ ] Enrollment blocked when prerequisites not met
+EOF
+)" \
+  --label "feature,story"
+```
+
+**Option B — Copy/paste from sample issues:**
+
+1. Open [`docs/sample-issues.md`](../docs/sample-issues.md) for 4 ready-to-use stories
+2. Go to your fork's **Issues** tab → **New Issue** → select **🚀 Feature Story**
+3. Copy/paste the title and fields from the sample doc
+
+> 💡 The issue form template guides you with a Domain Area dropdown, structured fields, and branch naming instructions.
+
+### Pick Up a Story
+
+1. Go to the **Issues** tab in your fork
+2. Find a feature story (e.g., "Add Course Prerequisites")
+3. **Assign it to yourself** by clicking "Assignees" on the right sidebar
+4. This is your story — you'll create a branch for it in the next section
+
+## 8.5 Create a Feature Branch
+
+Now create a branch from your assigned issue to trigger the PRD workflow.
+
+🌐 **On GitHub (from your issue):**
+
+1. Open your assigned issue (e.g., "[Feature]: Add Course Prerequisites")
+2. In the right sidebar, click **"Create a branch"** under "Development"
+3. **Important:** Change the branch name to start with `feature/`:
+   - Default: `1-feature-add-course-prerequisites`
+   - Change to: `feature/add-course-prerequisites`
+4. Select **"Checkout locally"** or **"Open in GitHub Desktop"** based on your preference
+5. Click **Create branch**
 
 Alternatively, 🖥️ **from your terminal:**
 
 **WSL/Bash:**
 ```bash
-git push origin lab/day-in-the-life-copilot-lab:feature/add-course-prerequisites
+git push origin main:feature/add-course-prerequisites
 ```
 
 **PowerShell:**
 ```powershell
 git push origin lab/day-in-the-life-copilot-lab:feature/add-course-prerequisites
 ```
+6. Go to the **Actions** tab in your repository
+7. You should see a workflow run triggered by the branch creation
+8. Click on the run to watch the agent work in real time
 
-5. Go to the **Actions** tab in your repository
-6. You should see a workflow run triggered by the branch creation
-7. Click on the run to watch the agent work in real time
+> ⏱️ The agent run typically takes 1-3 minutes. It reads the codebase, finds the linked issue, and generates the PRD with enriched context from your issue's user stories and acceptance criteria.
 
-> ⏱️ The agent run typically takes 1-3 minutes. It reads the codebase, reasons about the feature, and generates the PRD.
+## 8.6 Review the Generated PRD
 
-## 8.5 Review the Generated PRD
-
-After the workflow completes:
+After the workflow completes, the agent creates a **pull request** containing the PRD file.
 
 🌐 **On GitHub:**
 
-1. Navigate to `docs/prd/` in the `feature/add-course-prerequisites` branch
-2. Open the generated PRD file
-3. Review the content — the agent should have:
+1. Go to the **Pull Requests** tab in your repository
+2. Look for a PR with the `[prd]` prefix and the `prd`, `ai-generated` labels
+3. Open the PR and review the generated PRD in `docs/prd/` — the agent should have:
 
 | Section | What to Look For |
 |---------|-----------------|
@@ -215,25 +281,24 @@ After the workflow completes:
    - Identified affected projects (Core for entities, Infrastructure for EF migrations)
    - Suggested appropriate testing patterns
 
-> 💡 **Expected content:** A structured PRD with sections for Feature Overview, User Stories, Acceptance Criteria, Technical Considerations, and Dependencies. If the PRD is empty or generic, the workflow may have timed out.
+> 💡 **Expected content:** A pull request containing a structured PRD with sections for Feature Overview, User Stories, Acceptance Criteria, Technical Considerations, and Dependencies. If the PR was not created or the PRD is empty, the workflow may have timed out.
 
 > 💡 **Real-world use:** In production, this workflow replaces the manual PRD writing step. Teams create a branch, and the AI agent generates a first-draft PRD that the PM reviews and refines.
 
-## 8.6 Key Frontmatter Fields
+## 8.7 Key Frontmatter Fields
 
 Before moving on, let's solidify the frontmatter concepts:
 
 | Field | Required | Purpose |
 |-------|----------|---------|
 | `on` | Yes | GitHub event triggers (same syntax as Actions) |
-| `permissions` | Yes | GitHub token scopes |
+| `permissions` | Yes | GitHub token scopes (use read-only with `safe-outputs`) |
 | `tools` | Yes | What the agent can do: `github`, `edit`, `bash`, `web` |
 | `runtimes` | No | Language runtimes to install (`dotnet`, `node`, `python`) |
-| `strict` | No | If `true`, only `safe-outputs` actions are allowed |
-| `safe-outputs` | No | Named output actions the agent can perform |
+| `safe-outputs` | No | Named output actions the agent can perform (e.g., `create-pull-request`) |
 | `description` | No | Shown in the Actions UI |
 
-## 8.7 Final
+## 8.8 Final
 
 <details>
 <summary>Key Takeaways</summary>
@@ -246,7 +311,7 @@ Before moving on, let's solidify the frontmatter concepts:
 | **Triggers** | Same `on:` syntax as GitHub Actions |
 | **Tools** | `github` (API), `edit` (files), `bash` (commands), `web` (search) |
 | **Runtimes** | Optional: `dotnet`, `node`, `python` installed on the runner |
-| **This workflow** | Triggers on `feature/**` or `story/**` branch creation |
+| **This workflow** | Triggers on `feature/**` or `story/**` branch creation, creates a PR with the PRD |
 
 **What makes gh-aw different from traditional Actions:**
 
@@ -258,7 +323,7 @@ Before moving on, let's solidify the frontmatter concepts:
 | Fails on unexpected input | Adapts to context |
 | `.yml` files | `.md` files compiled to `.lock.yml` |
 
-**The enterprise picture:** gh-aw workflows run in GitHub Actions with full enterprise governance — permissions, audit logs, environment protections, OIDC for cloud deployments. Your local agents handle the dev loop; gh-aw handles the platform automation. Together they cover the full software lifecycle.
+**The enterprise picture:** gh-aw workflows run in GitHub Actions with full enterprise governance — permissions, audit logs, environment protections, OIDC for cloud deployments. The `safe-outputs` pattern enforces least-privilege by running agents with read-only permissions while explicitly declaring allowed mutations (like creating a PR). Your local agents handle the dev loop; gh-aw handles the platform automation. Together they cover the full software lifecycle.
 
 </details>
 

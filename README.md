@@ -25,7 +25,7 @@ Most labs (01–07, 10) work with **any Copilot license**. A few labs require sp
 | Lab | Feature | Required License | GitHub Permissions |
 |-----|---------|-----------------|-------------------|
 | **Lab 08** | GitHub Agentic Workflows (`gh-aw`) | Copilot Business or Enterprise | Actions enabled, `contents: write`, `issues: read` |
-| **Lab 09** | Copilot Code Review (built-in PR reviews) | Copilot Pro+, Business, or Enterprise | Repo admin (to configure rulesets) |
+| **Lab 09** | Copilot Coding Agent + Code Review | Copilot Pro+, Business, or Enterprise | Repo admin (to configure rulesets + enable coding agent) |
 | All other labs | Agents, Skills, Instructions, Prompts, Hooks, MCP, Orchestration | Any Copilot license (Individual+) | Repo write access |
 
 > **Note:** If your organization restricts Copilot features via policy, check with your admin that agent mode, MCP servers, and Copilot CLI are enabled.
@@ -112,6 +112,8 @@ erDiagram
 | **Hooks** | Pre/post tool-use lifecycle automation | 06 |
 | **Orchestration** | Multi-agent coordination workflows | 07 |
 | **Agentic Workflows** | `gh-aw` CI/CD automation with AI agents | 08, 09 |
+| **Coding Agent** | Platform-level issue → PR implementation | 09 |
+| **Code Review** | AI-powered pull request reviews | 09 |
 | **Reindex** | Automatic semantic understanding of your codebase | 10 |
 | **Session Management** | Memory MCP for decisions, handoffs, continuous learning | 10 |
 
@@ -132,7 +134,7 @@ erDiagram
 | [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks |
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
-| [Lab 09](labs/lab09.md) | Copilot Code Review | AI-powered pull request reviews |
+| [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
 | [Lab 10](labs/lab10.md) | Reindex, Session Management & Memory | Reindex, Memory MCP, continuous learning, handoffs |
 
 **Total: ~3 hours** (10 labs — self-paced or presenter-led)

@@ -496,6 +496,7 @@ The workflow in practice:
 | AGENTS.md | Root | Project context for all agents |
 | copilot-instructions.md | `.github/` | Global behavior rules |
 | gh-aw workflows | `.github/workflows/*.md` | Cloud-side AI automation |
+| Copilot Coding Agent | GitHub Settings (Copilot) | Issue → PR implementation |
 | Copilot Code Review | GitHub Settings (rulesets) | Platform-level AI PR review |
 
 </details>
@@ -512,7 +513,7 @@ Congratulations! You've gone from zero to a full understanding of the GitHub Cop
 - ✅ **Lab 06** — Built hooks for guardrails and automation
 - ✅ **Lab 07** — Orchestrated a multi-agent development pipeline
 - ✅ **Lab 08** — Automated PRD generation with GitHub Agentic Workflows
-- ✅ **Lab 09** — Used Copilot Code Review for AI-powered pull request reviews
+- ✅ **Lab 09** — Used the Copilot Coding Agent and Code Review for AI-powered issue-to-PR-to-review workflows
 - ✅ **Lab 10** — Explored reindex, used Memory MCP for decisions, practiced handoffs, and toured advanced features
 
 ### The Big Picture

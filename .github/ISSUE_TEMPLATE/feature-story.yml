@@ -1,0 +1,60 @@
+name: "🚀 Feature Story"
+description: "Request a new feature or user story for ContosoUniversity"
+title: "[Feature]: "
+labels: ["feature", "story"]
+body:
+  - type: dropdown
+    id: domain-area
+    attributes:
+      label: Domain Area
+      description: "Which area of the application does this feature relate to?"
+      options:
+        - Students
+        - Courses
+        - Instructors
+        - Departments
+        - Enrollments
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: "Describe the feature you'd like to see implemented"
+      placeholder: "A clear and concise description of the feature..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: "List user stories in 'As a [role], I want [action], so that [benefit]' format"
+      placeholder: |
+        - As a student, I want to view my enrolled courses, so that I can track my schedule.
+        - As an instructor, I want to see class rosters, so that I can manage attendance.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "What conditions must be met for this feature to be considered complete?"
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ### 🌿 Branch Name Suggestion
+
+        When you pick up this story, create a branch using: `feature/{short-description}`
+        (e.g., `feature/add-course-prerequisites`).
+
+        Use the **"Create a branch"** button below and customize the branch name to start with `feature/`.
