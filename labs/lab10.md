@@ -61,8 +61,15 @@ Reindex understands your code automatically, but some knowledge lives **outside 
 🖥️ **In your terminal:**
 
 1. Verify the Memory MCP is configured:
+
+**WSL/Bash:**
 ```bash
 cat .copilot/mcp-config.json | grep -A 5 '"memory"'
+```
+
+**PowerShell:**
+```powershell
+Get-Content .copilot/mcp-config.json | Select-String -Pattern '"memory"' -Context 0,5
 ```
 
 You should see:
@@ -174,8 +181,15 @@ This repository includes two **continuous-learning** skills that do exactly that
 🖥️ **In your terminal:**
 
 1. Examine the continuous-learning skill:
+
+**WSL/Bash:**
 ```bash
 head -30 .github/skills/continuous-learning/SKILL.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/skills/continuous-learning/SKILL.md | Select-Object -First 30
 ```
 
 This skill runs as a **sessionEnd hook** — at the end of each coding session, it:
@@ -184,8 +198,15 @@ This skill runs as a **sessionEnd hook** — at the end of each coding session, 
 3. Saves useful patterns to `~/.copilot/skills/learned/` as reusable knowledge
 
 2. Now look at the v2 evolution:
+
+**WSL/Bash:**
 ```bash
 head -50 .github/skills/continuous-learning-v2/SKILL.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-Object -First 50
 ```
 
 | Feature | v1 (continuous-learning) | v2 (instinct-based) |
@@ -197,8 +218,15 @@ head -50 .github/skills/continuous-learning-v2/SKILL.md
 | **Sharing** | None | Export/import instincts across teams |
 
 3. See how v2 uses the hooks you learned about in Lab 06:
+
+**WSL/Bash:**
 ```bash
 grep -A 10 '"hooks"' .github/skills/continuous-learning-v2/SKILL.md | head -12
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-String -Pattern '"hooks"' -Context 0,10 | Select-Object -First 1 | ForEach-Object { $_.Context.PostContext[0..9] -join "`n" }
 ```
 
 The v2 architecture uses `preToolUse` and `postToolUse` hooks — the same hook types we explored in Lab 06. This means every tool call is observed, and patterns are never missed.
@@ -214,8 +242,15 @@ When you reach the end of a session (context limit, break, or task boundary), cr
 🖥️ **In Copilot CLI:**
 
 1. This repository includes a handoff prompt. Examine it:
+
+**WSL/Bash:**
 ```bash
 cat .github/prompts/handoff.prompt.md | head -20
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/prompts/handoff.prompt.md | Select-Object -First 20
 ```
 
 2. Use the handoff prompt to generate a handoff document:
@@ -236,8 +271,15 @@ When prompted, provide:
    - A fresh-context prompt block for the next session
 
 4. You can also use the checkpoint prompt for lightweight saves:
+
+**WSL/Bash:**
 ```bash
 cat .github/prompts/checkpoint.prompt.md | head -15
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/prompts/checkpoint.prompt.md | Select-Object -First 15
 ```
 
 ```

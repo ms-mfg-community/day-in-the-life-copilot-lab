@@ -35,13 +35,28 @@ Before starting the labs, ensure you have:
 🖥️ **On your machine:**
 
 4. Clone your fork:
+
+**WSL/Bash:**
 ```bash
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
 ```
 
+**PowerShell:**
+```powershell
+git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
+Set-Location day-in-the-life-copilot-lab
+```
+
 5. Verify the .NET project builds:
+
+**WSL/Bash:**
 ```bash
+dotnet build ContosoUniversity.sln
+```
+
+**PowerShell:**
+```powershell
 dotnet build ContosoUniversity.sln
 ```
 
@@ -57,17 +72,38 @@ Build succeeded.
 🖥️ **On your machine:**
 
 1. Verify GitHub CLI is authenticated:
+
+**WSL/Bash:**
 ```bash
 gh auth status
 ```
 
+**PowerShell:**
+```powershell
+gh auth status
+```
+
 2. Verify Copilot CLI is installed:
+
+**WSL/Bash:**
 ```bash
 gh copilot --version
 ```
 
+**PowerShell:**
+```powershell
+gh copilot --version
+```
+
 3. Verify Agentic Workflows CLI is installed:
+
+**WSL/Bash:**
 ```bash
+gh aw --version
+```
+
+**PowerShell:**
+```powershell
 gh aw --version
 ```
 
@@ -76,7 +112,14 @@ gh aw --version
 🖥️ **On your machine:**
 
 1. Open the repository in VS Code:
+
+**WSL/Bash:**
 ```bash
+code .
+```
+
+**PowerShell:**
+```powershell
 code .
 ```
 
@@ -93,8 +136,15 @@ code .
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 
 3. Read the repository context document:
+
+**WSL/Bash:**
 ```bash
 cat AGENTS.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content AGENTS.md
 ```
 
 4. _(Optional)_ Create a tracking issue in your fork:

@@ -60,15 +60,29 @@ Now let's trigger a review by opening a PR with some changes.
 🖥️ **In your terminal:**
 
 1. Make sure you're on a feature branch (from Lab 08, or create one):
+
+**WSL/Bash:**
 ```bash
 git checkout -b feature/add-course-prerequisites 2>/dev/null || git checkout feature/add-course-prerequisites
 ```
 
+**PowerShell:**
+```powershell
+git checkout -b feature/add-course-prerequisites 2>$null; if (-not $?) { git checkout feature/add-course-prerequisites }
+```
+
 2. Make a small code change. For example, add a property to the Course model:
 
+**WSL/Bash:**
 ```bash
 # View the current Course model
 cat ContosoUniversity.Core/Models/Course.cs
+```
+
+**PowerShell:**
+```powershell
+# View the current Course model
+Get-Content ContosoUniversity.Core/Models/Course.cs
 ```
 
 3. Add a `MaxEnrollment` property (a simple, realistic change):
@@ -79,7 +93,16 @@ public int MaxEnrollment { get; set; } = 30;
 ```
 
 4. Commit and push:
+
+**WSL/Bash:**
 ```bash
+git add ContosoUniversity.Core/Models/Course.cs
+git commit -m "feat: add MaxEnrollment property to Course model"
+git push origin feature/add-course-prerequisites
+```
+
+**PowerShell:**
+```powershell
 git add ContosoUniversity.Core/Models/Course.cs
 git commit -m "feat: add MaxEnrollment property to Course model"
 git push origin feature/add-course-prerequisites
@@ -87,10 +110,19 @@ git push origin feature/add-course-prerequisites
 
 5. Open a PR:
 
+**WSL/Bash:**
 ```bash
 gh pr create \
   --base lab/day-in-the-life-copilot-lab \
   --title "feat: add course prerequisites and enrollment cap" \
+  --body "Adds MaxEnrollment property to Course model. Part of the course prerequisites feature."
+```
+
+**PowerShell:**
+```powershell
+gh pr create `
+  --base lab/day-in-the-life-copilot-lab `
+  --title "feat: add course prerequisites and enrollment cap" `
   --body "Adds MaxEnrollment property to Course model. Part of the course prerequisites feature."
 ```
 
@@ -138,7 +170,16 @@ public int MaxEnrollment { get; set; } = 30;
 ```
 
 3. Commit and push:
+
+**WSL/Bash:**
 ```bash
+git add ContosoUniversity.Core/Models/Course.cs
+git commit -m "docs: add XML documentation for MaxEnrollment"
+git push origin feature/add-course-prerequisites
+```
+
+**PowerShell:**
+```powershell
 git add ContosoUniversity.Core/Models/Course.cs
 git commit -m "docs: add XML documentation for MaxEnrollment"
 git push origin feature/add-course-prerequisites
@@ -156,8 +197,14 @@ Copilot Code Review automatically reads your `copilot-instructions.md` — the s
 
 🖥️ **In your terminal:**
 
+**WSL/Bash:**
 ```bash
 head -30 .github/copilot-instructions.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/copilot-instructions.md | Select-Object -First 30
 ```
 
 Because our repository has custom instructions covering:
@@ -189,8 +236,14 @@ This repository includes a custom gh-aw code review workflow:
 
 🖥️ **In your terminal:**
 
+**WSL/Bash:**
 ```bash
 cat .github/workflows/code-review.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/workflows/code-review.md
 ```
 
 This workflow demonstrates:

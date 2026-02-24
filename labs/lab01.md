@@ -88,12 +88,22 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 🖥️ **Quick look — pick any one:**
 
+**WSL/Bash:**
 ```bash
 # See the agents
 ls .github/agents/
 
 # Read one to see the anatomy (YAML frontmatter + markdown body)
 cat .github/agents/planner.agent.md
+```
+
+**PowerShell:**
+```powershell
+# See the agents
+Get-ChildItem .github/agents/
+
+# Read one to see the anatomy (YAML frontmatter + markdown body)
+Get-Content .github/agents/planner.agent.md
 ```
 
 ## 1.2 The Instruction Hierarchy

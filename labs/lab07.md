@@ -15,8 +15,15 @@ Multi-agent orchestration lets one agent coordinate work across multiple special
 🖥️ **In your terminal:**
 
 1. Review the agents we have available:
+
+**WSL/Bash:**
 ```bash
 ls .github/agents/ | grep -E "dotnet|code-review|orchestrator"
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem .github/agents/ | Where-Object { $_.Name -match "dotnet|code-review|orchestrator" }
 ```
 
 You should see:
@@ -65,6 +72,8 @@ tools: ["read", "search", "agent"]  # 'agent' enables delegation
 🖥️ **In your terminal:**
 
 1. Create the orchestrator agent:
+
+**WSL/Bash:**
 ```bash
 cat > .github/agents/lab-orchestrator.agent.md << 'AGENT'
 ---
@@ -143,9 +152,95 @@ Summarize what was done across all phases.
 AGENT
 ```
 
+**PowerShell:**
+```powershell
+@'
+---
+name: "lab-orchestrator"
+description: "Orchestrates a .NET development workflow: delegates implementation to dotnet-dev, testing to dotnet-qa, and review to code-reviewer. Coordinates handoffs between agents."
+tools: ["read", "search", "agent"]
+---
+
+# Lab Orchestrator Agent
+
+You are a development workflow orchestrator for the ContosoUniversity project. You coordinate a sequential pipeline: **dotnet-dev → dotnet-qa → code-reviewer**.
+
+You do NOT implement code yourself. You delegate to specialized agents and manage the handoff between them.
+
+## Workflow
+
+When given a feature request or task:
+
+### Phase 1: Planning
+
+1. Analyze the request and break it into implementation tasks
+2. Identify which files will be affected
+3. Determine the acceptance criteria
+
+### Phase 2: Implementation (delegate to @dotnet-dev)
+
+Delegate the implementation work:
+
+```
+@dotnet-dev Implement the following feature in ContosoUniversity:
+
+**Task**: [description]
+**Files to modify**: [list of files]
+**Acceptance criteria**:
+- [criterion 1]
+- [criterion 2]
+```
+
+Wait for completion before proceeding.
+
+### Phase 3: Testing (delegate to @dotnet-qa)
+
+Once implementation is done, delegate testing:
+
+```
+@dotnet-qa Write tests for the changes just made:
+
+**Code changed**: [summary]
+**Test requirements**:
+- Unit tests for new/modified methods
+- Follow MethodName_Condition_ExpectedResult naming
+- Cover edge cases: null inputs, invalid IDs, validation errors
+```
+
+### Phase 4: Review (delegate to @code-reviewer)
+
+After tests pass, request a code review:
+
+```
+@code-reviewer Review the recent changes for:
+- Clean architecture compliance
+- Async/await usage
+- Test coverage adequacy
+- Security considerations
+```
+
+### Phase 5: Summary
+
+Summarize what was done across all phases.
+
+## Delegation Rules
+
+- **Never write code yourself** — always delegate
+- **Wait for completion** before moving to the next phase
+- **Pass context forward** — each agent needs to know what the previous one did
+'@ | Out-File -FilePath .github/agents/lab-orchestrator.agent.md -Encoding utf8
+```
+
 2. Verify the agent:
+
+**WSL/Bash:**
 ```bash
 head -5 .github/agents/lab-orchestrator.agent.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/agents/lab-orchestrator.agent.md -Head 5
 ```
 
 ## 7.3 Understand Agent Delegation
@@ -155,8 +250,15 @@ The `agent` tool lets agents invoke other agents. Let's understand how it works.
 🖥️ **In your terminal:**
 
 1. Look at how existing agents reference each other:
+
+**WSL/Bash:**
 ```bash
 grep -l "invoke\|@dotnet\|delegate" .github/agents/*.agent.md
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem .github/agents/*.agent.md | Select-String -Pattern "invoke|@dotnet|delegate" | Select-Object -ExpandProperty Path -Unique
 ```
 
 2. The delegation pattern:
@@ -217,8 +319,15 @@ If you haven't already, create the `dotnet-qa.agent.md` agent that the orchestra
 🖥️ **In your terminal:**
 
 1. Check if it exists:
+
+**WSL/Bash:**
 ```bash
 ls .github/agents/dotnet-qa.agent.md 2>/dev/null && echo "Already exists" || echo "Need to create"
+```
+
+**PowerShell:**
+```powershell
+if (Test-Path .github/agents/dotnet-qa.agent.md) { "Already exists" } else { "Need to create" }
 ```
 
 2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. Key differences:

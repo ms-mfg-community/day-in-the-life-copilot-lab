@@ -48,6 +48,8 @@ Path-specific instructions apply rules only to certain file types via the `apply
 🖥️ **In your terminal:**
 
 1. Create a Razor view instruction:
+
+**WSL/Bash:**
 ```bash
 cat > .github/instructions/razor-views.instructions.md << 'EOF'
 ---
@@ -64,9 +66,33 @@ applyTo: '**/*.cshtml'
 EOF
 ```
 
+**PowerShell:**
+```powershell
+@'
+---
+description: "Razor view conventions for ContosoUniversity"
+applyTo: '**/*.cshtml'
+---
+
+# Razor View Guidelines
+
+- Use Tag Helpers (`asp-for`, `asp-action`) instead of HTML helpers (`@Html.`).
+- Always include `asp-validation-for` next to form inputs.
+- Display student names as "LastName, FirstMidName" using `@($"{item.LastName}, {item.FirstMidName}")`.
+- Use Bootstrap 5 CSS classes for layout and styling.
+'@ | Out-File -FilePath .github/instructions/razor-views.instructions.md -Encoding utf8
+```
+
 2. Verify the `applyTo` glob:
+
+**WSL/Bash:**
 ```bash
 head -4 .github/instructions/razor-views.instructions.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/instructions/razor-views.instructions.md -Head 4
 ```
 
 This instruction only loads when Razor files (`.cshtml`) are in context — not for C# files, not for tests, only views.
@@ -77,7 +103,9 @@ This instruction only loads when Razor files (`.cshtml`) are in context — not 
 
 `AGENTS.md` provides project context — architecture, decisions, domain knowledge. Use it for the *what* and *why*; use `copilot-instructions.md` for the *rules*.
 
-> 💡 Open AGENTS.md first (`head -50 AGENTS.md`) to see the current structure before adding your section.
+> 💡 Open AGENTS.md first to see the current structure before adding your section:
+> - **WSL/Bash:** `head -50 AGENTS.md`
+> - **PowerShell:** `Get-Content AGENTS.md -Head 50`
 
 🖥️ **In your terminal:**
 
