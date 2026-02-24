@@ -15,8 +15,15 @@ Before creating your own agent, let's understand what makes up an agent file.
 🖥️ **In your terminal:**
 
 1. Look at an existing agent to understand the structure:
+
+**WSL/Bash:**
 ```bash
 head -30 .github/agents/planner.agent.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/agents/planner.agent.md -Head 30
 ```
 
 2. An agent file has two parts:
@@ -50,6 +57,8 @@ Now let's create a .NET development agent specialized for ContosoUniversity.
 🖥️ **In your terminal:**
 
 1. Create the agent file:
+
+**WSL/Bash:**
 ```bash
 cat > .github/agents/dotnet-dev.agent.md << 'AGENT'
 ---
@@ -107,9 +116,74 @@ dotnet run --project ContosoUniversity.Web     # Run the app
 AGENT
 ```
 
+**PowerShell:**
+```powershell
+@'
+---
+name: "dotnet-dev"
+description: "Specialized .NET development agent for ContosoUniversity. Expertise in clean architecture, EF Core, ASP.NET MVC, dependency injection, and C# best practices."
+tools: ["read", "edit", "execute", "search"]
+---
+
+# .NET Development Agent
+
+You are a .NET development specialist working on the ContosoUniversity application. You implement features following clean architecture, DDD principles, and .NET best practices.
+
+## When Invoked
+
+1. Check the solution builds: `dotnet build ContosoUniversity.sln`
+2. Review the relevant project layer before making changes
+3. Follow the architecture: Core → Infrastructure → Web
+4. Implement with proper dependency injection and async patterns
+
+## ContosoUniversity Architecture
+
+```
+ContosoUniversity.Core/           # Domain models, interfaces, validation
+ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
+ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
+ContosoUniversity.Tests/          # xUnit tests
+ContosoUniversity.PlaywrightTests/ # E2E tests
+```
+
+## Coding Standards
+
+- **Async all the way**: Use `async Task<IActionResult>` for controller actions
+- **Constructor injection**: Inject `IRepository<T>`, never `new` up services
+- **Null checks with early return**: `if (id == null) return NotFound();`
+- **EF Core async**: Use `ToListAsync()`, `FirstOrDefaultAsync()`, `SaveChangesAsync()`
+- **No SELECT ***: Project only needed columns with `.Select()`
+- **Data Annotations**: `[Required]`, `[StringLength]`, `[Range]` on models
+
+## Development Commands
+
+```bash
+dotnet build ContosoUniversity.sln            # Build all projects
+dotnet test ContosoUniversity.Tests/           # Run tests
+dotnet run --project ContosoUniversity.Web     # Run the app
+```
+
+## Review Checklist
+
+- [ ] `dotnet build` succeeds
+- [ ] Existing tests pass
+- [ ] Async/await used correctly
+- [ ] Repository pattern used for data access
+- [ ] Input validation on controller actions
+- [ ] No hardcoded secrets
+'@ | Out-File -FilePath .github/agents/dotnet-dev.agent.md -Encoding utf8
+```
+
 2. Verify the agent was created:
+
+**WSL/Bash:**
 ```bash
 head -5 .github/agents/dotnet-dev.agent.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/agents/dotnet-dev.agent.md -Head 5
 ```
 
 You should see the YAML frontmatter with `name: "dotnet-dev"`.
@@ -123,8 +197,15 @@ The agent we created uses basic tools. Let's understand how to add MCP server ac
 🖥️ **In your terminal:**
 
 1. View the current MCP configuration:
+
+**WSL/Bash:**
 ```bash
 cat .copilot/mcp-config.json
+```
+
+**PowerShell:**
+```powershell
+Get-Content .copilot/mcp-config.json
 ```
 
 2. Agents can reference MCP servers by adding them to the frontmatter. For example, to give the agent access to Context7 for .NET documentation lookups:

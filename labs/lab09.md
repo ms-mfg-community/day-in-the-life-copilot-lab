@@ -128,6 +128,7 @@ Now assign Copilot to the issue and watch it work.
 
 Or use the CLI:
 
+**WSL/Bash:**
 ```bash
 # Replace <ISSUE_NUMBER> with your issue number
 gh issue edit <ISSUE_NUMBER> --add-assignee @copilot
@@ -217,8 +218,14 @@ Both the Coding Agent and Code Review automatically read your `copilot-instructi
 
 🖥️ **In your terminal:**
 
+**WSL/Bash:**
 ```bash
 head -30 .github/copilot-instructions.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/copilot-instructions.md | Select-Object -First 30
 ```
 
 Because our repository has custom instructions covering:
@@ -276,8 +283,14 @@ This repository includes a custom gh-aw code review workflow:
 
 🖥️ **In your terminal:**
 
+**WSL/Bash:**
 ```bash
 cat .github/workflows/code-review.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/workflows/code-review.md
 ```
 
 This workflow demonstrates:

@@ -14,8 +14,15 @@ Hooks are scripts that run automatically at specific points in the Copilot lifec
 🖥️ **In your terminal:**
 
 1. View the hook configuration:
+
+**WSL/Bash:**
 ```bash
 cat .github/hooks/default.json
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/hooks/default.json
 ```
 
 2. The configuration defines hooks for these lifecycle events:
@@ -48,27 +55,55 @@ This repository ships with several hooks. Let's understand what they do.
 🖥️ **In your terminal:**
 
 1. List the hook scripts:
+
+**WSL/Bash:**
 ```bash
 ls scripts/hooks/
 ```
 
+**PowerShell:**
+```powershell
+Get-ChildItem scripts/hooks/
+```
+
 2. Examine the secret scanner (a `preToolUse` hook):
+
+**WSL/Bash:**
 ```bash
 cat scripts/hooks/pre-tool-use-secret-scan.sh
+```
+
+**PowerShell:**
+```powershell
+Get-Content scripts/hooks/pre-tool-use-secret-scan.sh
 ```
 
 This hook runs before every tool use and blocks commits that contain hardcoded secrets (API keys, tokens, passwords).
 
 3. Examine the doc blocker (another `preToolUse` hook):
+
+**WSL/Bash:**
 ```bash
 cat scripts/hooks/pre-tool-use-doc-blocker.sh
+```
+
+**PowerShell:**
+```powershell
+Get-Content scripts/hooks/pre-tool-use-doc-blocker.sh
 ```
 
 This hook prevents Copilot from creating unnecessary documentation files (like `plan.md` or `notes.md` in the repo).
 
 4. Examine the format hook (a `postToolUse` hook):
+
+**WSL/Bash:**
 ```bash
 cat scripts/hooks/post-tool-use-format.sh
+```
+
+**PowerShell:**
+```powershell
+Get-Content scripts/hooks/post-tool-use-format.sh
 ```
 
 This hook auto-formats files after Copilot edits them.
@@ -82,6 +117,8 @@ Let's create a `postToolUse` hook that automatically verifies the .NET build aft
 🖥️ **In your terminal:**
 
 1. Create the bash script:
+
+**WSL/Bash:**
 ```bash
 cat > scripts/hooks/post-tool-use-dotnet-build.sh << 'HOOK'
 #!/usr/bin/env bash
@@ -118,9 +155,47 @@ HOOK
 chmod +x scripts/hooks/post-tool-use-dotnet-build.sh
 ```
 
+**PowerShell:**
+```powershell
+@'
+#!/usr/bin/env bash
+# Post-tool-use hook: Verify .NET build after editing C# files
+# Fires after: edit tool completes on .cs files
+
+set -euo pipefail
+
+# Only run after file edits
+TOOL_NAME="${TOOL_NAME:-}"
+FILE_PATH="${FILE_PATH:-}"
+
+if [[ "$TOOL_NAME" != "edit" && "$TOOL_NAME" != "create" ]]; then
+  exit 0
+fi
+
+# Only check C# files
+if [[ "$FILE_PATH" != *.cs ]]; then
+  exit 0
+fi
+
+# Run dotnet build and capture output
+BUILD_OUTPUT=$(dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
+  echo "⚠️  BUILD FAILED after editing $FILE_PATH"
+  echo ""
+  echo "$BUILD_OUTPUT" | tail -20
+  echo ""
+  echo "Fix the build errors before continuing."
+  exit 1
+}
+
+echo "✅ Build succeeded after editing $FILE_PATH"
+'@ | Out-File -FilePath scripts/hooks/post-tool-use-dotnet-build.sh -Encoding utf8
+```
+
 > ⚠️ **Don't skip this step** — without execute permissions, the hook won't run and you'll see no output.
 
 2. Create the PowerShell equivalent:
+
+**WSL/Bash:**
 ```bash
 cat > scripts/hooks/post-tool-use-dotnet-build.ps1 << 'HOOK'
 # Post-tool-use hook: Verify .NET build after editing C# files
@@ -145,6 +220,31 @@ Write-Host "✅ Build succeeded after editing $filePath"
 HOOK
 ```
 
+**PowerShell:**
+```powershell
+@'
+# Post-tool-use hook: Verify .NET build after editing C# files
+
+$toolName = $env:TOOL_NAME
+$filePath = $env:FILE_PATH
+
+if ($toolName -ne "edit" -and $toolName -ne "create") { exit 0 }
+if ($filePath -notlike "*.cs") { exit 0 }
+
+$output = dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️  BUILD FAILED after editing $filePath"
+    Write-Host ""
+    $output | Select-Object -Last 20 | Write-Host
+    Write-Host ""
+    Write-Host "Fix the build errors before continuing."
+    exit 1
+}
+
+Write-Host "✅ Build succeeded after editing $filePath"
+'@ | Out-File -FilePath scripts/hooks/post-tool-use-dotnet-build.ps1 -Encoding utf8
+```
+
 3. Register the hook in `default.json`. Open the file:
 ```bash
 code .github/hooks/default.json
@@ -162,8 +262,15 @@ code .github/hooks/default.json
 ```
 
 5. Verify the hook is registered:
+
+**WSL/Bash:**
 ```bash
 cat .github/hooks/default.json | grep dotnet-build
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/hooks/default.json | Select-String dotnet-build
 ```
 
 > 💡 **Timeout**: Set `timeoutSec` to 30 for build hooks — `dotnet build` can take time. If the hook times out, it won't block Copilot but the result won't be reported.
@@ -175,10 +282,19 @@ To test the hook manually:
 🖥️ **In your terminal:**
 
 1. Simulate what the hook does by running it directly:
+
+**WSL/Bash:**
 ```bash
 export TOOL_NAME="edit"
 export FILE_PATH="ContosoUniversity.Web/Controllers/StudentsController.cs"
 bash scripts/hooks/post-tool-use-dotnet-build.sh
+```
+
+**PowerShell:**
+```powershell
+$env:TOOL_NAME = "edit"
+$env:FILE_PATH = "ContosoUniversity.Web/Controllers/StudentsController.cs"
+.\scripts\hooks\post-tool-use-dotnet-build.ps1
 ```
 
 2. You should see `✅ Build succeeded` if the project builds cleanly.

@@ -15,8 +15,15 @@ MCP servers extend Copilot's capabilities with external tools — documentation 
 🖥️ **In your terminal:**
 
 1. View the MCP configuration:
+
+**WSL/Bash:**
 ```bash
 cat .copilot/mcp-config.json
+```
+
+**PowerShell:**
+```powershell
+Get-Content .copilot/mcp-config.json
 ```
 
 2. This repository ships with 5 MCP servers:

@@ -121,6 +121,8 @@ erDiagram
 
 ## Lab Modules
 
+> 💡 **Multi-Platform Support:** All lab command lines provide both **PowerShell** and **WSL/Bash** alternatives. Choose the commands that work best for your environment.
+
 | Lab | Module | Focus |
 |-----|--------|-------|
 | [Setup](labs/setup.md) | Fork, Prerequisites, Overview | Fork repo, enable Actions, install tools |

@@ -15,8 +15,15 @@ Skills are knowledge packs that Copilot loads **automatically** when the convers
 🖥️ **In your terminal:**
 
 1. Look at a skill's frontmatter — the `description` drives activation:
+
+**WSL/Bash:**
 ```bash
 head -5 .github/skills/coding-standards/SKILL.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/skills/coding-standards/SKILL.md -Head 5
 ```
 
 The `description` field is critical. A clear, specific description means better auto-activation.
@@ -30,11 +37,20 @@ Let's create a `.NET testing` skill with patterns specific to ContosoUniversity.
 🖥️ **In your terminal:**
 
 1. Create the skill directory and file:
+
+**WSL/Bash:**
 ```bash
 mkdir -p .github/skills/dotnet-testing
 ```
 
+**PowerShell:**
+```powershell
+New-Item -ItemType Directory -Path .github/skills/dotnet-testing -Force | Out-Null
+```
+
 2. Create the SKILL.md:
+
+**WSL/Bash:**
 ```bash
 cat > .github/skills/dotnet-testing/SKILL.md << 'SKILL'
 ---
@@ -131,9 +147,113 @@ public class StudentIntegrationTests : IClassFixture<CustomWebApplicationFactory
 SKILL
 ```
 
+**PowerShell:**
+```powershell
+@'
+---
+name: dotnet-testing
+description: .NET testing patterns for ContosoUniversity using xUnit, Moq, and WebApplicationFactory. Covers unit tests, integration tests, test infrastructure, mocking, and naming conventions.
+---
+
+# .NET Testing Patterns
+
+Testing patterns and infrastructure for ASP.NET Core applications using xUnit, Moq, and WebApplicationFactory.
+
+## Test Naming Convention
+
+Use `MethodName_Condition_ExpectedResult` for all test methods:
+
+```csharp
+[Fact]
+public async Task GetByIdAsync_ValidId_ReturnsStudent()
+
+[Fact]
+public async Task Details_NullId_ReturnsNotFound()
+
+[Theory]
+[InlineData("")]
+[InlineData(null)]
+public async Task Create_EmptyLastName_FailsValidation(string? lastName)
+```
+
+## Unit Test Pattern
+
+```csharp
+public class StudentsControllerTests
+{
+    private readonly Mock<IRepository<Student>> _mockRepo;
+    private readonly StudentsController _controller;
+
+    public StudentsControllerTests()
+    {
+        _mockRepo = new Mock<IRepository<Student>>();
+        _controller = new StudentsController(_mockRepo.Object);
+    }
+
+    [Fact]
+    public async Task Index_WithStudents_ReturnsViewWithStudentList()
+    {
+        // Arrange
+        var students = new List<Student>
+        {
+            new() { ID = 1, FirstMidName = "Carson", LastName = "Alexander" }
+        };
+        _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(students);
+
+        // Act
+        var result = await _controller.Index();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsAssignableFrom<IEnumerable<Student>>(viewResult.ViewData.Model);
+        Assert.Single(model);
+    }
+}
+```
+
+## Integration Test Pattern
+
+```csharp
+public class StudentIntegrationTests : IClassFixture<CustomWebApplicationFactory>
+{
+    private readonly HttpClient _client;
+
+    public StudentIntegrationTests(CustomWebApplicationFactory factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetStudents_ReturnsSuccessAndHtml()
+    {
+        var response = await _client.GetAsync("/Students");
+        response.EnsureSuccessStatusCode();
+    }
+}
+```
+
+## Edge Cases to Always Test
+
+| Category | Examples |
+|----------|----------|
+| Null inputs | `null` ID, `null` model |
+| Empty collections | No students in database |
+| Invalid IDs | 0, -1, non-existent |
+| Validation failures | Missing required fields |
+| Database errors | Repository throws exception |
+'@ | Out-File -FilePath .github/skills/dotnet-testing/SKILL.md -Encoding utf8
+```
+
 3. Verify the skill frontmatter:
+
+**WSL/Bash:**
 ```bash
 head -5 .github/skills/dotnet-testing/SKILL.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/skills/dotnet-testing/SKILL.md -Head 5
 ```
 
 ## 4.3 Create a Prompt Template
@@ -143,11 +263,20 @@ Prompts are reusable templates invoked with `/prompt-name`. Let's create one tha
 🖥️ **In your terminal:**
 
 1. Examine an existing prompt:
+
+**WSL/Bash:**
 ```bash
 head -15 .github/prompts/create-test.prompt.md
 ```
 
+**PowerShell:**
+```powershell
+Get-Content .github/prompts/create-test.prompt.md -Head 15
+```
+
 2. Create the .NET-specific test prompt:
+
+**WSL/Bash:**
 ```bash
 cat > .github/prompts/create-dotnet-test.prompt.md << 'PROMPT'
 ---
@@ -188,9 +317,57 @@ Use `MethodName_Condition_ExpectedResult`:
 PROMPT
 ```
 
+**PowerShell:**
+```powershell
+@'
+---
+description: "Generate xUnit tests for a ContosoUniversity class. Creates unit tests with Moq mocks following MethodName_Condition_ExpectedResult naming."
+mode: "agent"
+tools: ["read", "edit", "execute", "search"]
+---
+
+# Create .NET Test
+
+Generate comprehensive xUnit tests for a ContosoUniversity class.
+
+## Instructions
+
+1. **Read the source file** specified by the user (or the currently open file)
+2. **Identify all public methods** that need testing
+3. **Check existing test patterns** in `ContosoUniversity.Tests/`
+4. **Generate a test class** with these sections:
+   - Mock setup in constructor
+   - Happy path tests
+   - Null/missing input tests
+   - Not found tests
+   - Validation failure tests
+   - Error handling tests
+
+## Naming Convention
+
+Use `MethodName_Condition_ExpectedResult`:
+- `Index_WithStudents_ReturnsViewWithStudentList`
+- `Details_NullId_ReturnsNotFound`
+- `Create_ValidModel_RedirectsToIndex`
+
+## After Generating
+
+1. Build: `dotnet build ContosoUniversity.Tests/`
+2. Run: `dotnet test ContosoUniversity.Tests/ --filter "{ClassName}"`
+3. Report results
+'@ | Out-File -FilePath .github/prompts/create-dotnet-test.prompt.md -Encoding utf8
+```
+
 3. Verify:
+
+**WSL/Bash:**
 ```bash
 head -7 .github/prompts/create-dotnet-test.prompt.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/prompts/create-dotnet-test.prompt.md -Head 7
 ```
 
 ## 4.4 Test Skill Auto-Activation
