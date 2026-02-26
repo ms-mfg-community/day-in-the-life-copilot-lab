@@ -20,10 +20,14 @@ Hooks are scripts that run automatically at specific points in the Copilot lifec
 cat .github/hooks/default.json
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/hooks/default.json
 ```
+
+</details>
 
 2. The configuration defines hooks for these lifecycle events:
 
@@ -61,10 +65,14 @@ This repository ships with several hooks. Let's understand what they do.
 ls scripts/hooks/
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-ChildItem scripts/hooks/
 ```
+
+</details>
 
 2. Examine the secret scanner (a `preToolUse` hook):
 
@@ -73,10 +81,14 @@ Get-ChildItem scripts/hooks/
 cat scripts/hooks/pre-tool-use-secret-scan.sh
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content scripts/hooks/pre-tool-use-secret-scan.sh
 ```
+
+</details>
 
 This hook runs before every tool use and blocks commits that contain hardcoded secrets (API keys, tokens, passwords).
 
@@ -87,10 +99,14 @@ This hook runs before every tool use and blocks commits that contain hardcoded s
 cat scripts/hooks/pre-tool-use-doc-blocker.sh
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content scripts/hooks/pre-tool-use-doc-blocker.sh
 ```
+
+</details>
 
 This hook prevents Copilot from creating unnecessary documentation files (like `plan.md` or `notes.md` in the repo).
 
@@ -101,10 +117,14 @@ This hook prevents Copilot from creating unnecessary documentation files (like `
 cat scripts/hooks/post-tool-use-format.sh
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content scripts/hooks/post-tool-use-format.sh
 ```
+
+</details>
 
 This hook auto-formats files after Copilot edits them.
 
@@ -155,7 +175,9 @@ HOOK
 chmod +x scripts/hooks/post-tool-use-dotnet-build.sh
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 @'
 #!/usr/bin/env bash
@@ -191,6 +213,8 @@ echo "✅ Build succeeded after editing $FILE_PATH"
 '@ | Out-File -FilePath scripts/hooks/post-tool-use-dotnet-build.sh -Encoding utf8
 ```
 
+</details>
+
 > ⚠️ **Don't skip this step** — without execute permissions, the hook won't run and you'll see no output.
 
 2. Create the PowerShell equivalent:
@@ -220,7 +244,9 @@ Write-Host "✅ Build succeeded after editing $filePath"
 HOOK
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 @'
 # Post-tool-use hook: Verify .NET build after editing C# files
@@ -245,6 +271,8 @@ Write-Host "✅ Build succeeded after editing $filePath"
 '@ | Out-File -FilePath scripts/hooks/post-tool-use-dotnet-build.ps1 -Encoding utf8
 ```
 
+</details>
+
 3. Register the hook in `default.json`. Open the file:
 ```bash
 code .github/hooks/default.json
@@ -268,10 +296,14 @@ code .github/hooks/default.json
 cat .github/hooks/default.json | grep dotnet-build
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/hooks/default.json | Select-String dotnet-build
 ```
+
+</details>
 
 > 💡 **Timeout**: Set `timeoutSec` to 30 for build hooks — `dotnet build` can take time. If the hook times out, it won't block Copilot but the result won't be reported.
 
@@ -290,12 +322,16 @@ export FILE_PATH="ContosoUniversity.Web/Controllers/StudentsController.cs"
 bash scripts/hooks/post-tool-use-dotnet-build.sh
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 $env:TOOL_NAME = "edit"
 $env:FILE_PATH = "ContosoUniversity.Web/Controllers/StudentsController.cs"
 .\scripts\hooks\post-tool-use-dotnet-build.ps1
 ```
+
+</details>
 
 2. You should see `✅ Build succeeded` if the project builds cleanly.
 

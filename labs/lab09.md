@@ -223,10 +223,14 @@ Both the Coding Agent and Code Review automatically read your `copilot-instructi
 head -30 .github/copilot-instructions.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/copilot-instructions.md | Select-Object -First 30
 ```
+
+</details>
 
 Because our repository has custom instructions covering:
 - Clean architecture boundaries
@@ -288,10 +292,14 @@ This repository includes a custom gh-aw code review workflow:
 cat .github/workflows/code-review.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/workflows/code-review.md
 ```
+
+</details>
 
 This workflow demonstrates:
 - **Custom review checklist** — five specific categories (architecture, C#, security, testing, docs)

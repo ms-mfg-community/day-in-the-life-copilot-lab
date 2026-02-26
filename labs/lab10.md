@@ -67,10 +67,14 @@ Reindex understands your code automatically, but some knowledge lives **outside 
 cat .copilot/mcp-config.json | grep -A 5 '"memory"'
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .copilot/mcp-config.json | Select-String -Pattern '"memory"' -Context 0,5
 ```
+
+</details>
 
 You should see:
 ```json
@@ -187,10 +191,14 @@ This repository includes two **continuous-learning** skills that do exactly that
 head -30 .github/skills/continuous-learning/SKILL.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/skills/continuous-learning/SKILL.md | Select-Object -First 30
 ```
+
+</details>
 
 This skill runs as a **sessionEnd hook** — at the end of each coding session, it:
 1. Evaluates whether the session had enough activity (10+ messages)
@@ -204,10 +212,14 @@ This skill runs as a **sessionEnd hook** — at the end of each coding session, 
 head -50 .github/skills/continuous-learning-v2/SKILL.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-Object -First 50
 ```
+
+</details>
 
 | Feature | v1 (continuous-learning) | v2 (instinct-based) |
 |---------|--------------------------|---------------------|
@@ -224,10 +236,14 @@ Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-Object -Firs
 grep -A 10 '"hooks"' .github/skills/continuous-learning-v2/SKILL.md | head -12
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-String -Pattern '"hooks"' -Context 0,10 | Select-Object -First 1 | ForEach-Object { $_.Context.PostContext[0..9] -join "`n" }
 ```
+
+</details>
 
 The v2 architecture uses `preToolUse` and `postToolUse` hooks — the same hook types we explored in Lab 06. This means every tool call is observed, and patterns are never missed.
 
@@ -248,10 +264,14 @@ When you reach the end of a session (context limit, break, or task boundary), cr
 cat .github/prompts/handoff.prompt.md | head -20
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/prompts/handoff.prompt.md | Select-Object -First 20
 ```
+
+</details>
 
 2. Use the handoff prompt to generate a handoff document:
 ```
@@ -277,10 +297,14 @@ When prompted, provide:
 cat .github/prompts/checkpoint.prompt.md | head -15
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/prompts/checkpoint.prompt.md | Select-Object -First 15
 ```
+
+</details>
 
 ```
 /checkpoint create "lab-complete"

@@ -97,7 +97,9 @@ ls .github/agents/
 cat .github/agents/planner.agent.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 # See the agents
 Get-ChildItem .github/agents/
@@ -105,6 +107,8 @@ Get-ChildItem .github/agents/
 # Read one to see the anatomy (YAML frontmatter + markdown body)
 Get-Content .github/agents/planner.agent.md
 ```
+
+</details>
 
 ## 1.2 The Instruction Hierarchy
 

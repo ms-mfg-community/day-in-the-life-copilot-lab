@@ -21,10 +21,14 @@ Multi-agent orchestration lets one agent coordinate work across multiple special
 ls .github/agents/ | grep -E "dotnet|code-review|orchestrator"
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-ChildItem .github/agents/ | Where-Object { $_.Name -match "dotnet|code-review|orchestrator" }
 ```
+
+</details>
 
 You should see:
 - `dotnet-dev.agent.md` — implements code (created in Lab 03)
@@ -152,7 +156,9 @@ Summarize what was done across all phases.
 AGENT
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 @'
 ---
@@ -182,6 +188,8 @@ When given a feature request or task:
 Delegate the implementation work:
 
 ```
+
+</details>
 @dotnet-dev Implement the following feature in ContosoUniversity:
 
 **Task**: [description]
@@ -238,10 +246,14 @@ Summarize what was done across all phases.
 head -5 .github/agents/lab-orchestrator.agent.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/agents/lab-orchestrator.agent.md -Head 5
 ```
+
+</details>
 
 ## 7.3 Understand Agent Delegation
 
@@ -256,10 +268,14 @@ The `agent` tool lets agents invoke other agents. Let's understand how it works.
 grep -l "invoke\|@dotnet\|delegate" .github/agents/*.agent.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-ChildItem .github/agents/*.agent.md | Select-String -Pattern "invoke|@dotnet|delegate" | Select-Object -ExpandProperty Path -Unique
 ```
+
+</details>
 
 2. The delegation pattern:
 
@@ -325,10 +341,14 @@ If you haven't already, create the `dotnet-qa.agent.md` agent that the orchestra
 ls .github/agents/dotnet-qa.agent.md 2>/dev/null && echo "Already exists" || echo "Need to create"
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 if (Test-Path .github/agents/dotnet-qa.agent.md) { "Already exists" } else { "Need to create" }
 ```
+
+</details>
 
 2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. Key differences:
    - Description focuses on xUnit, Moq, WebApplicationFactory
