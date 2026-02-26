@@ -51,7 +51,7 @@ New-Item -ItemType Directory -Path .github/skills/dotnet-testing -Force | Out-Nu
 2. Create the SKILL.md:
 
 **WSL/Bash:**
-```bash
+````bash
 cat > .github/skills/dotnet-testing/SKILL.md << 'SKILL'
 ---
 name: dotnet-testing
@@ -145,12 +145,12 @@ public class StudentIntegrationTests : IClassFixture<CustomWebApplicationFactory
 | Validation failures | Missing required fields |
 | Database errors | Repository throws exception |
 SKILL
-```
+````
 
 <details>
 <summary><strong>PowerShell alternative</strong></summary>
 
-```powershell
+````powershell
 @'
 ---
 name: dotnet-testing
@@ -244,7 +244,7 @@ public class StudentIntegrationTests : IClassFixture<CustomWebApplicationFactory
 | Validation failures | Missing required fields |
 | Database errors | Repository throws exception |
 '@ | Out-File -FilePath .github/skills/dotnet-testing/SKILL.md -Encoding utf8
-```
+````
 
 </details>
 

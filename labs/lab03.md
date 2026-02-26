@@ -59,7 +59,7 @@ Now let's create a .NET development agent specialized for ContosoUniversity.
 1. Create the agent file:
 
 **WSL/Bash:**
-```bash
+````bash
 cat > .github/agents/dotnet-dev.agent.md << 'AGENT'
 ---
 name: "dotnet-dev"
@@ -114,12 +114,12 @@ dotnet run --project ContosoUniversity.Web     # Run the app
 - [ ] Input validation on controller actions
 - [ ] No hardcoded secrets
 AGENT
-```
+````
 
 <details>
 <summary><strong>PowerShell alternative</strong></summary>
 
-```powershell
+````powershell
 @'
 ---
 name: "dotnet-dev"
@@ -174,7 +174,7 @@ dotnet run --project ContosoUniversity.Web     # Run the app
 - [ ] Input validation on controller actions
 - [ ] No hardcoded secrets
 '@ | Out-File -FilePath .github/agents/dotnet-dev.agent.md -Encoding utf8
-```
+````
 
 </details>
 
