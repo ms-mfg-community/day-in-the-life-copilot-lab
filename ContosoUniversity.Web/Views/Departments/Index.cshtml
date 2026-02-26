@@ -23,7 +23,7 @@
                 @Html.DisplayNameFor(model => model.StartDate)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Administrator.FullName)
+                @Html.DisplayNameFor(model => model.Administrator!.FullName)
             </th>
             <th>Actions</th>
         </tr>
@@ -42,7 +42,7 @@
                     @Html.DisplayFor(modelItem => item.StartDate)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Administrator.FullName)
+                    @Html.DisplayFor(modelItem => item.Administrator!.FullName)
                 </td>
                 <td>
                     @Html.ActionLink("Details", "Details", new { id = item.DepartmentID }, new { @class = "btn btn-info btn-sm" })
