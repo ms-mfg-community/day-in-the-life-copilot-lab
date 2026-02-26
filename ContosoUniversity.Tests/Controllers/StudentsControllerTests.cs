@@ -44,8 +44,8 @@ namespace ContosoUniversity.Tests.Controllers
             };
 
             _mockStudentRepository
-                .Setup(repo => repo.GetAllAsync())
-                .ReturnsAsync(students);
+                .Setup(repo => repo.GetQueryable())
+                .Returns(students.AsQueryable());
 
             // Act
             var result = await _controller.Index("", "", "", 1);
