@@ -42,11 +42,15 @@ git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
 ```
+
+</details>
 
 5. Verify the .NET project builds:
 
@@ -55,10 +59,14 @@ Set-Location day-in-the-life-copilot-lab
 dotnet build ContosoUniversity.sln
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 dotnet build ContosoUniversity.sln
 ```
+
+</details>
 
 You should see something similar to:
 ```
@@ -78,10 +86,14 @@ Build succeeded.
 gh auth status
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 gh auth status
 ```
+
+</details>
 
 2. Verify Copilot CLI is installed:
 
@@ -90,10 +102,14 @@ gh auth status
 gh copilot --version
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 gh copilot --version
 ```
+
+</details>
 
 3. Verify Agentic Workflows CLI is installed:
 
@@ -102,10 +118,14 @@ gh copilot --version
 gh aw --version
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 gh aw --version
 ```
+
+</details>
 
 ## S.3 Explore the Repository Structure
 
@@ -118,10 +138,14 @@ gh aw --version
 code .
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 code .
 ```
+
+</details>
 
 2. Take a moment to explore the key directories. This is what you'll be working with throughout the labs:
 
@@ -142,10 +166,14 @@ code .
 cat AGENTS.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content AGENTS.md
 ```
+
+</details>
 
 4. _(Optional)_ Create a tracking issue in your fork:
 

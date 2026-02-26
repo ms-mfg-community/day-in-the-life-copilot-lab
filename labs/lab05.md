@@ -21,10 +21,14 @@ MCP servers extend Copilot's capabilities with external tools — documentation 
 cat .copilot/mcp-config.json
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .copilot/mcp-config.json
 ```
+
+</details>
 
 2. This repository ships with 5 MCP servers:
 

@@ -54,10 +54,14 @@ This repository includes a workflow that generates a PRD when you create a `feat
 cat .github/workflows/generate-prd.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 Get-Content .github/workflows/generate-prd.md
 ```
+
+</details>
 
 2. Let's break down each frontmatter field:
 
@@ -84,12 +88,16 @@ Get-Content .github/workflows/generate-prd.md
 sed -n '/^---$/,/^---$/d;p' .github/workflows/generate-prd.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 # Show only the Markdown body (after the second ---)
 $content = Get-Content .github/workflows/generate-prd.md -Raw
 if ($content -match '(?s)^---.*?---\s*(.*)') { $matches[1] }
 ```
+
+</details>
 
 The agent is instructed to:
 - Extract the feature description from the branch name
@@ -112,10 +120,14 @@ gh-aw workflows in `.md` format need to be compiled to `.lock.yml` files for Git
 gh aw --help 2>/dev/null && echo "gh-aw is installed" || echo "gh-aw not available — skip this section"
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 try { gh aw --help 2>$null; if ($?) { "gh-aw is installed" } else { "gh-aw not available — skip this section" } } catch { "gh-aw not available — skip this section" }
 ```
+
+</details>
 
 2. If `gh aw` is installed, compile the workflow:
 
@@ -124,10 +136,14 @@ try { gh aw --help 2>$null; if ($?) { "gh-aw is installed" } else { "gh-aw not a
 gh aw compile .github/workflows/generate-prd.md
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 gh aw compile .github/workflows/generate-prd.md
 ```
+
+</details>
 
 This generates `.github/workflows/generate-prd.lock.yml` — a standard GitHub Actions YAML file that:
 - Sets up the runner and runtimes
@@ -329,10 +345,14 @@ Alternatively, 🖥️ **from your terminal:**
 git push origin main:feature/add-course-prerequisites
 ```
 
-**PowerShell:**
+<details>
+<summary>PowerShell</summary>
+
 ```powershell
 git push origin lab/day-in-the-life-copilot-lab:feature/add-course-prerequisites
 ```
+
+</details>
 6. Go to the **Actions** tab in your repository
 7. You should see a workflow run triggered by the branch creation
 8. Click on the run to watch the agent work in real time
