@@ -14,7 +14,26 @@ References:
 - [GitHub CLI](https://cli.github.com/)
 - [GitHub Agentic Workflows](https://github.com/github/gh-aw)
 
-## Prerequisites
+## Quick Start: Dev Container (Recommended)
+
+The fastest way to get a fully working environment is to use the included **Dev Container**, which pre-installs all tools and dependencies automatically.
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension
+2. Fork and clone this repository (see [S.1](#s1-fork-and-clone-the-repository))
+3. Open the repo folder in VS Code
+4. When prompted _"Reopen in Container"_, click **Yes** — or run **Dev Containers: Reopen in Container** from the Command Palette (`Ctrl+Shift+P`)
+5. Wait for the container to build (first time takes a few minutes)
+6. Once open, authenticate: `copilot login` and `gh auth login`
+
+The container includes: .NET 8 + 9 SDKs, Node.js, GitHub CLI, Copilot CLI, gh-aw, jq, and all recommended VS Code extensions.
+
+> **Codespaces:** This Dev Container also works with [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → New codespace** on your fork for a fully cloud-hosted environment.
+
+If you prefer to install tools locally, continue with the manual prerequisites below.
+
+---
+
+## Prerequisites (Manual Install)
 
 Before starting the labs, ensure you have:
 
