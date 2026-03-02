@@ -10,6 +10,8 @@ References:
 - [Fork a repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js](https://nodejs.org/) (required for Copilot CLI and MCP servers)
+- [GitHub CLI](https://cli.github.com/)
 - [GitHub Agentic Workflows](https://github.com/github/gh-aw)
 
 ## Prerequisites
@@ -18,11 +20,44 @@ Before starting the labs, ensure you have:
 
 1. **GitHub Account** with a Copilot license (Individual, Business, or Enterprise)
 2. **VS Code** with the [GitHub Copilot extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
-3. **GitHub CLI** (`gh`) — [Install guide](https://cli.github.com/)
-4. **GitHub Copilot CLI** — Install the [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli): `npm install -g @github/copilot`
-5. **GitHub Agentic Workflows CLI** — Install with: `gh extension install github/gh-aw`
-6. **.NET 8 SDK** — [Download](https://dotnet.microsoft.com/download/dotnet/8.0)
-7. **Git** — [Install guide](https://git-scm.com/downloads)
+3. **Git** — [Install guide](https://git-scm.com/downloads) — verify with `git --version`
+4. **GitHub CLI** (`gh`) — [Install guide](https://cli.github.com/) — verify with `gh --version`
+5. **Node.js** (v18+) — [Download](https://nodejs.org/) — verify with `node --version`. Required for Copilot CLI installation (`npm`) and MCP servers (`npx`).
+6. **GitHub Copilot CLI** — Install the [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli): `npm install -g @github/copilot` — verify with `copilot --version`
+7. **GitHub Agentic Workflows CLI** — Install with: `gh extension install github/gh-aw` — verify with `gh aw version`
+8. **.NET 8 SDK** — [Download](https://dotnet.microsoft.com/download/dotnet/8.0) — verify with `dotnet --version`
+
+### Platform-Specific Installation Notes
+
+<details>
+<summary><strong>🐧 Linux</strong></summary>
+
+- **.NET 8 SDK**: Follow the [Install .NET on Linux](https://learn.microsoft.com/dotnet/core/install/linux) guide for your distribution (Ubuntu, Fedora, RHEL, etc.).
+- **GitHub CLI**: Install via package manager — see [Installing gh on Linux](https://github.com/cli/cli/blob/trunk/docs/install_linux.md) (apt, dnf, or Homebrew).
+- **Node.js**: Install via your package manager or [NodeSource](https://github.com/nodesource/distributions). Alternatively, use [nvm](https://github.com/nvm-sh/nvm).
+- **VS Code**: Download the `.deb` or `.rpm` package from [code.visualstudio.com](https://code.visualstudio.com/), or install via Snap: `sudo snap install code --classic`.
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS</strong></summary>
+
+- **.NET 8 SDK**: Download the installer from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/8.0) or install via Homebrew: `brew install dotnet-sdk`.
+- **GitHub CLI**: Install via Homebrew: `brew install gh`.
+- **Node.js**: Install via Homebrew: `brew install node`, or use [nvm](https://github.com/nvm-sh/nvm).
+- **VS Code**: Download from [code.visualstudio.com](https://code.visualstudio.com/) or install via Homebrew: `brew install --cask visual-studio-code`.
+
+</details>
+
+<details>
+<summary><strong>🪟 Windows</strong></summary>
+
+- **.NET 8 SDK**: Download the installer from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/8.0) or install via `winget install Microsoft.DotNet.SDK.8`.
+- **GitHub CLI**: Install via `winget install GitHub.cli` or the [MSI installer](https://cli.github.com/).
+- **Node.js**: Download the installer from [nodejs.org](https://nodejs.org/) or install via `winget install OpenJS.NodeJS.LTS`.
+- **VS Code**: Download from [code.visualstudio.com](https://code.visualstudio.com/) or install via `winget install Microsoft.VisualStudioCode`.
+
+</details>
 
 ## S.1 Fork and Clone the Repository
 
