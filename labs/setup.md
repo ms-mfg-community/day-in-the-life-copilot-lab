@@ -26,6 +26,8 @@ Before starting the labs, ensure you have:
 
 ## S.1 Fork and Clone the Repository
 
+> **GitHub EMU users:** If your organization uses a [GitHub Enterprise Managed Users (EMU)](https://docs.github.com/en/enterprise-cloud@latest/admin/identity-and-access-management/understanding-iam-for-enterprises/about-enterprise-managed-users) license and you **cannot fork** external repositories, skip to **[S.1b](#s1b-clone-into-your-own-namespace-github-emu-users)** below.
+
 🌐 **On GitHub:**
 
 1. Fork this repository: [day-in-the-life-copilot-lab](https://github.com/YOUR-ORG/day-in-the-life-copilot-lab)
