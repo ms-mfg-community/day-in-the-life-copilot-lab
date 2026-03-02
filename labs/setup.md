@@ -87,8 +87,7 @@ Press `Ctrl+C` to stop the application.
 4. Set visibility to **Private** (or Internal, per your organization's policy)
 5. **Do not** initialize the repository with a README, `.gitignore`, or license
 6. Click **Create repository**
-7. Go to your new repository's **Settings** → **Actions** → **General** and ensure Actions are enabled
-8. Go to the **Actions** tab and click _"I understand my workflows, go ahead and enable them"_ if prompted
+7. After you have pushed the lab content from your local clone to this repository (see the **On your machine** steps below), go to your repository's **Settings** → **Actions** → **General** and ensure Actions are enabled, then go to the **Actions** tab and click _"I understand my workflows, go ahead and enable them"_ if prompted
 
 🖥️ **On your machine:**
 
