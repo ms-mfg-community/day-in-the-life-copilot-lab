@@ -73,6 +73,96 @@ The app starts at **https://localhost:52379** (or http://localhost:52380). On fi
 
 Press `Ctrl+C` to stop the application.
 
+## S.1b Clone into Your Own Namespace (GitHub EMU Users)
+
+> **Who is this for?** If your organization uses a [GitHub Enterprise Managed Users (EMU)](https://docs.github.com/en/enterprise-cloud@latest/admin/identity-and-access-management/understanding-iam-for-enterprises/about-enterprise-managed-users) license, you **cannot fork** repositories that live outside your enterprise. Follow the steps below to create a copy of this repository in your own GitHub namespace instead.
+
+🌐 **On GitHub:**
+
+1. Navigate to [github.com/new](https://github.com/new) to create a new repository
+2. Set the **Owner** to your EMU account (e.g., `YOUR-USERNAME_ENTERPRISE`)
+3. Name the repository `day-in-the-life-copilot-lab`
+4. Set visibility to **Private** (or Internal, per your organization's policy)
+5. **Do not** initialize the repository with a README, `.gitignore`, or license
+6. Click **Create repository**
+7. Go to your new repository's **Settings** → **Actions** → **General** and ensure Actions are enabled
+8. Go to the **Actions** tab and click _"I understand my workflows, go ahead and enable them"_ if prompted
+
+🖥️ **On your machine:**
+
+1. Clone the source repository:
+
+**WSL/Bash:**
+```bash
+git clone https://github.com/YOUR-ORG/day-in-the-life-copilot-lab.git
+cd day-in-the-life-copilot-lab
+```
+
+**PowerShell:**
+```powershell
+git clone https://github.com/YOUR-ORG/day-in-the-life-copilot-lab.git
+Set-Location day-in-the-life-copilot-lab
+```
+
+2. Change the remote `origin` to point to **your** new repository:
+
+**WSL/Bash:**
+```bash
+git remote set-url origin https://github.com/YOUR-USERNAME_ENTERPRISE/day-in-the-life-copilot-lab.git
+```
+
+**PowerShell:**
+```powershell
+git remote set-url origin https://github.com/YOUR-USERNAME_ENTERPRISE/day-in-the-life-copilot-lab.git
+```
+
+3. Push all branches and tags to your new repository:
+
+**WSL/Bash:**
+```bash
+git push --all origin
+git push --tags origin
+```
+
+**PowerShell:**
+```powershell
+git push --all origin
+git push --tags origin
+```
+
+4. Verify the .NET project builds:
+
+```shell
+dotnet build ContosoUniversity.sln
+```
+
+You should see something similar to:
+```
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
+
+5. _(Optional)_ Run the application:
+
+```shell
+dotnet run --project ContosoUniversity.Web
+```
+
+The app starts at **https://localhost:52379** (or http://localhost:52380). Press `Ctrl+C` to stop.
+
+> **Tip:** If you want to keep your copy in sync with the original source repository, you can add it as an `upstream` remote:
+>
+> ```shell
+> git remote add upstream https://github.com/YOUR-ORG/day-in-the-life-copilot-lab.git
+> git fetch upstream
+> git merge upstream/main
+> ```
+
+Once complete, continue with **S.2** below. The remaining labs work identically whether you forked or cloned.
+
+---
+
 ## S.2 Verify Copilot CLI
 
 🖥️ **On your machine:**
