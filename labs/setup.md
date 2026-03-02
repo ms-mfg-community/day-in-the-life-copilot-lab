@@ -167,23 +167,35 @@ Once complete, continue with **S.2** below. The remaining labs work identically 
 
 🖥️ **On your machine:**
 
-1. Verify GitHub CLI is authenticated:
-
-```shell
-gh auth status
-```
-
-2. Verify Copilot CLI is installed:
+1. Verify Copilot CLI is installed:
 
 ```shell
 copilot --version
 ```
 
-3. Verify Agentic Workflows CLI is installed:
+2. Authenticate the Copilot CLI:
 
 ```shell
-gh aw --version
+copilot login
 ```
+
+> **Note:** The Copilot CLI has its own authentication — it does **not** use `gh auth`. Running `copilot login` opens a browser-based device code flow. Alternatively, you can set a `GH_TOKEN` environment variable with a fine-grained PAT that has the **Copilot Requests** permission.
+
+3. Verify Copilot CLI is authenticated by sending a test prompt:
+
+```shell
+copilot -p "hello"
+```
+
+If authenticated, you'll receive a response. If not, the CLI will prompt you to log in.
+
+4. Verify Agentic Workflows CLI is installed:
+
+```shell
+gh aw version
+```
+
+> **Note:** The `gh aw` extension relies on `gh auth` for GitHub API access (via the GitHub CLI). Run `gh auth status` if you need to verify your GitHub CLI authentication separately.
 
 ## S.3 Explore the Repository Structure
 
@@ -245,7 +257,7 @@ Get-Content AGENTS.md
 You now have:
 - A forked repository with all Copilot configurations
 - A building .NET project (ContosoUniversity) — optionally verified running at https://localhost:52379
-- Copilot CLI and gh-aw CLI installed
+- Copilot CLI authenticated and gh-aw CLI installed
 - An understanding of the repository structure
 
 ## Opening: The Art of the Possible (for presenter)
