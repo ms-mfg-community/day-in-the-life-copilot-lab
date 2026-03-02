@@ -262,7 +262,7 @@ You now have:
 
 ## Opening: The Art of the Possible (for presenter)
 
-Before Lab 01, the session opens with a **1-minute video** showing the session broker — a multi-agent coordination platform built entirely with the building blocks covered in these labs:
+*Optional:* Before Lab 01, the session opens with a **1-minute video** showing the session broker — a multi-agent coordination platform built entirely with the building blocks covered in these labs:
 
 - **Terminal 1 (Orchestrator):** Receives a feature request, decomposes it into tasks, assigns work to team members via MCP tools
 - **Terminal 2 (Dev Agent):** Picks up the implementation task, declares file intents, writes code, signals completion through the broker
