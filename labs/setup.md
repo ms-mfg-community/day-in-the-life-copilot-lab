@@ -18,18 +18,81 @@ References:
 
 The fastest way to get a fully working environment is to use the included **Dev Container**, which pre-installs all tools and dependencies automatically.
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension
-2. Fork and clone this repository (see [S.1](#s1-fork-and-clone-the-repository))
-3. Open the repo folder in VS Code
-4. When prompted _"Reopen in Container"_, click **Yes** — or run **Dev Containers: Reopen in Container** from the Command Palette (`Ctrl+Shift+P`)
-5. Wait for the container to build (first time takes a few minutes)
-6. Once open, authenticate: `copilot login` and `gh auth login`
-
 The container includes: .NET 8 + 9 SDKs, Node.js, GitHub CLI, Copilot CLI, gh-aw, jq, and all recommended VS Code extensions.
 
-> **Codespaces:** This Dev Container also works with [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → New codespace** on your fork for a fully cloud-hosted environment.
+Choose the option that matches your environment:
 
-If you prefer to install tools locally, continue with the manual prerequisites below.
+### Option A — GitHub Codespaces (zero local install)
+
+Use this if your organization has [GitHub Codespaces](https://github.com/features/codespaces) enabled. Nothing to install locally — everything runs in the cloud.
+
+1. Fork this repository (see [S.1](#s1-fork-and-clone-the-repository))
+2. On your fork, click **Code** → **Codespaces** → **Create codespace on main**
+3. Wait for the codespace to build (first time takes a few minutes — the post-create script installs all tools and builds the solution)
+4. Once the terminal is ready, authenticate:
+   ```shell
+   copilot login
+   gh auth login
+   ```
+5. Continue with [S.2 — Verify Copilot CLI](#s2-verify-copilot-cli)
+
+> **Tip:** If _"Codespaces"_ does not appear under the **Code** button, your organization may not have Codespaces enabled. Ask your admin, or use Option B or C below.
+
+### Option B — VS Code + Docker Desktop
+
+Use this if you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed (Windows, macOS, or Linux).
+
+1. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension
+2. Ensure Docker Desktop is running
+3. Fork and clone this repository (see [S.1](#s1-fork-and-clone-the-repository))
+4. Open the repo folder in VS Code
+5. When prompted _"Reopen in Container"_, click **Yes** — or run **Dev Containers: Reopen in Container** from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+6. Wait for the container to build (first time takes a few minutes)
+7. Once the terminal is ready, authenticate:
+   ```shell
+   copilot login
+   gh auth login
+   ```
+8. Continue with [S.2 — Verify Copilot CLI](#s2-verify-copilot-cli)
+
+### Option C — VS Code + Podman
+
+Use this if your organization restricts Docker Desktop or you prefer [Podman](https://podman.io/) as your container runtime.
+
+1. Install [Podman](https://podman.io/docs/installation) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension
+2. Configure VS Code to use Podman as the container engine. Open **Settings** (`Ctrl+,` / `Cmd+,`) and set:
+   ```json
+   "dev.containers.dockerPath": "podman"
+   ```
+   Alternatively, add this to your `.vscode/settings.json`.
+3. Start the Podman machine (if not already running):
+
+   **macOS / Windows:**
+   ```shell
+   podman machine init
+   podman machine start
+   ```
+
+   **Linux:** Podman runs natively — no machine needed. Ensure the Podman socket is active:
+   ```bash
+   systemctl --user enable --now podman.socket
+   ```
+4. Fork and clone this repository (see [S.1](#s1-fork-and-clone-the-repository))
+5. Open the repo folder in VS Code
+6. Run **Dev Containers: Reopen in Container** from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+7. Wait for the container to build (first time takes a few minutes)
+8. Once the terminal is ready, authenticate:
+   ```shell
+   copilot login
+   gh auth login
+   ```
+9. Continue with [S.2 — Verify Copilot CLI](#s2-verify-copilot-cli)
+
+> **Podman troubleshooting:** If the container fails to start, verify the Podman socket path matches what VS Code expects. On Linux, set `"dev.containers.dockerSocketPath": "/run/user/1000/podman/podman.sock"` (adjust the UID if yours differs). On macOS/Windows, `podman machine start` handles this automatically.
+
+---
+
+If you prefer to install all tools directly on your machine, continue with the manual prerequisites below.
 
 ---
 
