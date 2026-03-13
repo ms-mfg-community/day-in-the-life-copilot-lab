@@ -17,6 +17,7 @@ namespace ContosoUniversity.Tests.Controllers
     public class StudentsControllerTests
     {
         private readonly Mock<IRepository<Student>> _mockStudentRepository;
+        private readonly Mock<IStudentQueryService> _mockStudentQueryService;
         private readonly Mock<INotificationService> _mockNotificationService;
         private readonly Mock<ILogger<StudentsController>> _mockLogger;
         private readonly StudentsController _controller;
@@ -24,13 +25,21 @@ namespace ContosoUniversity.Tests.Controllers
         public StudentsControllerTests()
         {
             _mockStudentRepository = new Mock<IRepository<Student>>();
+            _mockStudentQueryService = new Mock<IStudentQueryService>();
             _mockNotificationService = new Mock<INotificationService>();
             _mockLogger = new Mock<ILogger<StudentsController>>();
 
             _controller = new StudentsController(
                 _mockStudentRepository.Object,
+                _mockStudentQueryService.Object,
                 _mockNotificationService.Object,
                 _mockLogger.Object);
+        }
+
+        private static PagedResult<Student> CreatePagedResult(IReadOnlyList<Student>? students = null, int totalCount = 0, int pageNumber = 1, int pageSize = 10)
+        {
+            var items = students ?? Array.Empty<Student>();
+            return new PagedResult<Student>(items, totalCount == 0 ? items.Count : totalCount, pageNumber, pageSize);
         }
 
         [Fact]
@@ -43,36 +52,116 @@ namespace ContosoUniversity.Tests.Controllers
                 new Student { ID = 2, FirstMidName = "Jane", LastName = "Smith", EnrollmentDate = DateTime.Parse("2020-09-01") }
             };
 
-            _mockStudentRepository
-                .Setup(repo => repo.GetQueryable())
-                .Returns(students.AsQueryable());
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .ReturnsAsync(new PagedResult<Student>(students, students.Count, 1, 10));
 
             // Act
-            var result = await _controller.Index("", "", "", 1);
+            var result = await _controller.Index("", "", "", 1, null, null);
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsAssignableFrom<PaginatedList<Student>>(viewResult.Model);
-            Assert.Equal(2, model.Count);
+            var model = Assert.IsType<StudentIndexViewModel>(viewResult.Model);
+            Assert.Equal(2, model.Students.Count);
         }
 
         [Fact]
-        public async Task Index_ReturnsEmptyList_WhenNoStudents()
+        public async Task Index_EmptyResult_ReturnsViewWithEmptyStudentList()
         {
             // Arrange
-            var students = new List<Student>();
-
-            _mockStudentRepository
-                .Setup(repo => repo.GetAllAsync())
-                .ReturnsAsync(students);
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .ReturnsAsync(CreatePagedResult(Array.Empty<Student>()));
 
             // Act
-            var result = await _controller.Index("", "", "", 1);
+            var result = await _controller.Index("", "", "", 1, null, null);
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsAssignableFrom<PaginatedList<Student>>(viewResult.Model);
-            Assert.Empty(model);
+            var model = Assert.IsType<StudentIndexViewModel>(viewResult.Model);
+            Assert.Empty(model.Students);
+        }
+
+        [Fact]
+        public async Task Index_NewSearchString_ResetsPageToOne()
+        {
+            // Arrange
+            StudentSearchCriteria? capturedCriteria = null;
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .Callback<StudentSearchCriteria>(criteria => capturedCriteria = criteria)
+                .ReturnsAsync(CreatePagedResult());
+
+            // Act
+            await _controller.Index(null, "existing", "new search", 3, null, null);
+
+            // Assert
+            Assert.NotNull(capturedCriteria);
+            Assert.Equal("new search", capturedCriteria!.SearchText);
+            Assert.Equal(1, capturedCriteria.PageNumber);
+        }
+
+        [Fact]
+        public async Task Index_NoSearchString_UsesCurrentFilter()
+        {
+            // Arrange
+            StudentSearchCriteria? capturedCriteria = null;
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .Callback<StudentSearchCriteria>(criteria => capturedCriteria = criteria)
+                .ReturnsAsync(CreatePagedResult(pageNumber: 3));
+
+            // Act
+            await _controller.Index(null, "saved filter", null, 3, null, null);
+
+            // Assert
+            Assert.NotNull(capturedCriteria);
+            Assert.Equal("saved filter", capturedCriteria!.SearchText);
+            Assert.Equal(3, capturedCriteria.PageNumber);
+        }
+
+        [Theory]
+        [InlineData("name_desc", StudentSortOption.LastNameDesc)]
+        [InlineData("Date", StudentSortOption.EnrollmentDateAsc)]
+        [InlineData("date_desc", StudentSortOption.EnrollmentDateDesc)]
+        [InlineData(null, StudentSortOption.LastNameAsc)]
+        public async Task Index_WithSortOrder_MapsToCorrectSortOption(string? sortOrder, StudentSortOption expectedSortOption)
+        {
+            // Arrange
+            StudentSearchCriteria? capturedCriteria = null;
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .Callback<StudentSearchCriteria>(criteria => capturedCriteria = criteria)
+                .ReturnsAsync(CreatePagedResult());
+
+            // Act
+            await _controller.Index(sortOrder, null, null, 1, null, null);
+
+            // Assert
+            Assert.NotNull(capturedCriteria);
+            Assert.Equal(expectedSortOption, capturedCriteria!.SortOption);
+        }
+
+        [Fact]
+        public async Task Index_WithDateFilters_PassesDatesToService()
+        {
+            // Arrange
+            StudentSearchCriteria? capturedCriteria = null;
+            var enrollmentDateFrom = new DateTime(2012, 1, 1);
+            var enrollmentDateTo = new DateTime(2014, 12, 31);
+
+            _mockStudentQueryService
+                .Setup(service => service.SearchStudentsAsync(It.IsAny<StudentSearchCriteria>()))
+                .Callback<StudentSearchCriteria>(criteria => capturedCriteria = criteria)
+                .ReturnsAsync(CreatePagedResult());
+
+            // Act
+            await _controller.Index(null, null, null, 1, enrollmentDateFrom, enrollmentDateTo);
+
+            // Assert
+            Assert.NotNull(capturedCriteria);
+            Assert.Equal(enrollmentDateFrom, capturedCriteria!.EnrollmentDateFrom);
+            Assert.Equal(enrollmentDateTo, capturedCriteria.EnrollmentDateTo);
         }
 
         [Fact]

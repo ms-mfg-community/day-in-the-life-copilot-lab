@@ -1,4 +1,4 @@
-@model PaginatedList<Student>
+@model ContosoUniversity.Web.Models.StudentIndexViewModel
 
 @{
     ViewBag.Title = "Students";
@@ -11,67 +11,98 @@
 </p>
 
 <form asp-action="Index" method="get">
-    <div class="form-actions no-color">
-        <p>
-            Find by name: <input type="text" name="SearchString" value="@ViewBag.CurrentFilter" />
-            <input type="submit" value="Search" class="btn btn-default" /> |
-            <a asp-action="Index">Back to Full List</a>
-        </p>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="searchString">Find by name:</label>
+                <input id="searchString" type="text" name="searchString" value="@Model.SearchText" class="form-control" placeholder="Search by name..." />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="form-group">
+                <label for="enrollmentDateFrom">Enrollment from:</label>
+                <input id="enrollmentDateFrom" type="date" name="enrollmentDateFrom" value="@(Model.EnrollmentDateFrom?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="form-group">
+                <label for="enrollmentDateTo">Enrollment to:</label>
+                <input id="enrollmentDateTo" type="date" name="enrollmentDateTo" value="@(Model.EnrollmentDateTo?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div>
+                    <input type="submit" value="Search" class="btn btn-primary" />
+                    <a asp-action="Index" class="btn btn-default">Clear</a>
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                <a asp-action="Index" asp-route-sortOrder="@ViewBag.NameSortParm" asp-route-currentFilter="@ViewBag.CurrentFilter">Last Name</a>
-            </th>
-            <th>
-                First Name
-            </th>
-            <th>
-                <a asp-action="Index" asp-route-sortOrder="@ViewBag.DateSortParm" asp-route-currentFilter="@ViewBag.CurrentFilter">Enrollment Date</a>
-            </th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+@if (Model.Students.Count == 0)
+{
+    <p>No students found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
             <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LastName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.FirstMidName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.EnrollmentDate)
-                </td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.ID" class="btn btn-info btn-sm">Details</a> |
-                    <a asp-action="Edit" asp-route-id="@item.ID" class="btn btn-warning btn-sm">Edit</a> |
-                    <a asp-action="Delete" asp-route-id="@item.ID" class="btn btn-danger btn-sm">Delete</a>
-                </td>
+                <th>
+                    <a asp-action="Index"
+                       asp-route-sortOrder="@Model.NameSortParm"
+                       asp-route-currentFilter="@Model.SearchText"
+                       asp-route-enrollmentDateFrom="@(Model.EnrollmentDateFrom?.ToString("yyyy-MM-dd"))"
+                       asp-route-enrollmentDateTo="@(Model.EnrollmentDateTo?.ToString("yyyy-MM-dd"))">Last Name</a>
+                </th>
+                <th>First Name</th>
+                <th>
+                    <a asp-action="Index"
+                       asp-route-sortOrder="@Model.DateSortParm"
+                       asp-route-currentFilter="@Model.SearchText"
+                       asp-route-enrollmentDateFrom="@(Model.EnrollmentDateFrom?.ToString("yyyy-MM-dd"))"
+                       asp-route-enrollmentDateTo="@(Model.EnrollmentDateTo?.ToString("yyyy-MM-dd"))">Enrollment Date</a>
+                </th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Students)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.LastName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.FirstMidName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.EnrollmentDate)</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@item.ID" class="btn btn-info btn-sm">Details</a> |
+                        <a asp-action="Edit" asp-route-id="@item.ID" class="btn btn-warning btn-sm">Edit</a> |
+                        <a asp-action="Delete" asp-route-id="@item.ID" class="btn btn-danger btn-sm">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
-@* Removed prevDisabled and nextDisabled variables; using inline conditionals in button classes below. *@
-
-<a asp-action="Index" 
-   asp-route-sortOrder="@ViewBag.CurrentSort" 
-   asp-route-page="@(Model.PageIndex - 1)" 
-   asp-route-currentFilter="@ViewBag.CurrentFilter" 
+<a asp-action="Index"
+   asp-route-sortOrder="@Model.CurrentSort"
+   asp-route-pageNumber="@(Model.PageNumber - 1)"
+   asp-route-currentFilter="@Model.SearchText"
+   asp-route-enrollmentDateFrom="@(Model.EnrollmentDateFrom?.ToString("yyyy-MM-dd"))"
+   asp-route-enrollmentDateTo="@(Model.EnrollmentDateTo?.ToString("yyyy-MM-dd"))"
    class="btn btn-default @(Model.HasPreviousPage ? "" : "disabled")">
-   Previous
+    Previous
 </a>
 
-<a asp-action="Index" 
-   asp-route-sortOrder="@ViewBag.CurrentSort" 
-   asp-route-page="@(Model.PageIndex + 1)" 
-   asp-route-currentFilter="@ViewBag.CurrentFilter" 
+<a asp-action="Index"
+   asp-route-sortOrder="@Model.CurrentSort"
+   asp-route-pageNumber="@(Model.PageNumber + 1)"
+   asp-route-currentFilter="@Model.SearchText"
+   asp-route-enrollmentDateFrom="@(Model.EnrollmentDateFrom?.ToString("yyyy-MM-dd"))"
+   asp-route-enrollmentDateTo="@(Model.EnrollmentDateTo?.ToString("yyyy-MM-dd"))"
    class="btn btn-default @(Model.HasNextPage ? "" : "disabled")">
-   Next
+    Next
 </a>

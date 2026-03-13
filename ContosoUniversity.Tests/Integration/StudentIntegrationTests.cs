@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -63,6 +64,160 @@ namespace ContosoUniversity.Tests.Integration
 
             var rows = document.QuerySelectorAll("tbody tr");
             Assert.True(rows.Length > 0, "No student rows found in the table");
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_WithNameSearch_FiltersResults()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?searchString=Alexander");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var rows = document.QuerySelectorAll("tbody tr");
+
+            Assert.Single(rows);
+
+            var rowText = rows[0].TextContent;
+            Assert.Contains("Alexander", rowText);
+            Assert.DoesNotContain("Alonso", rowText);
+            Assert.DoesNotContain("Anand", rowText);
+            Assert.DoesNotContain("Barzdukas", rowText);
+            Assert.DoesNotContain("Li", rowText);
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_WithNameSearch_NoMatch_ShowsEmptyMessage()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?searchString=zzzzz");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+
+            Assert.Contains("No students found.", content);
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_WithEnrollmentDateRange_FiltersResults()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?enrollmentDateFrom=2012-01-01&enrollmentDateTo=2012-12-31");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var rows = document.QuerySelectorAll("tbody tr");
+            var lastNames = rows
+                .Select(row => row.QuerySelectorAll("td")[0].TextContent.Trim())
+                .ToList();
+
+            Assert.Equal(new[] { "Alonso", "Barzdukas", "Li" }, lastNames);
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_SortByNameDesc_ReversesSortOrder()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?sortOrder=name_desc");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var rows = document.QuerySelectorAll("tbody tr");
+            var firstStudentLastName = rows[0].QuerySelectorAll("td")[0].TextContent.Trim();
+
+            Assert.Equal("Li", firstStudentLastName);
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_SortByDate_SortsByEnrollmentDate()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?sortOrder=Date");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var rows = document.QuerySelectorAll("tbody tr");
+            var firstStudentLastName = rows[0].QuerySelectorAll("td")[0].TextContent.Trim();
+
+            Assert.Equal("Alexander", firstStudentLastName);
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_PreservesFilterInSortLinks()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?searchString=A");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var sortLinks = document.QuerySelectorAll("th a")
+                .Select(link => link.GetAttribute("href"))
+                .Where(href => !string.IsNullOrWhiteSpace(href))
+                .ToList();
+
+            Assert.NotEmpty(sortLinks);
+            Assert.All(sortLinks, href => Assert.Contains("currentFilter=A", href!));
+        }
+
+        [Fact]
+        public async Task Get_StudentsIndex_ClearButton_PointsToCleanIndex()
+        {
+            // Arrange
+            using var client = Factory.CreateAuthenticatedClient("Admin");
+
+            // Act
+            var response = await client.GetAsync("/Students?searchString=test");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var config = Configuration.Default;
+            var browsingContext = BrowsingContext.New(config);
+            var document = await browsingContext.OpenAsync(req => req.Content(content));
+            var clearLink = document.QuerySelectorAll("a")
+                .FirstOrDefault(link => link.TextContent.Trim() == "Clear");
+
+            Assert.NotNull(clearLink);
+            Assert.Equal("/Students", clearLink!.GetAttribute("href"));
         }
 
         [Fact]

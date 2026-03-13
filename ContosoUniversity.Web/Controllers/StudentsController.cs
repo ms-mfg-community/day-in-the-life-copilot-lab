@@ -15,25 +15,30 @@ namespace ContosoUniversity.Web.Controllers
     public class StudentsController : BaseController
     {
         private readonly IRepository<Student> _studentRepository;
+        private readonly IStudentQueryService _studentQueryService;
         private readonly new ILogger<StudentsController> _logger;
 
         public StudentsController(
             IRepository<Student> studentRepository,
+            IStudentQueryService studentQueryService,
             INotificationService notificationService,
             ILogger<StudentsController> logger) : base(notificationService, logger)
         {
             _studentRepository = studentRepository;
+            _studentQueryService = studentQueryService;
             _logger = logger;
         }
 
         // GET: Students
         [Authorize(Roles = "Admin,Teacher")]
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
+        public async Task<IActionResult> Index(
+            string? sortOrder,
+            string? currentFilter,
+            string? searchString,
+            int? pageNumber,
+            DateTime? enrollmentDateFrom,
+            DateTime? enrollmentDateTo)
         {
-            ViewData["CurrentSort"] = sortOrder;
-            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
-            ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
-
             if (searchString != null)
             {
                 pageNumber = 1;
@@ -43,26 +48,40 @@ namespace ContosoUniversity.Web.Controllers
                 searchString = currentFilter;
             }
 
-            ViewData["CurrentFilter"] = searchString;
-
-            var studentsQuery = _studentRepository.GetQueryable();
-
-            if (!String.IsNullOrEmpty(searchString))
+            var criteria = new StudentSearchCriteria
             {
-                studentsQuery = studentsQuery.Where(s => s.LastName.Contains(searchString)
-                                       || s.FirstMidName.Contains(searchString));
-            }
-
-            studentsQuery = sortOrder switch
-            {
-                "name_desc" => studentsQuery.OrderByDescending(s => s.LastName),
-                "Date" => studentsQuery.OrderBy(s => s.EnrollmentDate),
-                "date_desc" => studentsQuery.OrderByDescending(s => s.EnrollmentDate),
-                _ => studentsQuery.OrderBy(s => s.LastName),
+                SearchText = searchString,
+                EnrollmentDateFrom = enrollmentDateFrom,
+                EnrollmentDateTo = enrollmentDateTo,
+                SortOption = sortOrder switch
+                {
+                    "name_desc" => StudentSortOption.LastNameDesc,
+                    "Date" => StudentSortOption.EnrollmentDateAsc,
+                    "date_desc" => StudentSortOption.EnrollmentDateDesc,
+                    _ => StudentSortOption.LastNameAsc,
+                },
+                PageNumber = pageNumber ?? 1,
+                PageSize = 10,
             };
 
-            int pageSize = 10;
-            return View(await PaginatedList<Student>.CreateAsync(studentsQuery, pageNumber ?? 1, pageSize));
+            var result = await _studentQueryService.SearchStudentsAsync(criteria);
+
+            var viewModel = new StudentIndexViewModel
+            {
+                Students = result.Items,
+                CurrentSort = sortOrder,
+                SearchText = searchString,
+                EnrollmentDateFrom = enrollmentDateFrom,
+                EnrollmentDateTo = enrollmentDateTo,
+                NameSortParm = string.IsNullOrEmpty(sortOrder) ? "name_desc" : string.Empty,
+                DateSortParm = sortOrder == "Date" ? "date_desc" : "Date",
+                PageNumber = result.PageNumber,
+                TotalPages = result.TotalPages,
+                HasPreviousPage = result.HasPreviousPage,
+                HasNextPage = result.HasNextPage,
+            };
+
+            return View(viewModel);
         }
 
         // GET: Students/Details/5

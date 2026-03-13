@@ -34,6 +34,9 @@ namespace ContosoUniversity.Infrastructure
             // Add Repositories
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+            // Add query services
+            services.AddScoped<IStudentQueryService, StudentQueryService>();
+
             // Configure options
             services.Configure<Configuration.ServiceBusOptions>(options => 
             {
