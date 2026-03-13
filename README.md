@@ -71,7 +71,7 @@ code .
 | Check | Command | Expected |
 |-------|---------|----------|
 | .NET build | `dotnet build ContosoUniversity.sln` | `Build succeeded` |
-| Tests pass | `dotnet test ContosoUniversity.sln` | All tests pass |
+| Tests pass | `dotnet test ContosoUniversity.Tests` | All tests pass |
 | Copilot CLI | `copilot --version` | Version number |
 | Extensions | VS Code → Extensions panel | GitHub Copilot installed & signed in |
 
@@ -168,12 +168,65 @@ This repo ships with a rich set of configurations for you to explore and extend:
 
 ---
 
+## Testing
+
+The project has two test suites covering unit, integration, and end-to-end scenarios.
+
+### Unit & Integration Tests (xUnit)
+
+Run all xUnit tests (unit + integration):
+
+```bash
+dotnet test ContosoUniversity.Tests --nologo
+```
+
+These tests use an **in-memory SQLite database** — no external dependencies required. The test infrastructure includes `CustomWebApplicationFactory` for integration tests and `TestDataSeeder` for deterministic test data.
+
+**Filter by test category:**
+
+| Category | Command |
+|----------|---------|
+| All xUnit tests | `dotnet test ContosoUniversity.Tests` |
+| Student search query service | `dotnet test ContosoUniversity.Tests --filter "FullyQualifiedName~StudentQueryService"` |
+| Student controller | `dotnet test ContosoUniversity.Tests --filter "FullyQualifiedName~StudentsController"` |
+| Student integration | `dotnet test ContosoUniversity.Tests --filter "FullyQualifiedName~StudentIntegration"` |
+| Specific test by name | `dotnet test ContosoUniversity.Tests --filter "FullyQualifiedName~TestName"` |
+
+### End-to-End Tests (Playwright)
+
+Playwright tests run against a **live instance** of the application. They are in a separate project and are **not included** in `ContosoUniversity.sln`, so `dotnet test ContosoUniversity.sln` will not run them.
+
+**Step 1 — Start the application:**
+
+```bash
+dotnet run --project ContosoUniversity.Web
+```
+
+The app starts at **https://localhost:52379**.
+
+**Step 2 — Install Playwright browsers** (first time only):
+
+```bash
+pwsh ContosoUniversity.PlaywrightTests/bin/Debug/net9.0/playwright.ps1 install
+```
+
+**Step 3 — Run E2E tests** (in a separate terminal):
+
+```bash
+dotnet test ContosoUniversity.PlaywrightTests --nologo
+```
+
+> **Note:** Playwright tests target `net9.0` and require the .NET 9 SDK. If you only have .NET 8 installed, the E2E tests will not build.
+
+---
+
 ## Useful Commands
 
 | Task | Command |
 |------|---------|
 | Build solution | `dotnet build ContosoUniversity.sln` |
-| Run tests | `dotnet test ContosoUniversity.sln` |
+| Run all unit/integration tests | `dotnet test ContosoUniversity.Tests` |
+| Run E2E tests | `dotnet test ContosoUniversity.PlaywrightTests` (requires running app) |
 | Run web app | `dotnet run --project ContosoUniversity.Web` |
 | Run specific test | `dotnet test --filter "FullyQualifiedName~TestName"` |
 | Check Copilot CLI | `copilot --version` |
