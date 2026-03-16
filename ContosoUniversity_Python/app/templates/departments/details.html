@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Department Details{% endblock %}
+{% block content %}
+<h2>Details</h2>
+<div>
+    <h4>Department</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Name</dt><dd class="col-sm-10">{{ department.name }}</dd>
+        <dt class="col-sm-2">Budget</dt><dd class="col-sm-10">${{ "{:,.2f}".format(department.budget) }}</dd>
+        <dt class="col-sm-2">Start Date</dt><dd class="col-sm-10">{{ department.start_date }}</dd>
+        <dt class="col-sm-2">Administrator</dt><dd class="col-sm-10">{{ department.administrator.full_name if department.administrator else 'N/A' }}</dd>
+    </dl>
+</div>
+
+{% if department.courses %}
+<h3>Courses</h3>
+<table class="table">
+    <thead>
+        <tr><th>Number</th><th>Title</th><th>Credits</th></tr>
+    </thead>
+    <tbody>
+        {% for course in department.courses %}
+        <tr>
+            <td>{{ course.course_id }}</td>
+            <td>{{ course.title }}</td>
+            <td>{{ course.credits }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('departments.edit', id=department.department_id) }}" class="btn btn-primary">Edit</a> |
+    <a href="{{ url_for('departments.index') }}">Back to List</a>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Instructors{% endblock %}
+{% block content %}
+<h2>Instructors</h2>
+
+<p><a href="{{ url_for('instructors.create') }}" class="btn btn-success">Create New</a></p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Last Name</th>
+            <th>First Name</th>
+            <th>Hire Date</th>
+            <th>Office</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for instructor in instructors %}
+        <tr class="{{ 'table-success' if instructor.id == selected_instructor_id }}">
+            <td>
+                <a href="{{ url_for('instructors.index', id=instructor.id) }}">{{ instructor.last_name }}</a>
+            </td>
+            <td>{{ instructor.first_name }}</td>
+            <td>{{ instructor.hire_date }}</td>
+            <td>{{ instructor.office_assignment.location if instructor.office_assignment else 'N/A' }}</td>
+            <td>
+                <a href="{{ url_for('instructors.edit', id=instructor.id) }}">Edit</a> |
+                <a href="{{ url_for('instructors.details', id=instructor.id) }}">Details</a> |
+                <a href="{{ url_for('instructors.delete', id=instructor.id) }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{# Second tier: Courses taught by selected instructor #}
+{% if selected_instructor_id and instructor_courses %}
+<h3>Courses Taught by Selected Instructor</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Course ID</th>
+            <th>Title</th>
+            <th>Department</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course in instructor_courses %}
+        <tr class="{{ 'table-info' if course.course_id == selected_course_id }}">
+            <td>
+                <a href="{{ url_for('instructors.index', id=selected_instructor_id, courseID=course.course_id) }}">{{ course.course_id }}</a>
+            </td>
+            <td>{{ course.title }}</td>
+            <td>{{ course.department.name if course.department else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{# Third tier: Students enrolled in selected course #}
+{% if selected_course_id and course_enrollments %}
+<h3>Students Enrolled in Selected Course</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Grade</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for enrollment in course_enrollments %}
+        <tr>
+            <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
+            <td>{{ enrollment.grade or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% endblock %}

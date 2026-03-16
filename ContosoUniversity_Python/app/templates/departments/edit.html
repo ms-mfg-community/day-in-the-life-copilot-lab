@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Edit Department{% endblock %}
+{% block content %}
+<h2>Edit</h2>
+<h4>Department</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control") }}
+                {% for error in form.name.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.budget.label(class="form-label") }}
+                {{ form.budget(class="form-control", type="number", step="0.01") }}
+                {% for error in form.budget.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.start_date.label(class="form-label") }}
+                {{ form.start_date(class="form-control", type="date") }}
+                {% for error in form.start_date.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.instructor_id.label(class="form-label", text="Administrator") }}
+                {{ form.instructor_id(class="form-select") }}
+                {% for error in form.instructor_id.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+<div><a href="{{ url_for('departments.index') }}">Back to List</a></div>
+{% endblock %}

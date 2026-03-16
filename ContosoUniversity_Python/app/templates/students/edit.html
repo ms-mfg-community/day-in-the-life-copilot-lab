@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Edit Student{% endblock %}
+{% block content %}
+<h2>Edit</h2>
+<h4>Student</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.last_name.label(class="form-label") }}
+                {{ form.last_name(class="form-control") }}
+                {% for error in form.last_name.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.first_name.label(class="form-label") }}
+                {{ form.first_name(class="form-control") }}
+                {% for error in form.first_name.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.enrollment_date.label(class="form-label") }}
+                {{ form.enrollment_date(class="form-control", type="date") }}
+                {% for error in form.enrollment_date.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+<div><a href="{{ url_for('students.index') }}">Back to List</a></div>
+{% endblock %}

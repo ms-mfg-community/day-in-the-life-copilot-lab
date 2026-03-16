@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} - Contoso University</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="{{ url_for('home.index') }}">Contoso University</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('home.index') }}">Home</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('home.about') }}">About</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('students.index') }}">Students</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('courses.index') }}">Courses</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('instructors.index') }}">Instructors</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('departments.index') }}">Departments</a></li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        {% if current_user.is_authenticated %}
+                        <li class="nav-item"><span class="nav-link text-dark">Hello, {{ current_user.name }}!</span></li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('auth.sign_out') }}">Sign Out</a></li>
+                        {% else %}
+                        <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('auth.sign_in') }}">Sign In</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <footer class="border-top footer text-muted">
+        <div class="container">&copy; {{ now().year if now is defined else "2026" }} - Contoso University (Python)</div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/site.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Departments{% endblock %}
+{% block content %}
+<h2>Departments</h2>
+
+<p><a href="{{ url_for('departments.create') }}" class="btn btn-success">Create New</a></p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Budget</th>
+            <th>Start Date</th>
+            <th>Administrator</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for department in departments %}
+        <tr>
+            <td>{{ department.name }}</td>
+            <td>${{ "{:,.2f}".format(department.budget) }}</td>
+            <td>{{ department.start_date }}</td>
+            <td>{{ department.administrator.full_name if department.administrator else 'N/A' }}</td>
+            <td>
+                <a href="{{ url_for('departments.edit', id=department.department_id) }}">Edit</a> |
+                <a href="{{ url_for('departments.details', id=department.department_id) }}">Details</a> |
+                <a href="{{ url_for('departments.delete', id=department.department_id) }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

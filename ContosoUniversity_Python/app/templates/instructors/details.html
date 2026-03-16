@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Instructor Details{% endblock %}
+{% block content %}
+<h2>Details</h2>
+<div>
+    <h4>Instructor</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Last Name</dt><dd class="col-sm-10">{{ instructor.last_name }}</dd>
+        <dt class="col-sm-2">First Name</dt><dd class="col-sm-10">{{ instructor.first_name }}</dd>
+        <dt class="col-sm-2">Hire Date</dt><dd class="col-sm-10">{{ instructor.hire_date }}</dd>
+        <dt class="col-sm-2">Office Location</dt><dd class="col-sm-10">{{ instructor.office_assignment.location if instructor.office_assignment else 'N/A' }}</dd>
+    </dl>
+</div>
+
+{% if instructor.course_assignments %}
+<h3>Assigned Courses</h3>
+<table class="table">
+    <thead>
+        <tr><th>Number</th><th>Title</th><th>Department</th></tr>
+    </thead>
+    <tbody>
+        {% for assignment in instructor.course_assignments %}
+        <tr>
+            <td>{{ assignment.course.course_id }}</td>
+            <td>{{ assignment.course.title }}</td>
+            <td>{{ assignment.course.department.name if assignment.course.department else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('instructors.edit', id=instructor.id) }}" class="btn btn-primary">Edit</a> |
+    <a href="{{ url_for('instructors.index') }}">Back to List</a>
+</div>
+{% endblock %}

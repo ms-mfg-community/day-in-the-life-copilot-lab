@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Student Details{% endblock %}
+{% block content %}
+<h2>Details</h2>
+<div>
+    <h4>Student</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Last Name</dt><dd class="col-sm-10">{{ student.last_name }}</dd>
+        <dt class="col-sm-2">First Name</dt><dd class="col-sm-10">{{ student.first_name }}</dd>
+        <dt class="col-sm-2">Enrollment Date</dt><dd class="col-sm-10">{{ student.enrollment_date }}</dd>
+    </dl>
+</div>
+
+{% if student.enrollments %}
+<h3>Enrollments</h3>
+<table class="table">
+    <thead>
+        <tr><th>Course</th><th>Grade</th></tr>
+    </thead>
+    <tbody>
+        {% for enrollment in student.enrollments %}
+        <tr>
+            <td>{{ enrollment.course.title }}</td>
+            <td>{{ enrollment.grade or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('students.edit', id=student.id) }}" class="btn btn-primary">Edit</a> |
+    <a href="{{ url_for('students.index') }}">Back to List</a>
+</div>
+{% endblock %}

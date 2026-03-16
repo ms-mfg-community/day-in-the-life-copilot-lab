@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+{% block content %}
+<h2>500 - Server Error</h2>
+<p>An error occurred while processing your request.</p>
+<p>We apologize for the inconvenience. Please try again later.</p>
+<p><a href="{{ url_for('home.index') }}">Return to Home</a></p>
+{% endblock %}

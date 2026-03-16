@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<h2>Student Body Statistics</h2>
+<table class="table">
+    <thead>
+        <tr><th>Enrollment Date</th><th>Students</th></tr>
+    </thead>
+    <tbody>
+        {% for stat in enrollment_stats %}
+        <tr><td>{{ stat.enrollment_date }}</td><td>{{ stat.student_count }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

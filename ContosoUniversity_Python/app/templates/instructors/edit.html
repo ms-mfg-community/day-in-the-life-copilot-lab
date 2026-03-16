@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Edit Instructor{% endblock %}
+{% block content %}
+<h2>Edit</h2>
+<h4>Instructor</h4>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.last_name.label(class="form-label") }}
+                {{ form.last_name(class="form-control") }}
+                {% for error in form.last_name.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.first_name.label(class="form-label") }}
+                {{ form.first_name(class="form-control") }}
+                {% for error in form.first_name.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.hire_date.label(class="form-label") }}
+                {{ form.hire_date(class="form-control", type="date") }}
+                {% for error in form.hire_date.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.office_location.label(class="form-label") }}
+                {{ form.office_location(class="form-control") }}
+                {% for error in form.office_location.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Assign Courses</label>
+                <div class="border p-3" style="max-height: 300px; overflow-y: auto;">
+                    {% for course in all_courses %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="assigned_courses" value="{{ course.course_id }}" id="course_{{ course.course_id }}"
+                               {% if course.course_id in instructor_course_ids %}checked{% endif %}>
+                        <label class="form-check-label" for="course_{{ course.course_id }}">
+                            {{ course.course_id }} - {{ course.title }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+<div><a href="{{ url_for('instructors.index') }}">Back to List</a></div>
+{% endblock %}

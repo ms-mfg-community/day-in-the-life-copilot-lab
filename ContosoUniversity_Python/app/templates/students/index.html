@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<h2>Students</h2>
+
+<form method="get" action="{{ url_for('students.index') }}" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Search</label>
+            <input type="text" name="searchString" value="{{ search_text or '' }}" class="form-control" placeholder="Name..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">From Date</label>
+            <input type="date" name="enrollmentDateFrom" value="{{ enrollment_date_from or '' }}" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">To Date</label>
+            <input type="date" name="enrollmentDateTo" value="{{ enrollment_date_to or '' }}" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a href="{{ url_for('students.index') }}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+    <input type="hidden" name="sortOrder" value="{{ current_sort or '' }}" />
+</form>
+
+<p><a href="{{ url_for('students.create') }}" class="btn btn-success">Create New</a></p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th><a href="{{ url_for('students.index', sortOrder=name_sort_parm, currentFilter=search_text, enrollmentDateFrom=enrollment_date_from, enrollmentDateTo=enrollment_date_to) }}">Last Name</a></th>
+            <th>First Name</th>
+            <th><a href="{{ url_for('students.index', sortOrder=date_sort_parm, currentFilter=search_text, enrollmentDateFrom=enrollment_date_from, enrollmentDateTo=enrollment_date_to) }}">Enrollment Date</a></th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr>
+            <td>{{ student.last_name }}</td>
+            <td>{{ student.first_name }}</td>
+            <td>{{ student.enrollment_date }}</td>
+            <td>
+                <a href="{{ url_for('students.edit', id=student.id) }}">Edit</a> |
+                <a href="{{ url_for('students.details', id=student.id) }}">Details</a> |
+                <a href="{{ url_for('students.delete', id=student.id) }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{# Pagination — mirrors .NET paging UI #}
+{% if total_pages > 1 %}
+<nav>
+    <ul class="pagination">
+        {% if has_previous_page %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('students.index', pageNumber=page_number-1, sortOrder=current_sort, currentFilter=search_text, enrollmentDateFrom=enrollment_date_from, enrollmentDateTo=enrollment_date_to) }}">Previous</a></li>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {{ 'active' if p == page_number }}"><a class="page-link" href="{{ url_for('students.index', pageNumber=p, sortOrder=current_sort, currentFilter=search_text, enrollmentDateFrom=enrollment_date_from, enrollmentDateTo=enrollment_date_to) }}">{{ p }}</a></li>
+        {% endfor %}
+        {% if has_next_page %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('students.index', pageNumber=page_number+1, sortOrder=current_sort, currentFilter=search_text, enrollmentDateFrom=enrollment_date_from, enrollmentDateTo=enrollment_date_to) }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

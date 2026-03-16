@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Course Details{% endblock %}
+{% block content %}
+<h2>Details</h2>
+<div>
+    <h4>Course</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Number</dt><dd class="col-sm-10">{{ course.course_id }}</dd>
+        <dt class="col-sm-2">Title</dt><dd class="col-sm-10">{{ course.title }}</dd>
+        <dt class="col-sm-2">Credits</dt><dd class="col-sm-10">{{ course.credits }}</dd>
+        <dt class="col-sm-2">Department</dt><dd class="col-sm-10">{{ course.department.name if course.department else 'N/A' }}</dd>
+        {% if course.teaching_material_image %}
+        <dt class="col-sm-2">Teaching Material</dt>
+        <dd class="col-sm-10">
+            <img src="data:image/jpeg;base64,{{ course.teaching_material_image }}" alt="Teaching Material" style="max-width: 300px;" class="img-thumbnail" />
+        </dd>
+        {% endif %}
+    </dl>
+</div>
+
+{% if course.enrollments %}
+<h3>Enrolled Students</h3>
+<table class="table">
+    <thead>
+        <tr><th>Student Name</th><th>Grade</th></tr>
+    </thead>
+    <tbody>
+        {% for enrollment in course.enrollments %}
+        <tr>
+            <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
+            <td>{{ enrollment.grade or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('courses.edit', id=course.course_id) }}" class="btn btn-primary">Edit</a> |
+    <a href="{{ url_for('courses.index') }}">Back to List</a>
+</div>
+{% endblock %}

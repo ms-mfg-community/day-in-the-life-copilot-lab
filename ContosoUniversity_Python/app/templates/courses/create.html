@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Create Course{% endblock %}
+{% block content %}
+<h2>Create</h2>
+<h4>Course</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.course_id.label(class="form-label") }}
+                {{ form.course_id(class="form-control") }}
+                {% for error in form.course_id.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {{ form.title(class="form-control") }}
+                {% for error in form.title.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.credits.label(class="form-label") }}
+                {{ form.credits(class="form-control", type="number") }}
+                {% for error in form.credits.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.department_id.label(class="form-label") }}
+                {{ form.department_id(class="form-select") }}
+                {% for error in form.department_id.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.teaching_material_image.label(class="form-label") }}
+                {{ form.teaching_material_image(class="form-control") }}
+                {% for error in form.teaching_material_image.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">Create</button>
+        </form>
+    </div>
+</div>
+<div><a href="{{ url_for('courses.index') }}">Back to List</a></div>
+{% endblock %}

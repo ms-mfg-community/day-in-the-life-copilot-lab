@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h1 class="display-4">Welcome to Contoso University</h1>
+    <p class="lead">A Python Flask web application for GitHub Copilot hands-on labs.</p>
+    <p>
+        <a class="btn btn-primary btn-lg" href="{{ url_for('students.index') }}">View Students</a>
+        <a class="btn btn-outline-primary btn-lg" href="{{ url_for('courses.index') }}">View Courses</a>
+    </p>
+</div>
+{% endblock %}
