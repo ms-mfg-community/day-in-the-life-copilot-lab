@@ -1,6 +1,8 @@
 # Everything GitHub Copilot — Hands-On Lab
 
-A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic development experience** — agents, skills, instructions, prompts, hooks, MCP servers, orchestration, and GitHub Agentic Workflows — all while working on a real .NET application.
+A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic development experience** — agents, skills, instructions, prompts, hooks, MCP servers, orchestration, and GitHub Agentic Workflows — all while working on a real web application.
+
+> **Two versions available:** This lab includes both a **.NET 8** (ASP.NET Core MVC) and a **Python** (Flask) version of the ContosoUniversity application. Choose whichever matches your team's stack — the Copilot features work identically with both.
 
 > **Start here** → [Lab Setup & Instructions](labs/setup.md)
 
@@ -14,9 +16,15 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 | **VS Code** | Latest version with [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) extension |
 | **GitHub CLI** | [Install `gh`](https://cli.github.com/) — verify with `gh --version` |
 | **Copilot CLI** | [Install guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli) — install with `npm install -g @github/copilot`, verify with `copilot --version` |
-| **.NET 8 SDK** | [Download](https://dotnet.microsoft.com/download/dotnet/8.0) — verify with `dotnet --version` |
 | **Git** | [Install](https://git-scm.com/downloads) — configured with your GitHub credentials |
 | **gh-aw extension** | `gh extension install github/gh-aw` (for Labs 08–09) |
+
+**Choose one (or both):**
+
+| Stack | Requirement | Verify |
+|-------|------------|--------|
+| **.NET** | [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | `dotnet --version` |
+| **Python** | [Python 3.11+](https://www.python.org/downloads/) | `python --version` |
 
 ### Permissions & Licensing
 
@@ -42,21 +50,38 @@ git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
 ```
 
-### 2. Build
+### 2. Build & Run
+
+Choose your stack:
+
+<details>
+<summary><strong>🐍 Python (Flask)</strong></summary>
+
+```bash
+cd ContosoUniversity_Python
+pip install -r requirements.txt
+python run.py
+```
+
+The app starts at **http://localhost:5000**. On first run, the database is automatically created and seeded with sample data.
+
+> **Note:** Uses SQLite (`contoso_university.db`), created automatically. No external database required.
+
+</details>
+
+<details open>
+<summary><strong>🔷 .NET (ASP.NET Core)</strong></summary>
 
 ```bash
 dotnet build ContosoUniversity.sln
-```
-
-### 3. Run the Application
-
-```bash
 dotnet run --project ContosoUniversity.Web
 ```
 
 The app starts at **https://localhost:52379** (or http://localhost:52380). On first run, the database is automatically created and seeded with sample data (students, courses, instructors, departments).
 
 > **Note:** The Development configuration uses SQLite, which works on all platforms (Windows, macOS, Linux). The database file (`ContosoUniversity.db`) is created automatically in the web project directory. Production uses SQL Server.
+
+</details>
 
 Press `Ctrl+C` to stop the application.
 
@@ -66,7 +91,19 @@ Press `Ctrl+C` to stop the application.
 code .
 ```
 
-### 5. Verify
+### 4. Verify
+
+**Python:**
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| Python version | `python --version` | 3.11+ |
+| App runs | `python run.py` (from `ContosoUniversity_Python/`) | Server at http://localhost:5000 |
+| Tests pass | `python -m pytest tests/ -v` | 42 tests pass |
+| Copilot CLI | `copilot --version` | Version number |
+| Extensions | VS Code → Extensions panel | GitHub Copilot installed & signed in |
+
+**.NET:**
 
 | Check | Command | Expected |
 |-------|---------|----------|
@@ -75,20 +112,7 @@ code .
 | Copilot CLI | `copilot --version` | Version number |
 | Extensions | VS Code → Extensions panel | GitHub Copilot installed & signed in |
 
-### Python Version
-
-A Python/Flask version of ContosoUniversity is also available:
-
-```bash
-cd ContosoUniversity_Python
-pip install -r requirements.txt
-python run.py                    # http://localhost:5000
-python -m pytest tests/ -v       # 42 tests
-```
-
-See [ContosoUniversity_Python/README.md](ContosoUniversity_Python/README.md) for full setup instructions.
-
-### 6. Start the labs
+### 5. Start the labs
 
 Open [`labs/setup.md`](labs/setup.md) and follow the instructions.
 
@@ -96,11 +120,16 @@ Open [`labs/setup.md`](labs/setup.md) and follow the instructions.
 
 ## The Application
 
-**ContosoUniversity** is a brownfield .NET 8 web application with clean architecture. You'll use it throughout every lab to build, test, and orchestrate AI-powered development workflows.
+**ContosoUniversity** is a university management web application available in two stacks. Both versions are functionally equivalent — same domain models, same seed data, same CRUD operations, same UI.
 
-```
-ASP.NET MVC (Web)  →  EF Core (Infrastructure)  →  SQL Server / SQLite
-```
+| | .NET Version | Python Version |
+|---|---|---|
+| **Framework** | ASP.NET Core 8 MVC | Flask 3.0 |
+| **ORM** | Entity Framework Core | SQLAlchemy 2.0 |
+| **Database** | SQLite (dev) / SQL Server (prod) | SQLite |
+| **Templates** | Razor (.cshtml) | Jinja2 (.html) |
+| **Tests** | xUnit + WebApplicationFactory | pytest + Flask test client |
+| **Directory** | Repository root | `ContosoUniversity_Python/` |
 
 ```mermaid
 erDiagram
@@ -115,11 +144,12 @@ erDiagram
 
 | Project | Layer | Purpose |
 |---------|-------|---------|
-| **ContosoUniversity.Core** | Domain | Models, interfaces, business rules |
-| **ContosoUniversity.Infrastructure** | Data | EF Core, repositories, services |
-| **ContosoUniversity.Web** | Presentation | MVC controllers, views, DI |
-| **ContosoUniversity.Tests** | Testing | xUnit + WebApplicationFactory |
-| **ContosoUniversity.PlaywrightTests** | E2E | Browser-based Playwright tests |
+| **ContosoUniversity.Core** | Domain (.NET) | Models, interfaces, business rules |
+| **ContosoUniversity.Infrastructure** | Data (.NET) | EF Core, repositories, services |
+| **ContosoUniversity.Web** | Presentation (.NET) | MVC controllers, views, DI |
+| **ContosoUniversity.Tests** | Testing (.NET) | xUnit + WebApplicationFactory |
+| **ContosoUniversity.PlaywrightTests** | E2E (.NET) | Browser-based Playwright tests |
+| **ContosoUniversity_Python/** | Full-stack (Python) | Flask app, SQLAlchemy models, Jinja2 templates, pytest |
 
 ---
 
@@ -153,7 +183,7 @@ erDiagram
 | [Setup](labs/setup.md) | Fork, Prerequisites, Overview | Fork repo, enable Actions, install tools |
 | [Lab 01](labs/lab01.md) | Exploring Copilot Configuration | Plugin marketplace, agents, skills, instructions, prompts |
 | [Lab 02](labs/lab02.md) | Custom Instructions & AGENTS.md | Instruction hierarchy, modify, extend |
-| [Lab 03](labs/lab03.md) | Creating a .NET Agent | Build `dotnet-dev.agent.md` |
+| [Lab 03](labs/lab03.md) | Creating a Dev Agent | Build `dotnet-dev.agent.md` or a Python dev agent |
 | [Lab 04](labs/lab04.md) | Skills & Prompts | Create a skill, write a prompt template |
 | [Lab 05](labs/lab05.md) | MCP Server Configuration | Configure Context7, Memory, Sequential Thinking |
 | [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks |
@@ -177,15 +207,27 @@ This repo ships with a rich set of configurations for you to explore and extend:
 | **Prompts** | 21 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
 | **Hooks** | 7 | Secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
-| **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
+| **Instructions** | 4 | Path-specific rules for `.cs`, `.py`, test files, and security |
 
 ---
 
 ## Testing
 
-The project has two test suites covering unit, integration, and end-to-end scenarios.
+The project has test suites for both stacks covering unit, integration, and end-to-end scenarios.
 
-### Unit & Integration Tests (xUnit)
+### Python Tests (pytest)
+
+```bash
+cd ContosoUniversity_Python
+python -m pytest tests/ -v              # All tests
+python -m pytest tests/unit/ -v         # Unit tests only
+python -m pytest tests/integration/ -v  # Integration tests only
+python -m pytest tests/ --cov=app       # With coverage
+```
+
+These tests use an **in-memory SQLite database** — no external dependencies required.
+
+### .NET Tests (xUnit)
 
 Run all xUnit tests (unit + integration):
 
@@ -235,15 +277,14 @@ dotnet test ContosoUniversity.PlaywrightTests --nologo
 
 ## Useful Commands
 
-| Task | Command |
-|------|---------|
-| Build solution | `dotnet build ContosoUniversity.sln` |
-| Run all unit/integration tests | `dotnet test ContosoUniversity.Tests` |
-| Run E2E tests | `dotnet test ContosoUniversity.PlaywrightTests` (requires running app) |
-| Run web app | `dotnet run --project ContosoUniversity.Web` |
-| Run specific test | `dotnet test --filter "FullyQualifiedName~TestName"` |
-| Check Copilot CLI | `copilot --version` |
-| Install gh-aw | `gh extension install github/gh-aw` |
+| Task | .NET | Python |
+|------|------|--------|
+| Build/Install | `dotnet build ContosoUniversity.sln` | `pip install -r requirements.txt` |
+| Run app | `dotnet run --project ContosoUniversity.Web` | `python run.py` |
+| Run tests | `dotnet test ContosoUniversity.Tests` | `python -m pytest tests/ -v` |
+| Run E2E tests | `dotnet test ContosoUniversity.PlaywrightTests` | *(coming soon)* |
+| Check Copilot CLI | `copilot --version` | `copilot --version` |
+| Install gh-aw | `gh extension install github/gh-aw` | `gh extension install github/gh-aw` |
 
 ---
 
@@ -309,6 +350,8 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Copilot CLI not authenticated | Run `gh auth login` and follow prompts |
 | MCP servers not loading | Copy `.copilot/mcp-config.json` to `~/.copilot/`, restart VS Code |
 | `dotnet build` fails | Verify .NET 8 SDK: `dotnet --version` — [download](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| Python `ModuleNotFoundError` | Run `pip install -r requirements.txt` from `ContosoUniversity_Python/` |
+| Python DB not created | Delete `contoso_university.db` and restart — it will be recreated with seed data |
 | Skills not activating | Reference the skill explicitly in your prompt, or check `SKILL.md` frontmatter |
 | Copilot not responding | Verify the extension is signed in and enabled in VS Code |
 
