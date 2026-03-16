@@ -7,6 +7,10 @@
       "version": "9.0",
       "installUsingApt": true
     },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true
+    },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
     },
@@ -22,10 +26,14 @@
         "GitHub.copilot",
         "GitHub.copilot-chat",
         "ms-dotnettools.csdevkit",
-        "ms-dotnettools.csharp"
+        "ms-dotnettools.csharp",
+        "ms-python.python",
+        "ms-python.vscode-pylance"
       ],
       "settings": {
-        "dotnet.defaultSolution": "ContosoUniversity.sln"
+        "dotnet.defaultSolution": "ContosoUniversity.sln",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic"
       }
     }
   },
@@ -34,12 +42,14 @@
 
   "remoteEnv": {
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
-    "DOTNET_NOLOGO": "1"
+    "DOTNET_NOLOGO": "1",
+    "FLASK_ENV": "development"
   },
 
-  "forwardPorts": [52379, 52380],
+  "forwardPorts": [52379, 52380, 5000],
   "portsAttributes": {
-    "52379": { "label": "ContosoUniversity (HTTPS)", "onAutoForward": "notify" },
-    "52380": { "label": "ContosoUniversity (HTTP)", "onAutoForward": "notify" }
+    "52379": { "label": "ContosoUniversity .NET (HTTPS)", "onAutoForward": "notify" },
+    "52380": { "label": "ContosoUniversity .NET (HTTP)", "onAutoForward": "notify" },
+    "5000": { "label": "ContosoUniversity Python (Flask)", "onAutoForward": "notify" }
   }
 }

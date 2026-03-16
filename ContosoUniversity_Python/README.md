@@ -8,12 +8,15 @@ A Python Flask web application for the **Everything GitHub Copilot Hands-On Lab*
 
 ### Prerequisites
 
+> 💡 **Using Codespaces or Dev Containers?** All prerequisites are pre-installed and dependencies are already set up. Skip to step 2.
+
 | Requirement | Details |
 |-------------|---------|
 | **Python 3.11+** | [Download](https://www.python.org/downloads/) — verify with `python --version` |
 | **pip** | Included with Python — verify with `pip --version` |
+| **Node.js** | [Install](https://nodejs.org/) (LTS) — needed for Copilot CLI |
 | **Git** | [Install](https://git-scm.com/downloads) |
-| **GitHub Copilot** | VS Code extension or Copilot CLI |
+| **GitHub Copilot** | VS Code extension or Copilot CLI (`npm install -g @github/copilot`) |
 
 ### 1. Install Dependencies
 

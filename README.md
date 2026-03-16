@@ -10,12 +10,15 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 
 ## Prerequisites
 
+> 💡 **Using Codespaces or Dev Containers?** All prerequisites are pre-installed — skip to [Quick Start](#quick-start). The devcontainer includes .NET, Python, Node.js, GitHub CLI, and Copilot CLI.
+
 | Requirement | Details |
 |------------|---------|
 | **GitHub account** | With Copilot license (Individual, Business, or Enterprise) |
 | **VS Code** | Latest version with [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) extension |
+| **Node.js** | [Install](https://nodejs.org/) (LTS) — needed for Copilot CLI. Verify with `node --version` |
 | **GitHub CLI** | [Install `gh`](https://cli.github.com/) — verify with `gh --version` |
-| **Copilot CLI** | [Install guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli) — install with `npm install -g @github/copilot`, verify with `copilot --version` |
+| **Copilot CLI** | Install with `npm install -g @github/copilot` — verify with `copilot --version` |
 | **Git** | [Install](https://git-scm.com/downloads) — configured with your GitHub credentials |
 | **gh-aw extension** | `gh extension install github/gh-aw` (for Labs 08–09) |
 
@@ -24,7 +27,7 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 | Stack | Requirement | Verify |
 |-------|------------|--------|
 | **.NET** | [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | `dotnet --version` |
-| **Python** | [Python 3.11+](https://www.python.org/downloads/) | `python --version` |
+| **Python** | [Python 3.11+](https://www.python.org/downloads/) + pip | `python --version` |
 
 ### Permissions & Licensing
 
