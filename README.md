@@ -69,7 +69,7 @@ The app starts at **http://localhost:5000**. On first run, the database is autom
 
 </details>
 
-<details open>
+<details>
 <summary><strong>🔷 .NET (ASP.NET Core)</strong></summary>
 
 ```bash
@@ -85,7 +85,7 @@ The app starts at **https://localhost:52379** (or http://localhost:52380). On fi
 
 Press `Ctrl+C` to stop the application.
 
-### 4. Open in VS Code
+### 3. Open in VS Code
 
 ```bash
 code .
@@ -204,7 +204,7 @@ This repo ships with a rich set of configurations for you to explore and extend:
 |----------|-------|---------|
 | **Agents** | 2 (+ more you build!) | `planner`, `code-reviewer` — learners create more in Labs 03, 07 |
 | **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
-| **Prompts** | 21 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
+| **Prompts** | 23 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/create-python-test`, `/plan-python` |
 | **Hooks** | 7 | Secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 4 | Path-specific rules for `.cs`, `.py`, test files, and security |
@@ -249,29 +249,43 @@ These tests use an **in-memory SQLite database** — no external dependencies re
 
 ### End-to-End Tests (Playwright)
 
-Playwright tests run against a **live instance** of the application. They are in a separate project and are **not included** in `ContosoUniversity.sln`, so `dotnet test ContosoUniversity.sln` will not run them.
+Playwright tests run against a **live instance** of the application.
 
-**Step 1 — Start the application:**
+<details>
+<summary><strong>🐍 Python E2E</strong></summary>
 
 ```bash
+# Start the app
+cd ContosoUniversity_Python && python run.py
+
+# In a separate terminal, install browsers (first time only)
+playwright install
+
+# Run E2E tests
+python -m pytest playwright_tests/ -v
+```
+
+</details>
+
+<details>
+<summary><strong>🔷 .NET E2E</strong></summary>
+
+Playwright tests are in a separate project and are **not included** in `ContosoUniversity.sln`.
+
+```bash
+# Step 1 — Start the application
 dotnet run --project ContosoUniversity.Web
-```
 
-The app starts at **https://localhost:52379**.
-
-**Step 2 — Install Playwright browsers** (first time only):
-
-```bash
+# Step 2 — Install Playwright browsers (first time only)
 pwsh ContosoUniversity.PlaywrightTests/bin/Debug/net9.0/playwright.ps1 install
-```
 
-**Step 3 — Run E2E tests** (in a separate terminal):
-
-```bash
+# Step 3 — Run E2E tests (in a separate terminal)
 dotnet test ContosoUniversity.PlaywrightTests --nologo
 ```
 
-> **Note:** Playwright tests target `net9.0` and require the .NET 9 SDK. If you only have .NET 8 installed, the E2E tests will not build.
+> **Note:** Playwright tests target `net9.0` and require the .NET 9 SDK.
+
+</details>
 
 ---
 
@@ -295,20 +309,25 @@ day-in-the-life-copilot-lab/
 ├── .github/
 │   ├── agents/                    # 2 agent profiles — more created during labs
 │   ├── skills/                    # 10 agent skills (SKILL.md)
-│   ├── prompts/                   # 21 prompt templates (.prompt.md)
+│   ├── prompts/                   # 23 prompt templates (.prompt.md) — .NET + Python
 │   ├── hooks/                     # Hook configuration (default.json)
-│   ├── instructions/              # 3 path-specific instructions (.instructions.md)
+│   ├── instructions/              # 4 path-specific instructions (.cs, .py, tests, security)
 │   ├── copilot-instructions.md    # Repository-wide instructions
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
 │   └── mcp-config.json            # MCP server configuration (5 servers)
+│
+├── # ── .NET Version ──
 ├── ContosoUniversity.sln          # .NET solution file
 ├── ContosoUniversity.Core/        # Domain models and interfaces
 ├── ContosoUniversity.Infrastructure/  # Data access and services
 ├── ContosoUniversity.Web/         # ASP.NET MVC web application
 ├── ContosoUniversity.Tests/       # xUnit unit and integration tests
-├── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
-├── ContosoUniversity_Python/      # Python/Flask version (functionally equivalent)
+├── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests (.NET)
+│
+├── # ── Python Version ──
+├── ContosoUniversity_Python/      # Flask app, SQLAlchemy, Jinja2, pytest
+│
 ├── labs/                          # Hands-on lab modules (10 labs)
 ├── solutions/                     # Reference solutions for each lab
 ├── docs/                          # Research and reference documentation
@@ -338,6 +357,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | [Setup Guide](labs/setup.md) | Fork, prerequisites, environment setup |
 | [Lab Modules](labs/) | 10 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
+| [Python App README](ContosoUniversity_Python/README.md) | Python/Flask version setup and documentation |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |
 
