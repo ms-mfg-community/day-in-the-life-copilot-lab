@@ -1,4 +1,5 @@
-"""Department forms — mirrors .NET Department data annotations + custom validators."""
+"""Department form with custom name and date validators."""
+# .NET equivalent: ContosoUniversity.Web Department data annotations
 
 from __future__ import annotations
 
@@ -8,12 +9,12 @@ from flask_wtf import FlaskForm
 from wtforms import DateField, DecimalField, SelectField, StringField
 from wtforms.validators import DataRequired, Length, NumberRange, ValidationError
 
-# Reserved words — mirrors .NET DepartmentNameValidationAttribute
+# Reserved words that cannot appear in department names
 RESERVED_WORDS = ["Test", "Demo", "Sample", "Temp"]
 
 
 def validate_department_name(form: FlaskForm, field: StringField) -> None:
-    """Custom validator — mirrors .NET DepartmentNameValidationAttribute."""
+    """Reject names that don't start with a letter or contain reserved words."""
     name = field.data or ""
     if name and not name[0].isalpha():
         raise ValidationError("Department name must start with a letter.")
@@ -23,13 +24,13 @@ def validate_department_name(form: FlaskForm, field: StringField) -> None:
 
 
 def validate_future_date(form: FlaskForm, field: DateField) -> None:
-    """Custom validator — mirrors .NET FutureDateValidationAttribute(5)."""
+    """Reject dates more than 5 years in the future."""
     if field.data and field.data > date.today() + timedelta(days=5 * 365):
         raise ValidationError("Date cannot be more than 5 years in the future.")
 
 
 class DepartmentForm(FlaskForm):
-    """Form for creating/editing departments — mirrors .NET Department + custom validations."""
+    """Form for creating and editing departments with budget and administrator selection."""
 
     name = StringField(
         "Name",

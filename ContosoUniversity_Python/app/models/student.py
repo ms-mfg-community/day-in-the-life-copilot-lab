@@ -1,4 +1,5 @@
-"""Student model — mirrors ContosoUniversity.Core.Models.Student."""
+"""Student model with enrollment tracking."""
+# .NET equivalent: ContosoUniversity.Core.Models.Student
 
 from __future__ import annotations
 
@@ -15,10 +16,7 @@ if TYPE_CHECKING:
 
 
 class Student(Person):
-    """Student entity — inherits from Person via TPH.
-
-    Mirrors .NET Student class with EnrollmentDate and Enrollments navigation.
-    """
+    """Student entity inheriting from Person via TPH with enrollment date and enrollments."""
 
     enrollment_date: Mapped[datetime.date | None] = mapped_column(
         Date, nullable=True

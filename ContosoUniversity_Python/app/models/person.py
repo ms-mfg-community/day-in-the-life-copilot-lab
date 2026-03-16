@@ -1,4 +1,5 @@
-"""Person base model — mirrors ContosoUniversity.Core.Models.Person."""
+"""Person base model using SQLAlchemy single-table inheritance."""
+# .NET equivalent: ContosoUniversity.Core.Models.Person
 
 from __future__ import annotations
 
@@ -9,10 +10,7 @@ from app import db
 
 
 class Person(db.Model):
-    """Base class for Student and Instructor — uses single-table (TPH) inheritance.
-
-    Mirrors .NET Person abstract class with HasDiscriminator configuration.
-    """
+    """Base class for Student and Instructor using single-table (TPH) inheritance."""
 
     __tablename__ = "person"
 
@@ -28,5 +26,5 @@ class Person(db.Model):
 
     @property
     def full_name(self) -> str:
-        """Computed property — mirrors .NET FullName => LastName + ', ' + FirstMidName."""
+        """Return formatted full name as 'LastName, FirstName'."""
         return f"{self.last_name}, {self.first_name}"

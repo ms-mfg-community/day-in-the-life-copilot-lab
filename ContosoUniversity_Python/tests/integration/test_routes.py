@@ -1,4 +1,4 @@
-"""Integration tests — mirrors ContosoUniversity.Tests integration tests."""
+"""Integration tests for Flask route endpoints."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from flask.testing import FlaskClient
 
 
 class TestHomeRoutes:
-    """Tests for Home routes — mirrors HomeController tests."""
+    """Tests for Home blueprint routes."""
 
     def test_index_returns_200(self, client: FlaskClient) -> None:
         response = client.get("/")
@@ -24,7 +24,7 @@ class TestHomeRoutes:
 
 
 class TestStudentRoutes:
-    """Tests for Student routes — mirrors StudentsController tests."""
+    """Tests for Student blueprint routes including CRUD and search."""
 
     def test_index_requires_auth(self, client: FlaskClient) -> None:
         response = client.get("/students/")
@@ -86,7 +86,7 @@ class TestStudentRoutes:
 
 
 class TestCourseRoutes:
-    """Tests for Course routes — mirrors CoursesController tests."""
+    """Tests for Course blueprint routes."""
 
     def test_index_returns_courses(self, authenticated_client: FlaskClient) -> None:
         response = authenticated_client.get("/courses/")
@@ -108,7 +108,7 @@ class TestCourseRoutes:
 
 
 class TestDepartmentRoutes:
-    """Tests for Department routes — mirrors DepartmentsController tests."""
+    """Tests for Department blueprint routes."""
 
     def test_index_returns_departments(self, authenticated_client: FlaskClient) -> None:
         response = authenticated_client.get("/departments/")
@@ -125,7 +125,7 @@ class TestDepartmentRoutes:
 
 
 class TestInstructorRoutes:
-    """Tests for Instructor routes — mirrors InstructorsController tests."""
+    """Tests for Instructor blueprint routes."""
 
     def test_index_returns_instructors(self, authenticated_client: FlaskClient) -> None:
         response = authenticated_client.get("/instructors/")
@@ -146,7 +146,7 @@ class TestInstructorRoutes:
 
 
 class TestSeedData:
-    """Tests that seed data matches .NET DbInitializer exactly."""
+    """Tests that seed data populates the correct number of entities."""
 
     def test_correct_number_of_students(self, app) -> None:
         from app import db

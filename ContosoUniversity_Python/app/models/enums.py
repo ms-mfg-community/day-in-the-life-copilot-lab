@@ -1,4 +1,5 @@
-"""Enums — mirrors ContosoUniversity.Core.Models enums."""
+"""Shared enums for entity operations and sorting options."""
+# .NET equivalent: ContosoUniversity.Core.Models enums
 
 from __future__ import annotations
 
@@ -6,7 +7,7 @@ import enum
 
 
 class EntityOperation(enum.Enum):
-    """Entity operation enum — mirrors .NET EntityOperation."""
+    """CRUD operation types for entity change tracking."""
 
     CREATE = "Create"
     READ = "Read"
@@ -15,7 +16,7 @@ class EntityOperation(enum.Enum):
 
 
 class StudentSortOption(enum.Enum):
-    """Student sort options — mirrors .NET StudentSortOption."""
+    """Sort options for student list queries."""
 
     LAST_NAME_ASC = "last_name_asc"
     LAST_NAME_DESC = "last_name_desc"

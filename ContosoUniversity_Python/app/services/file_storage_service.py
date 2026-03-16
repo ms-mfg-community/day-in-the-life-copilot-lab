@@ -1,4 +1,5 @@
-"""File storage service — mirrors ContosoUniversity.Web.Services.LocalFileStorageService."""
+"""Local file storage service for teaching material image uploads."""
+# .NET equivalent: ContosoUniversity.Web.Services.LocalFileStorageService
 
 from __future__ import annotations
 
@@ -25,7 +26,6 @@ def upload_file(file: FileStorage) -> tuple[bool, str | None, str | None]:
 
     Returns:
         Tuple of (success, url_or_none, error_message_or_none).
-    Mirrors .NET FileUploadUtility.UploadTeachingMaterialAsync.
     """
     if not file or not file.filename:
         return False, None, "No file provided"
@@ -37,7 +37,7 @@ def upload_file(file: FileStorage) -> tuple[bool, str | None, str | None]:
         upload_folder = Path(current_app.config.get("UPLOAD_FOLDER", "app/static/uploads"))
         upload_folder.mkdir(parents=True, exist_ok=True)
 
-        # Generate unique filename — mirrors .NET Guid approach
+        # Generate unique filename with UUID suffix
         ext = Path(file.filename).suffix
         unique_name = f"{Path(file.filename).stem}_{uuid.uuid4()}{ext}"
         file_path = upload_folder / unique_name
@@ -54,7 +54,7 @@ def upload_file(file: FileStorage) -> tuple[bool, str | None, str | None]:
 
 
 def delete_file(file_url: str) -> bool:
-    """Delete a file from local storage — mirrors .NET DeleteFileAsync."""
+    """Delete a file from local storage by its URL path."""
     try:
         if not file_url:
             return False

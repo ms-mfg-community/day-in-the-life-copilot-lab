@@ -1,4 +1,5 @@
-"""Student forms — mirrors .NET Student data annotations."""
+"""Student form with name and enrollment date validation."""
+# .NET equivalent: ContosoUniversity.Web Student data annotations
 
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ from wtforms.validators import DataRequired, Length
 
 
 class StudentForm(FlaskForm):
-    """Form for creating/editing students — mirrors .NET [Bind] attributes."""
+    """Form for creating and editing students with required name and date fields."""
 
     last_name = StringField(
         "Last Name",

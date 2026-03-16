@@ -1,4 +1,5 @@
-"""Instructor model — mirrors ContosoUniversity.Core.Models.Instructor."""
+"""Instructor model with course assignments and office assignment."""
+# .NET equivalent: ContosoUniversity.Core.Models.Instructor
 
 from __future__ import annotations
 
@@ -16,10 +17,7 @@ if TYPE_CHECKING:
 
 
 class Instructor(Person):
-    """Instructor entity — inherits from Person via TPH.
-
-    Mirrors .NET Instructor class with HireDate, CourseAssignments, and OfficeAssignment.
-    """
+    """Instructor entity inheriting from Person via TPH with hire date and relationships."""
 
     hire_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
 

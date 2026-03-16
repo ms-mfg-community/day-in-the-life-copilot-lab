@@ -1,4 +1,4 @@
-"""Shared test fixtures — mirrors .NET CustomWebApplicationFactory."""
+"""Shared test fixtures for Flask application testing."""
 
 from __future__ import annotations
 
@@ -13,20 +13,20 @@ from flask.testing import FlaskClient
 
 @pytest.fixture(scope="session")
 def app() -> Iterator[Flask]:
-    """Create application for testing — mirrors .NET WebApplicationFactory."""
+    """Create a Flask application configured for testing."""
     app = create_app("testing")
     yield app
 
 
 @pytest.fixture()
 def client(app: Flask) -> FlaskClient:
-    """Flask test client — mirrors .NET HttpClient from WebApplicationFactory."""
+    """Provide a Flask test client for making HTTP requests."""
     return app.test_client()
 
 
 @pytest.fixture()
 def authenticated_client(client: FlaskClient) -> FlaskClient:
-    """Pre-authenticated client — mirrors .NET test client with auto-login."""
+    """Provide a test client that is already signed in."""
     client.get("/account/sign-in", follow_redirects=True)
     return client
 

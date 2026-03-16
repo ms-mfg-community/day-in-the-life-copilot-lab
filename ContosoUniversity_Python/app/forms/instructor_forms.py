@@ -1,4 +1,5 @@
-"""Instructor forms — mirrors .NET Instructor data annotations."""
+"""Instructor form with name, hire date, and office location validation."""
+# .NET equivalent: ContosoUniversity.Web Instructor data annotations
 
 from __future__ import annotations
 

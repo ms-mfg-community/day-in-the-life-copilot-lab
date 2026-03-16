@@ -1,165 +1,183 @@
-# ContosoUniversity Python Port
+# ContosoUniversity — Python Edition
 
-This is a Python/Flask port of the ContosoUniversity .NET application, created as part of the GitHub Copilot hands-on labs.
+A Python Flask web application for the **Everything GitHub Copilot Hands-On Lab**. This is a university management system built with Flask, SQLAlchemy, and Jinja2 — designed for learners to explore GitHub Copilot agents, skills, prompts, hooks, MCP servers, and agentic workflows.
+
+> **Note:** A .NET version of this application also exists in the repository root. Both versions are functionally equivalent and can be used interchangeably for the lab exercises.
+
+## Quick Start
+
+### Prerequisites
+
+| Requirement | Details |
+|-------------|---------|
+| **Python 3.11+** | [Download](https://www.python.org/downloads/) — verify with `python --version` |
+| **pip** | Included with Python — verify with `pip --version` |
+| **Git** | [Install](https://git-scm.com/downloads) |
+| **GitHub Copilot** | VS Code extension or Copilot CLI |
+
+### 1. Install Dependencies
+
+```bash
+cd ContosoUniversity_Python
+pip install -r requirements.txt
+```
+
+### 2. Run the Application
+
+```bash
+python run.py
+```
+
+The app starts at **http://localhost:5000**. On first run, the database is automatically created and seeded with sample data (students, courses, instructors, departments).
+
+> **Note:** The development configuration uses SQLite (`contoso_university.db`), which is created automatically. No external database required.
+
+### 3. Run Tests
+
+```bash
+python -m pytest tests/ -v
+```
+
+### 4. Verify Setup
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| Python version | `python --version` | 3.11+ |
+| Dependencies | `pip install -r requirements.txt` | All installed |
+| App runs | `python run.py` | Server at http://localhost:5000 |
+| Tests pass | `python -m pytest tests/ -v` | 42 tests pass |
+| Copilot CLI | `copilot --version` | Version number |
+
+## The Application
+
+**ContosoUniversity** models a university system with these entities:
+
+```mermaid
+erDiagram
+    Department ||--o{ Course : offers
+    Department ||--o| Instructor : "administered by"
+    Course ||--o{ Enrollment : has
+    Student ||--o{ Enrollment : "enrolled in"
+    Instructor }o--o{ Course : teaches
+    Instructor ||--o| OfficeAssignment : has
+    Enrollment }o--o| Grade : receives
+```
+
+### Features
+
+- **Student Management** — CRUD with search, sorting, and pagination
+- **Course Management** — CRUD with department assignment and file upload
+- **Department Management** — CRUD with instructor administrator assignment
+- **Instructor Management** — CRUD with office assignment and course checkboxes
+- **Authentication** — Cookie-based with automatic dev login
+- **Notifications** — Entity change tracking (create/update/delete)
 
 ## Project Structure
 
 ```
 ContosoUniversity_Python/
-├── config.py                # Flask configuration (mirrors appsettings.json)
-├── pyproject.toml           # Project metadata and dependencies
-├── requirements.txt         # Pinned production dependencies
-├── requirements-dev.txt     # Development dependencies
-├── .env.example             # Environment variable template
-├── .python-version          # Python version (3.11)
+├── config.py                 # Flask configuration (dev/test/prod)
+├── run.py                    # Application entry point
+├── pyproject.toml            # Project metadata and tool config
+├── requirements.txt          # Production dependencies
+├── requirements-dev.txt      # Development dependencies
 │
-├── app/                     # Main application package
-│   ├── __init__.py          # Flask app factory
-│   ├── models/              # Domain models (mirrors Core.Models)
-│   ├── repositories/        # Data access (mirrors Infrastructure.Repositories)
-│   ├── services/            # Business logic (mirrors Infrastructure.Services)
-│   ├── routes/              # Route blueprints (mirrors Web.Controllers)
-│   ├── forms/               # WTForms (mirrors ViewModels/Data Annotations)
-│   ├── templates/           # Jinja2 templates (mirrors Razor views)
-│   ├── static/              # CSS, JS, uploads
-│   └── utils/               # Utility functions
+├── app/                      # Main application package
+│   ├── __init__.py           # Flask app factory
+│   ├── seed.py               # Database seed data
+│   ├── models/               # SQLAlchemy domain models
+│   │   ├── person.py         # Base class (single-table inheritance)
+│   │   ├── student.py        # Student entity
+│   │   ├── instructor.py     # Instructor entity
+│   │   ├── course.py         # Course entity
+│   │   ├── enrollment.py     # Enrollment + Grade enum
+│   │   ├── department.py     # Department entity
+│   │   ├── office_assignment.py
+│   │   ├── course_assignment.py  # Many-to-many join
+│   │   └── notification.py   # Change notifications
+│   ├── routes/               # Flask blueprints (URL routing)
+│   │   ├── home.py           # Home, About, Privacy
+│   │   ├── students.py       # /students/ CRUD
+│   │   ├── courses.py        # /courses/ CRUD
+│   │   ├── departments.py    # /departments/ CRUD
+│   │   ├── instructors.py    # /instructors/ CRUD
+│   │   └── auth.py           # Sign in/out
+│   ├── forms/                # WTForms validation
+│   ├── services/             # Business logic
+│   │   ├── student_query_service.py   # Search/sort/pagination
+│   │   ├── notification_service.py    # Change notifications
+│   │   └── file_storage_service.py    # File uploads
+│   ├── repositories/         # Data access abstraction
+│   ├── templates/            # Jinja2 HTML templates
+│   ├── static/               # CSS, JS, uploads
+│   └── utils/                # Utility functions
 │
-├── tests/
-│   ├── conftest.py          # Shared fixtures
-│   ├── unit/                # Unit tests
-│   └── integration/         # Integration tests
+├── tests/                    # pytest test suite
+│   ├── conftest.py           # Shared fixtures
+│   ├── unit/                 # Model and enum tests
+│   └── integration/          # Route and database tests
 │
-└── playwright_tests/        # E2E tests
+└── playwright_tests/         # E2E browser tests
 ```
 
 ## Technology Stack
 
-- **Python 3.11+**
-- **Flask 3.0** — Web framework (mirrors ASP.NET Core)
-- **SQLAlchemy 2.0** — ORM (mirrors Entity Framework Core)
-- **Flask-Login** — Authentication (mirrors ASP.NET Core Identity)
-- **Flask-WTF** — Forms and CSRF protection (mirrors Data Annotations)
-- **WTForms** — Form validation (mirrors ViewModels)
-- **pytest** — Testing framework (mirrors xUnit)
-- **Playwright** — E2E testing (mirrors Playwright in .NET)
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Web Framework** | Flask 3.0 | HTTP routing, templates, request handling |
+| **ORM** | SQLAlchemy 2.0 | Database models with type-annotated `Mapped[]` columns |
+| **Database** | SQLite (dev) | Zero-config local development |
+| **Forms** | Flask-WTF / WTForms | CSRF protection + server-side validation |
+| **Auth** | Flask-Login | Session-based authentication |
+| **Templates** | Jinja2 | HTML rendering with template inheritance |
+| **Testing** | pytest | Unit + integration tests with Flask test client |
+| **E2E** | Playwright | Browser-based end-to-end tests |
 
-## Setup Instructions
+## Development
 
-### 1. Install Dependencies
-
-```bash
-# Using pip
-pip install -r requirements-dev.txt
-
-# Or using uv (recommended)
-uv pip install -r requirements-dev.txt
-```
-
-### 2. Configure Environment
+### Linting
 
 ```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env with your settings
-```
-
-### 3. Initialize Database
-
-The database will be automatically initialized when you first run the app (mirrors `DbInitializer.InitializeAsync`).
-
-### 4. Run the Application
-
-```bash
-# Development server
-flask --app app run --debug
-
-# Or using Python
-python -m flask --app app run --debug
-```
-
-The app will be available at `http://127.0.0.1:5000`
-
-## Development Workflow
-
-### Running Tests
-
-```bash
-# All tests
-pytest
-
-# With coverage
-pytest --cov=app --cov-report=html
-
-# Unit tests only
-pytest tests/unit
-
-# Integration tests only
-pytest tests/integration
-```
-
-### Linting and Type Checking
-
-```bash
-# Run Ruff linter
 ruff check app tests
+ruff check --fix app tests   # auto-fix
+```
 
-# Auto-fix issues
-ruff check --fix app tests
+### Type Checking
 
-# Type checking with mypy
+```bash
 mypy app
 ```
 
-### E2E Tests with Playwright
+### Test Coverage
 
 ```bash
-# Install Playwright browsers (first time only)
-playwright install
-
-# Run E2E tests
-pytest playwright_tests
+python -m pytest tests/ --cov=app --cov-report=html
 ```
 
-## Architecture Notes
+### Configuration
 
-This Python port mirrors the .NET ContosoUniversity architecture:
+The `config.py` file defines three environments:
 
-- **Repository Pattern**: Data access abstraction (like .NET repositories)
-- **Service Layer**: Business logic separation (like .NET services)
-- **Blueprints**: Flask's equivalent to .NET Controllers
-- **SQLAlchemy ORM**: Declarative models like EF Core entities
-- **Flask-Login**: User authentication like ASP.NET Core Identity
-- **WTForms**: Server-side validation like Data Annotations
+| Environment | Database | Auth | Debug |
+|-------------|----------|------|-------|
+| **development** | SQLite file | Auto-login enabled | On |
+| **testing** | In-memory SQLite | Auto-login enabled, CSRF disabled | Off |
+| **production** | Configurable via `DATABASE_URL` | OAuth/OIDC | Off |
 
-## Configuration Environments
+Set with: `FLASK_ENV=development|testing|production`
 
-The `config.py` file defines three environments (mirrors .NET appsettings):
+## Seed Data
 
-- **Development**: SQLite database, debug mode, auto-login enabled
-- **Testing**: In-memory SQLite, CSRF disabled for tests
-- **Production**: PostgreSQL/MySQL, debug disabled, secure settings
+The application ships with sample university data (automatically loaded on first run):
 
-Set the environment with: `FLASK_ENV=development|testing|production`
-
-## Status
-
-All components are implemented and tested:
-
-| Component | Python | .NET Equivalent |
-|-----------|--------|-----------------|
-| Domain Models (9) | SQLAlchemy 2.0 + TPH inheritance | EF Core + Data Annotations |
-| Seed Data | Exact match (8 students, 5 instructors, 4 depts, 7 courses, 11 enrollments) | DbInitializer |
-| Repository Pattern | Generic `Repository` class | `IRepository<T>` / `Repository<T>` |
-| Student Search | `search_students()` with LIKE, date range, sort, pagination | `StudentQueryService` |
-| Notification Service | In-memory local service | `LocalNotificationService` |
-| File Storage | Local filesystem uploads | `LocalFileStorageService` |
-| CRUD Routes (5 entities) | Flask Blueprints with `@login_required` | ASP.NET MVC Controllers with `[Authorize]` |
-| Form Validation | WTForms + custom validators | Data Annotations + custom attributes |
-| Templates (25) | Jinja2 with Bootstrap 5 | Razor (.cshtml) |
-| Auth | Flask-Login with dev auto-login | Cookie auth with `LocalSignInAsync` |
-| Tests (42) | pytest (unit + integration) | xUnit + WebApplicationFactory |
+| Entity | Count | Examples |
+|--------|-------|---------|
+| Students | 8 | Carson Alexander, Meredith Alonso, ... |
+| Instructors | 5 | Kim Abercrombie, Fadi Fakhouri, ... |
+| Departments | 4 | English, Mathematics, Engineering, Economics |
+| Courses | 7 | Chemistry (1050), Calculus (1045), Literature (2042), ... |
+| Enrollments | 11 | With grades A through F |
 
 ## License
 
-MIT (same as original ContosoUniversity)
+MIT

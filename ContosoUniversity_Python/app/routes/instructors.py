@@ -1,4 +1,5 @@
-"""Instructor routes — mirrors ContosoUniversity.Web.Controllers.InstructorsController."""
+"""Instructor routes — CRUD with course assignments and office assignment management."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.InstructorsController
 
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ instructors_bp = Blueprint("instructors", __name__)
 
 
 def _get_assigned_courses(instructor: Instructor) -> list[dict]:
-    """Build assigned course data — mirrors .NET PopulateAssignedCourseDataAsync."""
+    """Build a list of all courses with assigned/unassigned status for checkboxes."""
     all_courses = db.session.query(Course).all()
     instructor_course_ids = {ca.course_id for ca in instructor.course_assignments}
     return [
@@ -38,7 +39,7 @@ def _get_assigned_courses(instructor: Instructor) -> list[dict]:
 
 @instructors_bp.route("/")
 def index():
-    """Instructor list with drill-down — mirrors .NET InstructorsController.Index."""
+    """List instructors with drill-down to courses and enrollments."""
     selected_instructor_id = request.args.get("id", type=int)
     selected_course_id = request.args.get("courseID", type=int)
 
@@ -73,7 +74,7 @@ def index():
 
 @instructors_bp.route("/details/<int:id>")
 def details(id: int):
-    """Instructor details — mirrors .NET InstructorsController.Details."""
+    """Display instructor details by ID."""
     instructor = db.session.get(Instructor, id)
     if instructor is None:
         abort(404)
@@ -83,7 +84,7 @@ def details(id: int):
 @instructors_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    """Create instructor — mirrors .NET InstructorsController.Create."""
+    """Handle GET (render form) and POST (save) for creating an instructor."""
     form = InstructorForm()
     assigned_courses = _get_assigned_courses(Instructor())
 
@@ -101,7 +102,7 @@ def create():
                     location=form.office_location.data,
                 )
 
-            # Handle course assignments — mirrors selectedCourses parameter
+            # Handle course assignments from checkbox selection
             selected_courses = request.form.getlist("selectedCourses")
             for course_id_str in selected_courses:
                 instructor.course_assignments.append(
@@ -134,7 +135,7 @@ def create():
 @instructors_bp.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit(id: int):
-    """Edit instructor — mirrors .NET InstructorsController.Edit."""
+    """Handle GET (render form) and POST (save) for editing an instructor."""
     instructor = db.session.get(Instructor, id)
     if instructor is None:
         abort(404)
@@ -156,7 +157,7 @@ def edit(id: int):
             instructor.first_name = form.first_name.data
             instructor.hire_date = form.hire_date.data
 
-            # Handle office assignment — mirrors .NET null-clearing logic
+            # Handle office assignment — clear if empty, create or update otherwise
             if form.office_location.data and form.office_location.data.strip():
                 if instructor.office_assignment:
                     instructor.office_assignment.location = form.office_location.data
@@ -167,7 +168,7 @@ def edit(id: int):
             else:
                 instructor.office_assignment = None
 
-            # Update course assignments — mirrors .NET UpdateInstructorCoursesAsync
+            # Sync course assignments with checkbox selections
             selected_courses = set(request.form.getlist("selectedCourses"))
             current_courses = {str(ca.course_id) for ca in instructor.course_assignments}
 
@@ -213,7 +214,7 @@ def edit(id: int):
 @instructors_bp.route("/delete/<int:id>", methods=["GET", "POST"])
 @login_required
 def delete(id: int):
-    """Delete instructor — mirrors .NET InstructorsController.Delete/DeleteConfirmed."""
+    """Handle GET (confirmation page) and POST (perform delete) for an instructor."""
     instructor = db.session.get(Instructor, id)
     if instructor is None:
         abort(404)
@@ -222,7 +223,7 @@ def delete(id: int):
         try:
             instructor_name = instructor.full_name
 
-            # Clear department administrator references — mirrors .NET logic
+            # Clear department administrator references before deleting
             departments = db.session.query(Department).filter_by(instructor_id=id).all()
             for dept in departments:
                 dept.instructor_id = None

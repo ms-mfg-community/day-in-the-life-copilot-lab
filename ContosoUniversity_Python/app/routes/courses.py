@@ -1,4 +1,5 @@
-"""Course routes — mirrors ContosoUniversity.Web.Controllers.CoursesController."""
+"""Course routes — CRUD operations with department selection and file uploads."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.CoursesController
 
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ courses_bp = Blueprint("courses", __name__)
 
 
 def _populate_departments(form: CourseForm) -> None:
-    """Populate department dropdown — mirrors .NET ViewData['DepartmentID'] SelectList."""
+    """Populate department dropdown choices on the form."""
     departments = db.session.query(Department).all()
     form.department_id.choices = [
         (d.department_id, d.name) for d in departments
@@ -29,14 +30,14 @@ def _populate_departments(form: CourseForm) -> None:
 
 @courses_bp.route("/")
 def index():
-    """Course list — mirrors .NET CoursesController.Index."""
+    """List all courses."""
     courses = db.session.query(Course).all()
     return render_template("courses/index.html", courses=courses)
 
 
 @courses_bp.route("/details/<int:id>")
 def details(id: int):
-    """Course details — mirrors .NET CoursesController.Details."""
+    """Display course details by ID."""
     course = db.session.query(Course).filter_by(course_id=id).first()
     if course is None:
         abort(404)
@@ -46,7 +47,7 @@ def details(id: int):
 @courses_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    """Create course — mirrors .NET CoursesController.Create."""
+    """Handle GET (render form) and POST (save) for creating a course."""
     form = CourseForm()
     _populate_departments(form)
 
@@ -59,7 +60,7 @@ def create():
                 department_id=form.department_id.data,
             )
 
-            # Handle file upload — mirrors .NET TeachingMaterialImage handling
+            # Handle teaching material image upload
             if form.teaching_material_image.data:
                 success, url, error = file_storage_service.upload_file(
                     form.teaching_material_image.data
@@ -91,7 +92,7 @@ def create():
 @courses_bp.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit(id: int):
-    """Edit course — mirrors .NET CoursesController.Edit."""
+    """Handle GET (render form) and POST (save) for editing a course."""
     course = db.session.get(Course, id)
     if course is None:
         abort(404)
@@ -145,7 +146,7 @@ def edit(id: int):
 @courses_bp.route("/delete/<int:id>", methods=["GET", "POST"])
 @login_required
 def delete(id: int):
-    """Delete course — mirrors .NET CoursesController.Delete/DeleteConfirmed."""
+    """Handle GET (confirmation page) and POST (perform delete) for a course."""
     course = db.session.query(Course).filter_by(course_id=id).first()
     if course is None:
         abort(404)

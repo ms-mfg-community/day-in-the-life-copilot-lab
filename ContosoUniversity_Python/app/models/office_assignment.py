@@ -1,4 +1,5 @@
-"""OfficeAssignment model — mirrors ContosoUniversity.Core.Models.OfficeAssignment."""
+"""OfficeAssignment model — one-to-one relationship with Instructor."""
+# .NET equivalent: ContosoUniversity.Core.Models.OfficeAssignment
 
 from __future__ import annotations
 
@@ -14,10 +15,7 @@ if TYPE_CHECKING:
 
 
 class OfficeAssignment(db.Model):
-    """Office assignment — one-to-one with Instructor (shared PK).
-
-    Mirrors .NET OfficeAssignment with InstructorID as primary key.
-    """
+    """Office assignment with a shared primary key (instructor_id) for one-to-one mapping."""
 
     __tablename__ = "office_assignment"
 

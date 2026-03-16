@@ -1,16 +1,38 @@
-"""Domain models — mirrors ContosoUniversity.Core.Models."""
+"""SQLAlchemy domain models for the university system."""
+# .NET equivalent: ContosoUniversity.Core.Models
 
 from __future__ import annotations
 
+from app.models.person import Person
+from app.models.student import Student
+from app.models.instructor import Instructor
+from app.models.course import Course
+from app.models.enrollment import Enrollment, Grade
+from app.models.department import Department
+from app.models.office_assignment import OfficeAssignment
+from app.models.course_assignment import CourseAssignment
+from app.models.notification import Notification
+from app.models.enums import EntityOperation, StudentSortOption
+
+__all__ = [
+    "Person",
+    "Student",
+    "Instructor",
+    "Course",
+    "Enrollment",
+    "Grade",
+    "Department",
+    "OfficeAssignment",
+    "CourseAssignment",
+    "Notification",
+    "EntityOperation",
+    "StudentSortOption",
+]
+
 
 def import_all_models() -> None:
-    """Import all models to ensure they are registered with SQLAlchemy."""
-    from app.models import person  # noqa: F401
-    from app.models import student  # noqa: F401
-    from app.models import instructor  # noqa: F401
-    from app.models import course  # noqa: F401
-    from app.models import enrollment  # noqa: F401
-    from app.models import department  # noqa: F401
-    from app.models import office_assignment  # noqa: F401
-    from app.models import course_assignment  # noqa: F401
-    from app.models import notification  # noqa: F401
+    """Import all models to ensure they are registered with SQLAlchemy.
+
+    Call this before db.create_all() to ensure all tables are created.
+    """
+    pass  # Importing this module already imports all models above

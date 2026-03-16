@@ -1,4 +1,5 @@
-"""Department model — mirrors ContosoUniversity.Core.Models.Department."""
+"""Department model with budget tracking and administrator relationship."""
+# .NET equivalent: ContosoUniversity.Core.Models.Department
 
 from __future__ import annotations
 
@@ -17,11 +18,7 @@ if TYPE_CHECKING:
 
 
 class Department(db.Model):
-    """Department entity with concurrency control.
-
-    Mirrors .NET Department class with RowVersion, custom validations, and
-    self-referencing FK to Instructor as administrator.
-    """
+    """Department entity with budget, administrator, and optimistic concurrency via row_version."""
 
     __tablename__ = "department"
 

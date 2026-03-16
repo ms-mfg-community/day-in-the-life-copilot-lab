@@ -75,6 +75,19 @@ code .
 | Copilot CLI | `copilot --version` | Version number |
 | Extensions | VS Code → Extensions panel | GitHub Copilot installed & signed in |
 
+### Python Version
+
+A Python/Flask version of ContosoUniversity is also available:
+
+```bash
+cd ContosoUniversity_Python
+pip install -r requirements.txt
+python run.py                    # http://localhost:5000
+python -m pytest tests/ -v       # 42 tests
+```
+
+See [ContosoUniversity_Python/README.md](ContosoUniversity_Python/README.md) for full setup instructions.
+
 ### 6. Start the labs
 
 Open [`labs/setup.md`](labs/setup.md) and follow the instructions.
@@ -254,6 +267,7 @@ day-in-the-life-copilot-lab/
 ├── ContosoUniversity.Web/         # ASP.NET MVC web application
 ├── ContosoUniversity.Tests/       # xUnit unit and integration tests
 ├── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
+├── ContosoUniversity_Python/      # Python/Flask version (functionally equivalent)
 ├── labs/                          # Hands-on lab modules (10 labs)
 ├── solutions/                     # Reference solutions for each lab
 ├── docs/                          # Research and reference documentation

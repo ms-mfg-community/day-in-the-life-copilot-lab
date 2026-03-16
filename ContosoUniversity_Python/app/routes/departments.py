@@ -1,4 +1,5 @@
-"""Department routes — mirrors ContosoUniversity.Web.Controllers.DepartmentsController."""
+"""Department routes — CRUD operations with administrator selection."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.DepartmentsController
 
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ departments_bp = Blueprint("departments", __name__)
 
 
 def _populate_instructors(form: DepartmentForm, selected_id: int | None = None) -> None:
-    """Populate instructor dropdown — mirrors .NET ViewData['InstructorID'] SelectList."""
+    """Populate instructor dropdown choices for the administrator field."""
     instructors = db.session.query(Instructor).all()
     form.instructor_id.choices = [(0, "-- Select --")] + [
         (i.id, i.full_name) for i in instructors
@@ -32,7 +33,7 @@ def _populate_instructors(form: DepartmentForm, selected_id: int | None = None) 
 @departments_bp.route("/")
 @login_required
 def index():
-    """Department list — mirrors .NET DepartmentsController.Index."""
+    """List all departments."""
     departments = db.session.query(Department).all()
     return render_template("departments/index.html", departments=departments)
 
@@ -40,7 +41,7 @@ def index():
 @departments_bp.route("/details/<int:id>")
 @login_required
 def details(id: int):
-    """Department details — mirrors .NET DepartmentsController.Details."""
+    """Display department details by ID."""
     department = db.session.get(Department, id)
     if department is None:
         abort(404)
@@ -50,7 +51,7 @@ def details(id: int):
 @departments_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    """Create department — mirrors .NET DepartmentsController.Create."""
+    """Handle GET (render form) and POST (save) for creating a department."""
     form = DepartmentForm()
     _populate_instructors(form)
 
@@ -84,7 +85,7 @@ def create():
 @departments_bp.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit(id: int):
-    """Edit department — mirrors .NET DepartmentsController.Edit."""
+    """Handle GET (render form) and POST (save) for editing a department."""
     department = db.session.get(Department, id)
     if department is None:
         abort(404)
@@ -124,7 +125,7 @@ def edit(id: int):
 @departments_bp.route("/delete/<int:id>", methods=["GET", "POST"])
 @login_required
 def delete(id: int):
-    """Delete department — mirrors .NET DepartmentsController.Delete/DeleteConfirmed."""
+    """Handle GET (confirmation page) and POST (perform delete) for a department."""
     department = db.session.get(Department, id)
     if department is None:
         abort(404)

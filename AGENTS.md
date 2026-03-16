@@ -8,6 +8,7 @@ This is the **Everything GitHub Copilot Hands-On Lab** — a comprehensive train
 ## Technology Stack
 
 - **Application**: ASP.NET Core 8 MVC with Entity Framework Core (ContosoUniversity)
+- **Python Application**: Flask 3.0 with SQLAlchemy 2.0 (ContosoUniversity_Python — functionally equivalent)
 - **Architecture**: Clean architecture — Core (domain), Infrastructure (data), Web (MVC), Tests (xUnit), PlaywrightTests (E2E)
 - **Copilot Config**: 2 agents, 10 skills, 21 prompts, 7 hooks, 3 instructions, 5 MCP servers
 - **CI/CD**: GitHub Agentic Workflows (gh-aw) for PRD generation and code review
@@ -17,6 +18,13 @@ This is the **Everything GitHub Copilot Hands-On Lab** — a comprehensive train
 ```shell
 dotnet build ContosoUniversity.sln
 dotnet test
+```
+
+```shell
+# Python version
+cd ContosoUniversity_Python
+pip install -r requirements.txt
+python -m pytest tests/ -v
 ```
 
 ## Agent Suite

@@ -1,4 +1,5 @@
-"""CourseAssignment model — mirrors ContosoUniversity.Core.Models.CourseAssignment."""
+"""CourseAssignment model — many-to-many join between Instructor and Course."""
+# .NET equivalent: ContosoUniversity.Core.Models.CourseAssignment
 
 from __future__ import annotations
 
@@ -15,10 +16,7 @@ if TYPE_CHECKING:
 
 
 class CourseAssignment(db.Model):
-    """Many-to-many join between Instructor and Course.
-
-    Mirrors .NET CourseAssignment with composite primary key.
-    """
+    """Many-to-many join between Instructor and Course with composite primary key."""
 
     __tablename__ = "course_assignment"
 

@@ -1,4 +1,5 @@
-"""Home routes — mirrors ContosoUniversity.Web.Controllers.HomeController."""
+"""Home page routes — landing page, about, and privacy."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.HomeController
 
 from __future__ import annotations
 
@@ -17,13 +18,13 @@ home_bp = Blueprint("home", __name__)
 
 @home_bp.route("/")
 def index():
-    """Home page — mirrors .NET HomeController.Index."""
+    """Render the home page."""
     return render_template("home/index.html")
 
 
 @home_bp.route("/about")
 def about():
-    """About page with enrollment statistics — mirrors .NET HomeController.About."""
+    """Render the about page with enrollment date statistics."""
     stats = db.session.execute(
         select(
             Student.enrollment_date,
@@ -38,5 +39,5 @@ def about():
 
 @home_bp.route("/privacy")
 def privacy():
-    """Privacy page — mirrors .NET HomeController.Privacy."""
+    """Render the privacy policy page."""
     return render_template("home/privacy.html")

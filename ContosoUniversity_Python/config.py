@@ -23,19 +23,19 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    """Development configuration — mirrors .NET Development environment."""
+    """Development configuration with debug mode and SQLite."""
 
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL",
         f"sqlite:///{BASE_DIR / 'contoso_university.db'}",
     )
-    # In development, auto-login as admin (mirrors .NET AccountController.LocalSignInAsync)
+    # In development, auto-login as admin for convenience
     AUTO_LOGIN_ENABLED = True
 
 
 class TestingConfig(Config):
-    """Testing configuration — in-memory SQLite like .NET tests."""
+    """Testing configuration with in-memory SQLite database."""
 
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"

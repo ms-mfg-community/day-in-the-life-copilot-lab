@@ -1,4 +1,5 @@
-"""Notification model — mirrors ContosoUniversity.Core.Models.Notification."""
+"""Notification model for entity change tracking."""
+# .NET equivalent: ContosoUniversity.Core.Models.Notification
 
 from __future__ import annotations
 
@@ -11,10 +12,7 @@ from app import db
 
 
 class Notification(db.Model):
-    """Notification entity for entity change tracking.
-
-    Mirrors .NET Notification class — tracks CRUD operations on entities.
-    """
+    """Notification entity that records CRUD operations on domain entities."""
 
     __tablename__ = "notification"
 

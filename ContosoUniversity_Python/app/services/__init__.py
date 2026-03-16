@@ -1,4 +1,5 @@
-"""Services package — mirrors ContosoUniversity.Infrastructure.Services and ContosoUniversity.Web.Services."""
+"""Services package — business logic for queries, notifications, and file storage."""
+# .NET equivalent: ContosoUniversity.Infrastructure.Services and ContosoUniversity.Web.Services
 
 __all__ = [
     "search_students",

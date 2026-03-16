@@ -1,4 +1,5 @@
-"""Student routes — mirrors ContosoUniversity.Web.Controllers.StudentsController."""
+"""Student routes — CRUD operations with search, sort, and pagination."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.StudentsController
 
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ students_bp = Blueprint("students", __name__)
 @students_bp.route("/")
 @login_required
 def index():
-    """Student list with search, sort, pagination — mirrors .NET StudentsController.Index."""
+    """List students with search, sort, and pagination."""
     sort_order = request.args.get("sortOrder")
     current_filter = request.args.get("currentFilter")
     search_string = request.args.get("searchString")
@@ -31,7 +32,7 @@ def index():
     date_from = request.args.get("enrollmentDateFrom")
     date_to = request.args.get("enrollmentDateTo")
 
-    # New search resets to page 1 — mirrors .NET logic
+    # New search resets to page 1
     if search_string is not None:
         page = 1
     else:
@@ -51,7 +52,7 @@ def index():
         except ValueError:
             pass
 
-    # Map sort order — mirrors .NET switch expression
+    # Map sort parameter to enum
     sort_option = {
         "name_desc": StudentSortOption.LAST_NAME_DESC,
         "Date": StudentSortOption.ENROLLMENT_DATE_ASC,
@@ -69,7 +70,7 @@ def index():
 
     result = search_students(criteria)
 
-    # Sort toggle params — mirrors .NET NameSortParm/DateSortParm logic
+    # Sort toggle params for column header links
     name_sort_parm = "name_desc" if not sort_order else ""
     date_sort_parm = "date_desc" if sort_order == "Date" else "Date"
 
@@ -92,7 +93,7 @@ def index():
 @students_bp.route("/details/<int:id>")
 @login_required
 def details(id: int):
-    """Student details — mirrors .NET StudentsController.Details."""
+    """Display student details by ID."""
     student = db.session.get(Student, id)
     if student is None:
         abort(404)
@@ -102,7 +103,7 @@ def details(id: int):
 @students_bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    """Create student — mirrors .NET StudentsController.Create (GET+POST)."""
+    """Handle GET (render form) and POST (save) for creating a student."""
     form = StudentForm()
 
     if form.validate_on_submit():
@@ -134,7 +135,7 @@ def create():
 @students_bp.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit(id: int):
-    """Edit student — mirrors .NET StudentsController.Edit (GET+POST)."""
+    """Handle GET (render form) and POST (save) for editing a student."""
     student = db.session.get(Student, id)
     if student is None:
         abort(404)
@@ -172,7 +173,7 @@ def edit(id: int):
 @students_bp.route("/delete/<int:id>", methods=["GET", "POST"])
 @login_required
 def delete(id: int):
-    """Delete student — mirrors .NET StudentsController.Delete/DeleteConfirmed."""
+    """Handle GET (confirmation page) and POST (perform delete) for a student."""
     student = db.session.get(Student, id)
     if student is None:
         abort(404)

@@ -1,4 +1,5 @@
-"""Student query service — mirrors ContosoUniversity.Infrastructure.Services.StudentQueryService."""
+"""Student query service — search, filter, sort, and paginate students."""
+# .NET equivalent: ContosoUniversity.Infrastructure.Services.StudentQueryService
 
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class StudentSearchCriteria:
-    """Search criteria — mirrors .NET StudentSearchCriteria."""
+    """Immutable search criteria for student queries."""
 
     search_text: str | None = None
     enrollment_date_from: object = None  # date | None
@@ -33,7 +34,7 @@ class StudentSearchCriteria:
 
 @dataclass(frozen=True)
 class PagedResult:
-    """Paged result — mirrors .NET PagedResult<T>."""
+    """Immutable paged result with navigation properties."""
 
     items: list
     total_count: int
@@ -56,26 +57,26 @@ class PagedResult:
 def search_students(criteria: StudentSearchCriteria) -> PagedResult:
     """Search students with filtering, sorting, and pagination.
 
-    Mirrors .NET StudentQueryService.SearchStudentsAsync exactly:
-    - LIKE search on LastName and FirstMidName
+    Supports:
+    - Case-insensitive LIKE search on last_name and first_name
     - Date range filtering (from inclusive, to exclusive next day)
     - Sort by name or enrollment date, ascending or descending
-    - Secondary sort by ID for stability
-    - Pagination with skip/take
+    - Secondary sort by ID for deterministic ordering
+    - Offset-based pagination
     """
     page_number = max(1, criteria.page_number)
     page_size = max(1, min(100, criteria.page_size))
 
     query = select(Student)
 
-    # Text search — mirrors EF.Functions.Like
+    # Text search using case-insensitive LIKE
     if criteria.search_text and criteria.search_text.strip():
         pattern = f"%{criteria.search_text.strip()}%"
         query = query.where(
             Student.last_name.ilike(pattern) | Student.first_name.ilike(pattern)
         )
 
-    # Date range — mirrors .NET date filtering
+    # Date range filtering
     if criteria.enrollment_date_from is not None:
         query = query.where(Student.enrollment_date >= criteria.enrollment_date_from)
 
@@ -84,7 +85,7 @@ def search_students(criteria: StudentSearchCriteria) -> PagedResult:
         to_exclusive = criteria.enrollment_date_to + timedelta(days=1)
         query = query.where(Student.enrollment_date < to_exclusive)
 
-    # Sorting — mirrors .NET switch expression with secondary sort by ID
+    # Sorting with secondary sort by ID for deterministic ordering
     match criteria.sort_option:
         case StudentSortOption.LAST_NAME_DESC:
             query = query.order_by(Student.last_name.desc(), Student.id)
@@ -99,7 +100,7 @@ def search_students(criteria: StudentSearchCriteria) -> PagedResult:
     count_query = select(func.count()).select_from(query.subquery())
     total_count = db.session.execute(count_query).scalar() or 0
 
-    # Paginate — mirrors .NET Skip/Take
+    # Paginate with offset and limit
     items = db.session.execute(
         query.offset((page_number - 1) * page_size).limit(page_size)
     ).scalars().all()

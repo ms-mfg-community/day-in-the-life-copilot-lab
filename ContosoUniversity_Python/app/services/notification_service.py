@@ -1,4 +1,5 @@
-"""Notification service — mirrors ContosoUniversity.Web.Services.LocalNotificationService."""
+"""In-memory notification service for entity change tracking."""
+# .NET equivalent: ContosoUniversity.Web.Services.LocalNotificationService
 
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from app import db
 
 logger = logging.getLogger(__name__)
 
-# In-memory store for development — mirrors .NET static List<Notification>
+# Thread-safe in-memory notification store for development
 _notifications: list[Notification] = []
 _lock = threading.Lock()
 _next_id = 1
@@ -25,7 +26,7 @@ def send_notification(
     entity_display_name: str | None = None,
     user_name: str | None = None,
 ) -> None:
-    """Send a notification — mirrors .NET SendNotification/SendNotificationAsync."""
+    """Create and store a notification for an entity operation."""
     global _next_id
 
     display = entity_display_name or entity_id
@@ -53,26 +54,26 @@ def send_notification(
 
 
 def receive_notification() -> Notification | None:
-    """Get first unread notification — mirrors ReceiveNotification."""
+    """Return the first unread notification, or None."""
     with _lock:
         return next((n for n in _notifications if not n.is_read), None)
 
 
 def get_notifications(count: int = 10) -> list[Notification]:
-    """Get recent notifications — mirrors GetNotifications."""
+    """Return the most recent notifications, up to count."""
     with _lock:
         return sorted(_notifications, key=lambda n: n.created_at, reverse=True)[:count]
 
 
 def get_unread_notifications(count: int = 10) -> list[Notification]:
-    """Get recent unread notifications — mirrors GetUnreadNotifications."""
+    """Return the most recent unread notifications, up to count."""
     with _lock:
         unread = [n for n in _notifications if not n.is_read]
         return sorted(unread, key=lambda n: n.created_at, reverse=True)[:count]
 
 
 def mark_as_read(notification_id: int) -> None:
-    """Mark notification as read — mirrors MarkAsRead."""
+    """Mark a single notification as read by ID."""
     with _lock:
         for n in _notifications:
             if n.id == notification_id:
@@ -83,7 +84,7 @@ def mark_as_read(notification_id: int) -> None:
 
 
 def mark_all_as_read() -> None:
-    """Mark all notifications as read — mirrors MarkAllAsRead."""
+    """Mark all unread notifications as read."""
     with _lock:
         now = datetime.now(timezone.utc)
         for n in _notifications:
@@ -94,7 +95,7 @@ def mark_all_as_read() -> None:
 
 
 def _generate_message(entity_type: str, display_name: str, operation: EntityOperation) -> str:
-    """Generate notification message — mirrors .NET GenerateMessage."""
+    """Generate a human-readable notification message for the given operation."""
     match operation:
         case EntityOperation.CREATE:
             return f"New {entity_type} '{display_name}' was created"

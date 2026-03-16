@@ -379,3 +379,15 @@ ping github.com -c 3
 ---
 
 **Stay calm. You've prepared. Handle issues gracefully and use them as teaching moments!**
+
+---
+
+## Python Version Issues
+
+| Problem | Fix |
+|---------|-----|
+| `ModuleNotFoundError` | Run `pip install -r requirements.txt` from `ContosoUniversity_Python/` |
+| Database not created | Delete `contoso_university.db` and restart — it will be recreated with seed data |
+| Port 5000 in use | Set `FLASK_RUN_PORT=5001` or change the port in `run.py` |
+| Tests fail with import errors | Run tests from `ContosoUniversity_Python/` directory: `python -m pytest tests/ -v` |
+| CSRF token errors in tests | Ensure `WTF_CSRF_ENABLED = False` in `TestingConfig` (already configured) |

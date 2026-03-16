@@ -1,4 +1,5 @@
-"""Repository package — mirrors ContosoUniversity.Infrastructure.Repositories."""
+"""Repository package providing generic data access abstractions."""
+# .NET equivalent: ContosoUniversity.Infrastructure.Repositories
 
 from app.repositories.base import Repository
 

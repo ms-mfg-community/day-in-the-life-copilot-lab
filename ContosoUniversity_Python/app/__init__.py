@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 def create_app(config_name: str | None = None) -> Flask:
-    """Create and configure the Flask application.
+    """Create and configure the Flask application using the factory pattern.
 
-    Mirrors .NET Program.cs / WebApplication.CreateBuilder pattern.
+    Initializes extensions, registers blueprints, and seeds the database.
 
     Args:
         config_name: Configuration to use (development/testing/production).
@@ -66,7 +66,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
 
 def _register_blueprints(app: Flask) -> None:
-    """Register all route blueprints — mirrors .NET MapControllerRoute."""
+    """Register Flask blueprints for URL routing."""
     from app.routes.home import home_bp
     from app.routes.students import students_bp
     from app.routes.courses import courses_bp
@@ -83,7 +83,7 @@ def _register_blueprints(app: Flask) -> None:
 
 
 def _init_database(app: Flask) -> None:
-    """Initialize database and seed data — mirrors .NET DbInitializer.InitializeAsync."""
+    """Create tables and seed initial data if the database is empty."""
     from app.models import import_all_models
     from app.seed import seed_database
 

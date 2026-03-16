@@ -1,4 +1,5 @@
-"""Course forms — mirrors .NET CourseViewModel."""
+"""Course form with title, credits, department, and image upload validation."""
+# .NET equivalent: ContosoUniversity.Web CourseViewModel
 
 from __future__ import annotations
 
@@ -9,7 +10,7 @@ from wtforms.validators import DataRequired, Length, NumberRange
 
 
 class CourseForm(FlaskForm):
-    """Form for creating/editing courses — mirrors .NET CourseViewModel."""
+    """Form for creating and editing courses with department selection and image upload."""
 
     course_id = IntegerField("Number", validators=[DataRequired()])
     title = StringField(

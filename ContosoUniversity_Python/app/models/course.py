@@ -1,4 +1,5 @@
-"""Course model — mirrors ContosoUniversity.Core.Models.Course."""
+"""Course model with department and enrollment relationships."""
+# .NET equivalent: ContosoUniversity.Core.Models.Course
 
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 class Course(db.Model):
     """Course entity with user-supplied primary key.
 
-    Note: CourseID is NOT auto-generated — mirrors .NET DatabaseGenerated(None).
+    Note: course_id is not auto-generated — it is explicitly assigned.
     """
 
     __tablename__ = "course"

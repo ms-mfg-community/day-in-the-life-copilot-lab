@@ -1,4 +1,5 @@
-"""Auth routes — mirrors ContosoUniversity.Web.Controllers.AccountController."""
+"""Authentication routes — sign-in, sign-out, and access denied."""
+# .NET equivalent: ContosoUniversity.Web.Controllers.AccountController
 
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 class DevUser(UserMixin):
-    """Development user — mirrors .NET LocalSignInAsync claims."""
+    """Development-only user with admin roles for local testing."""
 
     def __init__(self) -> None:
         self.id = "local-admin"
@@ -56,12 +57,12 @@ def sign_in():
 
 @auth_bp.route("/sign-out")
 def sign_out():
-    """Sign out — mirrors .NET SignOut."""
+    """Sign out the current user and redirect to home."""
     logout_user()
     return redirect(url_for("home.index"))
 
 
 @auth_bp.route("/access-denied")
 def access_denied():
-    """Access denied page — mirrors .NET AccessDenied."""
+    """Render the 403 access denied page."""
     return render_template("auth/access_denied.html"), 403

@@ -1,4 +1,5 @@
-"""Enrollment model — mirrors ContosoUniversity.Core.Models.Enrollment."""
+"""Enrollment model linking students to courses with optional grade."""
+# .NET equivalent: ContosoUniversity.Core.Models.Enrollment
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class Grade(enum.IntEnum):
-    """Grade enum — mirrors .NET Grade enum (A=0, B=1, C=2, D=3, F=4)."""
+    """Grade enum with integer values (A=0, B=1, C=2, D=3, F=4)."""
 
     A = 0
     B = 1
@@ -26,10 +27,7 @@ class Grade(enum.IntEnum):
 
 
 class Enrollment(db.Model):
-    """Enrollment entity — links students to courses with optional grade.
-
-    Mirrors .NET Enrollment class.
-    """
+    """Enrollment entity linking a student to a course with an optional grade."""
 
     __tablename__ = "enrollment"
 

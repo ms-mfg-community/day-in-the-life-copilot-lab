@@ -1,4 +1,5 @@
-"""Database seed data — mirrors ContosoUniversity.Infrastructure.Data.DbInitializer."""
+"""Database seed data for initial application setup."""
+# .NET equivalent: ContosoUniversity.Infrastructure.Data.DbInitializer
 
 from __future__ import annotations
 
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 def seed_database(db: SQLAlchemy) -> None:
     """Seed the database with initial data if empty.
 
-    Mirrors .NET DbInitializer.InitializeAsync — exact same data values.
-    Only seeds if no students exist (same check as .NET version).
+    Populates students, instructors, departments, courses, office assignments,
+    course assignments, and enrollments. Skips seeding if students already exist.
     """
     from app.models.student import Student
     from app.models.instructor import Instructor
@@ -24,14 +25,14 @@ def seed_database(db: SQLAlchemy) -> None:
     from app.models.office_assignment import OfficeAssignment
     from app.models.course_assignment import CourseAssignment
 
-    # Check if already seeded — mirrors: if (await context.Students.AnyAsync()) return;
+    # Check if already seeded
     if db.session.query(Student).first() is not None:
         logger.info("Database already contains data — skipping seeding")
         return
 
     logger.info("Starting database seeding...")
 
-    # Students — EXACT match to .NET seed data
+    # Students — sample university data
     students = [
         Student(first_name="Carson", last_name="Alexander", enrollment_date=date(2010, 9, 1)),
         Student(first_name="Meredith", last_name="Alonso", enrollment_date=date(2012, 9, 1)),
@@ -46,7 +47,7 @@ def seed_database(db: SQLAlchemy) -> None:
     db.session.flush()  # Get IDs assigned
     logger.info("Added %d students", len(students))
 
-    # Instructors — EXACT match
+    # Instructors
     instructors = [
         Instructor(first_name="Kim", last_name="Abercrombie", hire_date=date(1995, 3, 11)),
         Instructor(first_name="Fadi", last_name="Fakhouri", hire_date=date(2002, 7, 6)),
@@ -65,7 +66,7 @@ def seed_database(db: SQLAlchemy) -> None:
     def find_student(last_name: str) -> Student:
         return next(s for s in students if s.last_name == last_name)
 
-    # Departments — EXACT match
+    # Departments
     departments = [
         Department(
             name="English", budget=350000,
@@ -95,7 +96,7 @@ def seed_database(db: SQLAlchemy) -> None:
     def find_department(name: str) -> Department:
         return next(d for d in departments if d.name == name)
 
-    # Courses — EXACT match (note: CourseID is user-supplied, NOT auto-generated)
+    # Courses (note: course_id is user-supplied, not auto-generated)
     courses = [
         Course(course_id=1050, title="Chemistry", credits=3, department_id=find_department("Engineering").department_id),
         Course(course_id=4022, title="Microeconomics", credits=3, department_id=find_department("Economics").department_id),
@@ -112,7 +113,7 @@ def seed_database(db: SQLAlchemy) -> None:
     def find_course(title: str) -> Course:
         return next(c for c in courses if c.title == title)
 
-    # Office Assignments — EXACT match
+    # Office Assignments
     office_assignments = [
         OfficeAssignment(instructor_id=find_instructor("Fakhouri").id, location="Smith 17"),
         OfficeAssignment(instructor_id=find_instructor("Harui").id, location="Gowan 27"),
@@ -122,7 +123,7 @@ def seed_database(db: SQLAlchemy) -> None:
     db.session.flush()
     logger.info("Added %d office assignments", len(office_assignments))
 
-    # Course Assignments (Instructor ↔ Course) — EXACT match
+    # Course Assignments (Instructor ↔ Course)
     course_assignments = [
         CourseAssignment(course_id=find_course("Chemistry").course_id, instructor_id=find_instructor("Kapoor").id),
         CourseAssignment(course_id=find_course("Chemistry").course_id, instructor_id=find_instructor("Harui").id),
@@ -137,7 +138,7 @@ def seed_database(db: SQLAlchemy) -> None:
     db.session.flush()
     logger.info("Added %d course assignments", len(course_assignments))
 
-    # Enrollments — EXACT match (note: some have Grade=None)
+    # Enrollments (some have grade=None to represent in-progress)
     enrollments = [
         Enrollment(student_id=find_student("Alexander").id, course_id=find_course("Chemistry").course_id, grade=Grade.A),
         Enrollment(student_id=find_student("Alexander").id, course_id=find_course("Microeconomics").course_id, grade=Grade.C),

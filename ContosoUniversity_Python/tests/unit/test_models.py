@@ -1,4 +1,4 @@
-"""Model tests — mirrors ContosoUniversity.Tests model validation tests."""
+"""Unit tests for domain models, enums, and computed properties."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from app.models.enums import EntityOperation, StudentSortOption
 
 
 class TestGradeEnum:
-    """Tests for Grade enum — mirrors .NET Grade enum values."""
+    """Tests for Grade enum integer values."""
 
     def test_grade_a_has_value_zero(self) -> None:
         assert Grade.A == 0
@@ -18,7 +18,7 @@ class TestGradeEnum:
     def test_grade_f_has_value_four(self) -> None:
         assert Grade.F == 4
 
-    def test_grade_values_match_dotnet(self) -> None:
+    def test_grade_values_match_expected(self) -> None:
         expected = {"A": 0, "B": 1, "C": 2, "D": 3, "F": 4}
         for name, value in expected.items():
             assert Grade[name] == value
