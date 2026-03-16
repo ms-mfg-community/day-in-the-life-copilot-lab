@@ -7,6 +7,7 @@ import logging
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
+from sqlalchemy.orm import selectinload
 
 from app import db
 from app.forms.instructor_forms import InstructorForm
@@ -38,6 +39,7 @@ def _get_assigned_courses(instructor: Instructor) -> list[dict]:
 
 
 @instructors_bp.route("/")
+@login_required
 def index():
     """List instructors with drill-down to courses and enrollments."""
     selected_instructor_id = request.args.get("id", type=int)
@@ -45,6 +47,10 @@ def index():
 
     instructors = (
         db.session.query(Instructor)
+        .options(
+            selectinload(Instructor.course_assignments)
+            .selectinload(CourseAssignment.course)
+        )
         .order_by(Instructor.last_name)
         .all()
     )
@@ -73,6 +79,7 @@ def index():
 
 
 @instructors_bp.route("/details/<int:id>")
+@login_required
 def details(id: int):
     """Display instructor details by ID."""
     instructor = db.session.get(Instructor, id)

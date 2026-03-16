@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
+from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
@@ -25,8 +26,8 @@ class StudentSearchCriteria:
     """Immutable search criteria for student queries."""
 
     search_text: str | None = None
-    enrollment_date_from: object = None  # date | None
-    enrollment_date_to: object = None  # date | None
+    enrollment_date_from: date | None = None
+    enrollment_date_to: date | None = None
     sort_option: StudentSortOption = StudentSortOption.LAST_NAME_ASC
     page_number: int = 1
     page_size: int = 10

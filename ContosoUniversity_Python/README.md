@@ -77,7 +77,8 @@ erDiagram
 ```
 ContosoUniversity_Python/
 ├── config.py                 # Flask configuration (dev/test/prod)
-├── run.py                    # Application entry point
+├── run.py                    # Development server entry point
+├── wsgi.py                   # Production WSGI entry point (gunicorn/waitress)
 ├── pyproject.toml            # Project metadata and tool config
 ├── requirements.txt          # Production dependencies
 ├── requirements-dev.txt      # Development dependencies
@@ -132,6 +133,33 @@ ContosoUniversity_Python/
 | **Templates** | Jinja2 | HTML rendering with template inheritance |
 | **Testing** | pytest | Unit + integration tests with Flask test client |
 | **E2E** | Playwright | Browser-based end-to-end tests |
+
+## Architecture
+
+The application follows Flask best practices with a clean, modular structure:
+
+- **App Factory** (`create_app()`) — Configurable application creation for dev/test/prod
+- **Blueprints** — Each entity has its own route module under `app/routes/`
+- **SQLAlchemy 2.0** — Type-annotated models with `Mapped[]` columns and eager loading via `selectinload`
+- **WTForms** — Server-side validation with CSRF protection on all forms
+- **Flask-Login** — Session-based auth with automatic dev login and `@login_required` on all routes
+- **Error Handlers** — Custom 404/500 pages with database rollback on server errors
+- **Context Processors** — Template globals (e.g., `now()` for footer year)
+- **Session Cleanup** — `teardown_appcontext` ensures database sessions are properly closed
+
+### Production Deployment
+
+```bash
+# With gunicorn
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
+
+# With waitress (Windows)
+pip install waitress
+waitress-serve --port=8000 wsgi:app
+```
+
+> **Important:** Set `SECRET_KEY` environment variable in production. The app generates a random key per session in development, but production requires a persistent secret.
 
 ## Development
 

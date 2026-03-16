@@ -42,6 +42,12 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app.config.from_object(config_map[config_name])
 
+    # Configure logging
+    logging.basicConfig(
+        level=logging.DEBUG if app.debug else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
@@ -50,12 +56,25 @@ def create_app(config_name: str | None = None) -> Flask:
     login_manager.login_view = "auth.sign_in"
     login_manager.login_message_category = "info"
 
+    # Inject template globals
+    @app.context_processor
+    def inject_globals():
+        from datetime import datetime, timezone
+        return {"now": lambda: datetime.now(timezone.utc)}
+
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db.session.remove()
+
     # Ensure upload directory exists
     upload_path = Path(app.config.get("UPLOAD_FOLDER", "app/static/uploads"))
     upload_path.mkdir(parents=True, exist_ok=True)
 
     # Register blueprints (routes)
     _register_blueprints(app)
+
+    # Register error handlers
+    _register_error_handlers(app)
 
     # Initialize database
     with app.app_context():
@@ -80,6 +99,20 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(departments_bp, url_prefix="/departments")
     app.register_blueprint(instructors_bp, url_prefix="/instructors")
     app.register_blueprint(auth_bp, url_prefix="/account")
+
+
+def _register_error_handlers(app: Flask) -> None:
+    """Register HTTP error handlers with custom templates."""
+    from flask import render_template
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return render_template("errors/500.html"), 500
 
 
 def _init_database(app: Flask) -> None:

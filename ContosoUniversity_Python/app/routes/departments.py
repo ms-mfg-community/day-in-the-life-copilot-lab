@@ -7,6 +7,7 @@ import logging
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
+from sqlalchemy.orm import selectinload
 
 from app import db
 from app.forms.department_forms import DepartmentForm
@@ -34,7 +35,11 @@ def _populate_instructors(form: DepartmentForm, selected_id: int | None = None) 
 @login_required
 def index():
     """List all departments."""
-    departments = db.session.query(Department).all()
+    departments = (
+        db.session.query(Department)
+        .options(selectinload(Department.administrator))
+        .all()
+    )
     return render_template("departments/index.html", departments=departments)
 
 

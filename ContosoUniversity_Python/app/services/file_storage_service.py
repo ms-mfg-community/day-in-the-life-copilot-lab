@@ -33,6 +33,13 @@ def upload_file(file: FileStorage) -> tuple[bool, str | None, str | None]:
     if not allowed_file(file.filename):
         return False, None, f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
 
+    # Check file size
+    file.seek(0, 2)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > MAX_FILE_SIZE:
+        return False, None, f"File too large. Maximum size: {MAX_FILE_SIZE // (1024 * 1024)}MB"
+
     try:
         upload_folder = Path(current_app.config.get("UPLOAD_FOLDER", "app/static/uploads"))
         upload_folder.mkdir(parents=True, exist_ok=True)
