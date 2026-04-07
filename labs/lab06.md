@@ -311,6 +311,8 @@ $env:FILE_PATH = "ContosoUniversity.Web/Controllers/StudentsController.cs"
 
 > 💡 **Expected output:** You should see `✅ Build succeeded` in the Copilot output after editing a .cs file. If you see `⚠️ BUILD FAILED`, check the build errors. If you see nothing, verify permissions: `ls -la scripts/hooks/post-tool-use-dotnet-build.sh`.
 
+> 💡 **Verifying hooks in VS Code:** To confirm whether a hook fired and see its output, open the **Output** panel (`Cmd+Shift+U` / `Ctrl+Shift+U`), then select **"GitHub Copilot Chat Hooks"** from the dropdown menu. This shows execution logs for all hooks, including exit codes and any stdout/stderr output.
+
 ## 6.5 Final
 
 <details>
