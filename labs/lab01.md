@@ -57,7 +57,7 @@ Once installed, plugins are available in your Copilot conversations. Invoke them
 copilot
 
 # Then in the conversation, reference the plugin:
-> @plugin-name help me with my task
+> /plugin-name help me with my task
 ```
 
 > 💡 **Key insight:** Marketplace plugins give you a head start for common workflows — but they're just the beginning. In Lab 03, you'll learn to **create your own agents** tailored to your team's specific needs. Think of marketplace plugins as patterns you can study and customize.
