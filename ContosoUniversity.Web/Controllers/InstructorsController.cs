@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Authorization;
 using ContosoUniversity.Core.Interfaces;
 using ContosoUniversity.Core.Models;
 using ContosoUniversity.Web.Models.SchoolViewModels;
-using ContosoUniversity.Web.Extensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ContosoUniversity.Web.Controllers
 {
@@ -55,9 +48,8 @@ namespace ContosoUniversity.Web.Controllers
             if (courseID != null)
             {
                 ViewData["CourseID"] = courseID.Value;
-                viewModel.Enrollments = viewModel.Courses
-                    .Where(x => x.CourseID == courseID)
-                    .Single()
+                viewModel.Enrollments = (viewModel.Courses ?? Enumerable.Empty<Course>())
+                    .Single(x => x.CourseID == courseID)
                     .Enrollments;
             }
 
