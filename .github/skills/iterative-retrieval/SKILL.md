@@ -1,7 +1,20 @@
 ---
 name: iterative-retrieval
 description: Pattern for progressively refining context retrieval to solve the subagent context problem in multi-agent workflows.
+deprecated: true
+deprecated_since: "2026-04"
+redirect: ../continuous-learning-v2/SKILL.md
+see_also:
+  - docs/memory-decision-tree.md
+  - .github/skills/continuous-learning-v2/SKILL.md
 ---
+
+> ⚠️ **Deprecated — kept for teaching context.** The iterative-retrieval
+> pattern is now folded into the v2 instinct loop: subagents request
+> additional context as instincts fire, rather than discovering it through
+> ad-hoc retrieval rounds. Use
+> [`continuous-learning-v2`](../continuous-learning-v2/SKILL.md) and the
+> [memory decision tree](../../../docs/memory-decision-tree.md) instead.
 
 # Iterative Retrieval Pattern
 

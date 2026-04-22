@@ -1,7 +1,20 @@
 ---
 name: strategic-compact
 description: Suggests manual context compaction at logical intervals to preserve context through task phases rather than arbitrary auto-compaction.
+deprecated: true
+deprecated_since: "2026-04"
+redirect: ../continuous-learning-v2/SKILL.md
+see_also:
+  - docs/memory-decision-tree.md
+  - .github/skills/continuous-learning-v2/SKILL.md
 ---
+
+> ⚠️ **Deprecated — kept for teaching context.** Compaction guidance now
+> lives inside the v2 instinct loop: an instinct fires "compact before
+> phase change" rather than the user manually invoking a separate skill.
+> See [`continuous-learning-v2`](../continuous-learning-v2/SKILL.md) and
+> the [memory decision tree](../../../docs/memory-decision-tree.md) for the
+> consolidated story.
 
 # Strategic Compact Skill
 

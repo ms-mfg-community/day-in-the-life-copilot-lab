@@ -1,7 +1,23 @@
 ---
 name: continuous-learning
 description: Automatically extract reusable patterns from coding sessions and save them as learned skills for future use.
+deprecated: true
+deprecated_since: "2026-04"
+redirect: ../continuous-learning-v2/SKILL.md
+see_also:
+  - docs/memory-decision-tree.md
+  - .github/skills/continuous-learning-v2/SKILL.md
 ---
+
+> ⚠️ **Deprecated — kept for teaching context.** This v1 skill ran a single
+> `sessionEnd` hook and emitted full skills directly. It is superseded by
+> [`continuous-learning-v2`](../continuous-learning-v2/SKILL.md), which
+> observes every tool call, captures atomic *instincts* with a confidence
+> score, and only promotes them into skills/commands/agents via `/evolve`.
+> See [`docs/memory-decision-tree.md`](../../../docs/memory-decision-tree.md)
+> for the full picture of when to reach for which surface.
+>
+> Read on for the historical design — do not enable v1 alongside v2.
 
 # Continuous Learning Skill
 
