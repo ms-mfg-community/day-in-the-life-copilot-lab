@@ -578,12 +578,13 @@ day-in-the-life-copilot-lab/
 
 ## GitHub Agentic Workflows
 
-This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw) — author GitHub Actions using Markdown with YAML frontmatter. Two workflows are included:
+This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw) — author GitHub Actions using Markdown with YAML frontmatter. Three workflows are included:
 
 | Workflow | Trigger | What It Does |
 |----------|---------|-------------|
 | **PRD Generation** | Feature branch created | PM agent generates a Product Requirements Document |
 | **Code Review** | Pull request opened | Code review agent provides automated feedback |
+| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the seven freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
 
 ---
 
