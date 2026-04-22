@@ -29,7 +29,7 @@
     },
     "minimum_cli_version": {
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$",
       "description": "Floor Copilot CLI version. Pulled from docs/_meta/registry.yaml."
     },
     "homepage": { "type": "string" },

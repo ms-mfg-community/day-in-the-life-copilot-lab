@@ -7,7 +7,7 @@ version: 0.1.0
 description: >-
   Enterprise Copilot plugin starter — one agent, one skill, one hook, and a
   signed release workflow. Clone, rename, publish to a private org registry.
-minimum_cli_version: "1.0.35"
+minimum_cli_version: "1.0.35-4"
 homepage: "https://github.com/contoso-internal/contoso-copilot-plugins"
 license: MIT
 codeowners:
