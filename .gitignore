@@ -45,3 +45,6 @@ docs/.github/*
 # Vitest
 .vitest-cache/
 coverage/
+
+# Lab 12 — locally-generated Fabric simulator fixtures (Parquet)
+labs/fixtures/lab12/*.parquet
