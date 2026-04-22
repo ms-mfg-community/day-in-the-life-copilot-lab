@@ -1,0 +1,66 @@
+# Day-in-the-Life Copilot Lab — Content Registry
+#
+# Single source of truth for versions, services, and pacing that appear across
+# labs, workflows, and CI. The Phase 4 weekly audit agent reads this file,
+# compares against upstream sources, and opens a PR when drift is detected.
+#
+# Rules:
+#   - Keep keys stable; the audit workflow matches on them.
+#   - Labs that would otherwise hardcode a version MUST link to this file
+#     (see tests/content-currency/registry-consumed.test.ts).
+#   - Never place secrets here.
+
+schema_version: 1
+
+copilot_cli_version_floor: "1.0.35"
+
+gh_aw_schema_version: "2026.04"
+
+mcp_servers:
+  - name: context7
+    transport: stdio
+    pin: latest
+  - name: memory
+    transport: stdio
+    pin: latest
+  - name: sequential-thinking
+    transport: stdio
+    pin: latest
+  - name: microsoft-learn
+    transport: http
+    pin: latest
+  - name: workiq
+    transport: stdio
+    pin: latest
+
+models:
+  default: auto
+  cheap:
+    - claude-haiku-4.5
+    - gpt-5-mini
+  standard:
+    - claude-sonnet-4.6
+    - gpt-5.2
+  premium:
+    - claude-opus-4.7
+    - claude-opus-4.6
+    - gpt-5.3-codex
+
+labs:
+  lab01:
+    title: "Exploring Copilot Configuration"
+    pace_presenter_minutes: 4
+    pace_self_minutes: 10
+  lab05:
+    title: "MCP Server Configuration"
+    pace_presenter_minutes: 3
+    pace_self_minutes: 15
+  lab10:
+    title: "Context, Memory & Learning"
+    pace_presenter_minutes: 5
+    pace_self_minutes: 20
+
+audit:
+  # Phase 4 weekly-audit workflow thresholds.
+  draft_pr_if_changes_exceed: 25
+  broken_link_retries: 2
