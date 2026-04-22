@@ -12,7 +12,7 @@
 
 schema_version: 1
 
-copilot_cli_version_floor: "1.0.35"
+copilot_cli_version_floor: "1.0.35-4"
 
 gh_aw_schema_version: "2026.04"
 
