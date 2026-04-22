@@ -1,0 +1,19 @@
+{
+  "name": "day-in-the-life-copilot-lab",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lab harness for Day-in-the-Life Copilot Lab. Hosts Vitest suites that gate doc + content changes.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:lab-structure": "vitest run tests/lab-structure",
+    "test:content-currency": "vitest run tests/content-currency"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "vitest": "^2.1.9"
+  }
+}
