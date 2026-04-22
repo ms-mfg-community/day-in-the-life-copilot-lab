@@ -476,8 +476,9 @@ erDiagram
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
 | [Lab 10](labs/lab10.md) | Reindex, Session Management & Memory | Reindex, Memory MCP, continuous learning, handoffs |
+| [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 
-**Total: ~3 hours** (10 labs — self-paced or presenter-led)
+**Total: ~3.5 hours** (11 labs — self-paced or presenter-led)
 
 ---
 

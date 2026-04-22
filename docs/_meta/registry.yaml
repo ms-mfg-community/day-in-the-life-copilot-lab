@@ -59,6 +59,10 @@ labs:
     title: "Context, Memory & Learning"
     pace_presenter_minutes: 5
     pace_self_minutes: 20
+  lab11:
+    title: "Building & Distributing a Copilot Plugin (Enterprise Marketplace Pattern)"
+    pace_presenter_minutes: 6
+    pace_self_minutes: 25
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.
