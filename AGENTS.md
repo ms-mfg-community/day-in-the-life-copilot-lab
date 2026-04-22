@@ -19,6 +19,10 @@ dotnet build dotnet/ContosoUniversity.sln
 dotnet test
 ```
 
+## Automated Content Audit
+
+A weekly gh-aw workflow (`.github/workflows/weekly-content-audit.md`) runs every Sunday at 05:00 UTC. It reads `docs/_meta/registry.yaml`, runs the seven freshness checks (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing), and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` containing safe registry/lab updates plus a generated `docs/_meta/audit-report.md`. The PR is auto-labeled (`automated`, `content-audit`, `needs-review`), reviewers are assigned via `.github/CODEOWNERS`, and the PR is opened as a draft when changes exceed `audit.draft_pr_if_changes_exceed`. Future agents: update the registry instead of hardcoding versions in labs.
+
 ## Agent Suite
 
 ### Azure Specialists
