@@ -49,6 +49,27 @@ Most labs (01–07, 10) work with **any Copilot license**. A few labs require sp
 | [**Podman**](#option-c--vs-code--podman) | ~15 min | Enterprise (Docker restricted) | ✅ Supported |
 | [**Manual**](#option-d--manual-setup) | ~20 min | Prefer direct install | Advanced |
 
+### Pick a stack: .NET track or Node track
+
+The lab ships with **two parallel implementations** of Contoso University so you can practice the
+Copilot agentic surface against the stack you actually work in:
+
+| Track | Code lives in | Run tests | When to pick |
+|-------|---------------|-----------|--------------|
+| **.NET** (ASP.NET Core 8 + EF Core + xUnit) | [`dotnet/`](dotnet/) | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* | C# / ASP.NET shops, Azure App Service / Functions, Bicep deploys |
+| **Node** (Fastify 5 + Drizzle ORM + Vitest + Playwright) | [`node/`](node/) | `make test-node` *(or `pnpm -C node test`)* | TypeScript / Node shops, Container Apps, edge / serverless TS |
+
+Both tracks share the same domain (Student / Course / Instructor / Enrollment), the same lab
+narrative, and the same `.github/` Copilot configuration. Lab bodies are language-agnostic;
+each lab links a per-track appendix under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
+and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands.
+
+Run **both** tracks with a single command:
+
+```bash
+make test-all
+```
+
 ---
 
 ### Option A — GitHub Codespaces
