@@ -1,3 +1,12 @@
+---
+title: "Skills & Prompts"
+lab_number: 4
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 4 — Skills & Prompts
 
 In this lab you will create a new skill and prompt template for .NET testing.

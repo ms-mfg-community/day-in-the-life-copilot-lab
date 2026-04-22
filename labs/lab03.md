@@ -1,3 +1,12 @@
+---
+title: "Creating a .NET Development Agent"
+lab_number: 3
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 3 — Creating a .NET Development Agent
 
 In this lab you will create a custom agent specialized for .NET development with ContosoUniversity.

@@ -1,3 +1,12 @@
+---
+title: "GitHub Agentic Workflows: PRD Generation"
+lab_number: 8
+pace:
+  presenter_minutes: 5
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 8 — GitHub Agentic Workflows: PRD Generation
 
 In this lab you will explore how GitHub Agentic Workflows (gh-aw) automate document generation. You'll examine a workflow that generates a Product Requirements Document (PRD) when a feature branch is created.

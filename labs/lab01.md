@@ -1,3 +1,12 @@
+---
+title: "Exploring Copilot Configuration"
+lab_number: 1
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 10
+registry: docs/_meta/registry.yaml
+---
+
 # 1 — Exploring Copilot Configuration
 
 In this lab you will discover and understand the Copilot configuration files that ship with this repository.

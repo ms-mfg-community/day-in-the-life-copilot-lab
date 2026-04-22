@@ -1,3 +1,12 @@
+---
+title: "Custom Instructions & AGENTS.md"
+lab_number: 2
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 2 — Custom Instructions & AGENTS.md
 
 In this lab you will modify custom instructions and AGENTS.md to customize Copilot behavior.

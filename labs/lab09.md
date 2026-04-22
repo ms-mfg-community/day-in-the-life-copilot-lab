@@ -1,3 +1,12 @@
+---
+title: "Copilot Coding Agent & Code Review"
+lab_number: 9
+pace:
+  presenter_minutes: 5
+  self_paced_minutes: 20
+registry: docs/_meta/registry.yaml
+---
+
 # 9 — Copilot Coding Agent & Code Review
 
 In this lab you will chain two platform-level agentic features: the **Copilot Coding Agent** to implement a feature from a GitHub Issue, and **Copilot Code Review** to automatically review the resulting pull request. You won't write a single line of code — you'll write an issue, and two AI agents handle the rest.

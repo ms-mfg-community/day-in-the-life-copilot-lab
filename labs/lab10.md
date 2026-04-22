@@ -1,3 +1,12 @@
+---
+title: "Reindex, Session Management, Memory & Advanced Features"
+lab_number: 10
+pace:
+  presenter_minutes: 5
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 10 — Reindex, Session Management, Memory & Advanced Features
 
 In this lab you will learn how Copilot understands your codebase (reindex), when you still need cross-session persistence (Memory MCP), session handoff techniques, and advanced Copilot CLI capabilities. This is the capstone — it ties everything together.

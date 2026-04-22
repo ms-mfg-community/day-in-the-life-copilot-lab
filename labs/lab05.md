@@ -1,3 +1,12 @@
+---
+title: "MCP Server Configuration"
+lab_number: 5
+pace:
+  presenter_minutes: 3
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 5 — MCP Server Configuration
 
 In this lab you will explore and configure Model Context Protocol (MCP) servers.

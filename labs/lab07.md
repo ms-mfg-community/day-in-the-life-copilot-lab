@@ -1,3 +1,12 @@
+---
+title: "Multi-Agent Orchestration"
+lab_number: 7
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 20
+registry: docs/_meta/registry.yaml
+---
+
 # 7 — Multi-Agent Orchestration
 
 In this lab you will create an orchestrator agent that coordinates a development workflow.

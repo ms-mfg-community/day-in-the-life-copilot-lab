@@ -1,3 +1,12 @@
+---
+title: "Hooks"
+lab_number: 6
+pace:
+  presenter_minutes: 3
+  self_paced_minutes: 10
+registry: docs/_meta/registry.yaml
+---
+
 # 6 — Hooks
 
 In this lab you will explore the hook system and create a new hook for .NET build verification.
