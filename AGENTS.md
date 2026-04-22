@@ -31,7 +31,7 @@ A weekly gh-aw workflow (`.github/workflows/weekly-content-audit.md`) runs every
 |-------|----------|--------|
 | Infrastructure Architect | **Stratus** | Bicep IaC, Landing Zones, WAF |
 | Agent Development | **Nexus** | Agent Framework SDK, MCP |
-| Fabric Data Architect | **Prism** | OneLake, medallion patterns |
+| Fabric Data Architect | **Prism** | OneLake, medallion patterns ([Lab 12](labs/lab12.md) — Fabric MCP + offline Parquet path) |
 | Foundry Platform Engineer | **Forge** | Model catalog, Prompt Flow |
 | SDET & Quality Engineer | **Sentinel** | Testing, chaos engineering |
 | Suite Orchestrator | **Conductor** | Task decomposition, coordination |
