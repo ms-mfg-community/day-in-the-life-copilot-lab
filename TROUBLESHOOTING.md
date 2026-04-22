@@ -4,6 +4,176 @@ Quick reference for handling common issues during the demo.
 
 ---
 
+## 🟢 Per-Lab & Per-Track Issues (2026 modernization)
+
+These cover the labs added in Phases 1, 5, 6, and 7 plus the Node parity track.
+
+### Issue: Node track — `pnpm install` fails or wrong Node version
+
+**Symptoms:**
+- `ERR_PNPM_UNSUPPORTED_ENGINE`
+- `better-sqlite3` build errors (node-gyp / Python missing)
+- Drizzle migrations don't apply
+
+**Quick Fix:**
+```bash
+# Confirm Node 18+ and pnpm
+node --version          # Should be >= 18
+corepack enable && corepack prepare pnpm@latest --activate
+
+# Reinstall from a clean lockfile
+cd node
+rm -rf node_modules
+pnpm install --frozen-lockfile
+
+# Re-create the in-memory db (no real migrations — drizzle drives schema directly)
+pnpm test
+```
+
+**If Fastify port 3000 is in use:**
+```bash
+PORT=3001 pnpm -C node dev
+```
+
+**Time:** 3 minutes
+
+---
+
+### Issue: Lab 11 — plugin registry / `COPILOT_PLUGIN_REGISTRIES` not picked up
+
+**Symptoms:**
+- `/plugin install owner/repo` returns "plugin not found"
+- The private registry repo is not enumerated
+
+**Quick Fix:**
+```bash
+# Confirm the env var is set in the shell where you launch copilot
+echo "$COPILOT_PLUGIN_REGISTRIES"     # bash
+echo $env:COPILOT_PLUGIN_REGISTRIES   # pwsh
+
+# Format: comma-separated owner/repo refs (no spaces)
+export COPILOT_PLUGIN_REGISTRIES="my-org/copilot-registry,my-org/internal-plugins"
+
+# Re-launch copilot in the same shell
+copilot
+```
+
+**Allowlist policy:** if your org enforces an allowlist, the plugin's `name`
+field in `plugin.json` must match an entry in
+`mcp-configs/plugin-allowlist.json` for the install to succeed. See Lab 11 §11.4.
+
+**Time:** 3 minutes
+
+---
+
+### Issue: Lab 12 — Fabric MCP authentication fails in Codespaces
+
+**Symptoms:**
+- `fabric-mcp` server starts but `/list lakehouses` returns 401/403
+- No browser available to complete the device-code login
+
+**Fallback (offline simulator):** Lab 12 ships an offline path using a local
+Parquet fixture so the lab is completable without Fabric credentials.
+
+```bash
+# In the repo root
+export FABRIC_MCP_MODE=offline
+export FABRIC_MCP_FIXTURE=labs/appendices/fabric/fixtures/sales.parquet
+
+# Re-launch copilot; the fabric-mcp config falls through to the local file.
+```
+
+The lakehouse enumeration, notebook editing, and inline-chat steps work
+identically against the simulator. See Lab 12 §12.3 for the full fallback flow.
+
+**If you do have Fabric access:** prefer the device-code flow in a local VS
+Code window (not Codespaces) and copy the resulting token into the Codespace
+as a Codespaces secret named `FABRIC_TOKEN`.
+
+**Time:** 5 minutes
+
+---
+
+### Issue: Lab 14 — tmux pane targeting / orchestrator scripts misbehave
+
+**Symptoms:**
+- `scripts/orchestrator/handoff.sh` writes to the wrong pane
+- `clear-context.sh` clears the orchestrator pane instead of the worker
+- `tmux-start.sh` errors "session already exists"
+
+**Quick Fix:**
+```bash
+# 1) Check the current session name and pane indexes
+tmux ls
+tmux list-panes -t <session> -F "#{pane_index}: #{pane_current_command}"
+
+# 2) Re-bootstrap idempotently — tmux-start.sh is safe to re-run
+bash scripts/orchestrator/tmux-start.sh
+
+# 3) Pass an explicit pane to handoff/clear if auto-detection picks the wrong one
+bash scripts/orchestrator/handoff.sh --pane orchestrator:1.1
+bash scripts/orchestrator/clear-context.sh --pane orchestrator:1.1
+```
+
+**Pre-reqs reminder for `clear-context.sh`:** the worker pane must currently be
+running an interactive `copilot` session — the script sends `/clear` followed
+by `Enter`. If the pane is at a shell prompt, the script noops with a warning.
+
+**Schema mismatch on `handoff.sh`:** the script writes a `session.md` at the
+project root with the YAML front-matter expected by Lab 14. If you customized
+the schema, copy `scripts/orchestrator/handoff.sh` into `scripts/orchestrator/handoff-custom.sh`
+rather than editing the shipped script — Lab 14 tests assert the original shape.
+
+**Time:** 4 minutes
+
+---
+
+### Issue: Phase 7 — `/cost-check` reports "session store empty"
+
+**Symptoms:**
+- The `/cost-check` prompt runs but says it cannot find usage events
+- `events.usage_input_tokens` / `usage_output_tokens` SQL example returns 0 rows
+
+**Cause:** `/cost-check` queries the per-session events table populated by the
+Copilot CLI runtime. A brand-new session has no events until the first
+assistant turn completes.
+
+**Fix:**
+```bash
+# Run any small task first so the session store has at least one event
+copilot -p "Hello, capabilities check"
+
+# Then re-invoke the prompt
+/cost-check
+```
+
+If the SQL example in `.github/prompts/cost-check.prompt.md` errors with
+"no such column", the runtime schema has shifted — the prompt body is a
+template, not a guarantee. See `docs/token-and-model-guide.md` for the
+schema-agnostic fallback (the Cost Budget sidebars in labs 07/10/13/14
+provide order-of-magnitude numbers).
+
+**Time:** 1 minute
+
+---
+
+## 🟡 Known Limitations (Carry-forwards — surfaced, not silently fixed)
+
+These are non-blocking issues tracked across phases. They are documented here
+so learners hit them with eyes open; the weekly content audit (Phase 4) will
+sweep them on its next pass.
+
+| Carry-forward | Where | Workaround |
+|---------------|-------|-----------|
+| `safe-outputs.add-pr-comment` typo | `.github/workflows/code-review.md` (Phase 4) | The gh-aw compiler accepts both forms; rename on next workflow edit. |
+| `CODEOWNERS` placeholder team | `.github/CODEOWNERS` references `@ms-mfg-community/maintainers` | Replace with a real team before enabling required reviews. |
+| `nbdime` install not version-pinned | Lab 12 §12.5.1 | Pin to `nbdime==4.x` in your devcontainer if reproducibility matters. |
+| Top-level `prompts/` blocked | Repo convention is `.github/prompts/` (enforced by `pre-tool-use-doc-blocker`) | Keep prompts under `.github/prompts/`; the blocker is intentional. |
+| `MODEL_IDS` test list hand-maintained | `tests/content-currency/cli-commands-current.test.ts` | Update when GitHub publishes a new model tier. |
+| Cost Budget numbers are order-of-magnitude | Labs 07, 10, 13, 14 sidebars | Treat as guidance, not SLA. Re-run `/cost-check` for actuals. |
+
+---
+
 ## 🔴 Critical Issues (Demo Blockers)
 
 ### Issue: Copilot CLI Not Authenticated
