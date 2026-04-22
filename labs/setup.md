@@ -18,7 +18,11 @@
 > teaches the enterprise plugin marketplace pattern; [Lab 12](lab12.md)
 > wires up the **Fabric MCP** for both Copilot CLI and VS Code and ships
 > an **offline simulator path** (local Parquet fixture) so Codespaces
-> learners can complete it without Fabric auth.
+> learners can complete it without Fabric auth; [Lab 13](lab13.md)
+> introduces **A2A / ACP** orchestration with a two-agent
+> implementer + critic walkthrough on the Node app, including the three
+> classic failure modes (looping, context drift, hand-off ambiguity)
+> and their mitigations.
 
 ---
 
