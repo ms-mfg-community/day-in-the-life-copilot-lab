@@ -22,7 +22,7 @@ try {
 if (-not $FilePath) { exit 0 }
 
 # Allow documentation in these paths
-$AllowedPatterns = @("docs/", ".github/", "labs/", "solutions/", "AGENTS.md", "README.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md")
+$AllowedPatterns = @("docs/", ".github/", "labs/", "solutions/", "plugin-template/", "AGENTS.md", "README.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md", ".copilot/session-state/", ".orchestrator/")
 
 if ($FilePath -match '\.(md|txt)$') {
     $IsAllowed = $false

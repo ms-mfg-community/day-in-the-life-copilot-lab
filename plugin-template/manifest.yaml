@@ -1,0 +1,29 @@
+# Copilot plugin manifest — enterprise template
+# See plugin-template/README.md for field-by-field guidance.
+# The minimum_cli_version field MUST match docs/_meta/registry.yaml `copilot_cli_version_floor`.
+
+name: contoso-copilot-starter
+version: 0.1.0
+description: >-
+  Enterprise Copilot plugin starter — one agent, one skill, one hook, and a
+  signed release workflow. Clone, rename, publish to a private org registry.
+minimum_cli_version: "1.0.35"
+homepage: "https://github.com/contoso-internal/contoso-copilot-plugins"
+license: MIT
+codeowners:
+  - "@contoso-internal/copilot-platform"
+
+entrypoints:
+  agents:
+    - agents/example-agent.md
+  skills:
+    - skills/example-skill/SKILL.md
+  hooks:
+    - hooks/example-hook.sh
+  prompts:
+    - prompts/example.prompt.md
+
+mcp_servers:
+  - name: context7
+    transport: stdio
+    pin: latest
