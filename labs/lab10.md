@@ -23,6 +23,21 @@ either context bloats or knowledge evaporates.
 
 > ⏱️ Presenter pace: 5 minutes | Self-paced: 20 minutes
 
+> 💰 **Cost Budget**
+> - Expected token footprint: ~25k in / ~8k out across the four
+>   memory layers. Layer 3 (Memory MCP) dominates because the
+>   knowledge-graph round-trips are tool-heavy.
+> - Cheaper alternative: drive Layer 1 (session context) and
+>   Layer 2 (project memory) exercises on `claude-haiku-4.5` —
+>   they're mechanical file edits. Stay on `auto` (or upshift to
+>   `claude-opus-4.6`) only for the Layer 4 instinct-evolution
+>   discussion in §10.4.
+> - Compaction trigger: after §10.2 (project memory done), the
+>   AGENTS.md / instructions diffs are re-read every turn — run
+>   `strategic-compact` before starting §10.3 so Layer 3 begins
+>   with a clean slate.
+> - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
+
 References:
 - [Repository indexing](https://docs.github.com/en/copilot/concepts/context/repository-indexing)
 - [Memory MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)

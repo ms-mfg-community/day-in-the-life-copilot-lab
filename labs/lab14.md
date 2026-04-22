@@ -19,6 +19,27 @@ without losing the plot.
 
 > ⏱️ Presenter pace: 15 minutes | Self-paced: 45 minutes
 
+> 💰 **Cost Budget**
+> - Expected token footprint: ~80k in / ~25k out across a full
+>   plan → implement → handoff → clear → qa → clear cycle.
+>   That's the highest budget in the lab suite because the
+>   orchestrator pane stays alive across many phases.
+> - Cheaper alternative: pin the **orchestrator pane** to
+>   `claude-opus-4.6` (it does the heavy judging once per phase)
+>   and keep **worker panes** on `auto` so they downshift to
+>   `claude-haiku-4.5` / `gpt-5-mini` for the mechanical
+>   implement / test phases. Reserve `claude-opus-4.7` for the
+>   one-off architecture phase only.
+> - Compaction trigger: this is the canonical home for the
+>   discipline — every worker pane runs
+>   `scripts/orchestrator/clear-context.sh` after each phase, and
+>   the orchestrator runs `strategic-compact` once `plan.md`
+>   carries more than two completed phases. The whole pattern is
+>   designed to keep per-turn context bounded.
+> - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
+>   and the `/cost-check` prompt to verify your footprint between
+>   phases.
+
 > 🪞 **Meta callout — this lab teaches the pattern that built this lab.**
 > The repo you are reading was modernized using exactly the loop below.
 > The hand-off contracts under `.orchestrator/session.md` (see Lab 13

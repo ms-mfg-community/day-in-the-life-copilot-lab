@@ -18,6 +18,22 @@ failure modes every A2A system runs into in production.
 
 > ⏱️ Presenter pace: 10 minutes | Self-paced: 35 minutes
 
+> 💰 **Cost Budget**
+> - Expected token footprint: ~50k in / ~15k out for the full
+>   two-agent loop. The implementer + critic exchange is the
+>   single most expensive pattern in the lab suite because each
+>   peer re-reads the shared workspace every turn.
+> - Cheaper alternative: keep the **critic** on `claude-haiku-4.5`
+>   (criticism is mostly pattern-matching against a rubric) and
+>   reserve `claude-opus-4.6` for the **implementer** when the
+>   task is non-trivial. For the warm-up two-agent task in
+>   Part A, both peers can run on `gpt-5-mini` to learn the
+>   protocol without paying for premium reasoning.
+> - Compaction trigger: cap each peer at the turn limit you set
+>   in §13's failure-modes section, then `/clear` between Part A
+>   (warm-up) and Part B (failure-mode rehearsal).
+> - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
+
 > 🛤️ **Choose your path** before you start:
 >
 > - **Live ACP path** — your local Copilot CLI is at the floor pinned in

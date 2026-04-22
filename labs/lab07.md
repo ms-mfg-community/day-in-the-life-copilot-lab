@@ -13,6 +13,20 @@ In this lab you will create an orchestrator agent that coordinates a development
 
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 20 minutes
 
+> 💰 **Cost Budget**
+> - Expected token footprint: ~30k in / ~10k out for the full lab.
+>   Most of the spend is the orchestrator agent re-reading agent
+>   definitions on every delegation.
+> - Cheaper alternative: keep the top-level chat on `auto`, but pin
+>   any `task` tool sub-agent dispatches in §7.4 to
+>   `claude-haiku-4.5` for the simple delegations and reserve
+>   `claude-opus-4.6` (the repo default) only for the planner /
+>   reviewer roles.
+> - Compaction trigger: after §7.3 (orchestrator built and tested),
+>   run `/clear` before §7.4's multi-agent rehearsal so you don't
+>   re-send the agent-definition diffs every turn.
+> - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
+
 References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Agent handoffs](https://docs.github.com/en/copilot/reference/custom-agents-configuration#handoffs)
