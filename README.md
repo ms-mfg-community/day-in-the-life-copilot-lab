@@ -538,12 +538,16 @@ Version floors, model tiers, and MCP pins live in
 
 | Task | Command |
 |------|---------|
-| Build solution | `dotnet build dotnet/ContosoUniversity.sln` |
-| Run tests | `dotnet test dotnet/ContosoUniversity.sln` |
-| Run web app | `dotnet run --project dotnet/ContosoUniversity.Web` |
-| Run specific test | `dotnet test --filter "FullyQualifiedName~TestName"` |
+| Run **both tracks** + lab/structure tests | `make test-all` |
+| .NET unit/integration tests | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* |
+| Node unit/integration tests | `make test-node` *(or `pnpm -C node test`)* |
+| Root vitest (lab structure, build, devcontainer) | `make lint-labs` *(or `npm test`)* |
+| Build .NET solution | `dotnet build dotnet/ContosoUniversity.sln` |
+| Run .NET web app | `dotnet run --project dotnet/ContosoUniversity.Web` |
+| Run Node web app | `pnpm -C node dev` |
+| Compile gh-aw workflows locally | `gh aw compile` |
 | Check Copilot CLI | `copilot --version` |
-| Install gh-aw | `gh extension install github/gh-aw` |
+| Install gh-aw extension | `gh extension install github/gh-aw` |
 
 ---
 
@@ -552,28 +556,41 @@ Version floors, model tiers, and MCP pins live in
 ```
 day-in-the-life-copilot-lab/
 ├── .github/
-│   ├── agents/                    # 2 agent profiles — more created during labs
-│   ├── skills/                    # 10 agent skills (SKILL.md)
-│   ├── prompts/                   # 21 prompt templates (.prompt.md)
+│   ├── agents/                    # Agent profiles (more created during labs)
+│   ├── skills/                    # Agent skills (SKILL.md)
+│   ├── prompts/                   # Prompt templates (.prompt.md, incl. /cost-check)
 │   ├── hooks/                     # Hook configuration (default.json)
-│   ├── instructions/              # 3 path-specific instructions (.instructions.md)
+│   ├── instructions/              # Path-specific instructions (.instructions.md)
 │   ├── copilot-instructions.md    # Repository-wide instructions
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
 │   └── mcp-config.json            # MCP server configuration (5 servers)
-├── dotnet/                        # .NET solution and projects
+├── dotnet/                        # .NET track — ContosoUniversity solution
 │   ├── ContosoUniversity.sln
 │   ├── ContosoUniversity.Core/        # Domain models and interfaces
 │   ├── ContosoUniversity.Infrastructure/  # Data access and services
 │   ├── ContosoUniversity.Web/         # ASP.NET MVC web application
 │   ├── ContosoUniversity.Tests/       # xUnit unit and integration tests
 │   └── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
-├── labs/                          # Hands-on lab modules (10 labs)
-├── solutions/                     # Reference solutions for each lab
-├── docs/                          # Research and reference documentation
-├── scripts/hooks/                 # Hook shell scripts (Bash + PowerShell)
+├── node/                          # Node track — Fastify + Drizzle + Vitest
+│   ├── core/                          # Domain entities + repo interfaces
+│   ├── infra/                         # Drizzle schema, repos, in-memory db, seed
+│   ├── web/                           # Fastify app, routes, SSR views
+│   └── tests/                         # Unit + integration tests (Vitest)
+├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
+├── labs/                          # 14 hands-on lab modules + per-track appendices
+├── solutions/                     # Reference solutions
+├── docs/                          # Reference docs + token & model guide
+│   ├── _meta/                         # registry.yaml — single source of truth for versions
+│   └── token-and-model-guide.md       # Phase 7 cost / model-selection mental model
+├── scripts/
+│   ├── hooks/                         # Hook shell scripts (Bash + PowerShell)
+│   └── orchestrator/                  # Lab 14 — tmux-start, handoff, clear-context
 ├── mcp-configs/                   # MCP server reference configurations
+├── tests/                         # Root vitest suite (lab structure, build, meta)
+├── Makefile                       # `make test-all` orchestrates both tracks
 ├── AGENTS.md                      # Repository-level agent context
+├── CHANGELOG.md                   # Keep-a-Changelog release notes
 └── TROUBLESHOOTING.md             # Common issues and fixes
 ```
 
@@ -596,7 +613,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 10 hands-on labs — start here |
+| [Lab Modules](labs/) | 14 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |
