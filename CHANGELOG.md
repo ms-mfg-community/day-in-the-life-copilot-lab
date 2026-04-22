@@ -61,7 +61,10 @@ token-conscious model selection, and a complete TDD/meta-test discipline.
   `labs/appendices/node/` — labs themselves stay language-agnostic.
 - **Top-level `Makefile`** with `test-all`, `test-dotnet`, `test-node`,
   `lint-labs`, plus E2E variants.
-- **Fabric MCP config** at `mcp-configs/fabric.json` with offline-mode fallthrough.
+- **Fabric MCP config** at `mcp-configs/copilot-cli/individual/fabric.json` and
+  `mcp-configs/vscode/individual/fabric.json` with offline-fixture fallback
+  (no MCP-side env-var toggle — the offline path skips the MCP entirely and
+  reads a local Parquet fixture; see Lab 12 §12.2).
 - **Plugin registry tooling**: `plugin-template/` scaffold, manifest JSON
   schema, dry-run install test, allowlist-policy test (Phase 1).
 - **`docs/_meta/registry.yaml`** as the single source of truth for CLI floor,
@@ -143,8 +146,9 @@ Per-file `git add` only; conventional commit prefixes throughout
 
 - Root vitest: ≥ 203 tests across ≥ 31 files.
 - .NET (`dotnet test`): 56 / 56.
-- Node (`pnpm -C node test`): ≥ 18 / 18 (10 baseline + 3 new integration files
-  added in Phase 8 to lift coverage to ≥ 80%).
+- Node (`pnpm -C node test`): 28 / 5 (10 baseline tests in 2 files, plus 18
+  new tests in 3 new integration files added in Phase 8 to lift line coverage
+  to 92.94%).
 - Node line coverage: ≥ 80% (Phase 8 floor).
 
 ### Migration notes for existing forks

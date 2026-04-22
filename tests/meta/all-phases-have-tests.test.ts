@@ -19,7 +19,6 @@ const PHASE_TEST_DIRS: Record<string, string[]> = {
   ],
   'Phase 2 — Memory & learning for local environments': [
     'tests/memory',
-    'tests/hooks',
   ],
   'Phase 3 — Consolidate .NET + add Node/JS parity': [
     'tests/build',
@@ -31,6 +30,7 @@ const PHASE_TEST_DIRS: Record<string, string[]> = {
   'Phase 5 — Fabric MCP + Fabric notebooks': [
     'tests/mcp-configs',
     'tests/lab-structure',
+    'tests/hooks',
   ],
   'Phase 6 — A2A / ACP orchestration + tmux orchestrator pattern': [
     'tests/orchestrator',
