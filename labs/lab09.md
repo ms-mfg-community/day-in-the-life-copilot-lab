@@ -23,6 +23,19 @@ References:
 - [Configuring automatic code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/configure-automatic-review)
 - [Using Copilot code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review)
 
+## 9.0 Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a reviewer-specific plugin (security, performance, accessibility). |
+| **Parallel subagents** | `/fleet` | Running multiple specialist reviewers (security + perf + style) on the same diff. |
+| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode when triaging a novel review comment; autopilot mode for "apply the suggestion" flows. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Use `models.premium` from the registry for reasoning about complex review feedback. |
+| **Local tool discovery** | `extensions_manage` operation `list` | Discovering which review-related skills and agents are active. |
+
 ## 9.1 Understand Copilot Code Review
 
 GitHub Copilot includes a **built-in code reviewer** that can automatically review pull requests. No workflow files, no CI configuration — it's a native platform feature.

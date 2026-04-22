@@ -22,6 +22,19 @@ References:
 - [Workflow structure](https://github.github.io/gh-aw/reference/workflow-structure/)
 - [Frontmatter reference](https://github.github.io/gh-aw/reference/frontmatter/)
 
+## 8.0 Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a plugin that ships gh-aw workflow templates. |
+| **Parallel subagents** | `/fleet` | Generating multiple PRD sections in parallel before assembly. |
+| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode while drafting a new gh-aw workflow; autopilot mode once the workflow is trusted. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Use `models.premium` from the registry for the drafting agent; `models.cheap` for edits. |
+| **Local tool discovery** | `extensions_manage` operation `list` | Seeing which automation-related extensions are loaded. |
+
 ## 8.1 Understand gh-aw Workflow Format
 
 GitHub Agentic Workflows are a new way to define AI-powered automation in GitHub Actions. Unlike traditional YAML workflows, gh-aw workflows are **Markdown files with YAML frontmatter**.

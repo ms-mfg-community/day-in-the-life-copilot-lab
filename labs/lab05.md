@@ -17,6 +17,19 @@ References:
 - [MCP specification](https://spec.modelcontextprotocol.io/)
 - [Using MCP servers with Copilot](https://docs.github.com/en/copilot/using-github-copilot/using-mcp-servers-with-copilot)
 
+## 5.0 Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling an MCP-bundling plugin from a private or public registry. |
+| **Parallel subagents** | `/fleet` | Querying multiple MCP servers in parallel (e.g. `context7` + `microsoft-learn`). |
+| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode when wiring a new MCP server; autopilot mode when re-running well-known MCP queries. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry when the answer is already in MCP-retrieved context. |
+| **Local tool discovery** | `extensions_manage` operation `list` | Seeing which MCP-backed tools are loaded right now. |
+
 ## 5.1 Examine Existing MCP Configuration
 
 MCP servers extend Copilot's capabilities with external tools — documentation lookup, knowledge persistence, structured reasoning, and more.

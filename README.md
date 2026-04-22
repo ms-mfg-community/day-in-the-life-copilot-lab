@@ -494,6 +494,19 @@ This repo ships with a rich set of configurations for you to explore and extend:
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 
+### Current Copilot CLI surface (2026 refresh)
+
+Version floors, model tiers, and MCP pins live in
+[`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) so labs stay in sync.
+
+| Command / surface | What it does |
+|-------------------|--------------|
+| `/plugin install owner/repo` | Install a plugin from a marketplace or private `COPILOT_PLUGIN_REGISTRIES` registry (see Lab 11). |
+| `/fleet` | Launch parallel subagents for independent work streams. |
+| `/plan-mode` vs autopilot mode | Review each step vs. batch-execute well-understood tasks. |
+| `/model <tier-or-id>` | Switch models mid-session — use `models.cheap`/`standard`/`premium` tiers from the registry. |
+| `extensions_manage` | Tool discovery: list/inspect/guide/scaffold — the in-repo analogue of a marketplace. |
+
 ---
 
 ## Useful Commands

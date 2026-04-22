@@ -19,6 +19,21 @@ References:
 - [MCP specification](https://modelcontextprotocol.io/specification)
 - [Copilot CLI docs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli)
 
+## 10.0a Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). This
+> capstone lab references the full surface below; earlier labs teach pieces
+> in context.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a memory- or session-management plugin (e.g. continuous-learning bundles). |
+| **Parallel subagents** | `/fleet` | Running many short-lived workers under one long-lived orchestrator (see Lab 14 for the tmux deep-dive). |
+| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode when building up session memory; autopilot mode for handoff rituals. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Switch between `models.cheap`, `models.standard`, and `models.premium` tiers in the registry without restarting the session. |
+| **Local tool discovery** | `extensions_manage` operation `list` / `inspect` | The local analogue of a marketplace — shows every skill, agent, and hook contributing context right now. |
+
 ## 10.0 Reindex: How Copilot Understands Your Code
 
 Before we talk about Memory MCP, let's understand what Copilot **already knows** about your codebase — without any extra configuration.

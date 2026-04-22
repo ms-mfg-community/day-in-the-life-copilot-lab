@@ -17,6 +17,19 @@ References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Agent handoffs](https://docs.github.com/en/copilot/reference/custom-agents-configuration#handoffs)
 
+## 7.0 Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent plugin (e.g. dev + QA + reviewer bundle). |
+| **Parallel subagents** | `/fleet` | Running dev and QA agents in parallel when tasks are independent. |
+| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift the orchestrator to `models.premium`; keep workers on `models.cheap` to save tokens. |
+| **Local tool discovery** | `extensions_manage` operation `list` | Discovering which bundled agents are available before wiring a handoff. |
+
 ## 7.1 Design the Orchestration Flow
 
 Multi-agent orchestration lets one agent coordinate work across multiple specialized agents. Each agent has a focused role, and the orchestrator manages the pipeline.

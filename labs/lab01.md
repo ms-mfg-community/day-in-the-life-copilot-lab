@@ -19,6 +19,24 @@ References:
 - [Custom instructions](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
 - [Prompt files](https://docs.github.com/en/copilot/using-github-copilot/using-prompt-files)
 
+## 1.0a Copilot CLI currency (2026 refresh)
+
+> 💡 The Copilot CLI surface evolves quickly. Commands are current as of this
+> refresh; versions, model tiers, and MCP pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) so labs stay
+> consistent.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
+| **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
+| **Plan mode vs autopilot mode** | `/plan-mode` (review each step) vs autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry for routine edits; upshift to `models.premium` for deep reasoning. |
+| **Local tool discovery** | `extensions_manage` operation `list`, `inspect`, or `guide` | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. |
+
+*Lab 11 builds an enterprise plugin that publishes to a private
+`COPILOT_PLUGIN_REGISTRIES` registry using exactly this surface.*
+
 ## 1.0 Discover Agents from the Marketplace
 
 The Copilot CLI plugin marketplace is a registry of community and first-party agents you can install directly from your terminal. Plugins extend Copilot with specialized capabilities — think of them as pre-built agents for common development tasks.
