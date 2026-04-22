@@ -30,7 +30,7 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
 | **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
-| **Plan mode vs autopilot mode** | `/plan-mode` (review each step) vs autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) (review each step) vs autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry for routine edits; upshift to `models.premium` for deep reasoning. |
 | **Local tool discovery** | `extensions_manage` operation `list`, `inspect`, or `guide` | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. |
 

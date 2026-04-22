@@ -504,7 +504,7 @@ Version floors, model tiers, and MCP pins live in
 |-------------------|--------------|
 | `/plugin install owner/repo` | Install a plugin from a marketplace or private `COPILOT_PLUGIN_REGISTRIES` registry (see Lab 11). |
 | `/fleet` | Launch parallel subagents for independent work streams. |
-| `/plan-mode` vs autopilot mode | Review each step vs. batch-execute well-understood tasks. |
+| `Shift+Tab` (plan mode) vs autopilot mode | Review each step vs. batch-execute well-understood tasks. |
 | `/model <tier-or-id>` | Switch models mid-session — use `models.cheap`/`standard`/`premium` tiers from the registry. |
 | `extensions_manage` | Tool discovery: list/inspect/guide/scaffold — the in-repo analogue of a marketplace. |
 

@@ -30,7 +30,7 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a memory- or session-management plugin (e.g. continuous-learning bundles). |
 | **Parallel subagents** | `/fleet` | Running many short-lived workers under one long-lived orchestrator (see Lab 14 for the tmux deep-dive). |
-| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode when building up session memory; autopilot mode for handoff rituals. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when building up session memory; autopilot mode for handoff rituals. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Switch between `models.cheap`, `models.standard`, and `models.premium` tiers in the registry without restarting the session. |
 | **Local tool discovery** | `extensions_manage` operation `list` / `inspect` | The local analogue of a marketplace — shows every skill, agent, and hook contributing context right now. |
 

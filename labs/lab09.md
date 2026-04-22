@@ -32,7 +32,7 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a reviewer-specific plugin (security, performance, accessibility). |
 | **Parallel subagents** | `/fleet` | Running multiple specialist reviewers (security + perf + style) on the same diff. |
-| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode when triaging a novel review comment; autopilot mode for "apply the suggestion" flows. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when triaging a novel review comment; autopilot mode for "apply the suggestion" flows. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Use `models.premium` from the registry for reasoning about complex review feedback. |
 | **Local tool discovery** | `extensions_manage` operation `list` | Discovering which review-related skills and agents are active. |
 

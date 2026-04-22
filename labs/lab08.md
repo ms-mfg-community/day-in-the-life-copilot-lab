@@ -31,7 +31,7 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a plugin that ships gh-aw workflow templates. |
 | **Parallel subagents** | `/fleet` | Generating multiple PRD sections in parallel before assembly. |
-| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | Plan mode while drafting a new gh-aw workflow; autopilot mode once the workflow is trusted. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode while drafting a new gh-aw workflow; autopilot mode once the workflow is trusted. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Use `models.premium` from the registry for the drafting agent; `models.cheap` for edits. |
 | **Local tool discovery** | `extensions_manage` operation `list` | Seeing which automation-related extensions are loaded. |
 

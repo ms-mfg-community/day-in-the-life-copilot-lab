@@ -37,7 +37,7 @@ This lab assumes the current CLI surface (taught in Labs 01, 05, 07–10):
 |------------|-------------------|
 | **Install a plugin** | `/plugin install owner/repo` |
 | **Parallel subagents** | `/fleet` |
-| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode |
 | **Mid-session model switch** | `/model <tier-or-id>` (tiers in `docs/_meta/registry.yaml`) |
 | **Local tool discovery** | `extensions_manage` operation `list` / `inspect` / `guide` / `scaffold` |
 

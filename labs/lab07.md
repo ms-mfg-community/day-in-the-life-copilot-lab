@@ -26,7 +26,7 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent plugin (e.g. dev + QA + reviewer bundle). |
 | **Parallel subagents** | `/fleet` | Running dev and QA agents in parallel when tasks are independent. |
-| **Plan mode vs autopilot mode** | `/plan-mode` vs autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Upshift the orchestrator to `models.premium`; keep workers on `models.cheap` to save tokens. |
 | **Local tool discovery** | `extensions_manage` operation `list` | Discovering which bundled agents are available before wiring a handoff. |
 
