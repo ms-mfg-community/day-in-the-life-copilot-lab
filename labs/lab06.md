@@ -16,6 +16,10 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 References:
 - [Copilot hooks](https://docs.github.com/en/copilot/using-github-copilot/using-hooks)
 
+> 🧭 **Track appendices** — the post-tool-use build hook recipe per stack lives in
+> [`labs/appendices/dotnet/lab06.md`](appendices/dotnet/lab06.md) and
+> [`labs/appendices/node/lab06.md`](appendices/node/lab06.md).
+
 ## 6.1 Examine the Hook Configuration
 
 Hooks are scripts that run automatically at specific points in the Copilot lifecycle. They provide guardrails and automation.

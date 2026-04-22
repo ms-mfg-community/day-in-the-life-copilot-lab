@@ -17,6 +17,10 @@ References:
 - [MCP specification](https://spec.modelcontextprotocol.io/)
 - [Using MCP servers with Copilot](https://docs.github.com/en/copilot/using-github-copilot/using-mcp-servers-with-copilot)
 
+> 🧭 **Track appendices** — track-specific MCP server picks live in
+> [`labs/appendices/dotnet/lab05.md`](appendices/dotnet/lab05.md) and
+> [`labs/appendices/node/lab05.md`](appendices/node/lab05.md).
+
 ## 5.0 Copilot CLI currency (2026 refresh)
 
 > 💡 Commands are current as of this refresh; versions, model tiers, and MCP
