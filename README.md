@@ -500,8 +500,9 @@ erDiagram
 | [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
+| [Lab 14](labs/lab14.md) | Orchestrator + tmux Pattern (Deep-Dive) | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
 
-**Total: ~4.5 hours** (13 labs — self-paced or presenter-led)
+**Total: ~5 hours** (14 labs — self-paced or presenter-led)
 
 ---
 
