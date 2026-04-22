@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/plugin-template/manifest.schema.json",
+  "title": "Copilot Plugin Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version",
+    "description",
+    "minimum_cli_version",
+    "entrypoints"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$",
+      "description": "kebab-case plugin name; unique within an org registry."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+      "description": "Semantic version."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "minimum_cli_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Floor Copilot CLI version. Pulled from docs/_meta/registry.yaml."
+    },
+    "homepage": { "type": "string" },
+    "license": { "type": "string" },
+    "codeowners": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "entrypoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agents": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "hooks": { "type": "array", "items": { "type": "string" } },
+        "prompts": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "mcp_servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "transport"],
+        "properties": {
+          "name": { "type": "string" },
+          "transport": { "enum": ["stdio", "http", "sse"] },
+          "pin": { "type": "string" }
+        }
+      }
+    }
+  }
+}
