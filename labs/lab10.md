@@ -1,17 +1,27 @@
 ---
-title: "Reindex, Session Management, Memory & Advanced Features"
+title: "Context, Memory & Learning — The Four Layers"
 lab_number: 10
 pace:
   presenter_minutes: 5
-  self_paced_minutes: 15
+  self_paced_minutes: 20
 registry: docs/_meta/registry.yaml
 ---
 
-# 10 — Reindex, Session Management, Memory & Advanced Features
+# 10 — Context, Memory & Learning: The Four Layers
 
-In this lab you will learn how Copilot understands your codebase (reindex), when you still need cross-session persistence (Memory MCP), session handoff techniques, and advanced Copilot CLI capabilities. This is the capstone — it ties everything together.
+This is the capstone for the local Copilot CLI surface. By now you have
+seen agents, skills, hooks, MCP servers, and orchestration. This lab puts
+the last load-bearing piece into place: **how Copilot remembers things**.
 
-> ⏱️ Presenter pace: 5 minutes | Self-paced: 15 minutes
+There are exactly four memory layers in this repo. They do not overlap.
+Pick the right one and your sessions stay focused; pick the wrong one and
+either context bloats or knowledge evaporates.
+
+> 📍 **Companion reference:** [`docs/memory-decision-tree.md`](../docs/memory-decision-tree.md)
+> is a 1-page flowchart for choosing a layer. Keep it open in a second pane
+> while you work through this lab.
+
+> ⏱️ Presenter pace: 5 minutes | Self-paced: 20 minutes
 
 References:
 - [Repository indexing](https://docs.github.com/en/copilot/concepts/context/repository-indexing)
@@ -19,539 +29,411 @@ References:
 - [MCP specification](https://modelcontextprotocol.io/specification)
 - [Copilot CLI docs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli)
 
-## 10.0a Copilot CLI currency (2026 refresh)
+## 10.0 Copilot CLI surface check (2026 refresh)
 
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). This
-> capstone lab references the full surface below; earlier labs teach pieces
-> in context.
+> 💡 Commands and tiers below are pinned in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). If the registry
+> moves, this lab follows; you should not see hardcoded versions in the
+> body.
 
 | Capability | Command / surface | Use when |
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a memory- or session-management plugin (e.g. continuous-learning bundles). |
-| **Parallel subagents** | `/fleet` | Running many short-lived workers under one long-lived orchestrator (see Lab 14 for the tmux deep-dive). |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when building up session memory; autopilot mode for handoff rituals. |
+| **Parallel subagents** | `/fleet` | Running many short-lived workers under one long-lived orchestrator (Lab 14 deep-dives the tmux pattern). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` cycles interactive → plan mode → autopilot mode | Plan mode while building up session memory; autopilot mode for handoff rituals. |
 | **Mid-session model switch** | `/model <tier-or-id>` | Switch between `models.cheap`, `models.standard`, and `models.premium` tiers in the registry without restarting the session. |
 | **Local tool discovery** | `extensions_manage` operation `list` / `inspect` | The local analogue of a marketplace — shows every skill, agent, and hook contributing context right now. |
 
-## 10.0 Reindex: How Copilot Understands Your Code
+## 10.0a Reindex: the layer that *doesn't* count
 
-Before we talk about Memory MCP, let's understand what Copilot **already knows** about your codebase — without any extra configuration.
+Before we count to four, get one thing straight: **reindex is not a memory
+layer**. It is automatic semantic indexing of code that already exists in
+the repo. You don't manage it, you don't decide what to put in it, and it
+never persists anything that isn't already in source control.
 
-Copilot automatically builds a **semantic index** of your repository. This isn't keyword search — it's a meaning-based understanding of your code's structure, types, relationships, and patterns. GitHub officially calls this **repository indexing** (you may also hear it called "reindex" informally).
-
-| Feature | Details |
-|---------|---------|
-| **Speed** | Re-indexing is near-instant (seconds); initial indexing may take up to 60s for large repos |
-| **How it works** | Builds a semantic index when you open the repo; refreshes as you edit |
-| **What it understands** | Function purpose, type relationships, call hierarchies, patterns |
-| **Available on** | All Copilot tiers — no limits on repos indexed |
-| **Automatic** | No configuration needed — just open the repo |
-
-🖥️ **Try it — ask Copilot questions about your codebase:**
+🖥️ **Try it:**
 
 ```
 How does the repository pattern work in ContosoUniversity?
+What happens when a student enrolls in a course? Trace controller → DB.
 ```
 
-```
-What happens when a student enrolls in a course? Trace the flow from controller to database.
-```
+Copilot answers by searching semantically — it knows "enrolls" relates to
+the `Enrollment` entity, the controller, and the repository methods even
+when the word "enroll" doesn't appear in those files. That's reindex doing
+its job.
 
-```
-Show me all the places where Department is referenced across the solution.
-```
-
-> 💡 **Key insight:** Copilot answers these questions by searching semantically — it understands that "enrolls" relates to the `Enrollment` entity, `EnrollmentsController`, and the repository methods, even though those files don't all contain the word "enroll." This is reindex in action.
-
-### What reindex handles vs. what it doesn't
-
-| Reindex handles automatically ✅ | Still needs Memory MCP ❌ |
-|----------------------------------|--------------------------|
-| Code structure and relationships | Architecture decisions ("we chose X over Y because...") |
-| Type hierarchies and call graphs | Team conventions not in code |
-| File contents and patterns | Insights from previous sessions |
-| Project architecture (from code) | Cross-session continuity |
-| Test patterns and naming | Deployment notes, meeting decisions |
-
-> 💡 **Bottom line:** Reindex replaced the need to manually teach Copilot about your code. Memory MCP is now complementary — use it for **decisions, context, and knowledge that isn't in the code itself.**
+If your question can be answered by reading the code, **stop here**. The
+four layers below are for everything else.
 
 ---
 
-## 10.1 Memory MCP: Persistent Knowledge Beyond Code
+## 10.1 Layer 1 — Session context
 
-Reindex understands your code automatically, but some knowledge lives **outside the codebase** — architecture decisions, team conventions, insights from debugging sessions, deployment gotchas. The Memory MCP provides a **persistent knowledge graph** for this kind of knowledge.
+**Lifetime:** this session only.
+**Surfaces:** `~/.copilot/session-state/<id>/plan.md`, the per-session SQL
+`todos`/`todo_deps` tables, `/checkpoint`, scratch files in `files/`.
 
-🖥️ **In your terminal:**
+Use this layer for the **work-in-flight**: the plan you are executing right
+now, the todos you have not finished, the half-formed scratchpad. None of
+it is meant to outlive the task.
 
-1. Verify the Memory MCP is configured:
+🖥️ **Try it — todo tracking via the session SQL store:**
+
+```
+Create a small plan for adding a "Department dashboard" page. Track 3
+todos in the session database with id, title, description.
+```
+
+The agent calls the `sql` tool against the per-session SQLite database and
+inserts rows into the default `todos` table. Ask:
+
+```
+Show me the in-progress todo and mark the first one done.
+```
+
+🖥️ **Try it — the persistent plan.md:**
+
+```
+Write a 5-line plan.md to my session folder describing this lab.
+```
+
+The agent writes to `~/.copilot/session-state/<id>/plan.md`. That file is
+real on disk — `cat` it:
 
 **WSL/Bash:**
 ```bash
-cat .copilot/mcp-config.json | grep -A 5 '"memory"'
+cat ~/.copilot/session-state/*/plan.md 2>/dev/null | head -20
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .copilot/mcp-config.json | Select-String -Pattern '"memory"' -Context 0,5
+Get-Content $HOME/.copilot/session-state/*/plan.md -ErrorAction SilentlyContinue | Select-Object -First 20
 ```
 
-You should see:
-```json
-"memory": {
-  "type": "local",
-  "command": "npx",
-  "args": ["-y", "@modelcontextprotocol/server-memory"],
-  "tools": ["*"]
-}
+> 💡 **Rule of thumb:** if a teammate joining tomorrow would need this
+> information, it does *not* belong in Layer 1. Promote it to Layer 2 or
+> Layer 3 before you `/clear`.
+
+## 10.2 Layer 2 — Project memory
+
+**Lifetime:** forever (it lives in git).
+**Surfaces:** `AGENTS.md`, `.github/instructions/*.md`,
+`.github/copilot-instructions.md`, repo-local `.copilot/` conventions.
+
+Use this layer for **rules every contributor and every agent must obey**:
+language idioms, commit hygiene, security policy, architectural style.
+Anything you would put in a CONTRIBUTING.md belongs here too — but
+expressed in a form Copilot reads automatically.
+
+🖥️ **Inspect what's already in place:**
+
+**WSL/Bash:**
+```bash
+ls .github/instructions/ && head -20 AGENTS.md
 ```
 
-> 💡 **Data model:** Memory MCP stores a knowledge graph. A **node** is an entity (e.g., "ContosoUniversity"). An **observation** is a fact about it. A **relation** links two entities. Think of it as: entities have observations, and relations connect entities.
+**PowerShell:**
+```powershell
+Get-ChildItem .github/instructions; Get-Content AGENTS.md | Select-Object -First 20
+```
 
-2. The Memory MCP provides these tools:
+You should see scoped instruction files (e.g. `dotnet.instructions.md`,
+`testing.instructions.md`) plus the project's `AGENTS.md`. Copilot pulls
+all three into every session in this repo without you asking.
+
+🖥️ **Try it — extend Layer 2:**
+
+Add a one-line rule:
+
+```
+Append to .github/instructions/testing.instructions.md:
+"Every new repository class must have a corresponding xUnit fixture in
+ContosoUniversity.Tests/Fixtures/."
+```
+
+Now open a fresh session and ask the agent to scaffold a repository — it
+will follow the rule because Layer 2 is loaded automatically.
+
+> 💡 **Rule of thumb:** if a rule should still be true a year from now and
+> applies to *everyone*, write it once into Layer 2 and stop repeating it
+> in prompts.
+
+## 10.3 Layer 3 — Cross-session memory (Memory MCP)
+
+**Lifetime:** across sessions, per machine or per team.
+**Surface:** the Memory MCP knowledge graph — entities, observations,
+relations.
+
+Use this layer for **decisions and rationale that aren't in the code**:
+why you picked one library over another, what the on-call rotation
+discovered last quarter, where the bodies are buried.
+
+🖥️ **Verify the server is wired up:**
+
+**WSL/Bash:**
+```bash
+cat mcp-configs/copilot-cli/individual/memory.json
+```
+
+**PowerShell:**
+```powershell
+Get-Content mcp-configs/copilot-cli/individual/memory.json
+```
+
+You should see the standard `@modelcontextprotocol/server-memory`
+invocation. The server exposes:
 
 | Tool | Purpose |
 |------|---------|
-| `create_entities` | Create new nodes in the knowledge graph |
-| `create_relations` | Link entities together |
-| `add_observations` | Add facts to existing entities |
-| `search_nodes` | Search the knowledge graph |
-| `open_nodes` | Retrieve specific entities by name |
-| `read_graph` | Read the entire knowledge graph |
-| `delete_entities` | Remove entities |
-| `delete_relations` | Remove relations |
-| `delete_observations` | Remove specific observations |
+| `create_entities` | New nodes in the knowledge graph |
+| `create_relations` | Edges between entities |
+| `add_observations` | Facts attached to an entity |
+| `search_nodes` / `open_nodes` | Lookups |
+| `read_graph` | Dump the whole graph |
+| `delete_*` | Targeted removal |
 
-> 💡 **Knowledge graph model:** Entities are nodes (things), observations are facts about an entity, and relations are edges connecting entities. Think of it like a mini database with flexible schema.
-
-## 10.2 Store Decisions and Context in Memory MCP
-
-Reindex already knows your code structure. Use Memory MCP for knowledge that **isn't in the code** — decisions, conventions, and insights that future sessions need.
-
-🖥️ **In Copilot CLI, ask the agent to store knowledge:**
+🖥️ **Store a decision:**
 
 ```
-Store the following in the Memory MCP knowledge graph:
-
-Entity: ContosoUniversity-Decisions
-Type: decisions
-Observations:
-- Chose repository pattern over direct DbContext access for testability
-- Test naming convention: MethodName_Condition_ExpectedResult (team agreed 2024-Q3)
-- SQL Server for production, SQLite for integration tests via WebApplicationFactory
-- gh-aw PRD workflow triggers on feature/** branches — do NOT use for hotfixes
-- Code review requires approval from @code-reviewer agent before merge
+In Memory MCP, create an entity:
+  name: ContosoUniversity-Decisions
+  type: decisions
+  observations:
+    - "Repository pattern over direct DbContext for testability"
+    - "SQL Server in prod, SQLite via WebApplicationFactory in tests"
+    - "gh-aw PRD workflow does NOT trigger on hotfixes — feature/** only"
 ```
 
-The agent will call `create_entities` to store this in the knowledge graph.
-
-2. Now store a relation:
+🖥️ **Recall it from a fresh session:**
 
 ```
-Store a relation in Memory MCP:
-From: ContosoUniversity  Relation: "uses"  To: CleanArchitecture
-Create the CleanArchitecture entity with type "pattern" and observation:
-"Core has no dependencies, Infrastructure depends on Core, Web depends on both"
+What testing decisions are recorded for ContosoUniversity?
 ```
 
-3. Verify what was stored:
+The agent calls `search_nodes` and answers from Layer 3 — even though you
+never told *this* session anything.
 
-```
-Search the Memory MCP for "ContosoUniversity"
-```
+### 10.3a Offline / regulated-environment variant
 
-The agent calls `search_nodes` and returns the entity with all its observations.
-
-> 💡 **Expected response:** Copilot confirms storage with something like "I've stored the ContosoUniversity entity with observations about its architecture." If it says "Memory MCP not available," the server isn't configured in `.copilot/mcp-config.json`.
-
-> 💡 **When to store:** Store decisions, conventions, and gotchas — things that took effort to discover and aren't obvious from reading the code. Reindex already handles code structure, so don't duplicate that.
-
-## 10.3 Use Knowledge Across Sessions
-
-The power of Memory MCP becomes clear when you start a new session. The knowledge graph persists on disk, so a future session can read it.
-
-🖥️ **In Copilot CLI:**
-
-1. Read the full knowledge graph:
-```
-Read the entire Memory MCP knowledge graph and summarize what's stored.
-```
-
-The agent calls `read_graph` and shows all entities, observations, and relations.
-
-2. Ask a question that uses stored knowledge:
-```
-Based on what's in the Memory MCP, what testing patterns should I follow for ContosoUniversity?
-```
-
-The agent searches the knowledge graph, finds the ContosoUniversity entity, reads the test naming convention observation, and provides a contextual answer.
-
-3. Add a new observation based on what we learned in this lab:
-```
-Add these observations to the ContosoUniversity entity in Memory MCP:
-- Has gh-aw workflow for PRD generation on feature/** branch creation
-- Has gh-aw workflow for automated code review on pull requests
-- Lab orchestrator delegates to dotnet-dev, dotnet-qa, then code-reviewer
-```
-
-> 💡 **Memory is cumulative.** Each session adds knowledge. Over time, the knowledge graph becomes a rich context that makes the AI assistant more effective — it remembers your project's conventions, decisions, and patterns.
-
-## 10.4 Automatic Learning with Continuous Learning Skills
-
-Memory MCP stores knowledge **explicitly** — you tell it what to remember. But what if the AI could learn **automatically** from your coding sessions?
-
-This repository includes two **continuous-learning** skills that do exactly that.
-
-🖥️ **In your terminal:**
-
-1. Examine the continuous-learning skill:
+If you operate in an air-gapped or regulated environment, the default
+`npx -y @modelcontextprotocol/server-memory` invocation is blocked
+(no registry egress) and the shared graph may not be acceptable. This
+repo ships an offline variant:
 
 **WSL/Bash:**
 ```bash
-head -30 .github/skills/continuous-learning/SKILL.md
+cat mcp-configs/copilot-cli/individual/memory-offline.json
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .github/skills/continuous-learning/SKILL.md | Select-Object -First 30
+Get-Content mcp-configs/copilot-cli/individual/memory-offline.json
 ```
 
-This skill runs as a **sessionEnd hook** — at the end of each coding session, it:
-1. Evaluates whether the session had enough activity (10+ messages)
-2. Detects patterns: error resolutions, user corrections, workarounds, debugging techniques
-3. Saves useful patterns to `~/.copilot/skills/learned/` as reusable knowledge
+Key differences:
 
-2. Now look at the v2 evolution:
+- Runs from `./vendor/mcp-server-memory/` (vendor the package once via
+  `npm pack` and unpack into the repo).
+- Persists the graph to `./.copilot/memory/knowledge-graph.json` — a
+  single auditable JSON file you control.
+- Sets `MCP_MEMORY_OFFLINE=1` so the mode is grep-able from process logs.
+- Mutually exclusive with the online `memory` server: pick one.
+
+> ⚠️ Do not enable both `memory` and the offline variant — graphs will
+> diverge silently and recall will become non-deterministic.
+
+> 💡 **Rule of thumb:** if it's a *fact* that survives the session and
+> isn't already in the code, Layer 3.
+
+## 10.4 Layer 4 — The instinct & learning loop
+
+**Lifetime:** across sessions, promoted into skills/commands/agents over
+time.
+**Surfaces:** [`continuous-learning-v2`](../.github/skills/continuous-learning-v2/SKILL.md),
+`/learn`, `instinct-status`, `/evolve`, `/instinct-export`,
+`/instinct-import`. Storage at `~/.copilot/homunculus/instincts/`.
+
+Use this layer when a **behaviour** keeps repeating and you want Copilot
+to do it without being asked next time. The unit is the *instinct* — a
+small, atomic learned behaviour with a confidence score.
+
+### The flow
+
+```
+observe (every tool call)
+   │
+   ▼
+atomic instinct created  (confidence 0.3 — tentative)
+   │
+   │  fires again, user doesn't correct
+   ▼
+confidence climbs        (0.6 → 0.9)
+   │
+   ▼
+/evolve clusters related instincts
+   │
+   ▼
+promoted to a skill / command / agent (Layer 2!)
+   │
+   ▼
+/instinct-export → teammate /instinct-import
+```
+
+Notice the loop: **Layer 4 graduates findings into Layer 2.** That's the
+whole point of v2 over v1 — instead of guessing what to extract at
+session end, the system observes continuously, builds confidence, and
+only promotes when the evidence is solid.
+
+🖥️ **Inspect existing instincts on this machine:**
 
 **WSL/Bash:**
 ```bash
-head -50 .github/skills/continuous-learning-v2/SKILL.md
+ls ~/.copilot/homunculus/instincts/personal/ 2>/dev/null | head
+head -10 ~/.copilot/homunculus/instincts/personal/*.md 2>/dev/null | head -40
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-Object -First 50
+Get-ChildItem $HOME/.copilot/homunculus/instincts/personal -ErrorAction SilentlyContinue | Select-Object -First 10
 ```
 
-| Feature | v1 (continuous-learning) | v2 (instinct-based) |
-|---------|--------------------------|---------------------|
-| **When** | sessionEnd hook (end of session) | preToolUse/postToolUse hooks (every action) |
-| **Granularity** | Full skills | Atomic "instincts" with confidence scores |
-| **Confidence** | None | 0.3 (tentative) → 0.9 (near-certain) |
-| **Evolution** | Direct to skill | Instincts cluster → skills, commands, or agents |
-| **Sharing** | None | Export/import instincts across teams |
+Each instinct is a markdown file with frontmatter (`id`, `trigger`,
+`confidence`, `domain`). The kernel of `/instinct-export` ↔
+`/instinct-import` is exercised by
+[`scripts/memory/instinct-roundtrip.ts`](../scripts/memory/instinct-roundtrip.ts);
+its tests prove that confidence survives a round-trip exactly.
 
-3. See how v2 uses the hooks you learned about in Lab 06:
+🖥️ **Try the loop hands-on:**
 
-**WSL/Bash:**
-```bash
-grep -A 10 '"hooks"' .github/skills/continuous-learning-v2/SKILL.md | head -12
+```
+/learn — capture an instinct from this session: "always run npm test
+before committing changes to tests/"
 ```
 
-**PowerShell:**
-```powershell
-Get-Content .github/skills/continuous-learning-v2/SKILL.md | Select-String -Pattern '"hooks"' -Context 0,10 | Select-Object -First 1 | ForEach-Object { $_.Context.PostContext[0..9] -join "`n" }
+```
+/instinct-status — show me everything captured today with confidence > 0.5
 ```
 
-The v2 architecture uses `preToolUse` and `postToolUse` hooks — the same hook types we explored in Lab 06. This means every tool call is observed, and patterns are never missed.
-
-> 💡 **Three layers of knowledge:** Reindex is your **automatic code understanding** — it reads the code. Memory MCP is your **explicit decision store** — you tell it what to remember. Continuous learning is your **automatic pattern extractor** — it learns from what you do. Together, they make your AI assistant progressively smarter.
-
-> 💡 **Ties it all together:** Notice how continuous learning combines skills (Lab 04), hooks (Lab 06), and session persistence (this lab). Each Copilot feature amplifies the others.
-
-## 10.5 Session Handoff Techniques
-
-When you reach the end of a session (context limit, break, or task boundary), create a handoff document so the next session can resume efficiently.
-
-🖥️ **In Copilot CLI:**
-
-1. This repository includes a handoff prompt. Examine it:
-
-**WSL/Bash:**
-```bash
-cat .github/prompts/handoff.prompt.md | head -20
+```
+/evolve — cluster any related instincts about commit hygiene into a single
+skill candidate
 ```
 
-**PowerShell:**
-```powershell
-Get-Content .github/prompts/handoff.prompt.md | Select-Object -First 20
+### Why these v1 surfaces are deprecated
+
+The repo intentionally keeps three older skills on disk so you can see the
+evolution:
+
+| Skill | Status | Replacement |
+|-------|--------|-------------|
+| [`continuous-learning`](../.github/skills/continuous-learning/SKILL.md) | `deprecated: true` | `continuous-learning-v2` |
+| [`iterative-retrieval`](../.github/skills/iterative-retrieval/SKILL.md) | `deprecated: true` | folded into v2 instinct loop |
+| [`strategic-compact`](../.github/skills/strategic-compact/SKILL.md) | `deprecated: true` | expressed as a v2 instinct ("compact before phase change") |
+
+Each carries `deprecated: true` + `redirect:` in its YAML frontmatter and
+a banner in the body. The
+[`tests/memory/skills-consolidation.test.ts`](../tests/memory/skills-consolidation.test.ts)
+suite enforces that.
+
+> 💡 **Rule of thumb:** if you are typing the same correction to Copilot
+> for the third time, it belongs in Layer 4. Capture the instinct, watch
+> it climb, then `/evolve` it into a Layer 2 rule that nobody has to
+> remember.
+
+---
+
+## 10.5 Putting the four layers together
+
+Run through this checklist on your next real task:
+
+1. **Layer 1 — open the session.** `/checkpoint create "<task>"`, write a
+   short plan.md, insert todos into the SQL store.
+2. **Layer 2 — load the rules.** Confirm with `extensions_manage` that
+   the right instructions and skills are active for this repo.
+3. **Layer 3 — recall decisions.** `read_graph` (or a targeted
+   `search_nodes`) before you start changing things, so you don't
+   re-litigate a settled architectural call.
+4. **Layer 4 — capture the lesson.** When something surprises you,
+   `/learn`. When the instinct fires three times, `/evolve`.
+5. **Handoff.** `/handoff_prompt` overwrites the session document so the
+   next role (or the next you) walks in with full context.
+
+🖥️ **End-of-lab handoff drill:**
+
+```
+/handoff_prompt
 ```
 
-2. Use the handoff prompt to generate a handoff document:
-```
-/handoff
-```
-
-When prompted, provide:
-- **Work description:** "Completed all 10 labs of the Everything GitHub Copilot hands-on workshop"
+Provide:
+- **Work description:** "Completed Lab 10 — four memory layers"
 - **Stop reason:** "Lab complete"
-- **Blocker:** (leave empty)
 
-3. The prompt generates a structured handoff document with:
-   - Current git state (branch, recent commits, modified files)
-   - What was completed and what remains
-   - Key discoveries and decisions
-   - Verification commands
-   - A fresh-context prompt block for the next session
+The output is a structured document the next session can paste back in.
+That document is itself a Layer 1 artefact — it dies with the next
+session unless you graduate any persistent findings into Layer 2 or 3.
 
-4. You can also use the checkpoint prompt for lightweight saves:
+## 10.6 Lightweight reference: advanced surface
 
-**WSL/Bash:**
-```bash
-cat .github/prompts/checkpoint.prompt.md | head -15
-```
+The four layers are the load-bearing concepts. The CLI also exposes
+context-management tooling that helps you keep each layer healthy:
 
-**PowerShell:**
-```powershell
-Get-Content .github/prompts/checkpoint.prompt.md | Select-Object -First 15
-```
+| Command | Purpose | Layer it serves |
+|---------|---------|-----------------|
+| `/compact` | Summarize conversation history | Layer 1 |
+| `/context` | Visualize token usage | Layer 1 |
+| `/clear` | Reset between phases | Layer 1 |
+| `/lsp` | Configure language servers (semantic code reads) | reindex (not a layer) |
+| `/share` | Export session to markdown / gist | Layer 1 → external |
+| `/fleet` | Spawn parallel sub-agents | Orchestration (Lab 14) |
 
-```
-/checkpoint create "lab-complete"
-```
+> 💡 LSP gives Copilot semantic code understanding; it is the "verb" form
+> of reindex. Neither is a memory layer — they read code, they don't store
+> knowledge.
 
-> 💡 **Handoff vs Checkpoint:** Use `/handoff` at the end of a session (comprehensive). Use `/checkpoint` at intermediate milestones (lightweight — just a git stash/commit marker).
-
-> 💡 **When to use each:** Use `/checkpoint` at small milestones (finished a lab, completed initial design). Use `/handoff` when ending a session entirely — it generates a comprehensive context document for your next session.
-
-## 10.6 Advanced Copilot CLI Features
-
-The features we've covered so far — agents, skills, hooks, MCP, orchestration — are the building blocks. The Copilot CLI has additional advanced capabilities that amplify everything you've learned.
-
-### LSP Integration (Language Server Protocol)
-
-Copilot CLI interfaces with **language servers** for deep code intelligence — not just text search, but semantic understanding of your code.
-
-```bash
-# View and configure language servers
-/lsp
-```
-
-| Capability | What It Does |
-|-----------|-------------|
-| Go-to-definition | Jump to where a symbol is defined |
-| Find references | Find every usage of a function/type |
-| Hover info | Get type signatures and documentation |
-| Diagnostics | Real-time errors and warnings |
-| Rename | Semantically rename a symbol across files |
-
-You configure language servers via `.github/lsp.json` (per-repo) or `~/.copilot/lsp-config.json` (global):
-
-```json
-{
-  "lspServers": {
-    "typescript": {
-      "command": "typescript-language-server",
-      "args": ["--stdio"],
-      "fileExtensions": { ".ts": "typescript", ".tsx": "typescript" }
-    }
-  }
-}
-```
-
-> 💡 **Why this matters:** When Copilot uses LSP, it doesn't just `grep` your code — it *understands* types, inheritance, call hierarchies, and project structure. This is how it knows that changing a method signature will break 12 other files.
-
-### Semantic Code Search (Reindex)
-
-We covered reindex in section 10.0 — Copilot builds a **meaning-based index** of your codebase automatically. Here's a quick recap of what makes it powerful:
-
-| Feature | Details |
-|---------|---------|
-| **Indexing speed** | Near-instant (seconds, even for large projects) |
-| **How it works** | Builds a semantic index on repo open; refreshes as you work |
-| **What it understands** | Function purpose, relationships, patterns — not just names |
-| **Available on** | All Copilot tiers, no limits on repos indexed |
-
-When you ask *"How does authentication work in this project?"*, Copilot uses semantic search — it finds relevant code by **meaning**, not by grepping for the word "auth".
-
-### GitHub MCP: Remote Code Search
-
-The built-in GitHub MCP server extends this to **remote repositories**:
-
-```
-Search the GitHub repo dotnet/aspnetcore for how middleware pipeline ordering works
-```
-
-Copilot can search any GitHub repo you have access to — without cloning it — using GitHub's code search capabilities via MCP tools. This is powerful for:
-- Understanding upstream dependencies
-- Finding examples in open-source projects
-- Scanning organization repos for patterns or security issues
-
-### Sub-Agents & Parallel Execution
-
-Copilot CLI can spawn **specialized sub-agents** that run in parallel:
-
-| Sub-Agent | Purpose | Model |
-|-----------|---------|-------|
-| `explore` | Fast codebase analysis and Q&A | Haiku (fast) |
-| `task` | Run builds, tests, lints — brief on success, verbose on failure | Haiku (fast) |
-| `plan` | Generate implementation plans | Sonnet |
-| `code-review` | High signal-to-noise code review | Sonnet |
-
-```bash
-# Enable parallel agent execution (experimental — may not appear in official docs)
-/fleet
-```
-
-With `/fleet` mode, multiple sub-agents work simultaneously — one explores the codebase while another runs tests while a third reviews changes. This is what makes complex workflows fast.
-
-> ⚠️ **Note:** `/fleet` is an experimental feature and may not be listed in the official CLI command reference yet.
-
-### Autopilot Mode
-
-```
-Shift+Tab  →  cycle through: interactive → plan → autopilot
-```
-
-In **autopilot mode**, the agent keeps working until the task is complete — no manual "continue" needed. Combined with sub-agents and fleet mode, this enables fully autonomous multi-step workflows.
-
-### Context Management
-
-For long sessions, Copilot provides tools to manage the context window:
-
-| Command | Purpose |
-|---------|---------|
-| `/compact` | Summarize conversation history to free up context space |
-| `/context` | Visualize token usage — see how full your context window is |
-| `/session` | View session info and workspace summary |
-| `/share` | Export session to markdown or GitHub gist |
-
-> 💡 **Tying it all together:** LSP gives Copilot semantic code understanding. Semantic search indexes your codebase by meaning. GitHub MCP extends that reach to remote repos. Sub-agents parallelize work. Autopilot removes the human bottleneck. And context management keeps long sessions productive. Each feature amplifies the others.
-
-## 10.7 How It All Fits Together
-
-Let's review how every piece we've learned connects in a real development workflow:
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    GitHub (Platform)                  │
-│                                                       │
-│  Create Branch ──→ gh-aw: PRD Generated               │
-│                                                       │
-│  Open PR ──→ Copilot Code Review (built-in)           │
-│                                                       │
-│  GitHub MCP ──→ Semantic search across remote repos   │
-│                                                       │
-│  Enterprise policies ──→ Org-wide rules & rulesets    │
-│                                                       │
-└───────────────────────┬─────────────────────────────┘
-                        │
-┌───────────────────────┴─────────────────────────────┐
-│              Local (Copilot CLI + VS Code)            │
-│                                                       │
-│  Code Intelligence                                    │
-│    LSP servers      → Go-to-def, hover, diagnostics   │
-│    Semantic search  → Meaning-based code indexing      │
-│    ripgrep + glob   → Fast pattern matching            │
-│                                                       │
-│  Configuration Ecosystem                              │
-│    AGENTS.md          → Non-obvious context (keep minimal) │
-│    instructions/      → Rules for specific file types  │
-│    copilot-instructions → Global behavior rules        │
-│                                                       │
-│  Agents & Orchestration                               │
-│    dotnet-dev       → Implements features              │
-│    dotnet-qa        → Writes tests                     │
-│    code-reviewer    → Reviews code                     │
-│    lab-orchestrator → Coordinates the pipeline         │
-│    Sub-agents       → explore, task, plan (parallel)   │
-│                                                       │
-│  Knowledge & Automation                               │
-│    skills/            → Auto-activated knowledge       │
-│    prompts/           → Reusable command templates     │
-│    hooks/             → Lifecycle guardrails           │
-│    MCP servers        → context7, memory, ms-learn     │
-│                                                       │
-│  Session Management                                   │
-│    /compact, /context → Token management               │
-│    /fleet             → Parallel sub-agents            │
-│    Autopilot          → Shift+Tab for autonomous mode  │
-│    /handoff           → Cross-session continuity       │
-│                                                       │
-└───────────────────────────────────────────────────────┘
-```
-
-The workflow in practice:
-
-1. **Create a feature branch** → gh-aw generates a PRD
-2. **Read the PRD** → understand what to build
-3. **Ask `@lab-orchestrator`** → it delegates to `@dotnet-dev`, `@dotnet-qa`, `@code-reviewer`
-4. **Skills activate** → `dotnet-testing` provides testing patterns automatically
-5. **Hooks fire** → `secret-scan` blocks secrets, `dotnet-build` verifies compilation
-6. **Memory MCP** → stores decisions and conventions for future sessions
-7. **Continuous learning** → automatically extracts patterns from your session
-8. **Push + open PR** → Copilot Code Review provides automated feedback
-9. **Iterate** → fix issues, push, get re-reviewed
-10. **Handoff** → generate handoff doc when the session ends
-
-## 10.8 Final
+## 10.7 Final
 
 <details>
 <summary>Key Takeaways</summary>
 
-| Concept | Details |
-|---------|---------|
-| **Reindex** | Automatic semantic understanding of your codebase — no config needed |
-| **Memory MCP** | Persistent knowledge graph for decisions and context beyond code |
-| **Entities** | Nodes with a name, type, and observations |
-| **Relations** | Directed edges between entities |
-| **Observations** | Individual facts attached to an entity |
-| **Continuous learning** | Automatic pattern extraction from coding sessions |
-| **Instincts (v2)** | Atomic learned behaviors with confidence scoring |
-| **Handoff prompt** | `/handoff` — comprehensive session end document |
-| **Checkpoint prompt** | `/checkpoint` — lightweight progress marker |
-| **LSP** | Language server integration for semantic code intelligence |
-| **Semantic search** | Meaning-based codebase indexing (instant) |
-| **GitHub MCP** | Remote semantic search across GitHub repos |
-| **Sub-agents** | Parallel specialized agents (explore, task, plan, review) |
-| **Fleet mode** | `/fleet` — enable parallel sub-agent execution |
-| **Autopilot** | `Shift+Tab` — agent works until task is complete |
-| **Context mgmt** | `/compact`, `/context` for long session management |
+| Concept | Layer | Lifetime |
+|---------|------:|----------|
+| `plan.md`, SQL todos, `/checkpoint`, session-state | 1 | This session |
+| `AGENTS.md`, `.github/instructions/`, `copilot-instructions.md` | 2 | Forever (in git) |
+| Memory MCP knowledge graph (online or offline variant) | 3 | Across sessions |
+| Continuous-learning-v2 instinct loop, `/evolve`, instinct export/import | 4 | Across sessions; graduates into Layer 2 |
+| Reindex / LSP | — | Automatic; reads code, stores nothing |
 
-**The complete Copilot agentic surface:**
+**Promotion rules**
 
-| Feature | Location | Purpose |
-|---------|----------|---------|
-| Agents | `.github/agents/` | Specialized AI personas |
-| Skills | `.github/skills/` | Auto-activated knowledge packs |
-| Instructions | `.github/instructions/` | Path-specific rules |
-| Prompts | `.github/prompts/` | Reusable command templates |
-| Hooks | `.github/hooks/` | Lifecycle guardrails |
-| MCP servers | `.copilot/mcp-config.json` | External tool integrations |
-| LSP servers | `.github/lsp.json` | Language-aware code intelligence |
-| AGENTS.md | Root | Non-obvious project context (keep minimal) |
-| copilot-instructions.md | `.github/` | Global behavior rules |
-| gh-aw workflows | `.github/workflows/*.md` | Cloud-side AI automation |
-| Copilot Coding Agent | GitHub Settings (Copilot) | Issue → PR implementation |
-| Copilot Code Review | GitHub Settings (rulesets) | Platform-level AI PR review |
+- Layer 1 → Layer 2 when a finding is durable and applies to everyone.
+- Layer 1 → Layer 3 when a finding is durable and rationale-shaped.
+- Layer 4 → Layer 2 via `/evolve` when an instinct's confidence is high
+  and it cleanly maps to a skill, command, or agent.
+- Nothing belongs in two layers at once.
 
 </details>
 
 ## Lab Complete 🎉
 
-Congratulations! You've gone from zero to a full understanding of the GitHub Copilot agentic surface:
+You've now mapped every memory and learning surface the local Copilot CLI
+exposes:
 
-- ✅ **Lab 01** — Mapped the configuration ecosystem and instruction hierarchy
-- ✅ **Lab 02** — Created custom instructions and updated AGENTS.md
-- ✅ **Lab 03** — Built a specialized .NET development agent
-- ✅ **Lab 04** — Created a skill and a prompt
-- ✅ **Lab 05** — Configured MCP servers for extended capabilities
-- ✅ **Lab 06** — Built hooks for guardrails and automation
-- ✅ **Lab 07** — Orchestrated a multi-agent development pipeline
-- ✅ **Lab 08** — Automated PRD generation with GitHub Agentic Workflows
-- ✅ **Lab 09** — Used the Copilot Coding Agent and Code Review for AI-powered issue-to-PR-to-review workflows
-- ✅ **Lab 10** — Explored reindex, used Memory MCP for decisions, practiced handoffs, and toured advanced features
+- ✅ **Lab 01–09** — agents, skills, hooks, MCP, orchestration, gh-aw,
+  Coding Agent, Code Review.
+- ✅ **Lab 10** — the four memory layers and the loop that promotes
+  instincts into rules.
+- ⏭ **Lab 11** — building and distributing a Copilot plugin (enterprise
+  marketplace pattern) so the rules you discovered above ship to other
+  teams.
 
-### The Big Picture
+### What's next?
 
-Remember the opening video — 4 terminals collaborating on a real feature? That session broker was built using exactly these primitives: agents for specialization, MCP for coordination, hooks for guardrails, instructions for consistency. The question isn't whether AI changes how you work — it's how fast you can build your own agentic workflows.
-
-### What's Next?
-
-- **Customize:** Adapt these patterns to your own projects
-- **Extend:** Create new agents, skills, and workflows for your team
-- **Share:** Push your configurations to a shared repo for team-wide use
-- **Scale:** Use gh-aw and Copilot Code Review to extend agentic workflows across your organization
-- **Explore:** Try `/fleet` mode, autopilot (`Shift+Tab`), and `/lsp` in your daily work
+- **Customize:** apply the four-layer model to your own repo. Most teams
+  over-rely on Layer 1 and starve Layers 2–4.
+- **Audit:** run `extensions_manage` operation `list` and confirm Layer 2
+  in your repo is the minimum viable set, not a junk drawer.
+- **Share:** `/instinct-export` your strongest instincts and have a
+  teammate `/instinct-import` them — confidence transfers exactly.
 
 **Return to:** [README](../README.md)
