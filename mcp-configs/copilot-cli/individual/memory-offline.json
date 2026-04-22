@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "memory": {
+      "description": "Offline / air-gapped variant of the Memory MCP knowledge graph. Pins to a vendored package and writes the graph to a local file under the repo (or a path you control), so no network egress and no shared state. Use this in regulated environments where the default `npx -y @modelcontextprotocol/server-memory` invocation cannot reach the registry and where the knowledge graph must not leave the machine.",
+      "type": "local",
+      "command": "node",
+      "args": [
+        "./vendor/mcp-server-memory/dist/index.js"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": "./.copilot/memory/knowledge-graph.json",
+        "MCP_MEMORY_OFFLINE": "1"
+      },
+      "tools": ["*"],
+      "notes": [
+        "Vendor the server: `npm pack @modelcontextprotocol/server-memory` then unpack to ./vendor/mcp-server-memory.",
+        "Create ./.copilot/memory/ and add it to .gitignore if the graph is sensitive.",
+        "No network calls are made; the knowledge graph is a single JSON file you can audit, back up, and rotate.",
+        "Do NOT enable this server alongside the online `memory` server — pick one to avoid divergent graphs."
+      ]
+    }
+  }
+}
