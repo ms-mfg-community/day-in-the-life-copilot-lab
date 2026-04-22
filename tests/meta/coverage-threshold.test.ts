@@ -20,7 +20,7 @@ function ensureNodeCoverage(): void {
   // Generate coverage on demand. Use pnpm if available, fall back to npx.
   // Coverage config lives in node/vitest.config.ts.
   try {
-    execSync('pnpm -C node test -- --coverage --coverage.reporter=json-summary', {
+    execSync('pnpm -C node exec vitest run --coverage --coverage.reporter=json-summary', {
       stdio: 'pipe',
       cwd: ROOT,
     });
