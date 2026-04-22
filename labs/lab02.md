@@ -134,7 +134,7 @@ This instruction only loads when Razor files (`.cshtml`) are in context — not 
 
 **Context**: Controllers need database access but should not depend directly on Entity Framework's `SchoolContext`.
 
-**Decision**: All data access goes through `IRepository<T>` defined in `ContosoUniversity.Core`. Implementations live in `ContosoUniversity.Infrastructure`.
+**Decision**: All data access goes through `IRepository<T>` defined in `dotnet/ContosoUniversity.Core`. Implementations live in `dotnet/ContosoUniversity.Infrastructure`.
 
 **Consequences**:
 - Controllers are testable with mock repositories

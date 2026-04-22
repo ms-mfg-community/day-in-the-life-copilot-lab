@@ -135,11 +135,11 @@ Before starting, ensure you have all [prerequisites](#prerequisites) installed.
 1. Fork and clone this repository (see [Fork & Clone](#fork--clone) below)
 2. Build the solution:
    ```shell
-   dotnet build ContosoUniversity.sln
+   dotnet build dotnet/ContosoUniversity.sln
    ```
 3. _(Optional)_ Run the application:
    ```shell
-   dotnet run --project ContosoUniversity.Web
+   dotnet run --project dotnet/ContosoUniversity.Web
    ```
    The app starts at **https://localhost:52379** (or http://localhost:52380). Press `Ctrl+C` to stop.
 4. Open in VS Code:
@@ -209,7 +209,7 @@ Set-Location day-in-the-life-copilot-lab
 5. Verify the .NET project builds:
 
 ```shell
-dotnet build ContosoUniversity.sln
+dotnet build dotnet/ContosoUniversity.sln
 ```
 
 You should see:
@@ -222,7 +222,7 @@ Build succeeded.
 6. _(Optional)_ Run the application:
 
 ```shell
-dotnet run --project ContosoUniversity.Web
+dotnet run --project dotnet/ContosoUniversity.Web
 ```
 
 The app starts at **https://localhost:52379** (or http://localhost:52380). On first run, the database is automatically created and seeded with sample data.
@@ -285,13 +285,13 @@ git push --tags origin
 4. Verify the .NET project builds:
 
 ```shell
-dotnet build ContosoUniversity.sln
+dotnet build dotnet/ContosoUniversity.sln
 ```
 
 5. _(Optional)_ Run the application:
 
 ```shell
-dotnet run --project ContosoUniversity.Web
+dotnet run --project dotnet/ContosoUniversity.Web
 ```
 
 > **Tip:** To keep your copy in sync with the source, add it as an `upstream` remote:
@@ -430,11 +430,11 @@ erDiagram
 
 | Project | Layer | Purpose |
 |---------|-------|---------|
-| **ContosoUniversity.Core** | Domain | Models, interfaces, business rules |
-| **ContosoUniversity.Infrastructure** | Data | EF Core, repositories, services |
-| **ContosoUniversity.Web** | Presentation | MVC controllers, views, DI |
-| **ContosoUniversity.Tests** | Testing | xUnit + WebApplicationFactory |
-| **ContosoUniversity.PlaywrightTests** | E2E | Browser-based Playwright tests |
+| **ContosoUniversity.Core** (`dotnet/`) | Domain | Models, interfaces, business rules |
+| **ContosoUniversity.Infrastructure** (`dotnet/`) | Data | EF Core, repositories, services |
+| **ContosoUniversity.Web** (`dotnet/`) | Presentation | MVC controllers, views, DI |
+| **ContosoUniversity.Tests** (`dotnet/`) | Testing | xUnit + WebApplicationFactory |
+| **ContosoUniversity.PlaywrightTests** (`dotnet/`) | E2E | Browser-based Playwright tests |
 
 ---
 
@@ -514,9 +514,9 @@ Version floors, model tiers, and MCP pins live in
 
 | Task | Command |
 |------|---------|
-| Build solution | `dotnet build ContosoUniversity.sln` |
-| Run tests | `dotnet test ContosoUniversity.sln` |
-| Run web app | `dotnet run --project ContosoUniversity.Web` |
+| Build solution | `dotnet build dotnet/ContosoUniversity.sln` |
+| Run tests | `dotnet test dotnet/ContosoUniversity.sln` |
+| Run web app | `dotnet run --project dotnet/ContosoUniversity.Web` |
 | Run specific test | `dotnet test --filter "FullyQualifiedName~TestName"` |
 | Check Copilot CLI | `copilot --version` |
 | Install gh-aw | `gh extension install github/gh-aw` |
@@ -537,12 +537,13 @@ day-in-the-life-copilot-lab/
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
 │   └── mcp-config.json            # MCP server configuration (5 servers)
-├── ContosoUniversity.sln          # .NET solution file
-├── ContosoUniversity.Core/        # Domain models and interfaces
-├── ContosoUniversity.Infrastructure/  # Data access and services
-├── ContosoUniversity.Web/         # ASP.NET MVC web application
-├── ContosoUniversity.Tests/       # xUnit unit and integration tests
-├── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
+├── dotnet/                        # .NET solution and projects
+│   ├── ContosoUniversity.sln
+│   ├── ContosoUniversity.Core/        # Domain models and interfaces
+│   ├── ContosoUniversity.Infrastructure/  # Data access and services
+│   ├── ContosoUniversity.Web/         # ASP.NET MVC web application
+│   ├── ContosoUniversity.Tests/       # xUnit unit and integration tests
+│   └── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
 ├── labs/                          # Hands-on lab modules (10 labs)
 ├── solutions/                     # Reference solutions for each lab
 ├── docs/                          # Research and reference documentation

@@ -18,7 +18,7 @@ if [[ "$FILE_PATH" != *.cs ]]; then
 fi
 
 # Run dotnet build and capture output
-BUILD_OUTPUT=$(dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
+BUILD_OUTPUT=$(dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
   echo "⚠️  BUILD FAILED after editing $FILE_PATH"
   echo ""
   echo "$BUILD_OUTPUT" | tail -20

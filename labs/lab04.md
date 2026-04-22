@@ -306,7 +306,7 @@ Generate comprehensive xUnit tests for a ContosoUniversity class.
 
 1. **Read the source file** specified by the user (or the currently open file)
 2. **Identify all public methods** that need testing
-3. **Check existing test patterns** in `ContosoUniversity.Tests/`
+3. **Check existing test patterns** in `dotnet/ContosoUniversity.Tests/`
 4. **Generate a test class** with these sections:
    - Mock setup in constructor
    - Happy path tests
@@ -324,8 +324,8 @@ Use `MethodName_Condition_ExpectedResult`:
 
 ## After Generating
 
-1. Build: `dotnet build ContosoUniversity.Tests/`
-2. Run: `dotnet test ContosoUniversity.Tests/ --filter "{ClassName}"`
+1. Build: `dotnet build dotnet/ContosoUniversity.Tests/`
+2. Run: `dotnet test dotnet/ContosoUniversity.Tests/ --filter "{ClassName}"`
 3. Report results
 PROMPT
 ```
@@ -349,7 +349,7 @@ Generate comprehensive xUnit tests for a ContosoUniversity class.
 
 1. **Read the source file** specified by the user (or the currently open file)
 2. **Identify all public methods** that need testing
-3. **Check existing test patterns** in `ContosoUniversity.Tests/`
+3. **Check existing test patterns** in `dotnet/ContosoUniversity.Tests/`
 4. **Generate a test class** with these sections:
    - Mock setup in constructor
    - Happy path tests
@@ -367,8 +367,8 @@ Use `MethodName_Condition_ExpectedResult`:
 
 ## After Generating
 
-1. Build: `dotnet build ContosoUniversity.Tests/`
-2. Run: `dotnet test ContosoUniversity.Tests/ --filter "{ClassName}"`
+1. Build: `dotnet build dotnet/ContosoUniversity.Tests/`
+2. Run: `dotnet test dotnet/ContosoUniversity.Tests/ --filter "{ClassName}"`
 3. Report results
 '@ | Out-File -FilePath .github/prompts/create-dotnet-test.prompt.md -Encoding utf8
 ```
@@ -412,7 +412,7 @@ How should I write unit tests for the StudentsController in ContosoUniversity?
 
 4. Now try the prompt:
 ```
-@create-dotnet-test for ContosoUniversity.Web/Controllers/CoursesController.cs
+@create-dotnet-test for dotnet/ContosoUniversity.Web/Controllers/CoursesController.cs
 ```
 
 The prompt should generate a complete test class for the CoursesController.

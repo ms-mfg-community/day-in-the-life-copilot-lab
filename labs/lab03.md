@@ -82,7 +82,7 @@ You are a .NET development specialist working on the ContosoUniversity applicati
 
 ## When Invoked
 
-1. Check the solution builds: `dotnet build ContosoUniversity.sln`
+1. Check the solution builds: `dotnet build dotnet/ContosoUniversity.sln`
 2. Review the relevant project layer before making changes
 3. Follow the architecture: Core → Infrastructure → Web
 4. Implement with proper dependency injection and async patterns
@@ -90,11 +90,11 @@ You are a .NET development specialist working on the ContosoUniversity applicati
 ## ContosoUniversity Architecture
 
 ```
-ContosoUniversity.Core/           # Domain models, interfaces, validation
-ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
-ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
-ContosoUniversity.Tests/          # xUnit tests
-ContosoUniversity.PlaywrightTests/ # E2E tests
+dotnet/ContosoUniversity.Core/           # Domain models, interfaces, validation
+dotnet/ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
+dotnet/ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
+dotnet/ContosoUniversity.Tests/          # xUnit tests
+dotnet/ContosoUniversity.PlaywrightTests/ # E2E tests
 ```
 
 ## Coding Standards
@@ -109,9 +109,9 @@ ContosoUniversity.PlaywrightTests/ # E2E tests
 ## Development Commands
 
 ```bash
-dotnet build ContosoUniversity.sln            # Build all projects
-dotnet test ContosoUniversity.Tests/           # Run tests
-dotnet run --project ContosoUniversity.Web     # Run the app
+dotnet build dotnet/ContosoUniversity.sln            # Build all projects
+dotnet test dotnet/ContosoUniversity.Tests/           # Run tests
+dotnet run --project dotnet/ContosoUniversity.Web     # Run the app
 ```
 
 ## Review Checklist
@@ -142,7 +142,7 @@ You are a .NET development specialist working on the ContosoUniversity applicati
 
 ## When Invoked
 
-1. Check the solution builds: `dotnet build ContosoUniversity.sln`
+1. Check the solution builds: `dotnet build dotnet/ContosoUniversity.sln`
 2. Review the relevant project layer before making changes
 3. Follow the architecture: Core → Infrastructure → Web
 4. Implement with proper dependency injection and async patterns
@@ -150,11 +150,11 @@ You are a .NET development specialist working on the ContosoUniversity applicati
 ## ContosoUniversity Architecture
 
 ```
-ContosoUniversity.Core/           # Domain models, interfaces, validation
-ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
-ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
-ContosoUniversity.Tests/          # xUnit tests
-ContosoUniversity.PlaywrightTests/ # E2E tests
+dotnet/ContosoUniversity.Core/           # Domain models, interfaces, validation
+dotnet/ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
+dotnet/ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
+dotnet/ContosoUniversity.Tests/          # xUnit tests
+dotnet/ContosoUniversity.PlaywrightTests/ # E2E tests
 ```
 
 ## Coding Standards
@@ -169,9 +169,9 @@ ContosoUniversity.PlaywrightTests/ # E2E tests
 ## Development Commands
 
 ```bash
-dotnet build ContosoUniversity.sln            # Build all projects
-dotnet test ContosoUniversity.Tests/           # Run tests
-dotnet run --project ContosoUniversity.Web     # Run the app
+dotnet build dotnet/ContosoUniversity.sln            # Build all projects
+dotnet test dotnet/ContosoUniversity.Tests/           # Run tests
+dotnet run --project dotnet/ContosoUniversity.Web     # Run the app
 ```
 
 ## Review Checklist
@@ -249,11 +249,11 @@ copilot
 
 2. Invoke the agent:
 ```
-@dotnet-dev Analyze the ContosoUniversity.Core project. What models exist and what are their relationships?
+@dotnet-dev Analyze the dotnet/ContosoUniversity.Core project. What models exist and what are their relationships?
 ```
 
 3. The agent should:
-   - Read files from `ContosoUniversity.Core/Models/`
+   - Read files from `dotnet/ContosoUniversity.Core/Models/`
    - Identify: Student, Course, Instructor, Enrollment, Department, OfficeAssignment
    - Describe relationships (Student has Enrollments, Course has Enrollments, etc.)
 

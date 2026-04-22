@@ -74,10 +74,10 @@ cat .copilot/mcp-config.json | jq .
 # > Search the Memory MCP for "ContosoUniversity"
 
 # Build the .NET project
-dotnet build ContosoUniversity.sln
+dotnet build dotnet/ContosoUniversity.sln
 
 # Run tests
-dotnet test ContosoUniversity.Tests/
+dotnet test dotnet/ContosoUniversity.Tests/
 ```
 
 ### Fresh Context Prompt

@@ -149,7 +149,7 @@ Add a one-line rule:
 ```
 Append to .github/instructions/testing.instructions.md:
 "Every new repository class must have a corresponding xUnit fixture in
-ContosoUniversity.Tests/Fixtures/."
+dotnet/ContosoUniversity.Tests/Fixtures/."
 ```
 
 Now open a fresh session and ask the agent to scaffold a repository — it

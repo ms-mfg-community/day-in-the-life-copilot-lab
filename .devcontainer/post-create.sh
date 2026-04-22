@@ -17,11 +17,11 @@ sudo apt-get update -qq && sudo apt-get install -y -qq jq > /dev/null
 
 # Restore .NET packages
 echo "Restoring .NET packages..."
-dotnet restore ContosoUniversity.sln
+dotnet restore dotnet/ContosoUniversity.sln
 
 # Build the solution to verify everything works
 echo "Building solution..."
-dotnet build ContosoUniversity.sln --no-restore
+dotnet build dotnet/ContosoUniversity.sln --no-restore
 
 echo ""
 echo "=== Setup complete ==="

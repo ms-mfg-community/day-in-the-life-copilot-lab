@@ -15,7 +15,7 @@ This is the **Everything GitHub Copilot Hands-On Lab** — a comprehensive train
 ## Build & Test
 
 ```shell
-dotnet build ContosoUniversity.sln
+dotnet build dotnet/ContosoUniversity.sln
 dotnet test
 ```
 
