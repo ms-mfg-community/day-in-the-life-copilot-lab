@@ -59,8 +59,9 @@ copilot
 ```
 
 **Allowlist policy:** if your org enforces an allowlist, the plugin's `name`
-field in `plugin.json` must match an entry in
-`mcp-configs/plugin-allowlist.json` for the install to succeed. See Lab 11 §11.4.
+field in `manifest.yaml` must be listed in `plugin-template/org-policy.example.yaml`
+(or the equivalent file your org has adopted from that template) for the
+install to succeed. See Lab 11 §11.4.
 
 **Time:** 3 minutes
 
@@ -72,19 +73,23 @@ field in `plugin.json` must match an entry in
 - `fabric-mcp` server starts but `/list lakehouses` returns 401/403
 - No browser available to complete the device-code login
 
-**Fallback (offline simulator):** Lab 12 ships an offline path using a local
-Parquet fixture so the lab is completable without Fabric credentials.
+**Fallback (offline simulator):** Lab 12 ships an offline path so the lab is
+completable without Fabric credentials. The pattern is **skip the Fabric MCP
+entirely** and read a local Parquet fixture instead — no env-var toggle on the
+MCP server itself.
 
 ```bash
-# In the repo root
-export FABRIC_MCP_MODE=offline
-export FABRIC_MCP_FIXTURE=labs/appendices/fabric/fixtures/sales.parquet
+# 1) Generate the fixture (one-time, requires python + pandas + pyarrow)
+python labs/appendices/fabric/build-fixture.py
 
-# Re-launch copilot; the fabric-mcp config falls through to the local file.
+# 2) In your copilot session, point at the fixture instead of the live MCP
+#    The lab's offline path uses pandas/pyarrow directly inside notebook cells.
+#    See Lab 12 §12.2 for the full snippet.
 ```
 
 The lakehouse enumeration, notebook editing, and inline-chat steps work
-identically against the simulator. See Lab 12 §12.3 for the full fallback flow.
+identically against the simulator. See Lab 12 §12.2 (offline simulator setup)
+and §12.5 (notebook hygiene) for the full fallback flow.
 
 **If you do have Fabric access:** prefer the device-code flow in a local VS
 Code window (not Codespaces) and copy the resulting token into the Codespace
@@ -333,14 +338,14 @@ Copilot doesn't reference skills when expected
 ls -la .github/skills/
 
 # Check SKILL.md format
-cat .github/skills/frontend-patterns/SKILL.md | head -20
+cat .github/skills/coding-standards/SKILL.md | head -20
 # Should have YAML frontmatter with name and description
 ```
 
 **Fix:**
 ```bash
 # Explicitly reference the skill in prompt
-copilot -p "Follow the patterns in .github/skills/frontend-patterns/SKILL.md when implementing the component."
+copilot -p "Follow the patterns in .github/skills/coding-standards/SKILL.md when implementing the component."
 ```
 
 **Explanation:**
