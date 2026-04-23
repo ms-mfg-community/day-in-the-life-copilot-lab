@@ -398,6 +398,10 @@ Cross-references:
   `task` tool for sub-agents instead of spawning panes.
 - Pair with **Lab 10** for the underlying session-state primitives
   (plan.md, todos, checkpoints) that the hand-off docs build on.
+- [Lab 11](lab11.md) and [Lab 12](lab12.md) are useful background —
+  Lab 11 for the plugin / distribution mindset that shaped
+  `.github/skills/`, and Lab 12 for a concrete MCP integration you may
+  want to hand to a worker pane in the orchestrator pattern below.
 
 Recap: a tmux session, three short shell scripts, one rubric prompt,
 and one rule — *the orchestrator remembers, the workers forget* — are
