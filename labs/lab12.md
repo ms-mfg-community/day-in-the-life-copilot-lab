@@ -60,6 +60,11 @@ your org pins a different fork (common in regulated tenants), update the
 
 ## 12.1 Prerequisites
 
+> 📎 **Builds on [Lab 11](lab11.md).** Lab 11 introduced the
+> "configuration as a product" / plugin-distribution mindset; this lab
+> extends the same mindset to the data plane via Fabric MCP. Lab 11
+> is not a hard prerequisite, but the packaging instincts carry over.
+
 | Path | Prerequisite |
 |------|--------------|
 | Live | Azure CLI (`az`) signed in to your Fabric tenant; access to one workspace |
