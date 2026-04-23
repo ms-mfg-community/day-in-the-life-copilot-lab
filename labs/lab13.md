@@ -335,9 +335,10 @@ Before you close the lab, confirm:
 
 ### Next steps
 
-- **Lab 14** (next cycle) puts this pattern on rails with a tmux-based
-  orchestrator deep-dive and shipped helper scripts. The hand-off doc
-  schema introduced in §B.2 is the contract Lab 14 will automate.
+- **[Lab 14](lab14.md)** (next cycle) puts this pattern on rails with a
+  tmux-based orchestrator deep-dive and shipped helper scripts. The
+  hand-off doc schema introduced in §B.2 is the contract Lab 14 will
+  automate.
 - Try the two-agent loop on a real PR in your fork. The first time it
   catches a bug a single-agent flow missed, you'll feel why the
   pattern earns its overhead.
