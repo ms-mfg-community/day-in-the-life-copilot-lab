@@ -6,6 +6,57 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 
 ---
 
+## 🚨 Pre-Workshop Setup Checklist
+
+> **Facilitators: share this section with attendees at least 1 week before the session.**
+> Setup takes 15–30 minutes on a good network and can fail on restricted laptops. Reserving a week gives every attendee room to resolve IT approvals, install tooling, and run preflight before showtime — so the live session is about Copilot, not package managers.
+> Attendees arriving with a failing preflight on the day of the workshop may need to switch to Codespaces to keep up.
+
+**Attendees — run this checklist end-to-end and arrive with a green preflight:**
+
+1. **Read the [Prerequisites](#prerequisites) section below** and install anything you are missing.
+2. **Authenticate the CLIs once** so the session does not start on a login prompt:
+   - `gh auth login` — GitHub CLI
+   - `copilot` (launch it once and complete the sign-in flow)
+3. **Clone the repo to a fast local filesystem.** On Windows/WSL2 this means a path **under your Linux home directory** (e.g. `~/repos/day-in-the-life-copilot-lab`), *not* `/mnt/c/…`. See the [Lab 14 compatibility matrix](labs/lab14.md#141-compatibility-matrix) for why.
+4. **Run the preflight script** and resolve any `FAIL` items. `WARN` items are acceptable but review them:
+   ```bash
+   # macOS, Linux, WSL2
+   scripts/preflight.sh --lab14
+
+   # Windows PowerShell (non-Lab-14 paths only; see matrix)
+   pwsh scripts/preflight.ps1 -Lab14
+   ```
+   Expected green result:
+   ```
+   Summary: 0 FAIL, 0 WARN
+   Result: READY ✅
+   ```
+   `--lab14` / `-Lab14` enables the strict Lab 14 checks (tmux required, WSL1 and Windows-PS-only become FAIL). Drop that flag if you are certain you will skip Lab 14.
+5. **Optional but recommended:** open the devcontainer once (Codespaces or local Docker/Podman) so its image is pre-pulled. See [Choose Your Path](#choose-your-path).
+
+**If preflight FAILs:**
+
+| FAIL | Fix |
+|------|-----|
+| `copilot not found` | `npm install -g @github/copilot` (Node 18+ required) |
+| `gh not found` | [Install GitHub CLI](https://cli.github.com/) then `gh auth login` |
+| `git not found` | [Install git](https://git-scm.com/downloads) |
+| `node not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org/) |
+| `tmux not found` (with `--lab14`) | Linux: `sudo apt-get install -y tmux` · macOS: `brew install tmux` · Windows: run the workshop inside WSL2 |
+| `os` is `wsl1` | Upgrade: `wsl --set-version <distro> 2` |
+| `os` is `windows` (with `--lab14`) | Switch to WSL2 or GitHub Codespaces — Lab 14's tmux-orchestrator pattern is not supported on Windows PowerShell. See the [compatibility matrix](labs/lab14.md#141-compatibility-matrix). |
+
+**Warnings to review:**
+
+| WARN | What it means |
+|------|---------------|
+| Repo on `/mnt/c/…` | WSL2 file I/O is ~10× slower across the Windows↔Linux boundary; file-watchers are flaky. Move the clone to `~/repos/…` before the session. |
+| `gh-aw extension not installed` | Only needed for Labs 08–09. Install with `gh extension install github/gh-aw`. |
+| No container runtime | Only needed if you intend to use the local devcontainer path. Codespaces works without it. |
+
+---
+
 ## Prerequisites
 
 ### Must-Have Now
