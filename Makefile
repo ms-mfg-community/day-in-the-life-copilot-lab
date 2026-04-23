@@ -20,7 +20,7 @@ DOTNET_TESTS   := dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj
 DOTNET_E2E     := dotnet/ContosoUniversity.PlaywrightTests/ContosoUniversity.PlaywrightTests.csproj
 NODE_DIR       := node
 
-.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs setup-hooks lint-workflows slides
+.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs setup-hooks lint-workflows slides handout-pdf
 
 help:
 	@echo "Targets:"
@@ -33,10 +33,34 @@ help:
 	@echo "  make setup-hooks      - Activate repo-managed git hooks in .githooks/"
 	@echo "  make lint-workflows   - Compile every gh-aw workflow under .github/workflows/"
 	@echo "  make slides           - Build the workshop deck to workshop/dist/"
+	@echo "  make handout-pdf      - Render workshop/attendee-handout.md to PDF (opt-in: needs pandoc)"
 
 slides:
 	@echo "=== Building workshop deck (workshop/dist/index.html) ==="
 	node scripts/workshop/build-slides.mjs
+
+# Render the attendee handout to PDF. Opt-in — pandoc is NOT a new devDep
+# of this repo. If pandoc is installed, we use it; if not, we print a
+# clear install hint and exit 0 so the target is a documented noop.
+# The handout is designed to render cleanly through any markdown->PDF
+# pipeline; pandoc is the lowest-friction option.
+handout-pdf:
+	@echo "=== Rendering workshop/attendee-handout.md to PDF (opt-in via pandoc) ==="
+	@if ! command -v pandoc >/dev/null 2>&1; then \
+	  echo "pandoc not installed — this target is opt-in."; \
+	  echo "Install pandoc to enable:"; \
+	  echo "  macOS:   brew install pandoc"; \
+	  echo "  Linux:   sudo apt-get install -y pandoc texlive-xetex"; \
+	  echo "  Windows: winget install JohnMacFarlane.Pandoc"; \
+	  echo "Then re-run: make handout-pdf"; \
+	  exit 0; \
+	fi; \
+	mkdir -p workshop/dist; \
+	pandoc workshop/attendee-handout.md \
+	  -o workshop/dist/attendee-handout.pdf \
+	  --from=gfm --pdf-engine=xelatex \
+	  -V geometry:margin=0.75in -V fontsize=10pt; \
+	echo "wrote workshop/dist/attendee-handout.pdf"
 
 test-dotnet:
 	@echo "=== .NET unit/integration tests ==="
