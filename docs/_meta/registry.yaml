@@ -46,62 +46,85 @@ models:
     - claude-opus-4.6
     - gpt-5.3-codex
 
+# Pace-field semantics (Phase 1 audit):
+#   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline
+#     "⏱️ Presenter pace: X minutes" callout at the top of each lab.
+#     Matches tests/lab-structure/*.test.ts frontmatter assertions.
+#   pace_workshop_minutes  — realistic presenter-demo time inside the
+#     4-hour advanced workshop. Includes narrative setup, live demo with
+#     room for one mistake, and transition. Consumed by
+#     workshop/curriculum.md via tests/workshop/time-budget.test.ts.
+#   pace_self_minutes      — self-paced/solo completion time.
 labs:
   lab01:
     title: "Exploring Copilot Configuration"
     pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
     pace_self_minutes: 10
   lab02:
     title: "Custom Instructions & AGENTS.md"
     pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
     pace_self_minutes: 15
   lab03:
     title: "Creating a .NET Development Agent"
     pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
     pace_self_minutes: 15
   lab04:
     title: "Skills & Prompts"
     pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
     pace_self_minutes: 15
   lab05:
     title: "MCP Server Configuration"
     pace_presenter_minutes: 3
+    pace_workshop_minutes: 10
     pace_self_minutes: 15
   lab06:
     title: "Hooks"
     pace_presenter_minutes: 3
+    pace_workshop_minutes: 4
     pace_self_minutes: 10
   lab07:
     title: "Multi-Agent Orchestration"
     pace_presenter_minutes: 4
+    pace_workshop_minutes: 25
     pace_self_minutes: 20
   lab08:
     title: "GitHub Agentic Workflows: PRD Generation"
     pace_presenter_minutes: 5
+    pace_workshop_minutes: 12
     pace_self_minutes: 15
   lab09:
     title: "Copilot Coding Agent & Code Review"
     pace_presenter_minutes: 5
+    pace_workshop_minutes: 13
     pace_self_minutes: 20
   lab10:
     title: "Context, Memory & Learning"
     pace_presenter_minutes: 5
+    pace_workshop_minutes: 7
     pace_self_minutes: 20
   lab11:
     title: "Building & Distributing a Copilot Plugin (Enterprise Marketplace Pattern)"
     pace_presenter_minutes: 6
+    pace_workshop_minutes: 20
     pace_self_minutes: 25
   lab12:
     title: "Fabric MCP with Copilot CLI & VS Code"
     pace_presenter_minutes: 8
+    pace_workshop_minutes: 20
     pace_self_minutes: 30
   lab13:
     title: "A2A Concepts with Copilot CLI ACP"
     pace_presenter_minutes: 10
+    pace_workshop_minutes: 10
     pace_self_minutes: 35
   lab14:
     title: "Orchestrator + tmux Pattern (Deep-Dive)"
     pace_presenter_minutes: 15
+    pace_workshop_minutes: 15
     pace_self_minutes: 45
 
 audit:
