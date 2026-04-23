@@ -72,6 +72,36 @@ const PHASE_3B_MODULES: ModuleSpec[] = [
   },
 ];
 
+// Phase 3c adds Modules 5 (enterprise plugin marketplace, anchor lab11) and
+// 6 (A2A / ACP + tmux-orchestrator flagship, anchor labs 13 + 14). Same six
+// required sections and a "total: N min" marker matching the slide's
+// `minutes:` front-matter. In addition, the flagship shape calls for a
+// dense demo script — we assert at least five `### Demo <Letter>` sub-
+// sections in the Demo script body so the module carries real live
+// material rather than narration-only beats.
+const PHASE_3C_MODULES: ModuleSpec[] = [
+  {
+    id: 'M5',
+    slidePath: join(SLIDES_DIR, '50-module-5.md'),
+    scriptPath: join(SCRIPTS_DIR, 'module-05-marketplace.md'),
+  },
+  {
+    id: 'M6',
+    slidePath: join(SLIDES_DIR, '60-module-6.md'),
+    scriptPath: join(SCRIPTS_DIR, 'module-06-a2a-tmux.md'),
+  },
+];
+
+function countDemoHeadings(script: string): number {
+  // Scoped to the Demo script section (## 2.) so advanced-tip or pitfall
+  // bullets that happen to include the word "Demo" don't inflate the count.
+  const secRe = /##\s+2\.\s+Demo script[\s\S]*?(?=\n##\s+\d\.|\n#\s|$)/i;
+  const m = script.match(secRe);
+  if (!m) return 0;
+  const demoRe = /^###\s+Demo\s+[A-Z]\b/gm;
+  return (m[0].match(demoRe) ?? []).length;
+}
+
 const REQUIRED_SECTIONS = [
   /##\s+1\.\s+Open with the advanced problem/i,
   /##\s+2\.\s+Demo script/i,
@@ -178,6 +208,48 @@ describe('workshop speaker-scripts — Phase 3b modules', () => {
         expect(totalDeclared).toBe(slideMinutes);
         expect(lastStart, `no timing cues found in ${mod.scriptPath}`).not.toBeNull();
         expect(lastStart! < slideMinutes).toBe(true);
+      });
+    });
+  }
+});
+
+describe('workshop speaker-scripts — Phase 3c modules', () => {
+  for (const mod of PHASE_3C_MODULES) {
+    describe(mod.id, () => {
+      it('has a speaker-script file on disk', () => {
+        expect(
+          existsSync(mod.scriptPath),
+          `missing speaker script: ${mod.scriptPath}`,
+        ).toBe(true);
+      });
+
+      it('contains all six required sections', () => {
+        const text = readFileSync(mod.scriptPath, 'utf8');
+        for (const re of REQUIRED_SECTIONS) {
+          expect(re.test(text), `missing section ${re} in ${mod.scriptPath}`).toBe(true);
+        }
+      });
+
+      it('declares a total that matches the slide minutes front-matter', () => {
+        const slideMinutes = parseFrontMatterMinutes(mod.slidePath);
+        const text = readFileSync(mod.scriptPath, 'utf8');
+        const { totalDeclared, lastStart } = extractTimingCues(text);
+        expect(
+          totalDeclared,
+          `Timing cues section must declare an explicit "total: N min" marker in ${mod.scriptPath}`,
+        ).not.toBeNull();
+        expect(totalDeclared).toBe(slideMinutes);
+        expect(lastStart, `no timing cues found in ${mod.scriptPath}`).not.toBeNull();
+        expect(lastStart! < slideMinutes).toBe(true);
+      });
+
+      it('carries at least five "### Demo X" sub-sections inside Demo script', () => {
+        const text = readFileSync(mod.scriptPath, 'utf8');
+        const count = countDemoHeadings(text);
+        expect(
+          count,
+          `expected >= 5 "### Demo <Letter>" headings in Demo script section of ${mod.scriptPath}, found ${count}`,
+        ).toBeGreaterThanOrEqual(5);
       });
     });
   }
