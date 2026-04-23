@@ -41,7 +41,7 @@
   Zoom / Meet auto-captions) before the first demo and confirm they
   are on during `## Tech check`.
 - Narrate every demo action in plain language before performing it
-  ("I'll run `make mcp-up` now, which starts the three MCP servers")
+  ("I'll now compose three MCP servers with `copilot --additional-mcp-config`, which registers Context7, Microsoft Learn, and memory")
   so audio-only attendees and caption readers follow without seeing
   the terminal.
 - When a demo produces important textual output that is too small to

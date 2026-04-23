@@ -44,7 +44,7 @@ checklist references do not break.
 ### M2 — Multi-server MCP composition
 
 - **File:** `m2-primary-demo.png.placeholder`
-- **What it should show:** `make mcp-up` terminal output with three
+- **What it should show:** `copilot --additional-mcp-config @mcp-configs/copilot-cli/individual/{context7,microsoft-learn,memory}.json` terminal output with three
   MCP servers healthy, followed by a `/mcp` listing inside Copilot
   CLI showing all three registered.
 - **Trigger:** Container runtime fails to start, or `/mcp` does not

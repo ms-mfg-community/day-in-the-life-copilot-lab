@@ -45,7 +45,7 @@ laptop within the last 24 hours. Cross-check against the per-module
 speaker scripts in `workshop/speaker-scripts/`.
 
 - [ ] **M1** — extensibility architecture walk (`copilot --help`, skill invocation, hook trigger)
-- [ ] **M2** — multi-server MCP compose (`make mcp-up`, `/mcp`, Fabric MCP round-trip)
+- [ ] **M2** — multi-server MCP compose (`copilot --additional-mcp-config @mcp-configs/copilot-cli/individual/{context7,microsoft-learn,memory}.json`, `/mcp`, Fabric MCP round-trip)
 - [ ] **M3** — multi-agent parallel dispatch (sub-agent fan-out, budget summary)
 - [ ] **M4** — gh-aw authoring + `gh aw compile` + one run trigger
 - [ ] **M5** — plugin marketplace install + `/plugins` list
