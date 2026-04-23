@@ -57,6 +57,40 @@ References:
 
 ---
 
+## Compatibility matrix
+
+Lab 14's orchestrator pattern is a thin layer over tmux, `send-keys`,
+and the POSIX filesystem. That makes it fast and hackable — and it
+also means it inherits every rough edge of the underlying OS. Before
+running this lab live (or in an advanced workshop), confirm your
+environment fits the matrix below.
+
+| Tier | Environment | Status | Why |
+|------|-------------|--------|-----|
+| ✅ **Supported** | Native macOS (Intel or Apple Silicon) | Run as-is | POSIX, real tmux, stable `send-keys`. |
+| ✅ **Supported** | Native Linux (Ubuntu 22.04+, Debian 12+, Fedora 39+) | Run as-is | POSIX, real tmux, stable `send-keys`. |
+| ⭐ **Recommended on Windows** | WSL2 with Copilot CLI + tmux installed **inside** the WSL distro, repo cloned **under your Linux `$HOME`** (e.g. `~/repos/…`) | Run as-is | Full Linux kernel, fast ext4 I/O, reliable file-watchers. This is the only officially supported Windows path for the live workshop. |
+| ⚠️ **Allowed but degraded** | WSL2 with the repo under `/mnt/c/…` or another Windows drive mount | Expect pain | Cross-boundary file I/O is ~10× slower, file-watchers drop events, `inotify` is unreliable, and `tmux send-keys` round-trips can stall. Works for exploration; unsafe for a timed demo. |
+| ❌ **Unsupported for the live workshop** | Windows PowerShell-only (no WSL) | Do not attempt | No tmux, no POSIX filesystem semantics; every script under `scripts/orchestrator/` assumes a Unix shell. `preflight.ps1 -Lab14` will FAIL this configuration on purpose. |
+| ❌ **Not tested / unsupported** | WSL1 | Do not attempt | tmux + interop behaviour under WSL1 is not validated; we have seen silent `send-keys` drops. Upgrade: `wsl --set-version <distro> 2`. `preflight.sh --lab14` will FAIL this on purpose. |
+| ✅ **Supported** | GitHub Codespaces (default devcontainer) | Run as-is | Linux VM with tmux available via `apt-get install -y tmux` in `post-create.sh`. Best choice when local setup is blocked. |
+
+Run `scripts/preflight.sh --lab14` (or `pwsh scripts/preflight.ps1
+-Lab14` where PowerShell is the only option) before starting this lab.
+A single `FAIL` line maps directly to one of the rows above.
+
+Two non-obvious rules that the matrix encodes:
+
+1. **"WSL2" alone is not enough.** Where the *repo* lives matters as
+   much as where the *shell* runs. A WSL2 shell pointed at
+   `/mnt/c/Users/…/repo` is the degraded row, not the recommended
+   row.
+2. **The live workshop does not run on Windows PowerShell.** The
+   `preflight.ps1` script exists to *tell you* you need WSL2 or
+   Codespaces; it is not a substitute for them.
+
+---
+
 ## 14.0 Why panes, why tmux, why now
 
 A single Copilot CLI session is one big context window. As a phased

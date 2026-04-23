@@ -18,7 +18,7 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 2. **Authenticate the CLIs once** so the session does not start on a login prompt:
    - `gh auth login` — GitHub CLI
    - `copilot` (launch it once and complete the sign-in flow)
-3. **Clone the repo to a fast local filesystem.** On Windows/WSL2 this means a path **under your Linux home directory** (e.g. `~/repos/day-in-the-life-copilot-lab`), *not* `/mnt/c/…`. See the [Lab 14 compatibility matrix](labs/lab14.md#141-compatibility-matrix) for why.
+3. **Clone the repo to a fast local filesystem.** On Windows/WSL2 this means a path **under your Linux home directory** (e.g. `~/repos/day-in-the-life-copilot-lab`), *not* `/mnt/c/…`. See the [Lab 14 compatibility matrix](labs/lab14.md#compatibility-matrix) for why.
 4. **Run the preflight script** and resolve any `FAIL` items. `WARN` items are acceptable but review them:
    ```bash
    # macOS, Linux, WSL2
@@ -45,7 +45,7 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 | `node not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org/) |
 | `tmux not found` (with `--lab14`) | Linux: `sudo apt-get install -y tmux` · macOS: `brew install tmux` · Windows: run the workshop inside WSL2 |
 | `os` is `wsl1` | Upgrade: `wsl --set-version <distro> 2` |
-| `os` is `windows` (with `--lab14`) | Switch to WSL2 or GitHub Codespaces — Lab 14's tmux-orchestrator pattern is not supported on Windows PowerShell. See the [compatibility matrix](labs/lab14.md#141-compatibility-matrix). |
+| `os` is `windows` (with `--lab14`) | Switch to WSL2 or GitHub Codespaces — Lab 14's tmux-orchestrator pattern is not supported on Windows PowerShell. See the [compatibility matrix](labs/lab14.md#compatibility-matrix). |
 
 **Warnings to review:**
 
