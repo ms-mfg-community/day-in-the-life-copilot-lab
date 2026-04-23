@@ -109,8 +109,13 @@ PY
 > lakehouse query result, so the offline path teaches the same data-shape
 > intuition as the live path.
 
-The fixture is **gitignored** — see `.gitignore` for the `labs/fixtures/`
-entry. Regenerate it any time with the snippet above.
+The canonical `labs/fixtures/lab12/sales.parquet` is **committed** to the
+repo (~3 KiB) so the offline path works out of the box — no pandas install
+required just to read the lab. Regenerate it any time with the snippet
+above or via `python scripts/generate-lab12-fixture.py` (pandas + pyarrow
+required only when regenerating). Any *additional* parquet files you drop
+into `labs/fixtures/lab12/` while experimenting stay local — see
+`.gitignore`.
 
 ---
 

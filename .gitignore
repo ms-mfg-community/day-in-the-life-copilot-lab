@@ -46,5 +46,8 @@ docs/.github/*
 .vitest-cache/
 coverage/
 
-# Lab 12 — locally-generated Fabric simulator fixtures (Parquet)
+# Lab 12 — the committed sales.parquet fixture is regenerated via
+# scripts/generate-lab12-fixture.py. Any *additional* parquet files a
+# learner drops into labs/fixtures/lab12/ while experimenting stay local.
 labs/fixtures/lab12/*.parquet
+!labs/fixtures/lab12/sales.parquet
