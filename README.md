@@ -504,6 +504,11 @@ erDiagram
 
 **Total: ~5 hours** (14 labs — self-paced or presenter-led)
 
+> 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
+> standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
+> Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
+> Lab 14 operationalises them with tmux.
+
 ---
 
 ## Pre-Configured Copilot Features
