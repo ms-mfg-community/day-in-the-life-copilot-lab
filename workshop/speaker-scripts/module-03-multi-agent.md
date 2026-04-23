@@ -2,7 +2,7 @@
 module: M3
 title: "Multi-agent orchestration — speaker script"
 slide_source: workshop/slides/30-module-3.md
-minutes: 30
+minutes: 25
 phase: 3b
 ---
 
@@ -22,7 +22,7 @@ The room knows. Start with the decision.
 
 > "Everyone here has run a custom agent. Some of you have wired an
 > agent-of-agents with the `agent` tool in the `tools:` array. Over
-> the next 30 minutes I want to answer the question you actually hit
+> the next 25 minutes I want to answer the question you actually hit
 > at scale: **five roles on one task — planner, implementer,
 > reviewer, QA, security — do you run them serially in one session,
 > use an agent-of-agents with shared context, fan out with `/fleet`,
@@ -42,7 +42,7 @@ Demo A).
 **Copilot CLI only. No VS Code.** Every command runs in the workshop
 repo.
 
-### Demo A — four shapes on disk in 60 seconds each (~5 min)
+### Demo A — four shapes on disk, 60 seconds each (~4 min)
 
 ```bash
 cd ~/Coding_Projects/day-in-the-life-copilot-lab
@@ -65,7 +65,7 @@ copilot help commands 2>&1 | grep -E "/tasks|/fleet"
 Narrate: "Same CLI, four different composition shapes. Pick one on
 purpose."
 
-### Demo B — the budget triangle (~4 min)
+### Demo B — the budget triangle (~3 min)
 
 ```bash
 # Open an interactive session and walk the three budget knobs.
@@ -92,7 +92,7 @@ Close the beat with: *"The three knobs are `/model`, `--effort`,
 and `/compact` vs `/clear`. Orchestrators on premium, workers on
 cheap, reset between phases."*
 
-### Demo C — real `/fleet` on the last commit (~5 min)
+### Demo C — real `/fleet` on the last commit (~4 min)
 
 ```bash
 copilot --agent planner --mode plan --add-dir .
@@ -125,7 +125,7 @@ You lose the parallelism, not the teaching outcome. Commit to the
 fallback out loud — *"we are going sequential"* — so the room is
 not confused about what they are watching.
 
-### Demo D — the `agent` tool is the delegation primitive (~3 min)
+### Demo D — the `agent` tool is the delegation primitive (~2 min)
 
 ```bash
 grep -n "^tools:" .github/agents/*.agent.md
@@ -137,7 +137,7 @@ are the ones that can actually delegate. Agents without it can
 *describe* a handoff but cannot invoke another agent. This is a
 silent failure class.
 
-### Demo E — `/compact` vs `/clear` between phases (~3 min)
+### Demo E — `/compact` vs `/clear` between phases (~1 min)
 
 Still inside an interactive session:
 
@@ -160,19 +160,19 @@ will orphan them.
 
 ## 3. Timing cues
 
-<!-- total: 30 min -->
+<!-- total: 25 min -->
 
 - 0:00 — Open with the advanced problem. Name the three failure modes. (2 min)
-- 2:00 — Slide: "Four composition shapes." Read each one-liner; ask the room for a real example of each. (3 min)
-- 5:00 — Slide: "The context-isolation decision." (2 min)
-- 7:00 — **Demo A** — four shapes on disk, 60 seconds each. (5 min)
-- 12:00 — Slide: "Budget control — the three knobs." (2 min)
-- 14:00 — **Demo B** — `/context`, `/usage`, `/model`. (4 min)
-- 18:00 — Slide: "Real sub-agent dispatch — the Copilot CLI surface." Point at `copilot help commands`. (2 min)
-- 20:00 — **Demo C** — live `/fleet` on the last commit. (5 min)
-- 25:00 — **Demo D** — the `agent` tool is the delegation primitive. (2 min)
-- 27:00 — **Demo E** — `/compact` vs `/clear` between phases. (2 min)
-- 29:00 — Slide: "Takeaway." Flat over nested; pick the shape on purpose. (1 min, closes at 30:00)
+- 2:00 — Slide: "Four composition shapes." Read each one-liner; ask the room for a real example of each. (2 min)
+- 4:00 — Slide: "The context-isolation decision." (2 min)
+- 6:00 — **Demo A** — four shapes on disk, 60 seconds each. (4 min)
+- 10:00 — Slide: "Budget control — the three knobs." (2 min)
+- 12:00 — **Demo B** — `/context`, `/usage`, `/model`. (3 min)
+- 15:00 — Slide: "Real sub-agent dispatch — the Copilot CLI surface." Point at `copilot help commands`. (2 min)
+- 17:00 — **Demo C** — live `/fleet` on the last commit. (4 min)
+- 21:00 — **Demo D** — the `agent` tool is the delegation primitive. (2 min)
+- 23:00 — **Demo E** — `/compact` vs `/clear` between phases. (1 min)
+- 24:00 — Slide: "Takeaway." Flat over nested; pick the shape on purpose. (1 min, closes at 25:00)
 
 ## 4. Expected pitfalls
 

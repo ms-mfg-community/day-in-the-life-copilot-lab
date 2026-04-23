@@ -2,7 +2,7 @@
 module: M3
 title: "Multi-agent orchestration"
 anchor_labs: [lab07]
-minutes: 30
+minutes: 25
 phase: 3b
 ---
 
