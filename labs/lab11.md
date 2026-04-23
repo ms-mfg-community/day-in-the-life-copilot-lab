@@ -194,3 +194,10 @@ enforce this contract on every PR.
 Lab 12 takes the same "configuration as a product" mindset into the data
 plane with Fabric MCP + notebooks. Labs 13 and 14 wire multi-plugin
 workspaces into A2A orchestration and tmux-driven execution patterns.
+
+- [Lab 12](lab12.md) — Fabric MCP with Copilot CLI & VS Code (data-plane
+  MCP, offline Parquet fallback, notebook hygiene).
+- [Lab 13](lab13.md) — A2A concepts with Copilot CLI ACP (implementer +
+  critic, trust boundaries, hand-off schema).
+- [Lab 14](lab14.md) — Orchestrator + tmux deep-dive (the pattern that
+  built this repo; operationalises Lab 13's hand-off schema).
