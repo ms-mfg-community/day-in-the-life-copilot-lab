@@ -12,6 +12,98 @@ _Nothing yet._
 
 ---
 
+## [2.1.0-workshop] — 2026 advanced Copilot CLI workshop arc (Phases 0–6)
+
+Builds a delivery layer on top of the `[2.0.0-modernize]` lab content so the
+repo can be run as a live **4-hour advanced Copilot CLI workshop**. The labs
+remain authoritative for self-paced study; this release adds the presenter
+surface (slides + speaker scripts), attendee surface (preread + handout), and
+facilitator surface (guide + timing + rehearsal + a11y + fallbacks) needed to
+deliver the session end-to-end.
+
+### Highlights
+
+- **6 workshop modules** authored end-to-end in `workshop/slides/` and
+  `workshop/speaker-scripts/` (M1 extensibility architecture, M2 multi-server
+  MCP, M3 multi-agent orchestration, M4 gh-aw CI agent, M5 enterprise plugin
+  marketplace, M6 A2A/ACP + tmux orchestrator meta-loop).
+- **Three-artifact attendee/presenter split** — `workshop/facilitator-guide.md`,
+  `workshop/attendee-preread.md`, `workshop/attendee-handout.md` with a
+  minute-by-minute `workshop/timing-plan.md` (machine-readable YAML sums to 240).
+- **Delivery safety net** — `workshop/rehearsal-checklist.md` (Tech + Room +
+  Slides + Demos + Backup sections, 40+ checks), `workshop/a11y-notes.md`
+  (WCAG 2.1 AA — 4.5:1 body / 3:1 large, alt-text, captions, keyboard nav),
+  `workshop/fallback-screenshots/` index + 6 tracked placeholder stubs (M1–M6).
+- **Workshop test suite** grew **36 → 75** vitest tests across
+  `tests/workshop/` (5 files), including a regression that asserts slide
+  minutes match `curriculum.md` and an a11y smoke that fails on empty alt
+  text.
+- **Handout PDF path** — opt-in `make handout-pdf` Makefile target (pandoc +
+  wkhtmltopdf) produces `workshop/dist/attendee-handout.pdf`.
+- **Readiness slice (Phase 0, ships independently)** — `scripts/preflight.sh`
+  + `scripts/preflight.ps1` with fail/warn/pass classification, `README.md`
+  top-of-file **Pre-Workshop Setup Checklist** with 1-week-ahead share
+  callout, and a **Lab 14 WSL compatibility matrix** in `labs/lab14.md`
+  (supported / recommended / degraded / unsupported / not-tested).
+
+### Phase summary
+
+| Phase | Theme | Outcome |
+|------:|-------|---------|
+| Phase 0 | Attendee readiness release (ships first) | `scripts/preflight.{sh,ps1}`, README prework section, Lab 14 compatibility matrix. |
+| Phase 1 | Curriculum finalization + pacing audit | `workshop/curriculum.md` 6-module plan, time-budget test (≤ 240 min, ≥ 15% contingency). |
+| Phase 2 | Slide framework (lowest maintenance) | Plain HTML+CSS build pipeline, outcome-based tests (build, asset resolution, demo-command resolution). |
+| Phase 3 | Module authoring (3 sub-phases × 2 modules) | All 6 slide decks + speaker scripts, demo-density + cue-ladder tests. |
+| Phase 4 | Three-artifact split + timing plan + handout-pdf | Facilitator / preread / handout split, timing-plan YAML, opt-in PDF target. |
+| Phase 5 | Rehearsal + accessibility + fallback screenshots | Rehearsal checklist, a11y notes, fallback-screenshot index with M1–M6 stubs. |
+| Phase 6 | Release prep | Final test sweep, rubber-duck review, this changelog, annotated tag. |
+
+### Added
+
+- `workshop/curriculum.md`, `workshop/timing-plan.md`,
+  `workshop/facilitator-guide.md`, `workshop/attendee-preread.md`,
+  `workshop/attendee-handout.md`, `workshop/rehearsal-checklist.md`,
+  `workshop/a11y-notes.md`, `workshop/fallback-screenshots/README.md` + 6
+  `.placeholder` stubs (M1–M6).
+- `workshop/slides/module-0{1..6}/` — built HTML + markdown source for all 6
+  modules.
+- `workshop/speaker-scripts/module-0{1..6}-*.md` — matching presenter scripts
+  with explicit demo commands, cue ladders, and time-drift triggers.
+- `scripts/workshop/build-slides.mjs` — slide build tool.
+- `scripts/preflight.sh`, `scripts/preflight.ps1` — prereq checker with
+  fail-vs-warn classification and Lab 14 compatibility-matrix awareness.
+- `Makefile` — `slides`, `handout-pdf` targets.
+- `tests/workshop/` (5 files, **75 tests total**, up from 36):
+  `time-budget.test.ts` (18), `slides.test.ts` (6), `speaker-scripts.test.ts` (20),
+  `phase-4-artifacts.test.ts` (21), `phase-5-rehearsal.test.ts` (10).
+- `tests/scripts/preflight.test.ts` — preflight fail/warn classification.
+- README.md **Pre-Workshop Setup Checklist** top section.
+- `labs/lab14.md` WSL compatibility matrix.
+
+### Changed
+
+- `docs/_meta/registry.yaml` — presenter-pace numbers audited against the
+  finalized curriculum.
+
+### Known issues
+
+- **19 pre-existing vitest failures** in `tests/meta/phase-a-findings-schema.test.ts`
+  inherited from the earlier cleanup arc — **explicitly out of scope** for
+  this release. Full vitest sweep at tag time: **374 passed, 19 failed (1
+  file)**. Workshop suite: **75/75 green**. `dotnet test`: **56/56 green**.
+  The failing meta suite is tracked against the cleanup arc, not the
+  workshop arc, and does not block workshop delivery.
+
+### Guarded surfaces (untouched in this arc)
+
+- `scripts/preflight.sh` / `scripts/preflight.ps1` (once Phase 0 landed),
+  `workshop/curriculum.md` (once Phase 1 finalized), `docs/_meta/registry.yaml`,
+  `workshop/slides/` built output, `workshop/speaker-scripts/`,
+  `scripts/workshop/build-slides.mjs`, `package.json`, `package-lock.json` —
+  zero devDependency additions across the arc.
+
+---
+
 ## [2.0.0-modernize] — 2026 modernization arc (Phases 0–8)
 
 This release modernizes the lab from a 10-lab .NET-only demo into a 14-lab,
