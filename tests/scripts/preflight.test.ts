@@ -29,14 +29,14 @@ function makeStubPath(tools: string[]): string {
   const dir = mkdtempSync(join(tmpdir(), 'preflight-stub-'));
   for (const t of tools) {
     const p = join(dir, t);
-    // node needs to print a version when queried; keep stubs simple but
-    // version-aware where the script might parse it.
+    // Stubs use /bin/sh so they work even when PATH is limited to the
+    // stub directory (no `env` / `bash` lookup required).
     const body =
       t === 'node'
-        ? '#!/usr/bin/env bash\necho v20.11.0\n'
+        ? '#!/bin/sh\necho v20.11.0\n'
         : t === 'gh'
-        ? '#!/usr/bin/env bash\nif [ "$1" = "extension" ] && [ "$2" = "list" ]; then echo "github/gh-aw"; exit 0; fi\necho "gh stub $*"\n'
-        : `#!/usr/bin/env bash\necho "${t} stub $*"\n`;
+        ? '#!/bin/sh\nif [ "$1" = "extension" ] && [ "$2" = "list" ]; then echo "github/gh-aw"; exit 0; fi\necho "gh stub $*"\n'
+        : `#!/bin/sh\necho "${t} stub $*"\n`;
     writeFileSync(p, body);
     chmodSync(p, 0o755);
   }
@@ -61,7 +61,7 @@ function runPreflight(
       ? `${opts.toolDir}:/usr/bin:/bin`
       : opts.toolDir;
   }
-  const res = spawnSync('bash', [SH, ...args], {
+  const res = spawnSync('/usr/bin/bash', [SH, ...args], {
     env: baseEnv as NodeJS.ProcessEnv,
     encoding: 'utf8',
   });
