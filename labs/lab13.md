@@ -98,6 +98,11 @@ This lab is about the cases the Lab 07 pattern can't cleanly cover.
 
 ## 13.1 Prerequisites
 
+> 📎 **Background (not hard prerequisites).** [Lab 11](lab11.md) and
+> [Lab 12](lab12.md) are useful context: Lab 11 for the plugin /
+> distribution mindset, Lab 12 for a concrete MCP integration you can
+> hand to a peer agent in the A2A pattern introduced below.
+
 | Path | Prerequisite |
 |------|--------------|
 | Both | Copilot CLI installed and authenticated (Lab 01 setup) |
