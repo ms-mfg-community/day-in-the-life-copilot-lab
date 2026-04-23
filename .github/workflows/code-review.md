@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize]
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read
 tools:
   github:
     toolsets: [pull_requests, repos]
@@ -14,8 +14,9 @@ runtimes:
     version: "8.0"
 strict: false
 safe-outputs:
-  add-pr-comment:
-    labels: [ai-review]
+  add-comment: {}
+  add-labels:
+    allowed: [ai-review]
 description: "Automated code review on pull requests using AI agent"
 ---
 ## Automated Code Review
