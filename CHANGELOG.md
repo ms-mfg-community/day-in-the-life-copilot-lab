@@ -151,6 +151,99 @@ Per-file `git add` only; conventional commit prefixes throughout
   to 92.94%).
 - Node line coverage: ≥ 80% (Phase 8 floor).
 
+### Cleanup (post-tag)
+
+Post-release validation + deferred-findings sweep landed on
+`feature/modernize` after the `v2.0.0-modernize` tag was cut. No
+caller-visible behavior changes; the release contract is unchanged.
+Test surface grew from **290 tests across 37 files** to **302 tests
+across 40 files** as deferred-test debt and enumeration gaps were
+closed. Annotated tag was re-pointed at the cleanup HEAD; see the
+`v2.0.0-modernize` tag message for the force-move details.
+
+- **Phase B — enumeration parity.** `docs/_meta/registry.yaml` `labs:`
+  block previously enumerated only 4 of 14 labs (01, 05, 10, 11),
+  leaving labs 02–04, 06–09, and 12–14 invisible to the weekly-audit
+  pacing check. Added the 10 missing entries with `title` +
+  `pace_presenter_minutes` / `pace_self_minutes` pulled from each
+  lab's frontmatter. `tests/meta/enumeration-parity.test.ts` (RED in
+  Phase A) flipped GREEN; a narrow allowlist codifies that
+  `labs/setup.md` is a grouped narrative redirect stub and not a
+  per-lab manifest (the authoritative index is the README Lab Modules
+  table).
+
+- **Phase C — shipped-but-unwired machinery validated end-to-end.**
+  Four pieces of code that landed in the modernize arc but were never
+  exercised in CI got install paths, fixtures, and proof tests:
+  - **Lab 12 offline Parquet fallback** — generated and committed
+    `labs/fixtures/lab12/sales.parquet` plus
+    `scripts/generate-lab12-fixture.py`. Lab 12's offline-simulator
+    story had been advertised in 3+ places but the fixture directory
+    did not exist on disk.
+  - **Notebook `strip-outputs` hook** — wired into a repo-managed
+    `.githooks/pre-commit` installed by the devcontainer
+    `postCreateCommand` via `git config core.hooksPath`. Previously
+    documented only inside Lab 12 as an optional manual step.
+  - **`plugin-template/` install path** — gave `install.mjs` a real
+    CLI entry point. Fixed a real defect: the script previously
+    exited 0 even on a broken manifest, so the `# expect ok=true`
+    assertion in the template README was false-advertising. Now
+    validates name, version, minimum_cli_version, and entrypoints
+    with 0 / 1 / 2 exit-code discipline.
+  - **Weekly-audit gh-aw workflow** —
+    `tests/workflows/weekly-audit-compiles.test.ts` shells out to
+    `gh aw compile` against a sandboxed copy of `.github/` and
+    asserts exit-0; a `make lint-workflows` target was added for
+    local validation.
+
+- **Phase D — deferred findings #6/#8/#9 + gh-aw schema migration.**
+  - **Finding #6 (lab14 parity):** added
+    `tests/lab-structure/lab14-exists-and-linked.test.ts` for symmetry
+    with labs 11–13 and upgraded the `labs/lab13.md` § Next steps
+    forward bridge to a live `[Lab 14](lab14.md)` hyperlink.
+  - **Finding #8 (cross-lab connective tissue):** Lab 11's "What's
+    next" now hyperlinks Labs 12/13/14; Lab 12 carries a "Builds on
+    Lab 11" prereq callout; Lab 13 has a background callout linking
+    Labs 11 & 12; Lab 14's cross-references include Labs 11 & 12; the
+    README Lab Modules table carries a one-line learning-path note
+    (`01–10 core sequence / 11 standalone / 12 standalone (Fabric) /
+    13 → 14 sequential`).
+  - **Finding #9 (coverage-threshold refactor):**
+    `tests/meta/coverage-threshold.test.ts` now reads
+    `node/coverage/coverage-summary.json` directly and skips with a
+    warning if the summary is absent, instead of spawning a nested
+    vitest invocation. Points developers at `make test-node`.
+  - **gh-aw schema migration:** `make lint-workflows` was broadened
+    to bare `gh aw compile` (all workflows, not just weekly-audit).
+    `.github/workflows/code-review.md` was migrated to the gh-aw
+    v0.50.1 schema: the deprecated `add-pr-comment` sub-key was split
+    into `add-comment` + a separate `add-labels: allowed: [ai-review]`
+    safe-output, and frontmatter `pull-requests: write` was dropped to
+    `read` (write-level frontmatter perms are rejected by v0.50.1 —
+    writes must route through safe-outputs). The workflow's
+    `code-review.lock.yml` was compiled for the first time (the file
+    did not previously exist), functionally enabling the code-review
+    workflow to run in GitHub Actions. `gh aw compile` also
+    deterministically drops an auto-generated dispatcher descriptor
+    at `.github/agents/agentic-workflows.agent.md`; it is committed so
+    subsequent `make lint-workflows` runs do not dirty the tree.
+  - **Agent prompt preservation:** the code-review workflow prompt
+    was updated to explicitly instruct the agent to invoke
+    `add-labels` after commenting, preserving the old single-output
+    auto-labeling behavior under the new split safe-output schema.
+
+Final test surface entering the re-annotated `v2.0.0-modernize` tag:
+
+- Root vitest: **302 / 302** across **40 files** (was 290 / 37).
+- `make test-all`: 56 .NET + 28 node + 302 root, all GREEN.
+- Node line coverage: **92.94%** (floor 80%, unchanged).
+- `gh aw compile`: **3 workflows** compile cleanly (was 1 —
+  `weekly-content-audit.md` only); 1 non-blocking fuzzy-schedule
+  warning on `weekly-content-audit.md` preserved.
+
+Cleanup arc: 22 commits `44d38d4..d815281`, all conventional-prefixed
+with per-file `git add` and the `Co-authored-by: Copilot` trailer.
+
 ### Migration notes for existing forks
 
 - The .NET solution moved from the repo root to `dotnet/`. Update CI scripts
