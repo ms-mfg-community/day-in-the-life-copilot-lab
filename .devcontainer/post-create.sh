@@ -15,6 +15,11 @@ gh extension install github/gh-aw || true
 echo "Installing jq..."
 sudo apt-get update -qq && sudo apt-get install -y -qq jq > /dev/null
 
+# Repo-managed git hooks (strips notebook outputs on commit — see
+# scripts/hooks/pre-commit-strip-notebook-outputs.sh). Finding 2.1.
+echo "Activating repo-managed git hooks (.githooks)..."
+git config core.hooksPath .githooks
+
 # Restore .NET packages
 echo "Restoring .NET packages..."
 dotnet restore dotnet/ContosoUniversity.sln

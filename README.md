@@ -542,6 +542,8 @@ Version floors, model tiers, and MCP pins live in
 | .NET unit/integration tests | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* |
 | Node unit/integration tests | `make test-node` *(or `pnpm -C node test`)* |
 | Root vitest (lab structure, build, devcontainer) | `make lint-labs` *(or `npm test`)* |
+| Activate repo-managed git hooks (strip notebook outputs) | `make setup-hooks` |
+| Compile every gh-aw workflow (authoritative agentic-workflow lint) | `make lint-workflows` *(or `gh aw compile`)* |
 | Build .NET solution | `dotnet build dotnet/ContosoUniversity.sln` |
 | Run .NET web app | `dotnet run --project dotnet/ContosoUniversity.Web` |
 | Run Node web app | `pnpm -C node dev` |

@@ -20,7 +20,7 @@ DOTNET_TESTS   := dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj
 DOTNET_E2E     := dotnet/ContosoUniversity.PlaywrightTests/ContosoUniversity.PlaywrightTests.csproj
 NODE_DIR       := node
 
-.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs
+.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs setup-hooks lint-workflows
 
 help:
 	@echo "Targets:"
@@ -30,6 +30,8 @@ help:
 	@echo "  make test-node-e2e    - Node Playwright E2E (needs browsers installed)"
 	@echo "  make test-all         - Both tracks (unit/integration) + root lab/structure tests"
 	@echo "  make lint-labs        - Root vitest suite (lab structure, build, devcontainer)"
+	@echo "  make setup-hooks      - Activate repo-managed git hooks in .githooks/"
+	@echo "  make lint-workflows   - Compile every gh-aw workflow under .github/workflows/"
 
 test-dotnet:
 	@echo "=== .NET unit/integration tests ==="
@@ -53,3 +55,27 @@ test-all: lint-labs test-dotnet test-node
 lint-labs:
 	@echo "=== Root vitest (lab structure, build, devcontainer) ==="
 	npm test --silent -- --run
+
+# Activate the repo-managed git hooks (currently: .githooks/pre-commit which
+# strips Jupyter notebook outputs — see scripts/hooks/pre-commit-strip-notebook-outputs.sh
+# and Finding 2.1 in .orchestrator/phase-A-findings.md).
+# Idempotent: safe to re-run.
+setup-hooks:
+	@echo "=== Activating repo-managed git hooks (.githooks) ==="
+	git config core.hooksPath .githooks
+	@echo "core.hooksPath = $$(git config --get core.hooksPath)"
+
+# Compile every gh-aw markdown workflow under .github/workflows/ — the
+# authoritative validation step for weekly-content-audit.md and any other
+# agentic workflow. Requires the `gh aw` extension
+# (`gh extension install github/gh-aw`).
+lint-workflows:
+	@echo "=== gh aw compile (agentic workflow lint) ==="
+	@if ! command -v gh >/dev/null 2>&1; then \
+	  echo "ERROR: gh CLI not installed" >&2; exit 1; \
+	fi
+	@if ! gh aw --help >/dev/null 2>&1; then \
+	  echo "ERROR: gh-aw extension not installed. Run: gh extension install github/gh-aw" >&2; \
+	  exit 1; \
+	fi
+	gh aw compile
