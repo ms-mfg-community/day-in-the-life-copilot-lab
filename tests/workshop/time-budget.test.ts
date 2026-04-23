@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
 
@@ -41,6 +41,7 @@ import yaml from 'js-yaml';
 const ROOT = process.cwd();
 const CURRICULUM = join(ROOT, 'workshop', 'curriculum.md');
 const REGISTRY = join(ROOT, 'docs', '_meta', 'registry.yaml');
+const SLIDES_DIR = join(ROOT, 'workshop', 'slides');
 
 interface Module {
   id: string;
@@ -178,4 +179,58 @@ describe('registry workshop-pace audit', () => {
       ).toBeGreaterThanOrEqual(lab.pace_presenter_minutes);
     }
   });
+});
+
+/**
+ * Phase 3b regression — slide front-matter `minutes` must match the
+ * curriculum time-budget entry for the same module id.
+ *
+ * This closes the hole QA caught in Phase 3b: the speaker-script test
+ * only compared the `<!-- total: N min -->` marker against the slide's
+ * own `minutes:` front-matter, so a slide that declared `minutes: 30`
+ * while curriculum said `minutes: 25` still passed locally. The
+ * authoritative source is `workshop/curriculum.md`; slides and
+ * speaker-script totals must conform to it.
+ */
+describe('workshop slide front-matter vs curriculum', () => {
+  let budget: TimeBudget;
+  let curriculumMinutesById: Map<string, number>;
+
+  beforeAll(() => {
+    budget = extractTimeBudget(readFileSync(CURRICULUM, 'utf8'));
+    curriculumMinutesById = new Map(budget.modules.map((m) => [m.id, m.minutes]));
+  });
+
+  function slideFrontMatter(file: string): { module?: string; minutes?: number } {
+    const raw = readFileSync(file, 'utf8');
+    if (!raw.startsWith('---\n')) return {};
+    const end = raw.indexOf('\n---\n', 4);
+    if (end === -1) return {};
+    return yaml.load(raw.slice(4, end)) as { module?: string; minutes?: number };
+  }
+
+  const moduleSlideFiles = readdirSync(SLIDES_DIR)
+    .filter((f) => /^\d+-module-\d+\.md$/.test(f))
+    .sort();
+
+  it('discovers at least one module slide deck', () => {
+    expect(moduleSlideFiles.length).toBeGreaterThan(0);
+  });
+
+  for (const file of moduleSlideFiles) {
+    it(`${file} minutes matches curriculum.md for its module id`, () => {
+      const fm = slideFrontMatter(join(SLIDES_DIR, file));
+      expect(fm.module, `${file} missing front-matter 'module:'`).toBeTypeOf('string');
+      expect(fm.minutes, `${file} missing front-matter 'minutes:'`).toBeTypeOf('number');
+      const expected = curriculumMinutesById.get(fm.module!);
+      expect(
+        expected,
+        `${file} declares module ${fm.module} but curriculum has no such module`,
+      ).toBeTypeOf('number');
+      expect(
+        fm.minutes,
+        `${file} front-matter minutes=${fm.minutes} must match curriculum.md ${fm.module}=${expected}`,
+      ).toBe(expected);
+    });
+  }
 });
