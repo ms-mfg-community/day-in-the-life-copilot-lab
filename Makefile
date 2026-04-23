@@ -20,7 +20,7 @@ DOTNET_TESTS   := dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj
 DOTNET_E2E     := dotnet/ContosoUniversity.PlaywrightTests/ContosoUniversity.PlaywrightTests.csproj
 NODE_DIR       := node
 
-.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs setup-hooks lint-workflows
+.PHONY: help test-dotnet test-dotnet-e2e test-node test-node-e2e test-all lint-labs setup-hooks lint-workflows slides
 
 help:
 	@echo "Targets:"
@@ -32,6 +32,11 @@ help:
 	@echo "  make lint-labs        - Root vitest suite (lab structure, build, devcontainer)"
 	@echo "  make setup-hooks      - Activate repo-managed git hooks in .githooks/"
 	@echo "  make lint-workflows   - Compile every gh-aw workflow under .github/workflows/"
+	@echo "  make slides           - Build the workshop deck to workshop/dist/"
+
+slides:
+	@echo "=== Building workshop deck (workshop/dist/index.html) ==="
+	node scripts/workshop/build-slides.mjs
 
 test-dotnet:
 	@echo "=== .NET unit/integration tests ==="
