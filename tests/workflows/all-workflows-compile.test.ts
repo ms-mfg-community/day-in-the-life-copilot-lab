@@ -52,6 +52,14 @@ describe('workflows: every gh-aw workflow compiles cleanly', () => {
     const work = mkdtempSync(join(tmpdir(), 'gh-aw-compile-all-'));
     try {
       cpSync(join(ROOT, '.github'), join(work, '.github'), { recursive: true });
+      // `gh aw compile` (no args) requires a git repo. Initialise an
+      // empty one in the sandbox so the command runs; we don't commit
+      // anything, this is purely to satisfy the git-presence check.
+      const init = spawnSync('git', ['init', '--quiet'], {
+        cwd: work,
+        encoding: 'utf8',
+      });
+      expect(init.status, `git init in sandbox must succeed: ${init.stderr}`).toBe(0);
       const res = spawnSync('gh', ['aw', 'compile'], {
         cwd: work,
         encoding: 'utf8',
