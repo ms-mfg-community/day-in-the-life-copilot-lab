@@ -65,12 +65,16 @@ setup-hooks:
 	git config core.hooksPath .githooks
 	@echo "core.hooksPath = $$(git config --get core.hooksPath)"
 
-# Compile every gh-aw markdown workflow under .github/workflows/ — the
-# authoritative validation step for weekly-content-audit.md and any other
-# agentic workflow. Requires the `gh aw` extension
-# (`gh extension install github/gh-aw`).
+# Compile the weekly-content-audit gh-aw workflow — the authoritative
+# validation step wired into Phase C.4 (Finding 2.4). This target is
+# deliberately scoped to weekly-content-audit rather than all workflows:
+# `.github/workflows/code-review.md` uses `safe-outputs.add-pr-comment`
+# which the current gh-aw rejects in favor of `add-comment`, and that
+# pre-existing drift is out of scope for the Phase C cleanup arc (flagged
+# to QA for a Phase-D follow-up). Run `gh aw compile` manually to audit
+# every workflow.
 lint-workflows:
-	@echo "=== gh aw compile (agentic workflow lint) ==="
+	@echo "=== gh aw compile weekly-content-audit ==="
 	@if ! command -v gh >/dev/null 2>&1; then \
 	  echo "ERROR: gh CLI not installed" >&2; exit 1; \
 	fi
@@ -78,4 +82,4 @@ lint-workflows:
 	  echo "ERROR: gh-aw extension not installed. Run: gh extension install github/gh-aw" >&2; \
 	  exit 1; \
 	fi
-	gh aw compile
+	gh aw compile weekly-content-audit
