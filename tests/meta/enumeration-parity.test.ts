@@ -20,7 +20,27 @@ const SETUP_PATH = join(ROOT, 'labs', 'setup.md');
 const ALLOWLIST: Record<'registry' | 'readme' | 'setup', Set<string>> = {
   registry: new Set<string>(),
   readme: new Set<string>(),
-  setup: new Set<string>(),
+  // labs/setup.md is an intentionally-grouped narrative redirect page, not a
+  // per-lab manifest: labs 01-10 are summarised as "the core agentic surface"
+  // and lab11 is named-but-not-hyperlinked per the same grouping convention.
+  // The authoritative per-lab index lives in README.md's Lab Modules table
+  // (already asserted by the README block above). Labs 12-14 ARE individually
+  // linked from setup.md because they are post-core standalones and stay
+  // outside this allowlist so any future regression (e.g., a removed link)
+  // still fails the parity check.
+  setup: new Set<string>([
+    'lab01',
+    'lab02',
+    'lab03',
+    'lab04',
+    'lab05',
+    'lab06',
+    'lab07',
+    'lab08',
+    'lab09',
+    'lab10',
+    'lab11',
+  ]),
 };
 
 function listLabIds(): string[] {
