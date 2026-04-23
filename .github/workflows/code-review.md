@@ -62,3 +62,7 @@ Provide a summary comment on the PR with:
 
 Do NOT approve or request changes — only comment with suggestions.
 Keep feedback actionable and specific.
+
+After posting the review comment, add the `ai-review` label to the pull
+request (via the `add-labels` safe-output) for auditability and downstream
+filtering.
