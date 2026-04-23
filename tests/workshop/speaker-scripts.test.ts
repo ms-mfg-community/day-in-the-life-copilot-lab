@@ -54,6 +54,24 @@ const PHASE_3A_MODULES: ModuleSpec[] = [
   },
 ];
 
+// Phase 3b adds Modules 3 (multi-agent orchestration) and 4 (gh-aw). The
+// assertions are identical to Phase 3a — file presence, six required
+// sections, and a "total: N min" timing marker that matches the paired
+// slide's `minutes:` front-matter. We keep the list additive (do not
+// rewrite the Phase 3a list) so the per-phase coverage is auditable.
+const PHASE_3B_MODULES: ModuleSpec[] = [
+  {
+    id: 'M3',
+    slidePath: join(SLIDES_DIR, '30-module-3.md'),
+    scriptPath: join(SCRIPTS_DIR, 'module-03-multi-agent.md'),
+  },
+  {
+    id: 'M4',
+    slidePath: join(SLIDES_DIR, '40-module-4.md'),
+    scriptPath: join(SCRIPTS_DIR, 'module-04-gh-aw.md'),
+  },
+];
+
 const REQUIRED_SECTIONS = [
   /##\s+1\.\s+Open with the advanced problem/i,
   /##\s+2\.\s+Demo script/i,
@@ -125,6 +143,39 @@ describe('workshop speaker-scripts — Phase 3a modules', () => {
         ).not.toBeNull();
         expect(totalDeclared).toBe(slideMinutes);
         // Sanity: timing cues must actually be present and monotonic up to the total.
+        expect(lastStart, `no timing cues found in ${mod.scriptPath}`).not.toBeNull();
+        expect(lastStart! < slideMinutes).toBe(true);
+      });
+    });
+  }
+});
+
+describe('workshop speaker-scripts — Phase 3b modules', () => {
+  for (const mod of PHASE_3B_MODULES) {
+    describe(mod.id, () => {
+      it('has a speaker-script file on disk', () => {
+        expect(
+          existsSync(mod.scriptPath),
+          `missing speaker script: ${mod.scriptPath}`,
+        ).toBe(true);
+      });
+
+      it('contains all six required sections', () => {
+        const text = readFileSync(mod.scriptPath, 'utf8');
+        for (const re of REQUIRED_SECTIONS) {
+          expect(re.test(text), `missing section ${re} in ${mod.scriptPath}`).toBe(true);
+        }
+      });
+
+      it('declares a total that matches the slide minutes front-matter', () => {
+        const slideMinutes = parseFrontMatterMinutes(mod.slidePath);
+        const text = readFileSync(mod.scriptPath, 'utf8');
+        const { totalDeclared, lastStart } = extractTimingCues(text);
+        expect(
+          totalDeclared,
+          `Timing cues section must declare an explicit "total: N min" marker in ${mod.scriptPath}`,
+        ).not.toBeNull();
+        expect(totalDeclared).toBe(slideMinutes);
         expect(lastStart, `no timing cues found in ${mod.scriptPath}`).not.toBeNull();
         expect(lastStart! < slideMinutes).toBe(true);
       });
