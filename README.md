@@ -105,10 +105,12 @@ Most labs (01–07, 10) work with **any Copilot license**. A few labs require sp
 The lab ships with **two parallel implementations** of Contoso University so you can practice the
 Copilot agentic surface against the stack you actually work in:
 
-| Track | Code lives in | Run tests | When to pick |
-|-------|---------------|-----------|--------------|
-| **.NET** (ASP.NET Core 8 + EF Core + xUnit) | [`dotnet/`](dotnet/) | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* | C# / ASP.NET shops, Azure App Service / Functions, Bicep deploys |
-| **Node** (Fastify 5 + Drizzle ORM + Vitest + Playwright) | [`node/`](node/) | `make test-node` *(or `pnpm -C node test`)* | TypeScript / Node shops, Container Apps, edge / serverless TS |
+| Track | Code lives in | Install deps (manual setup) | Run tests | When to pick |
+|-------|---------------|----------------------------|-----------|--------------|
+| **.NET** (ASP.NET Core 8 + EF Core + xUnit) | [`dotnet/`](dotnet/) | _(none — `dotnet` restores on build)_ | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* | C# / ASP.NET shops, Azure App Service / Functions, Bicep deploys |
+| **Node** (Fastify 5 + Drizzle ORM + Vitest + Playwright) | [`node/`](node/) | `npm install -g pnpm && pnpm -C node install` | `make test-node` *(or `pnpm -C node test`)* | TypeScript / Node shops, Container Apps, edge / serverless TS |
+
+> **Dev-container / Codespaces users can skip the install step** — the `post-create.sh` script runs `pnpm -C node install` automatically. Manual-setup users on the Node track must install pnpm first (`npm i -g pnpm`) because the Node workspace ships a `pnpm-lock.yaml` and is only supported via pnpm; use `pnpm -C node install`, not `npm install`, inside `node/`.
 
 Both tracks share the same domain (Student / Course / Instructor / Enrollment), the same lab
 narrative, and the same `.github/` Copilot configuration. Lab bodies are language-agnostic;
@@ -270,13 +272,17 @@ Before starting, ensure you have all [prerequisites](#prerequisites) installed.
 ```bash
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
+git checkout feature/modernize   # required until PR #27 merges
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
+git checkout feature/modernize   # required until PR #27 merges
 ```
+
+> ⚠️ **Branch under test:** Until PR #27 merges, all 14 labs — including `scripts/preflight.sh`, the pnpm Node track, and the Pre-Workshop Setup Checklist — live on the `feature/modernize` branch. Run `git checkout feature/modernize` immediately after cloning or the setup steps below will fail.
 
 5. Verify the .NET project builds:
 
@@ -284,12 +290,7 @@ Set-Location day-in-the-life-copilot-lab
 dotnet build dotnet/ContosoUniversity.sln
 ```
 
-You should see:
-```
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-```
+You should see `Build succeeded.` with `0 Error(s)`. Compiler warnings may appear on `feature/modernize` (nullable-reference warnings in some Razor views); they do not block the labs. If you see any `Error(s)`, re-run `scripts/preflight.sh` and consult [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 6. _(Optional)_ Run the application:
 
@@ -327,12 +328,14 @@ Press `Ctrl+C` to stop.
 ```bash
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
+git checkout feature/modernize   # required until PR #27 merges
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
+git checkout feature/modernize   # required until PR #27 merges
 ```
 
 2. Change the remote `origin` to point to **your** new repository:
@@ -428,11 +431,11 @@ code .
 | Directory | Contents | Count |
 |-----------|----------|-------|
 | `.github/skills/` | Agent skills (`SKILL.md`) | 10 |
-| `.github/prompts/` | Prompt templates (`.prompt.md`) | 21 |
+| `.github/prompts/` | Prompt templates (`.prompt.md`) | 23 |
 | `.github/hooks/` | Hook configuration | 1 |
 | `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 3 |
-| `.copilot/` | MCP server configuration | 1 |
-| `scripts/hooks/` | Hook shell scripts | 17 |
+| `.copilot/` | MCP server configuration (`mcp-config.json`; root `.mcp.json` mirrors it for the Copilot CLI) | 2 |
+| `scripts/hooks/` | Hook shell scripts | 18 |
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 
 3. Read the repository context document:
@@ -568,10 +571,10 @@ This repo ships with a rich set of configurations for you to explore and extend:
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **Agents** | 2 (+ more you build!) | `planner`, `code-reviewer` — learners create more in Labs 03, 07 |
+| **Agents** | 3 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07 |
 | **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
-| **Prompts** | 21 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
-| **Hooks** | 7 | Secret scanning, code formatting, type checking, continuous learning, error logging |
+| **Prompts** | 23 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
+| **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 

@@ -103,15 +103,15 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 | Directory | What | Count | Lab |
 |-----------|------|-------|-----|
-| `.github/agents/` | Specialized AI personas (`.agent.md`) | 2 (+ more in Lab 03) | Lab 03 |
+| `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
 | `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 10 | Lab 04 |
-| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 21 | Lab 04 |
+| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 23 | Lab 04 |
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 3 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
-| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 7 | Lab 06 |
+| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 5 events | Lab 06 |
 | `.copilot/mcp-config.json` | External tool integrations | 5 servers | Lab 05 |
-| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 2 | Labs 08-09 |
+| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 3 | Labs 08-09 |
 
 🖥️ **Quick look — pick any one:**
 
