@@ -51,3 +51,8 @@ coverage/
 # learner drops into labs/fixtures/lab12/ while experimenting stay local.
 labs/fixtures/lab12/*.parquet
 !labs/fixtures/lab12/sales.parquet
+
+# Orchestrator / dry-run artifacts (dev-only, never commit)
+.orchestrator/
+.orchestrator.bak-*/
+docs/setup-dryrun-report.md
