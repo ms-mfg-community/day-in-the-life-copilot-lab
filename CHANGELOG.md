@@ -8,7 +8,23 @@ demo app).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+- Retired `tests/meta/phase-a-findings-schema.test.ts` — modernize-arc
+  Phase A audit instrumentation. The one-time findings report has
+  been moved to `docs/archive/phase-A-findings.md` for historical
+  reference; no test asserts against it.
+- Retired `tests/meta/all-phases-have-tests.test.ts` — modernize-arc
+  phase 0–8 directory-mapping guard. Arc is shipped; guard is no
+  longer needed.
+
+### Corrections
+- The v2.1.0-workshop release notes listed "19 pre-existing vitest
+  failures in tests/meta/phase-a-findings-schema.test.ts" as a known
+  issue. That was inaccurate: canonical HEAD at tag time passed
+  393/393. The failures only manifested when a local orchestrator
+  loop rotated `.orchestrator/` to a `.bak-*/` dir, orphaning the
+  still-tracked `.orchestrator/phase-A-findings.md` file from the
+  working tree. This chore permanently removes the path coupling.
 
 ---
 
