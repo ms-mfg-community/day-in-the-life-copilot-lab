@@ -8,9 +8,8 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 
 ## 🚨 Pre-Workshop Setup Checklist
 
-> **Facilitators: share this section with attendees at least 1 week before the session.**
-> Setup takes 15–30 minutes on a good network and can fail on restricted laptops. Reserving a week gives every attendee room to resolve IT approvals, install tooling, and run preflight before showtime — so the live session is about Copilot, not package managers.
-> Attendees arriving with a failing preflight on the day of the workshop may need to switch to Codespaces to keep up.
+> **Facilitators: share this section with attendees before the session.**
+> Setup takes 15–30 minutes on a good network and can fail on restricted laptops. Attendees arriving with a failing preflight may need to switch to Codespaces to keep up.
 
 **Attendees — run this checklist end-to-end and arrive with a green preflight:**
 
@@ -272,17 +271,15 @@ Before starting, ensure you have all [prerequisites](#prerequisites) installed.
 ```bash
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
-git checkout feature/modernize   # required until PR #27 merges
+git checkout feature/modernize
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
-git checkout feature/modernize   # required until PR #27 merges
+git checkout feature/modernize
 ```
-
-> ⚠️ **Branch under test:** Until PR #27 merges, all 14 labs — including `scripts/preflight.sh`, the pnpm Node track, and the Pre-Workshop Setup Checklist — live on the `feature/modernize` branch. Run `git checkout feature/modernize` immediately after cloning or the setup steps below will fail.
 
 5. Verify the .NET project builds:
 
@@ -290,7 +287,7 @@ git checkout feature/modernize   # required until PR #27 merges
 dotnet build dotnet/ContosoUniversity.sln
 ```
 
-You should see `Build succeeded.` with `0 Error(s)`. Compiler warnings may appear on `feature/modernize` (nullable-reference warnings in some Razor views); they do not block the labs. If you see any `Error(s)`, re-run `scripts/preflight.sh` and consult [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+You should see `Build succeeded.` with `0 Error(s)`. A handful of nullable-reference warnings may appear in some Razor views; they do not block the labs. If you see any `Error(s)`, re-run `scripts/preflight.sh` and consult [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 6. _(Optional)_ Run the application:
 
@@ -328,14 +325,14 @@ Press `Ctrl+C` to stop.
 ```bash
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
-git checkout feature/modernize   # required until PR #27 merges
+git checkout feature/modernize
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
-git checkout feature/modernize   # required until PR #27 merges
+git checkout feature/modernize
 ```
 
 2. Change the remote `origin` to point to **your** new repository:
