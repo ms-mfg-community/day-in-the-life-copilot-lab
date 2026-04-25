@@ -464,7 +464,7 @@ Get-Content AGENTS.md
 - [ ] Lab 07: Multi-Agent Orchestration
 - [ ] Lab 08: gh-aw: PRD Generation
 - [ ] Lab 09: Copilot Coding Agent & Code Review
-- [ ] Lab 10: Session Management & Memory
+- [ ] Lab 10: Agent memory — personalities, lessons, and consolidation
 ```
 
 ---
@@ -527,7 +527,7 @@ erDiagram
 | **Coding Agent** | Platform-level issue → PR implementation | 09 |
 | **Code Review** | AI-powered pull request reviews | 09 |
 | **Reindex** | Automatic semantic understanding of your codebase | 10 |
-| **Session Management** | Memory MCP for decisions, handoffs, continuous learning | 10 |
+| **Session Management** | Agent memory via markdown lessons — decisions, handoffs, project wiki | 10 |
 
 ---
 
@@ -547,7 +547,7 @@ erDiagram
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
-| [Lab 10](labs/lab10.md) | Reindex, Session Management & Memory | Reindex, Memory MCP, continuous learning, handoffs |
+| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three Karpathy layers (Raw sources → Wiki → Schema), `/consolidate-lessons`, `.copilot/lessons/` |
 | [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
