@@ -12,6 +12,8 @@
 > `strategic-compact` skill when you want a recommended compaction
 > point.
 
+> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature today — Copilot CLI does not expose a `/cost-check` slash command for user-authored prompts. Treat the `.prompt.md` file as a reusable template you paste into a CLI session, or invoke it from Copilot Chat in your IDE.
+
 ---
 
 ## Model selection

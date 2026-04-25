@@ -56,6 +56,8 @@ Why per track? The `description` field is what drives auto-activation. `xUnit + 
 
 ## 4.3 Create a Prompt Template (per track)
 
+> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** customization (VS Code, Visual Studio, JetBrains) — Copilot CLI exposes no `@prompt-name` or `/prompt-name` invocation for user-authored prompt files today. Run the `@create-<track>-test` invocation from Copilot Chat in your IDE; the prompt body itself is still useful as a reusable copy-paste template if you live in the CLI.
+
 Prompts are reusable templates invoked with `@prompt-name`. The track-specific test-generator prompt body also lives in your track's appendix:
 
 - **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `@create-dotnet-test` prompt that emits xUnit test classes.

@@ -11,6 +11,8 @@ This appendix supplies the **.NET-track** content for [Lab 04 — Skills & Promp
 
 > Pair with: [`labs/appendices/node/lab04.md`](../node/lab04.md) for the Node-track equivalent.
 
+> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature; the `@create-dotnet-test` invocation below works in Copilot Chat (VS Code / Visual Studio / JetBrains), not in Copilot CLI. The skill portion of this appendix is unaffected — skills run in CLI as written.
+
 ## `.github/skills/dotnet-testing/SKILL.md`
 
 **WSL/Bash:**
