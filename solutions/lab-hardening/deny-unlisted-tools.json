@@ -1,0 +1,15 @@
+{
+  "_comment": "preToolUse hook for the hardening lab. Emits ONLY `deny` when toolName is outside the allow-list. `allow` and `ask` decisions are DELIBERATELY OMITTED: per https://docs.github.com/en/copilot/reference/hooks-configuration the runtime currently honors only `deny`; `allow`/`ask` outputs are accepted but ignored, so designing around them gives false confidence. Absence of deny is allow.",
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "INPUT=$(cat); TOOL=$(printf '%s' \"$INPUT\" | jq -r '.toolName // empty'); case \"$TOOL\" in \"\"|read|microsoft-learn/microsoft_docs_search) exit 0 ;; esac; REASON=\"tool '$TOOL' is not in the hardening allow-list (read, microsoft-learn/microsoft_docs_search). Widen the allow-list in .github/hooks/deny-unlisted-tools.json only after a security review.\"; jq -nc --arg r \"$REASON\" '{permissionDecision:\"deny\", permissionDecisionReason:$r}'; exit 0",
+        "powershell": "$raw = [Console]::In.ReadToEnd(); try { $evt = $raw | ConvertFrom-Json } catch { exit 0 }; $tool = [string]$evt.toolName; if ([string]::IsNullOrEmpty($tool)) { exit 0 }; $allow = @('read','microsoft-learn/microsoft_docs_search'); if ($allow -contains $tool) { exit 0 }; $reason = \"tool '$tool' is not in the hardening allow-list (read, microsoft-learn/microsoft_docs_search). Widen the allow-list in .github/hooks/deny-unlisted-tools.json only after a security review.\"; @{ permissionDecision = 'deny'; permissionDecisionReason = $reason } | ConvertTo-Json -Compress; exit 0",
+        "timeoutSec": 5,
+        "comment": "Deny-only guardrail. Defense-in-depth against a mis-edited agent frontmatter. Allow-list mirrors solutions/lab-hardening/tight-reviewer.agent.md."
+      }
+    ]
+  }
+}
