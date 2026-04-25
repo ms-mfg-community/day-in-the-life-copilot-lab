@@ -42,7 +42,7 @@ cat AGENTS.md | head -40
 **Anchor labs.** `labs/lab01.md` (topology), `labs/lab02.md`
 (`AGENTS.md`), `labs/lab03.md` (custom agents), `labs/lab04.md`
 (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md`
-(memory + context lifecycle).
+(agent memory: Raw sources → Wiki → Schema).
 
 ### M2 — MCP servers in anger (30 min)
 

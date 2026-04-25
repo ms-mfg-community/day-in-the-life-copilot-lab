@@ -10,20 +10,20 @@ phase: 3a
 
 ## The advanced problem
 
-Five surfaces extend Copilot CLI: **AGENTS.md**, **custom agents**, **skills**, **prompts**, **hooks**, and **memory**. Fluent users already know each one. The advanced question is: **which one do you reach for when, and how do they compose into a single coherent project profile?**
+Six surfaces extend Copilot CLI: **AGENTS.md**, **custom agents**, **skills**, **prompts**, **hooks**, and **memory**. Fluent users already know each one. The advanced question is: **which one do you reach for when, and how do they compose into a single coherent project profile?**
 
 Reach for the wrong surface and you pay twice — in tokens on every turn *and* in review overhead for coupling that doesn't belong.
 
 ---
 
-## Five surfaces, one decision tree
+## Six surfaces, one decision tree
 
 - **AGENTS.md** — always loaded, project-wide behavior rules. Hot path. Every token counts.
 - **Custom agents** (`.github/agents/*.agent.md`) — specialist personas the user opts into with `--agent` or `/agent`.
 - **Skills** (`.github/skills/<name>/SKILL.md`) — knowledge packs that **auto-activate** by description match; you do not invoke them.
 - **Prompts** (`.github/prompts/*.prompt.md`) — user-invoked slash commands; deterministic playbooks the human triggers.
 - **Hooks** (`.github/hooks/default.json`) — lifecycle scripts: `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `stop`, `notification`. Run every time.
-- **Memory** — four distinct layers, covered in `labs/lab10.md`: session context, skill artifacts, Memory MCP knowledge graph, and session-store (`session_store_sql`).
+- **Memory** — three Karpathy layers, covered in `labs/lab10.md`: **Layer 1 Raw sources** (`plan.md`, SQL todos, `~/.copilot/session-state/`), **Layer 2 The Wiki** (`.copilot/lessons/` + `~/.copilot/lessons/`, promoted via `/consolidate-lessons`), **Layer 3 The Schema** (`AGENTS.md`, `.github/instructions/*.md`, agent personalities). Promotion goes Raw → Wiki → Schema.
 
 ---
 
@@ -34,7 +34,7 @@ Reach for the wrong surface and you pay twice — in tokens on every turn *and* 
 - **Domain knowledge the model should load on its own when a topic comes up?** → Skill. Its `description` is the activation key.
 - **Playbook the *human* wants to invoke with a slash?** → Prompt file.
 - **Cross-cutting side effect or guardrail (audit log, format check, build verification)?** → Hook.
-- **Cross-turn state (decisions, entities, follow-ups)?** → Memory — pick one of the four layers from `labs/lab10.md`. Don't spread state across more than one layer.
+- **Cross-turn state (decisions, entities, follow-ups)?** → Memory — pick one of the three Karpathy layers from `labs/lab10.md` (Raw sources / Wiki / Schema). Don't spread state across more than one layer; promote Raw → Wiki → Schema instead.
 
 ---
 
@@ -81,7 +81,7 @@ Disable a misbehaving surface fast: `copilot --no-custom-instructions` or `/inst
 
 ## Live demo — build one coherent profile
 
-Anchor labs: `labs/lab01.md` (topology), `labs/lab02.md` (AGENTS.md), `labs/lab03.md` (custom agents), `labs/lab04.md` (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md` (memory).
+Anchor labs: `labs/lab01.md` (topology), `labs/lab02.md` (AGENTS.md), `labs/lab03.md` (custom agents), `labs/lab04.md` (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md` (agent memory: Raw sources → Wiki → Schema).
 
 ```bash
 # See what's loaded right now.
@@ -104,7 +104,7 @@ copilot --agent code-reviewer --no-custom-instructions -p "review the last commi
 - **Skill description too broad** — "general coding help" activates constantly. Narrow the description or it will double-load on every turn.
 - **Hook doing real work** — hooks should be observability and guardrails, not business logic. They block the turn and have `timeoutSec` budgets.
 - **Prompt that should be a skill** — if the model should load it *automatically* when a topic comes up, it's a skill. Prompts are for humans.
-- **Memory layer sprawl** — pick one of the four layers from `labs/lab10.md` per kind of state. Do not duplicate.
+- **Memory layer sprawl** — pick one of the three Karpathy layers from `labs/lab10.md` per kind of state (Raw sources, Wiki, or Schema). Do not duplicate; promote Raw → Wiki → Schema via `/consolidate-lessons`.
 
 ---
 
