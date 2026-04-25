@@ -351,4 +351,4 @@ See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for
 
 </details>
 
-**Next:** [Lab 10 — Session Management & Memory](lab10.md)
+**Next:** [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md)

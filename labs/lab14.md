@@ -33,8 +33,9 @@ without losing the plot.
 > - Compaction trigger: this is the canonical home for the
 >   discipline — every worker pane runs
 >   `scripts/orchestrator/clear-context.sh` after each phase, and
->   the orchestrator runs `strategic-compact` once `plan.md`
->   carries more than two completed phases. The whole pattern is
+>   the orchestrator promotes durable decisions into
+>   `.copilot/lessons/` (Lab 10) once `plan.md` carries more than
+>   two completed phases. The whole pattern is
 >   designed to keep per-turn context bounded.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
 >   and the `/cost-check` prompt to verify your footprint between
@@ -49,11 +50,11 @@ without losing the plot.
 References:
 
 - [Lab 13 §B.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalises
-- [`.github/skills/strategic-compact`](../.github/skills/strategic-compact) — context-hygiene skill that pairs with the `clear` step
+- [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki that preserves decisions across the `/clear` boundary (Lab 10)
 - [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md) — the judging rubric the orchestrator pane uses
 - [`scripts/orchestrator/`](../scripts/orchestrator/) — `tmux-start.sh`, `handoff.sh`, `clear-context.sh`
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the in-process orchestrator → dev → QA flow this lab generalises across panes
-- [Lab 10 — Reindex, Session Management & Memory](lab10.md) — session-state primitives the orchestrator pane relies on
+- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + consolidation primitives the orchestrator pane relies on
 
 ---
 
@@ -186,10 +187,11 @@ Three rules make the diagram work:
    where the multi-phase plan, the rubric, and the carry-forward log
    live. Clearing it loses the project.
 2. **The worker pane is cleared between every phase.** This is the
-   token-discipline cousin of the [`strategic-compact`](../.github/skills/strategic-compact)
-   skill — but more aggressive, because you don't need to keep the
-   *summary* of phase N to start phase N+1; you only need the
-   hand-off doc, which is on disk.
+   token-discipline hammer that pairs with the
+   [`.copilot/lessons/`](../.copilot/lessons/) wiki (Lab 10) — you
+   don't need to keep the *summary* of phase N to start phase N+1;
+   you only need the hand-off doc on disk plus any durable decisions
+   the worker promoted into a lesson before clearing.
 3. **All inter-pane state goes through hand-off docs on disk.** Never
    "screen-scrape" another pane. The doc is the contract; everything
    else is incidental.
@@ -370,17 +372,18 @@ That's the whole loop.
 
 ---
 
-## 14.5 Token discipline — why `clear` and `strategic-compact` complement each other
+## 14.5 Token discipline — why `clear` and `.copilot/lessons/` complement each other
 
-The [`strategic-compact`](../.github/skills/strategic-compact) skill
-exists because, even *inside* a single pane, you sometimes want to
-shrink the working context without losing the plot. Lab 14's `/clear`
-between phases is the heavier hammer for the same problem:
+The [`.copilot/lessons/`](../.copilot/lessons/) markdown wiki (Lab 10)
+exists because, even *inside* a single pane, you sometimes need to
+shrink the working context without losing the durable decisions you
+just made. Lab 14's `/clear` between phases is the heavier hammer for
+the same problem — and the two are designed to be used together:
 
 | Tool | Granularity | Loses what? | Use when |
 |------|-------------|-------------|----------|
-| `strategic-compact` skill | Within a pane / phase | Verbose intermediate turns; keeps decisions | You're mid-phase and approaching the window limit |
-| `clear-context.sh` | Between phases | Everything in that worker pane | You've shipped the phase and the doc on disk is the source of truth |
+| Promote to `.copilot/lessons/` | Within a pane / phase | Nothing durable; verbose intermediate turns go away on the next `/clear` | You're mid-phase and the decision you just made matters beyond this session |
+| `clear-context.sh` | Between phases | Everything in that worker pane | You've shipped the phase and the doc on disk (plus any freshly-written lesson) is the source of truth |
 | Kill + restart pane | Nuclear | The whole shell process state | The pane has accumulated env-var / cwd cruft you don't want |
 
 The orchestrator pane uses neither in normal operation: its job is to

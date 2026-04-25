@@ -4,27 +4,37 @@ import { join } from 'node:path';
 
 const DECISION_TREE = join(process.cwd(), 'docs', 'memory-decision-tree.md');
 
-// Every memory/learning mechanism the repo teaches must appear in the
-// 1-page decision tree so learners can pick the right tool. Phase 2 plan.md:
-// "every memory mechanism in the repo is represented in the decision tree".
+// Every memory mechanism the repo teaches must appear in the 1-page
+// decision tree so learners can pick the right tool. The workshop uses
+// the three-layer Karpathy pattern (Raw sources → Wiki → Schema), so
+// every surface across those three layers must be represented — plus
+// the non-memory surfaces (reindex) that learners commonly confuse for
+// memory.
 const REQUIRED_MECHANISMS: ReadonlyArray<{ label: string; pattern: RegExp }> = [
-  { label: 'Session context (plan.md / SQL todos)', pattern: /plan\.md|session[- ]state|SQL todos/i },
-  { label: 'Project memory (AGENTS.md)', pattern: /AGENTS\.md/ },
-  { label: 'Project memory (.github/instructions/)', pattern: /\.github\/instructions/ },
-  { label: 'Cross-session (Memory MCP knowledge graph)', pattern: /Memory MCP|knowledge graph/i },
-  { label: 'Offline Memory MCP variant', pattern: /offline|memory-offline|local[- ]only/i },
-  { label: 'Continuous learning v1 (deprecated)', pattern: /continuous-learning(?!-v2)/ },
-  { label: 'Continuous learning v2 (canonical)', pattern: /continuous-learning-v2/ },
-  { label: 'Iterative retrieval (deprecated)', pattern: /iterative-retrieval/ },
-  { label: 'Strategic compact (deprecated)', pattern: /strategic-compact/ },
-  { label: 'Instinct loop (capture/promote)', pattern: /instinct/i },
+  // Layer 1 — Raw sources (session-scoped)
+  { label: 'Layer 1: plan.md', pattern: /plan\.md/ },
+  { label: 'Layer 1: SQL todos table', pattern: /SQL\s+todos|todos\s+table|todo_deps/i },
+  { label: 'Layer 1: session-state workspace', pattern: /session[- ]state/i },
+
+  // Layer 2 — The Wiki (LLM-maintained markdown)
+  { label: 'Layer 2: project wiki (.copilot/lessons/)', pattern: /\.copilot\/lessons/ },
+  { label: 'Layer 2: global wiki (~/.copilot/lessons/)', pattern: /~\/\.copilot\/lessons/ },
+  { label: 'Layer 2: consolidate-lessons command', pattern: /consolidate-lessons/ },
+
+  // Layer 3 — The Schema (binding rulebook)
+  { label: 'Layer 3: AGENTS.md', pattern: /AGENTS\.md/ },
+  { label: 'Layer 3: .github/instructions/', pattern: /\.github\/instructions/ },
+  { label: 'Layer 3: agent personalities', pattern: /agent personalit|\.github\/agents/i },
+
+  // Non-memory surfaces commonly confused for memory
+  { label: 'Disambiguation: reindex is not a memory layer', pattern: /reindex/i },
 ];
 
 describe('memory: decision tree covers every mechanism', () => {
   it('docs/memory-decision-tree.md exists', () => {
     expect(
       existsSync(DECISION_TREE),
-      'docs/memory-decision-tree.md is missing — Phase 2 deliverable',
+      'docs/memory-decision-tree.md is missing',
     ).toBe(true);
   });
 
