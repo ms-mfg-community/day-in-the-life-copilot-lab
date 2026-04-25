@@ -1,17 +1,22 @@
 #!/usr/bin/env node
-// Phase 2 — zero-devDep workshop deck builder.
+// Phase 2 (wave 2) — Reveal.js workshop deck builder.
 //
-// Reads every workshop/slides/*.md in sorted filename order, splits each
-// file into slides on lines containing only `---`, renders a minimal
-// markdown subset (headings, fenced code, bullet lists, inline code,
-// paragraphs), and emits a single self-contained workshop/dist/index.html.
+// Reads every workshop/slides/*.md (sorted), splits each file into slides
+// on lines containing only `---`, renders a minimal markdown subset plus
+// Shiki-highlighted code blocks, and emits a Reveal.js-scaffolded
+// workshop/dist/index.html that self-hosts reveal.js under
+// workshop/dist/reveal/. Links workshop/styles/theme.css for branding.
 //
-// Why a custom renderer instead of reveal-md / marked: see
-// workshop/README.md → "Slide framework decision". Lowest-maintenance wins
-// for a 6-module talking-head deck with code blocks + screenshots; no new
-// devDeps, no transitive CVE churn.
+// Degrades gracefully: if reveal.js is not available under node_modules
+// (offline harness) the build falls back to a CDN script tag and prints
+// a warning to stderr so V.1 / V.2 don't fail. Shiki failures per-block
+// fall back to an escaped <pre><code> so a rare language can't kill the
+// build.
 
-import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import {
+  readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync, existsSync,
+  copyFileSync, statSync,
+} from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,6 +25,17 @@ const REPO_ROOT = resolve(HERE, '..', '..');
 const SLIDES_DIR = join(REPO_ROOT, 'workshop', 'slides');
 const DIST_DIR = join(REPO_ROOT, 'workshop', 'dist');
 const OUT_FILE = join(DIST_DIR, 'index.html');
+const REVEAL_OUT = join(DIST_DIR, 'reveal');
+const REVEAL_SRC = join(REPO_ROOT, 'node_modules', 'reveal.js', 'dist');
+const CURRICULUM = join(REPO_ROOT, 'workshop', 'curriculum.md');
+
+const REVEAL_CDN = 'https://cdn.jsdelivr.net/npm/reveal.js@5';
+const DEFAULT_TITLE = 'Day in the Life — GitHub Copilot Lab';
+const SHIKI_THEME = 'github-light';
+const SHIKI_LANGS = [
+  'bash', 'javascript', 'typescript', 'json', 'yaml',
+  'csharp', 'markdown', 'text', 'html', 'css', 'python',
+];
 
 function escapeHtml(s) {
   return s
@@ -31,25 +47,40 @@ function escapeHtml(s) {
 }
 
 function renderInline(line) {
-  // Escape first, then re-introduce a small set of inline markers by
-  // operating on the escaped output using the escaped quotes.
   let out = escapeHtml(line);
-  // Inline code: `...` — must run before other inline markers. We
-  // operate on the escaped text, so backticks are still literal.
   out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
-  // Bold: **...**
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   return out;
 }
 
-function renderSlide(body) {
+async function renderCodeBlock(highlighter, lang, code) {
+  const resolved = lang && SHIKI_LANGS.includes(lang) ? lang : 'text';
+  try {
+    const html = highlighter.codeToHtml(code, {
+      lang: resolved,
+      theme: SHIKI_THEME,
+    });
+    // Shiki emits <pre class="shiki ..."><code>...</code></pre>. Tag the
+    // original language on the wrapper so the theme's language-label CSS
+    // rule can pick it up.
+    const langAttr = lang ? ` data-lang="${escapeHtml(lang)}"` : '';
+    return html.replace(/^<pre([^>]*)>/, `<pre$1${langAttr}>`);
+  } catch (err) {
+    process.stderr.write(
+      `shiki: falling back to plain <pre> for lang="${lang}" (${err.message})\n`,
+    );
+    const cls = lang ? ` class="language-${escapeHtml(lang)}"` : '';
+    return `<pre${cls}><code>${escapeHtml(code)}</code></pre>`;
+  }
+}
+
+async function renderSlideBody(highlighter, body) {
   const lines = body.split('\n');
   const out = [];
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block.
     const fence = line.match(/^```(\S*)\s*$/);
     if (fence) {
       const lang = fence[1] || '';
@@ -59,22 +90,18 @@ function renderSlide(body) {
         buf.push(lines[i]);
         i += 1;
       }
-      i += 1; // skip closing fence
-      const cls = lang ? ` class="language-${escapeHtml(lang)}"` : '';
-      out.push(`<pre><code${cls}>${escapeHtml(buf.join('\n'))}</code></pre>`);
+      i += 1;
+      out.push(await renderCodeBlock(highlighter, lang, buf.join('\n')));
       continue;
     }
 
-    // Headings.
     const h = line.match(/^(#{1,4})\s+(.*)$/);
     if (h) {
-      const level = h[1].length;
-      out.push(`<h${level}>${renderInline(h[2])}</h${level}>`);
+      out.push(`<h${h[1].length}>${renderInline(h[2])}</h${h[1].length}>`);
       i += 1;
       continue;
     }
 
-    // Bullet list block.
     if (/^-\s+/.test(line)) {
       const items = [];
       while (i < lines.length && /^-\s+/.test(lines[i])) {
@@ -85,23 +112,26 @@ function renderSlide(body) {
       continue;
     }
 
-    // Image: ![alt](src) on its own line.
     const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
     if (img) {
-      const alt = escapeHtml(img[1]);
-      const src = escapeHtml(img[2]);
-      out.push(`<img src="${src}" alt="${alt}">`);
+      out.push(`<img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}">`);
       i += 1;
       continue;
     }
 
-    // Blank line.
-    if (line.trim() === '') {
-      i += 1;
+    if (line.trim() === '') { i += 1; continue; }
+
+    // Blockquote.
+    if (/^>\s?/.test(line)) {
+      const buf = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) {
+        buf.push(renderInline(lines[i].replace(/^>\s?/, '')));
+        i += 1;
+      }
+      out.push(`<blockquote>${buf.join('<br>')}</blockquote>`);
       continue;
     }
 
-    // Paragraph — accumulate contiguous non-special lines.
     const para = [line];
     i += 1;
     while (
@@ -109,7 +139,8 @@ function renderSlide(body) {
       lines[i].trim() !== '' &&
       !/^#{1,4}\s+/.test(lines[i]) &&
       !/^```/.test(lines[i]) &&
-      !/^-\s+/.test(lines[i])
+      !/^-\s+/.test(lines[i]) &&
+      !/^>\s?/.test(lines[i])
     ) {
       para.push(lines[i]);
       i += 1;
@@ -126,7 +157,20 @@ function stripFrontmatter(raw) {
   return raw.slice(end + 5);
 }
 
-function loadSlides() {
+function classifySlide(sourceFile, body) {
+  if (sourceFile === '00-cover.md') return 'cover';
+  // Divider heuristic: a single `#` heading and ≤ 8 non-blank lines,
+  // with no body content beyond headings / blank lines.
+  const nonBlank = body.split('\n').filter((l) => l.trim() !== '');
+  if (nonBlank.length > 8) return '';
+  const headings = nonBlank.filter((l) => /^#{1,4}\s+/.test(l));
+  if (headings.length === 1 && headings.length === nonBlank.length) {
+    return 'divider';
+  }
+  return '';
+}
+
+function loadSlideSources() {
   const files = readdirSync(SLIDES_DIR)
     .filter((f) => f.endsWith('.md'))
     .sort();
@@ -134,70 +178,173 @@ function loadSlides() {
   for (const f of files) {
     const raw = readFileSync(join(SLIDES_DIR, f), 'utf8');
     const body = stripFrontmatter(raw);
-    // A file with no explicit slide separator is a single slide.
     const chunks = body.split(/\n---\n/);
     for (const chunk of chunks) {
       const trimmed = chunk.trim();
-      if (trimmed) slides.push({ source: f, html: renderSlide(trimmed) });
+      if (trimmed) {
+        slides.push({ source: f, body: trimmed, cls: classifySlide(f, trimmed) });
+      }
     }
   }
   return slides;
 }
 
-const CSS = `:root{color-scheme:light dark;--fg:#1a1a1a;--bg:#fff;--accent:#0057b8;--code-bg:#f4f4f6;--muted:#555}
-@media (prefers-color-scheme:dark){:root{--fg:#eee;--bg:#111;--code-bg:#1e1e22;--muted:#aaa;--accent:#4ea8ff}}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;color:var(--fg);background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5}
-main{scroll-snap-type:y mandatory;overflow-y:scroll;height:100vh}
-section.slide{scroll-snap-align:start;min-height:100vh;padding:6vh 8vw;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--muted)}
-section.slide h1{font-size:clamp(1.8rem,4vw,3rem);color:var(--accent);margin:0 0 .5em}
-section.slide h2{font-size:clamp(1.4rem,3vw,2.2rem);margin:0 0 .5em}
-section.slide h3{font-size:clamp(1.1rem,2vw,1.5rem);margin:1em 0 .3em}
-section.slide p,section.slide li{font-size:clamp(1rem,1.5vw,1.25rem)}
-section.slide pre{background:var(--code-bg);padding:1em;border-radius:6px;overflow-x:auto;font-size:clamp(.85rem,1.2vw,1rem)}
-section.slide code{font-family:ui-monospace,Menlo,Consolas,monospace}
-section.slide :not(pre) > code{background:var(--code-bg);padding:.1em .35em;border-radius:3px}
-section.slide img{max-width:100%;max-height:60vh;object-fit:contain;margin:1em 0}
-section.slide ul{padding-left:1.2em}
-footer.deck-meta{position:fixed;bottom:.5em;right:1em;font-size:.75rem;color:var(--muted);opacity:.7}
-@media print{main{height:auto;overflow:visible}section.slide{page-break-after:always;border:none;min-height:auto}}`;
+function readWorkshopTitle() {
+  if (!existsSync(CURRICULUM)) return DEFAULT_TITLE;
+  const raw = readFileSync(CURRICULUM, 'utf8');
+  if (!raw.startsWith('---\n')) return DEFAULT_TITLE;
+  const end = raw.indexOf('\n---\n', 4);
+  if (end === -1) return DEFAULT_TITLE;
+  const fm = raw.slice(4, end);
+  const m = fm.match(/^title:\s*(.+)$/m);
+  if (!m) return DEFAULT_TITLE;
+  return m[1].trim().replace(/^["']|["']$/g, '');
+}
 
-function renderDeck(slides) {
+function copyRevealAssets() {
+  if (!existsSync(REVEAL_SRC)) return false;
+  mkdirSync(REVEAL_OUT, { recursive: true });
+  const files = [
+    ['reveal.js', 'reveal.js'],
+    ['reveal.css', 'reveal.css'],
+    ['reset.css', 'reset.css'],
+    ['plugin/notes.js', 'notes.js'],
+  ];
+  let copied = 0;
+  for (const [src, dst] of files) {
+    const s = join(REVEAL_SRC, src);
+    if (!existsSync(s)) continue;
+    try {
+      if (!statSync(s).isFile()) continue;
+      copyFileSync(s, join(REVEAL_OUT, dst));
+      copied += 1;
+    } catch (err) {
+      process.stderr.write(`reveal: could not copy ${src}: ${err.message}\n`);
+    }
+  }
+  return copied >= 2; // need at least reveal.js + reveal.css
+}
+
+function renderDeck({ slides, title, selfHosted }) {
   const sections = slides
-    .map((s, idx) => `<section class="slide" id="slide-${idx + 1}" data-source="${escapeHtml(s.source)}">\n${s.html}\n</section>`)
+    .map((s, idx) => {
+      const cls = s.cls ? ` class="${s.cls}"` : '';
+      return `<section${cls} data-source="${escapeHtml(s.source)}" data-slide="${idx + 1}">\n${s.html}\n</section>`;
+    })
     .join('\n');
+
+  const headTags = selfHosted
+    ? `<link rel="stylesheet" href="reveal/reset.css">
+<link rel="stylesheet" href="reveal/reveal.css">`
+    : `<link rel="stylesheet" href="${REVEAL_CDN}/dist/reset.css">
+<link rel="stylesheet" href="${REVEAL_CDN}/dist/reveal.css">`;
+
+  const revealScript = selfHosted
+    ? `<script src="reveal/reveal.js"></script>
+<script src="reveal/notes.js"></script>`
+    : `<script src="${REVEAL_CDN}/dist/reveal.js"></script>
+<script src="${REVEAL_CDN}/plugin/notes/notes.js"></script>`;
+
+  const escTitle = escapeHtml(title);
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Advanced Copilot CLI Workshop</title>
-<style>${CSS}</style>
+<title>${escTitle}</title>
+${headTags}
+<link rel="stylesheet" href="../styles/theme.css">
 </head>
 <body>
-<main>
+<div class="workshop-header" aria-hidden="true">${escTitle}</div>
+<div class="reveal">
+<div class="slides">
 ${sections}
-</main>
-<footer class="deck-meta">Advanced Copilot CLI Workshop — slide <span id="n">1</span>/${slides.length}</footer>
+</div>
+</div>
+${revealScript}
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    controls: true,
+    progress: true,
+    keyboard: true,
+    overview: true,
+    plugins: typeof RevealNotes !== 'undefined' ? [RevealNotes] : [],
+  });
+</script>
 </body>
 </html>
 `;
 }
 
-function main() {
+async function main() {
   if (!existsSync(SLIDES_DIR)) {
-    console.error(`no slide source directory: ${SLIDES_DIR}`);
+    process.stderr.write(`no slide source directory: ${SLIDES_DIR}\n`);
     process.exit(1);
   }
+
+  const sources = loadSlideSources();
+  if (sources.length === 0) {
+    process.stderr.write('no slides found\n');
+    process.exit(1);
+  }
+
+  let highlighter;
+  try {
+    const shiki = await import('shiki');
+    highlighter = await shiki.createHighlighter({
+      themes: [SHIKI_THEME],
+      langs: SHIKI_LANGS,
+    });
+  } catch (err) {
+    process.stderr.write(
+      `shiki unavailable (${err.message}); code blocks will use plain <pre>\n`,
+    );
+    highlighter = {
+      codeToHtml(code, { lang }) {
+        const cls = lang ? ` class="language-${escapeHtml(lang)}"` : '';
+        return `<pre${cls}><code>${escapeHtml(code)}</code></pre>`;
+      },
+    };
+  }
+
+  const slides = [];
+  for (const s of sources) {
+    slides.push({ ...s, html: await renderSlideBody(highlighter, s.body) });
+  }
+
   rmSync(DIST_DIR, { recursive: true, force: true });
   mkdirSync(DIST_DIR, { recursive: true });
-  const slides = loadSlides();
-  if (slides.length === 0) {
-    console.error('no slides found');
-    process.exit(1);
+
+  const selfHosted = copyRevealAssets();
+  if (!selfHosted) {
+    process.stderr.write(
+      'reveal.js not found under node_modules — falling back to CDN script tags\n',
+    );
   }
-  writeFileSync(OUT_FILE, renderDeck(slides), 'utf8');
-  console.log(`built ${slides.length} slide(s) → ${OUT_FILE}`);
+
+  const title = readWorkshopTitle();
+  writeFileSync(
+    OUT_FILE,
+    renderDeck({ slides, title, selfHosted }),
+    'utf8',
+  );
+
+  if (highlighter && typeof highlighter.dispose === 'function') {
+    highlighter.dispose();
+  }
+
+  console.log(
+    `built ${slides.length} slide(s) → ${OUT_FILE} ` +
+    `(reveal: ${selfHosted ? 'self-hosted' : 'cdn-fallback'})`,
+  );
 }
 
-main();
+main().catch((err) => {
+  process.stderr.write(`build-slides: ${err.stack || err.message}\n`);
+  process.exit(1);
+});

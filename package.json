@@ -8,12 +8,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:lab-structure": "vitest run tests/lab-structure",
-    "test:content-currency": "vitest run tests/content-currency"
+    "test:content-currency": "vitest run tests/content-currency",
+    "build:slides": "node scripts/workshop/build-slides.mjs"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
+    "reveal.js": "^6.0.1",
+    "shiki": "^4.0.2",
     "vitest": "^2.1.9"
   }
 }
