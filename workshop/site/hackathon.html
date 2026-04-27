@@ -773,7 +773,7 @@ body.overview #dot-tooltip { display: none; }
       <br>Bob O'Keefe – Sr. Cloud Solution Architect, Microsoft
     </p>
   </div>
-  <div class="slide-notes">Welcome everyone! We have an exciting 2-day hackathon ahead — Day 1 is lightning sessions and hands-on labs, Day 2 is building your own use cases.</div>
+  <div class="slide-notes">Welcome everyone! We have a focused single-day, 4-hour workshop ahead — the first half is lightning sessions you sit through, the second half is the hands-on lab block where you run the labs in order on your own machine.</div>
 </section>
 
 <!-- ─────────────────────────── AGENDA SECTION ─────────────────────────── -->
@@ -782,9 +782,9 @@ body.overview #dot-tooltip { display: none; }
   <div style="text-align:center; position:relative; z-index:1;">
     <div style="font-size:64px; margin-bottom:20px;">📅</div>
     <h1 class="section-title">Agenda</h1>
-    <p class="section-tagline">2-Day Hackathon: Learn, Build, Ship</p>
+    <p class="section-tagline">Single-Day Workshop · 4 Hours · Learn · Practice · Ship</p>
   </div>
-  <div class="slide-notes">Set the time budget out loud: Day 1 is lightning sessions plus labs, Day 2 is team builds. Flag the mid-morning and post-lunch breaks now. Remind folks the agenda lives in agenda.json so the timezone dropdown matches their clock.</div>
+  <div class="slide-notes">Set the time budget out loud: this is a single-day, 4-hour workshop — the presentation block runs first, then one consolidated lab block where you run labs 1→N in order. Flag the two breaks now. Remind folks the agenda lives in agenda.json so the timezone dropdown matches their clock.</div>
 </section>
 
 <section class="slide" data-section="agenda" data-title="Schedule">
@@ -1058,17 +1058,6 @@ body.overview #dot-tooltip { display: none; }
     <div class="note-bar" style="margin-top:20px;">💡 They sit at different layers of the stack. Copilot is your development accelerator; Foundry is your production AI platform. Most real-world projects use both.</div>
   </div>
   <div class="slide-notes">Key question: "Who is the end user of the agent?" If it's a developer → Copilot. If it's a business user or customer → Foundry. Most enterprise projects use both: Copilot to build, Foundry to run. They are complementary, not competing.</div>
-</section>
-
-<!-- ─────────────────────────── LAB CUE: → Lab 01 ─────────────────────────── -->
-<section class="slide" data-section="lab-cue" data-title="→ Lab 01: Exploring Copilot Configuration">
-  <div class="content">
-    <h2 class="slide-title">→ Lab 01: Exploring Copilot Configuration</h2>
-    <p class="slide-subtitle">You just covered: Copilot product family + extensibility map</p>
-    <p>Next up — open the lab and inventory the Copilot config surface on a fresh machine before we dive into the CLI.</p>
-    <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 01:</strong> Map every Copilot config touchpoint (<span class="mono">~/.copilot</span>, <span class="mono">.github/</span>, <span class="mono">AGENTS.md</span>) so the rest of the workshop has somewhere to land.</div>
-  </div>
-  <div class="slide-notes">Quick transition beat. Lab 01 is reconnaissance — learners list every file Copilot reads on startup. This grounds every later module (skills, instructions, agents, hooks, MCP) in concrete file locations.</div>
 </section>
 
 <!-- ─────────────────────────── SLIDE 23: Section - CLI ─────────────────────────── -->
@@ -1628,17 +1617,6 @@ body.overview #dot-tooltip { display: none; }
   <div class="slide-notes">CLI extensions are the local-side counterpart to gh-ext. They live in your repo (.github/extensions/) or your user extensions dir, and the scaffold→inspect→reload loop keeps iteration tight. Adjacency to Lab 06: extensions and hooks share the same blast-radius concerns — bound them both before publishing through Lab 11.</div>
 </section>
 
-<!-- ─────────────────────────── LAB CUE: → Lab 11 ─────────────────────────── -->
-<section class="slide" data-section="lab-cue" data-title="→ Lab 11: Plugin Marketplace">
-  <div class="content">
-    <h2 class="slide-title">→ Lab 11: Plugin Marketplace</h2>
-    <p class="slide-subtitle">You just covered: plugins, gh-ext, CLI extensions</p>
-    <p>Next up — package and publish team config through the enterprise marketplace pattern with hook blast-radius bounded.</p>
-    <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 11:</strong> Build, sign, and distribute a plugin via the org-scoped marketplace pattern with explicit hook scope before we pivot to skills and instructions.</div>
-  </div>
-  <div class="slide-notes">Bridge from extension surface theory to distribution practice. Lab 11 ties hook scoping (Lab 06) and the extension surfaces together — packaging is where blast-radius decisions become permanent.</div>
-</section>
-
 <!-- ─────────────────────────── SECTION: Skills & Instructions ─────────────────────────── -->
 <section class="slide section-slide" data-section="skills" data-title="Skills & Instructions">
   <div class="glow-ring" style="top:30%; left:50%;"></div>
@@ -2117,24 +2095,13 @@ body.overview #dot-tooltip { display: none; }
   <div class="slide-notes">Vision/multimodal input lets you attach image files to Copilot Chat conversations. This is increasingly used for debugging visual issues, implementing UI mockups, and explaining complex architecture diagrams. Now GA in VS Code, JetBrains, Visual Studio, and Eclipse. Source: docs.github.com/en/copilot/using-github-copilot/asking-github-copilot-questions-in-your-ide</div>
 </section>
 
-<!-- ─────────────────────────── LAB CUE: → Lab 05 + Lab 12 ─────────────────────────── -->
-<section class="slide" data-section="lab-cue" data-title="→ Lab 05 + Lab 12: MCP">
-  <div class="content">
-    <h2 class="slide-title">→ Lab 05 + Lab 12: MCP in anger</h2>
-    <p class="slide-subtitle">You just covered: skills, instructions, prompts, custom agents</p>
-    <p>Next up — wire MCP servers into the CLI and compose Fabric MCP with an offline Parquet fallback before the MCP module deep-dive.</p>
-    <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 05 + Lab 12:</strong> Lab 05 composes <span class="mono">context7</span> + <span class="mono">microsoft-learn</span>; Lab 12 layers Fabric MCP with an offline Parquet path for restricted networks.</div>
-  </div>
-  <div class="slide-notes">Two labs flagged together because they share the MCP composition pattern. Lab 05 is the canonical multi-server config; Lab 12 proves the offline path so learners on locked-down networks aren't blocked.</div>
-</section>
-
 <!-- ─────────────────────────── SLIDE 12: Section - MCP ─────────────────────────── -->
 <section class="slide section-slide" data-slide="8" data-section="mcp" data-title="MCP">
   <div class="glow-ring" style="top:30%; left:60%;"></div>
   <div class="glow-ring" style="top:50%; left:35%; width:300px; height:300px; animation-delay:2s;"></div>
   <div style="text-align:center; position:relative; z-index:1;">
     <h1 class="section-title">Model Context Protocol</h1>
-    <p class="section-tagline">Extend Copilot capabilities with an open standard</p>
+    <p class="section-tagline">Extend Copilot capabilities with an open standard — MCP in practice</p>
     <div class="columns col-3" style="max-width:700px; gap:32px; margin-top:40px;">
       <div style="text-align:center;">
         <div style="font-size:40px; margin-bottom:12px;">🔌</div>
@@ -2435,17 +2402,6 @@ body.overview #dot-tooltip { display: none; }
     </div>
   </div>
   <div class="slide-notes">GitHub Spark (GitHub Next) is an AI-powered platform for building and sharing micro-apps using natural language — no full-stack coding required. It's distinct from Copilot but part of the broader GitHub AI story. Developers describe the app they want; Spark generates, hosts, and lets them share it instantly. Useful for prototyping, internal tools, and demos. Source: githubnext.com/projects/github-spark</div>
-</section>
-
-<!-- ─────────────────────────── LAB CUE: → Lab 08 + Lab 09 ─────────────────────────── -->
-<section class="slide" data-section="lab-cue" data-title="→ Lab 08 + Lab 09: gh-aw">
-  <div class="content">
-    <h2 class="slide-title">→ Lab 08 + Lab 09: gh-aw workflows</h2>
-    <p class="slide-subtitle">You just covered: MCP servers + composition</p>
-    <p>Next up — author a PRD-generation agent (Lab 08) and a code-review agent (Lab 09) before the Coding Agent deep-dive.</p>
-    <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 08 + Lab 09:</strong> Lab 08 ships a PRD agent through GitHub Agentic Workflows; Lab 09 wires the cloud Coding Agent into automated code review.</div>
-  </div>
-  <div class="slide-notes">These labs prove the gh-aw + Coding Agent pairing. Lab 08 is the upstream (requirements as a workflow); Lab 09 is the downstream (review as a workflow). Together they bound the Coding Agent's day-to-day surface.</div>
 </section>
 
 <!-- ─────────────────────────── SLIDE 16: Section - Coding Agent ─────────────────────────── -->
@@ -2864,17 +2820,6 @@ body.overview #dot-tooltip { display: none; }
   <div class="slide-notes">At its core, agent mode orchestrates tools using a system prompt. It parses requests, plans, executes, detects errors, and auto-corrects in a continuous loop.</div>
 </section>
 
-<!-- ─────────────────────────── LAB CUE: → Lab 07 ─────────────────────────── -->
-<section class="slide" data-section="lab-cue" data-title="→ Lab 07: Multi-Agent Orchestration">
-  <div class="content">
-    <h2 class="slide-title">→ Lab 07: Multi-Agent Orchestration</h2>
-    <p class="slide-subtitle">You just covered: cloud Coding Agent + custom-agent profiles</p>
-    <p>Next up — dispatch parallel sub-agents through the <span class="mono">task</span> tool with model routing before we close out with A2A and the tmux meta-loop.</p>
-    <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 07:</strong> Run sequential and parallel sub-agent dispatches via the <span class="mono">task</span> tool, pinning <span class="mono">claude-opus-4.6</span> for hard reasoning.</div>
-  </div>
-  <div class="slide-notes">M3 flagship lab. The mental shift: you're a manager of agents, not just an editor of files. Sequential for dependent steps, parallel for independent threads. Model routing is part of the dispatch decision — keep premium for hard reasoning, cheaper for routine tool loops.</div>
-</section>
-
 <!-- ─────────────────────────── SLIDE 18: Section - Agent Management ─────────────────────────── -->
 <section class="slide section-slide" data-slide="17" data-section="agent-mgmt" data-title="Agent Management">
   <div class="glow-ring" style="top:40%; left:50%;"></div>
@@ -3051,6 +2996,36 @@ body.overview #dot-tooltip { display: none; }
     <div class="note-bar" style="margin-top:16px;">🧪 <strong>Workshop anchor — Lab 13 + Lab 14:</strong> ACP handshake (<span class="mono">copilot --acp</span>) and the tmux meta-loop pass <span class="mono">.orchestrator/session.md</span> between dev/QA panes.</div>
   </div>
   <div class="slide-notes">This slide sets up M6. Lab 13 walks the A2A/ACP handshake — copilot --acp, role assertion, tool ACL. Lab 14 layers the tmux orchestrator on top: dev pane → QA pane → dev pane via .orchestrator/session.md, with a compatibility matrix for what survives a pane restart. The handoff document is your insurance policy against context loss; treat it as the single source of truth between sessions.</div>
+</section>
+
+<!-- ─────────────────────────── Lab Block — All Labs in Order ─────────────────────────── -->
+<section class="slide" data-section="lab-block" data-title="Lab Block — All Labs in Order">
+  <div class="content">
+    <h2 class="slide-title">🧪 Lab Block — All Labs in Order</h2>
+    <p class="slide-subtitle">Run these in numeric order — each lab builds on the prior one</p>
+    <ol style="font-size:16px; line-height:1.5; columns:2; column-gap:36px; margin-top:8px;">
+      <li><strong>Lab 01</strong> — Exploring Copilot Configuration</li>
+      <li><strong>Lab 02</strong> — Custom Instructions &amp; AGENTS.md</li>
+      <li><strong>Lab 03</strong> — Creating a .NET Development Agent</li>
+      <li><strong>Lab 04</strong> — Skills &amp; Prompts</li>
+      <li><strong>Lab 05</strong> — MCP Server Configuration</li>
+      <li><strong>Lab 06</strong> — Hooks</li>
+      <li><strong>Lab 07</strong> — Multi-Agent Orchestration</li>
+      <li><strong>Lab 08</strong> — GitHub Agentic Workflows: PRD Generation</li>
+      <li><strong>Lab 09</strong> — Copilot Coding Agent &amp; Code Review</li>
+      <li><strong>Lab 10</strong> — Agent Memory: Personalities, Lessons, and Consolidation</li>
+      <li><strong>Lab 11</strong> — Building &amp; Distributing a Copilot Plugin (Enterprise Marketplace)</li>
+      <li><strong>Lab 12</strong> — Fabric MCP with Copilot CLI &amp; VS Code</li>
+      <li><strong>Lab 13</strong> — A2A Concepts with Copilot CLI ACP</li>
+      <li><strong>Lab 14</strong> — Orchestrator + tmux Pattern (Deep-Dive)</li>
+    </ol>
+    <div class="note-bar" style="margin-top:12px;">🧪 <strong>Workshop anchor — Lab 01:</strong> Map every Copilot config touchpoint (<span class="mono">~/.copilot</span>, <span class="mono">.github/</span>, <span class="mono">AGENTS.md</span>) so the rest of the workshop has somewhere to land.</div>
+    <div class="note-bar" style="margin-top:8px;">🧪 <strong>Workshop anchor — Lab 05 + Lab 12:</strong> Lab 05 composes <span class="mono">context7</span> + <span class="mono">microsoft-learn</span>; Lab 12 layers Fabric MCP with an offline Parquet path for restricted networks.</div>
+    <div class="note-bar" style="margin-top:8px;">🧪 <strong>Workshop anchor — Lab 07:</strong> Run sequential and parallel sub-agent dispatches via the <span class="mono">task</span> tool, pinning <span class="mono">claude-opus-4.6</span> for hard reasoning.</div>
+    <div class="note-bar" style="margin-top:8px;">🧪 <strong>Workshop anchor — Lab 08 + Lab 09:</strong> Lab 08 ships a PRD agent through GitHub Agentic Workflows; Lab 09 wires the cloud Coding Agent into automated code review.</div>
+    <div class="note-bar" style="margin-top:8px;">🧪 <strong>Workshop anchor — Lab 11:</strong> Build, sign, and distribute a plugin via the org-scoped marketplace pattern with explicit hook scope.</div>
+  </div>
+  <div class="slide-notes">This is the consolidated lab block. The presentation block is done — every reference you saw to "we'll do this hands-on later" lives here. Run the labs in strict numeric order: 1 sets up the config surface, 2-4 build the static config (instructions, agents, skills), 5-6 layer in MCP and hooks, 7 introduces orchestration, 8-9 cover gh-aw and Coding Agent, 10 is memory, 11 packages everything as a plugin, 12 is the Fabric MCP variant, 13-14 are the A2A/ACP and tmux deep-dive. Time-box each lab; if you fall behind, skip optional sections rather than skipping a whole lab. The five anchor note-bars below the list summarize the previously standalone cue-slide anchors so the read-aloud script still has them.</div>
 </section>
 
 <!-- ─────────────────────────── Thank You ─────────────────────────── -->
