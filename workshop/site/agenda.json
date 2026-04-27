@@ -1,0 +1,104 @@
+{
+  "title": "Advanced Copilot CLI Workshop",
+  "baseTz": "America/Chicago",
+  "days": [
+    {
+      "name": "Day 1",
+      "subtitle": "Single-day, 4-hour advanced workshop",
+      "blocks": [
+        {
+          "type": "session",
+          "start": "08:00",
+          "end": "08:05",
+          "title": "Welcome & readiness check",
+          "description": "Top-of-day smoke test: environment, CLI auth, MCP servers reachable. Not a content module.",
+          "icon": "👋"
+        },
+        {
+          "type": "session",
+          "start": "08:05",
+          "end": "08:40",
+          "title": "M1 — Copilot CLI extensibility architecture",
+          "description": "Choose between AGENTS.md, custom agents, skills, prompts, hooks, and memory; wire them into one coherent project profile. Anchor labs: lab01/02/03/04/06/10.",
+          "icon": "🧩",
+          "section": "m1"
+        },
+        {
+          "type": "session",
+          "start": "08:40",
+          "end": "09:10",
+          "title": "M2 — MCP servers in anger",
+          "description": "Compose multiple MCP servers in one session, debug silent failures, use --additional-mcp-config for per-session overrides. Anchor labs: lab05, lab12.",
+          "icon": "🔌",
+          "section": "m2"
+        },
+        {
+          "type": "break",
+          "start": "09:10",
+          "end": "09:20",
+          "title": "Break",
+          "icon": "☕"
+        },
+        {
+          "type": "session",
+          "start": "09:20",
+          "end": "09:45",
+          "title": "M3 — Multi-agent orchestration",
+          "description": "Decompose tasks into parallel stateless sub-agent dispatches, route models by cost/judgment, know when not to spawn one. Anchor lab: lab07.",
+          "icon": "🤝",
+          "section": "m3"
+        },
+        {
+          "type": "session",
+          "start": "09:45",
+          "end": "10:10",
+          "title": "M4 — GitHub Agentic Workflows (gh-aw)",
+          "description": "Read, author, and debug gh-aw workflows on the registry-pinned schema for PRD generation and code review. Anchor labs: lab08, lab09.",
+          "icon": "⚙️",
+          "section": "m4"
+        },
+        {
+          "type": "break",
+          "start": "10:10",
+          "end": "10:20",
+          "title": "Break",
+          "icon": "☕"
+        },
+        {
+          "type": "session",
+          "start": "10:20",
+          "end": "10:40",
+          "title": "M5 — Enterprise plugin marketplace",
+          "description": "Package agents/skills/prompts/hooks as a plugin, publish to an internal marketplace, reason about versioning and blast radius. Anchor lab: lab11.",
+          "icon": "🏪",
+          "section": "m5"
+        },
+        {
+          "type": "session",
+          "start": "10:40",
+          "end": "11:05",
+          "title": "M6 — A2A / ACP + tmux orchestrator meta-loop (flagship)",
+          "description": "Stand up the tmux orchestrator (plan→implement→handoff→clear→qa) and run Copilot CLI as an ACP server. Anchor labs: lab13, lab14.",
+          "icon": "🧵",
+          "section": "m6"
+        },
+        {
+          "type": "session",
+          "start": "11:05",
+          "end": "11:20",
+          "title": "Q&A and wrap",
+          "description": "Open Q&A, references, and pointers to follow-on labs and registry sources of truth.",
+          "icon": "❓"
+        },
+        {
+          "type": "session",
+          "start": "11:20",
+          "end": "12:00",
+          "title": "Contingency / overflow",
+          "description": "Absorbs run-long drift; not separately scheduled content. Visible so the agenda render shows the buffer.",
+          "icon": "🛟"
+        }
+      ]
+    }
+  ]
+}
