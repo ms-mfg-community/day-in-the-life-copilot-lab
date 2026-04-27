@@ -78,7 +78,7 @@ head -10 .github/prompts/verify.prompt.md
 # Hooks — every turn, every session
 cat .github/hooks/default.json | head -30
 
-# Memory — four layers, one lab
+# Memory — three Karpathy layers, one lab
 head -40 labs/lab10.md
 ```
 
@@ -133,7 +133,7 @@ mechanical rule.
 - **`/env` output is overwhelming on this repo.** It is — this repo has ~10 skills, 3 agents, 23 prompts, 7 hook scripts. That *is* the teaching moment: "here's why the decision rubric matters; look how much there is to pay for."
 - **Someone asks 'AGENTS.md vs copilot-instructions.md'.** Both load; AGENTS.md is agent-oriented guidance, `copilot-instructions.md` is Copilot-specific. Cite the repo's own `copilot-instructions.md` as the canonical example. Don't let this eat 5 minutes.
 - **'Why not just put everything in a skill?'** Skills are auto-activated by description — a skill with a broad description activates on every turn and burns tokens like a hook, but silently. Narrow descriptions or it's worse than AGENTS.md.
-- **Memory layer confusion.** If someone asks "which memory layer?", point to `labs/lab10.md` and the `docs/memory-decision-tree.md` flowchart. Don't re-teach lab 10 inside this module — 5 minutes, tops.
+- **Memory layer confusion.** If someone asks "which memory layer?", point to `labs/lab10.md` and the `docs/memory-decision-tree.md` flowchart — three Karpathy layers (Raw sources → Wiki → Schema), promotion only ever goes upward. Call out the disambiguation section: reindex, knowledge-graph servers, and instinct loops are *not* memory layers. Don't re-teach lab 10 inside this module — 5 minutes, tops.
 - **Live demo fails — session won't start.** Fallback: `copilot --no-custom-instructions` to rule out a broken instruction file; `copilot --log-level debug --log-dir /tmp/copilot-logs` and tail the log. Worst case: show the screenshot in `workshop/fallback-screenshots/` (Phase 5 artifact — refer out).
 
 ## 5. Q&A prompts

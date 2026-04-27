@@ -52,9 +52,9 @@ References:
 
 - [`AGENTS.md`](../AGENTS.md) — agent suite (orchestrator, code-reviewer, planner, …)
 - [`.github/agents/code-reviewer.agent.md`](../.github/agents/code-reviewer.agent.md)
-- [`.github/skills/strategic-compact`](../.github/skills/strategic-compact) — context-hygiene skill cited in §13.4
+- [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki agents use to preserve decisions across phase boundaries (cited in §13.4)
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the orchestrator → dev → QA → review flow you'll extend here
-- [Lab 10 — Reindex, Session Management & Memory](lab10.md) — session state primitives Lab 13 builds on
+- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + schema primitives Lab 13 builds on
 - [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — CLI version floor for the live ACP path
 
 ---
@@ -323,8 +323,10 @@ right:
 - **`rubber-duck`** (built-in agent type) — the "critic without standing
   up a peer" baseline. If a rubber-duck pass would have caught the
   issue, you didn't need A2A.
-- **`strategic-compact`** (skill) — A2A burns context fast across both
-  peers. Compact at phase boundaries, not on a timer.
+- **`.copilot/lessons/`** (markdown wiki, Lab 10) — A2A burns context fast
+  across both peers. Before `/clear` at a phase boundary, promote durable
+  decisions into a lesson file so the next peer can recall them without
+  replaying the whole transcript.
 
 ---
 

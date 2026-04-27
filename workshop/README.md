@@ -11,6 +11,21 @@ Advanced Copilot CLI workshop. Labs under `labs/` remain authoritative
 for self-paced study; materials here are curated slices that reference
 the labs, not duplicates of them.
 
+## Hackathon delivery artifacts
+
+Live-session surface produced by the materials-gap arc. Open these
+when delivering or rehearsing the hackathon variant of the workshop.
+
+- `workshop/site/hackathon.html` — Reveal.js deck (64 slides at
+  1920×1080). Open in a browser; press `S` for presenter mode with
+  speaker notes and a dual-screen clock.
+- `docs/workshop/presenter-script.md` — narrative walkthrough mapped
+  1:1 to the deck slides. Use this for rehearsal and as the
+  facilitator handoff doc.
+- `workshop/site/agenda.json` — single source of truth for the
+  schedule. Slide 3 of the deck reads it at runtime; edit here, not
+  in the HTML.
+
 ## Layout
 
 - `curriculum.md` — source of truth for the module list, per-module

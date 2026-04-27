@@ -149,3 +149,10 @@ If you ship one pattern out of this workshop, this is the one.
 ## Takeaway
 
 A2A is the trust-boundary story: `--acp` turns Copilot CLI into a peer a different agent can drive. tmux-orchestrator is the *context-discipline* story: a never-cleared orchestrator coordinating cleared worker + qa panes with hand-off docs on disk. Read the matrix before you promise it on Windows. Read `labs/lab13.md` and `labs/lab14.md` for the full walk-through.
+
+---
+
+## What's next
+
+- See [`workshop/slides/56-module-5c-copilot-cli-extensions.md`](56-module-5c-copilot-cli-extensions.md) and [`labs/lab-copilot-cli-extensions.md`](../../labs/lab-copilot-cli-extensions.md) for the deterministic-hook × probabilistic-extension synergy pattern.
+- M5b — [`gh` extensions](55-module-5b-gh-extensions.md) (anchor lab: `labs/lab-gh-extensions.md`) — build your own `gh` command that calls an LLM and wires into a git pre-commit hook.

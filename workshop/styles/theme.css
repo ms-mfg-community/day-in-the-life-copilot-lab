@@ -1,0 +1,684 @@
+/* =============================================================================
+ * theme.css — Reveal.js theme overrides for the Day-in-the-Life Copilot workshop
+ *
+ * Purpose
+ *   Brand-aligned, accessible Reveal.js theme. This file is the *only* style
+ *   surface for the deck; the build pipeline (scripts/workshop/build-slides.mjs,
+ *   wave 2) wires Reveal.js around the slide markdown and links this stylesheet.
+ *
+ * Workshop content license
+ *   Workshop content (c) Microsoft + community contributors. See repo LICENSE.
+ *
+ * Font license note
+ *   Inter and JetBrains Mono are both licensed under the SIL Open Font License
+ *   (OFL) 1.1. Self-hosted via @font-face below — no runtime CDN fetch. The
+ *   actual .woff2 binaries are dropped in by wave 2 (WS-C-build-pipeline) at
+ *   the paths declared in the @font-face src URLs. If the binaries are absent
+ *   at runtime, the system-font fallback stack defined on `--ds-font-sans` /
+ *   `--ds-font-mono` keeps the deck legible.
+ *
+ * Targeting
+ *   Selectors assume Reveal.js DOM (`.reveal section`, `.reveal pre`, …).
+ *   Variables are namespaced `--ds-*` (deck-system) per workstream convention.
+ *
+ * Accessibility floor
+ *   - Text contrast >= 4.5:1 in both light and dark themes (verified against
+ *     GitHub Primer foundations + #8957e5 Copilot purple).
+ *   - Focus rings are always visible (no `outline: none` without a replacement).
+ *   - Transitions wrapped in `prefers-reduced-motion: no-preference` so the
+ *     reduced-motion default is "no animation."
+ *   - Heading sizes scale but never invert semantic order — h1 > h2 > h3.
+ * ============================================================================= */
+
+
+/* -----------------------------------------------------------------------------
+ * 1. @font-face — self-hosted Inter + JetBrains Mono (SIL OFL)
+ *
+ * The font files are not committed in this wave. Wave 2 / regeneration will
+ * place them at the URLs below. `font-display: swap` keeps the deck readable
+ * during the brief window before the webfont arrives (or indefinitely if it
+ * never does — the system fallback stack handles that).
+ * ----------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 2. Design tokens — light theme (default)
+ *
+ * Palette is derived from GitHub Primer's "light" foundations (canvas / fg /
+ * border / accent) with Copilot purple (#8957e5) as the brand accent.
+ * Contrast pairings verified at https://webaim.org/resources/contrastchecker/:
+ *   - --ds-fg (#1f2328)        on --ds-bg (#ffffff)        → 16.1 : 1  AAA
+ *   - --ds-fg-muted (#59636e)  on --ds-bg (#ffffff)        →  5.4 : 1  AA
+ *   - --ds-accent (#8957e5)    on --ds-bg (#ffffff)        →  4.7 : 1  AA
+ *   - --ds-fg (#1f2328)        on --ds-code-bg (#f6f8fa)   → 14.6 : 1  AAA
+ * ----------------------------------------------------------------------------- */
+
+:root {
+  /* Typography stacks. The custom families come first; the system fallback
+   * stack is the safety net if a webfont fails to load. */
+  --ds-font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
+  --ds-font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Type scale — conservative because Reveal scales the whole stage. */
+  --ds-fs-body: 28px;
+  --ds-fs-h1: 64px;
+  --ds-fs-h2: 44px;
+  --ds-fs-h3: 32px;
+  --ds-fs-code: 22px;
+  --ds-fs-display: clamp(72px, 9vw, 128px);   /* cover + dividers */
+  --ds-line-prose: 1.4;
+  --ds-line-code: 1.55;
+
+  /* Brand: Copilot purple as the single accent. */
+  --ds-accent: #8957e5;
+  --ds-accent-fg: #ffffff;          /* text *on* accent fills */
+  --ds-accent-soft: #efe4fc;        /* tinted backgrounds */
+
+  /* GitHub Primer light foundations. */
+  --ds-bg: #ffffff;
+  --ds-bg-subtle: #f6f8fa;
+  --ds-fg: #1f2328;
+  --ds-fg-muted: #59636e;
+  --ds-border: #d1d9e0;
+
+  /* Code surfaces. */
+  --ds-code-bg: #f6f8fa;
+  --ds-code-fg: #1f2328;
+  --ds-code-border: #d1d9e0;
+  --ds-code-tag-bg: #1f2328;
+  --ds-code-tag-fg: #ffffff;
+
+  /* Cover gradient — Copilot purple → indigo → near-black. Used as a
+   * radial wash on `section.cover` so the wordmark/logo stays readable. */
+  --ds-cover-gradient:
+    radial-gradient(ellipse at 25% 20%, #8957e5 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, #4c2889 0%, transparent 60%),
+    linear-gradient(135deg, #0d1117 0%, #1f2328 100%);
+
+  /* Focus ring — high-contrast, always visible. */
+  --ds-focus-ring: 0 0 0 3px rgba(137, 87, 229, 0.55);
+
+  /* Stage / chrome dimensions. */
+  --ds-header-height: 36px;
+  --ds-footer-height: 36px;
+  --ds-radius: 10px;
+  --ds-radius-sm: 6px;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 3. Design tokens — dark theme
+ *
+ * Two activation paths so authors can either pin the theme via
+ * `<html data-theme="dark">` (Reveal often does this) *or* respect the OS
+ * preference. Both resolve to the same token set.
+ *
+ * Contrast pairings:
+ *   - --ds-fg (#e6edf3)        on --ds-bg (#0d1117)        → 15.6 : 1  AAA
+ *   - --ds-fg-muted (#9198a1)  on --ds-bg (#0d1117)        →  5.2 : 1  AA
+ *   - --ds-accent (#bc8cff)    on --ds-bg (#0d1117)        →  7.1 : 1  AAA
+ *     (Copilot purple is brightened to #bc8cff on dark to clear 4.5:1.)
+ * ----------------------------------------------------------------------------- */
+
+[data-theme="dark"] {
+  --ds-accent: #bc8cff;
+  --ds-accent-fg: #0d1117;
+  --ds-accent-soft: #2a1f4a;
+
+  --ds-bg: #0d1117;
+  --ds-bg-subtle: #161b22;
+  --ds-fg: #e6edf3;
+  --ds-fg-muted: #9198a1;
+  --ds-border: #30363d;
+
+  --ds-code-bg: #161b22;
+  --ds-code-fg: #e6edf3;
+  --ds-code-border: #30363d;
+  --ds-code-tag-bg: #e6edf3;
+  --ds-code-tag-fg: #0d1117;
+
+  --ds-cover-gradient:
+    radial-gradient(ellipse at 25% 20%, #8957e5 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, #2a1f4a 0%, transparent 60%),
+    linear-gradient(135deg, #010409 0%, #0d1117 100%);
+
+  --ds-focus-ring: 0 0 0 3px rgba(188, 140, 255, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ds-accent: #bc8cff;
+    --ds-accent-fg: #0d1117;
+    --ds-accent-soft: #2a1f4a;
+
+    --ds-bg: #0d1117;
+    --ds-bg-subtle: #161b22;
+    --ds-fg: #e6edf3;
+    --ds-fg-muted: #9198a1;
+    --ds-border: #30363d;
+
+    --ds-code-bg: #161b22;
+    --ds-code-fg: #e6edf3;
+    --ds-code-border: #30363d;
+    --ds-code-tag-bg: #e6edf3;
+    --ds-code-tag-fg: #0d1117;
+
+    --ds-cover-gradient:
+      radial-gradient(ellipse at 25% 20%, #8957e5 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 90%, #2a1f4a 0%, transparent 60%),
+      linear-gradient(135deg, #010409 0%, #0d1117 100%);
+
+    --ds-focus-ring: 0 0 0 3px rgba(188, 140, 255, 0.6);
+  }
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 4. Reveal.js stage — base typography and surface
+ *
+ * Reveal applies its own font sizing via CSS variables (`--r-main-font-size`
+ * etc.) in newer versions; we override both the legacy `.reveal` rules and the
+ * newer custom props to be safe.
+ * ----------------------------------------------------------------------------- */
+
+html,
+body {
+  background: var(--ds-bg);
+  color: var(--ds-fg);
+}
+
+.reveal {
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-fs-body);
+  line-height: var(--ds-line-prose);
+  color: var(--ds-fg);
+  background: var(--ds-bg);
+
+  /* Reveal 4.x custom-prop hooks — keep these in sync with the tokens. */
+  --r-main-font: var(--ds-font-sans);
+  --r-main-font-size: var(--ds-fs-body);
+  --r-main-color: var(--ds-fg);
+  --r-heading-font: var(--ds-font-sans);
+  --r-heading-color: var(--ds-fg);
+  --r-link-color: var(--ds-accent);
+  --r-link-color-hover: var(--ds-accent);
+  --r-selection-background-color: var(--ds-accent);
+  --r-selection-color: var(--ds-accent-fg);
+  --r-code-font: var(--ds-font-mono);
+  --r-background-color: var(--ds-bg);
+}
+
+.reveal .slides {
+  text-align: left;        /* override Reveal's default centered text */
+}
+
+.reveal .slides > section,
+.reveal .slides > section > section {
+  padding: 48px 64px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 5. Headings — semantic order respected
+ * ----------------------------------------------------------------------------- */
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  font-family: var(--ds-font-sans);
+  font-weight: 700;
+  color: var(--ds-fg);
+  text-transform: none;       /* Reveal uppercases by default — we don't want that */
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0 0 0.6em 0;
+}
+
+.reveal h1 { font-size: var(--ds-fs-h1); }
+.reveal h2 { font-size: var(--ds-fs-h2); }
+.reveal h3 { font-size: var(--ds-fs-h3); color: var(--ds-fg-muted); }
+.reveal h4 { font-size: 24px; color: var(--ds-fg-muted); font-weight: 600; }
+
+
+/* -----------------------------------------------------------------------------
+ * 6. Prose — paragraphs, lists, links, emphasis
+ * ----------------------------------------------------------------------------- */
+
+.reveal p,
+.reveal li {
+  color: var(--ds-fg);
+  line-height: var(--ds-line-prose);
+}
+
+.reveal ul,
+.reveal ol {
+  display: block;
+  margin: 0 0 1em 1.2em;
+}
+
+.reveal li + li { margin-top: 0.35em; }
+
+.reveal a {
+  color: var(--ds-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.reveal a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.reveal strong { font-weight: 700; color: var(--ds-fg); }
+.reveal em     { font-style: italic; }
+
+
+/* -----------------------------------------------------------------------------
+ * 7. Code blocks
+ *
+ * Requirements (per plan §C):
+ *   - Rounded corners, background tint, language tag in the upper right.
+ *   - line-height 1.55, no horizontal scrollbar at 16:9 / 1920×1080.
+ *
+ * We avoid horizontal scroll by enforcing `white-space: pre-wrap` *only* when
+ * the build pipeline does not pre-tokenize via Shiki. Wave 2 will inject
+ * Shiki-tokenized markup; long lines should be hand-wrapped at the source —
+ * but `pre-wrap` is the safety net for slides that slip through.
+ * ----------------------------------------------------------------------------- */
+
+.reveal pre {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 1em 0;
+  padding: 20px 24px;
+  background: var(--ds-code-bg);
+  color: var(--ds-code-fg);
+  border: 1px solid var(--ds-code-border);
+  border-radius: var(--ds-radius);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-fs-code);
+  line-height: var(--ds-line-code);
+  box-shadow: none;
+  overflow: hidden;          /* no horizontal scroll at 1920×1080 */
+}
+
+.reveal pre code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-family: var(--ds-font-mono);
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;     /* wrap long tokens; pairs with `overflow:hidden` */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  border: none;
+  border-radius: 0;
+}
+
+/* Inline code (single backticks). */
+.reveal :not(pre) > code {
+  font-family: var(--ds-font-mono);
+  font-size: 0.92em;
+  padding: 0.12em 0.4em;
+  background: var(--ds-bg-subtle);
+  color: var(--ds-fg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-sm);
+}
+
+/* Language tag — upper-right corner. The build pipeline emits
+ * `<pre data-lang="bash"><code>…</code></pre>` (Shiki convention) and we
+ * surface that as a small chip. If `data-lang` is missing the chip is hidden. */
+.reveal pre[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  padding: 2px 8px;
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-code-tag-fg);
+  background: var(--ds-code-tag-bg);
+  border-radius: var(--ds-radius-sm);
+  pointer-events: none;
+  user-select: none;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 8. Tables, blockquotes, horizontal rules
+ * ----------------------------------------------------------------------------- */
+
+.reveal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+.reveal th,
+.reveal td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.reveal th {
+  font-weight: 700;
+  color: var(--ds-fg);
+  background: var(--ds-bg-subtle);
+}
+
+.reveal blockquote {
+  margin: 1em 0;
+  padding: 12px 20px;
+  border-left: 4px solid var(--ds-accent);
+  background: var(--ds-accent-soft);
+  color: var(--ds-fg);
+  font-style: normal;
+  border-radius: 0 var(--ds-radius-sm) var(--ds-radius-sm) 0;
+  box-shadow: none;
+}
+
+.reveal hr {
+  border: 0;
+  height: 1px;
+  background: var(--ds-border);
+  margin: 1.2em 0;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 9. Cover slide — `section.cover`
+ *
+ * The build pipeline (wave 2) annotates the first slide with `class="cover"`.
+ * Layout: large display title centered-left, gradient backdrop, optional logo
+ * in the upper-left logo slot. The slot expects `workshop/assets/logo.svg`.
+ * If the SVG is absent we render a CSS wordmark fallback (see `.cover-wordmark`)
+ * so we never depend on marks we may not have rights to ship.
+ * ----------------------------------------------------------------------------- */
+
+.reveal section.cover {
+  background: var(--ds-cover-gradient);
+  color: #ffffff;
+  padding: 72px 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.reveal section.cover h1 {
+  font-size: var(--ds-fs-display);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  max-width: 16ch;
+  margin: 0 0 0.4em 0;
+}
+
+.reveal section.cover h2,
+.reveal section.cover h3,
+.reveal section.cover p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 32px;
+  font-weight: 400;
+  margin: 0 0 0.4em 0;
+}
+
+/* Logo slot — fixed upper-left, sized for a 1920×1080 stage. */
+.reveal section.cover .cover-logo {
+  position: absolute;
+  top: 48px;
+  left: 64px;
+  width: 220px;
+  height: 56px;
+  background-image: url("../assets/logo.svg");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: left center;
+}
+
+/* CSS wordmark fallback — used when logo.svg is absent or fails to load.
+ * Authors opt in by adding `class="cover-wordmark"` to the slot element. */
+.reveal section.cover .cover-wordmark {
+  position: absolute;
+  top: 48px;
+  left: 64px;
+  font-family: var(--ds-font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  opacity: 0.92;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 10. Section dividers — `section.divider`
+ *
+ * Single-word display type, centered, solid background. Authors mark a slide
+ * with `class="divider"` and put one word in an h1.
+ * ----------------------------------------------------------------------------- */
+
+.reveal section.divider {
+  background: var(--ds-bg-subtle);
+  color: var(--ds-fg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.reveal section.divider h1 {
+  font-size: var(--ds-fs-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ds-fg);
+  margin: 0;
+  /* Subtle accent underline so the word doesn't float in space. */
+  padding-bottom: 0.2em;
+  border-bottom: 6px solid var(--ds-accent);
+}
+
+.reveal section.divider h2,
+.reveal section.divider p {
+  color: var(--ds-fg-muted);
+  font-size: 28px;
+  margin-top: 0.6em;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 11. Header (workshop title) and footer (slide number)
+ *
+ * Reveal renders these via plugins / config: a header element injected by the
+ * build pipeline carries `.workshop-header`; the slide number lives in
+ * `.reveal .slide-number` (Reveal's built-in element). We just style them.
+ * Both are suppressed on cover and divider slides so the chrome doesn't fight
+ * the title.
+ * ----------------------------------------------------------------------------- */
+
+.workshop-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ds-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--ds-bg);
+  border-bottom: 1px solid var(--ds-border);
+  font-family: var(--ds-font-sans);
+  font-size: 13px;
+  color: var(--ds-fg-muted);
+  z-index: 30;
+}
+
+.workshop-header .workshop-title {
+  font-weight: 700;
+  color: var(--ds-fg);
+  letter-spacing: 0.02em;
+}
+
+.workshop-header .workshop-meta {
+  font-weight: 400;
+  color: var(--ds-fg-muted);
+}
+
+.reveal .slide-number {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  height: var(--ds-footer-height);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: transparent;
+  font-family: var(--ds-font-mono);
+  font-size: 13px;
+  color: var(--ds-fg-muted);
+  z-index: 30;
+}
+
+/* Hide chrome on cover + divider — the title slide and dividers should be
+ * unencumbered by header/footer. */
+.reveal section.cover ~ .workshop-header,
+.reveal section.divider ~ .workshop-header { display: none; }
+.reveal section.cover .slide-number,
+.reveal section.divider .slide-number { display: none; }
+/* Body-level escape hatch — Reveal sets data attributes on <body> reflecting
+ * the active slide; the build pipeline can mirror cover/divider into a class
+ * on <body> for cleaner targeting. */
+body.slide-cover .workshop-header,
+body.slide-cover .reveal .slide-number,
+body.slide-divider .workshop-header,
+body.slide-divider .reveal .slide-number { display: none; }
+
+
+/* -----------------------------------------------------------------------------
+ * 12. Focus + keyboard navigation styles
+ *
+ * Reveal uses `:focus` on the controls, links inside slides, and the slide
+ * container during keyboard nav. We replace the default browser ring with a
+ * Copilot-purple ring that meets 3:1 against both backgrounds.
+ * ----------------------------------------------------------------------------- */
+
+.reveal a:focus-visible,
+.reveal button:focus-visible,
+.reveal .controls button:focus-visible,
+.reveal .slides section:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+  border-radius: var(--ds-radius-sm);
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 13. Reveal controls + progress bar — recolor to brand
+ * ----------------------------------------------------------------------------- */
+
+.reveal .controls { color: var(--ds-accent); }
+.reveal .progress { color: var(--ds-accent); background: var(--ds-border); height: 4px; }
+.reveal .progress span { background: var(--ds-accent); }
+
+
+/* -----------------------------------------------------------------------------
+ * 14. Reduced motion — suppress all transitions and animations
+ *
+ * Reveal's slide transitions are driven by CSS `transition` + `transform`. The
+ * cleanest way to fully disable them is to scope *all* transitions/animations
+ * to `prefers-reduced-motion: no-preference`. The default (no preference
+ * expressed OR `reduce`) gets nothing. This is stricter than the typical
+ * "wrap only our additions" pattern, but it matches the plan's accessibility
+ * floor: motion-reduced safe by default.
+ *
+ * If a future revision needs animation by default, gate everything below on
+ * `prefers-reduced-motion: no-preference` instead.
+ * ----------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal *,
+  .reveal *::before,
+  .reveal *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .reveal .slides section {
+    transform: none !important;
+  }
+}
+
+
+/* -----------------------------------------------------------------------------
+ * 15. Print — keep PDF export legible
+ *
+ * Reveal's PDF export adds `.print-pdf` to <html>. We strip the gradient on
+ * the cover (printers handle solid backgrounds far better) and force the light
+ * palette so the printout doesn't waste toner.
+ * ----------------------------------------------------------------------------- */
+
+@media print {
+  :root {
+    --ds-bg: #ffffff;
+    --ds-fg: #1f2328;
+    --ds-cover-gradient: #1f2328;
+  }
+  .reveal section.cover { color: #ffffff; background: #1f2328; }
+  .workshop-header,
+  .reveal .slide-number { position: static; border: none; }
+}

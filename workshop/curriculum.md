@@ -103,8 +103,8 @@ every surface available.
 
 **Anchor labs.** `lab01` (Copilot configuration topology),
 `lab02` (AGENTS.md + custom instructions), `lab03` (custom agents),
-`lab04` (skills and prompts), `lab06` (hooks), `lab10` (memory and
-context lifecycle).
+`lab04` (skills and prompts), `lab06` (hooks), `lab10` (agent memory:
+personalities, lessons, and consolidation).
 
 **Registry check.** 6 + 6 + 6 + 6 + 4 + 7 = **35 min**
 (`pace_workshop_minutes` for labs 01, 02, 03, 04, 06, 10).

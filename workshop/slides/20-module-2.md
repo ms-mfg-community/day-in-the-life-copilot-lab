@@ -42,6 +42,8 @@ That flag is repeatable and accepts either a JSON string or `@/path/to/file`. It
 - `type` is **`local`** for stdio, `http` for HTTP, `sse` for SSE.
 - Every entry **requires a `tools` array** — `["*"]` to expose everything, or an allowlist.
 
+> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers), `sse` is **deprecated** in the MCP spec (still accepted for backward compat). Prefer `type: http` (Streamable HTTP) for any new server you author.
+
 VS Code's `mcp.json` uses `servers` and `type: stdio`. Copy-pasting between clients is the single biggest source of "it worked in VS Code but not in the CLI."
 
 ---

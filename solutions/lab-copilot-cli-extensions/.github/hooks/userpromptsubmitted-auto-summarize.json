@@ -1,0 +1,15 @@
+{
+  "_comment": "userPromptSubmitted hook: detects the deterministic `summarize:` prefix and emits an audit/telemetry line. Per docs (https://docs.github.com/en/copilot/reference/hooks-configuration) `userPromptSubmitted` output is NOT honored by the runtime today (\"prompt mutation not supported\"), so this hook cannot itself invoke the extension or rewrite the prompt. The synergy pattern this models is: (a) hook deterministically detects the trigger, (b) operator/automation observes the log, (c) the agent — guided by the `summarize:` convention in the user prompt — calls the `clab_summarize` tool. See lab §5 for the limitation discussion.",
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "INPUT=$(cat); PROMPT=$(printf '%s' \"$INPUT\" | jq -r '.prompt // \"\"'); case \"$PROMPT\" in summarize:*) printf '[clab-auto-summarize] trigger detected at %s for cwd=%s\\n' \"$(date -u +%FT%TZ)\" \"$(printf '%s' \"$INPUT\" | jq -r '.cwd // \"?\"')\" >&2 ;; esac; exit 0",
+        "powershell": "$raw = [Console]::In.ReadToEnd(); $evt = $raw | ConvertFrom-Json; if ($evt.prompt -match '^summarize:') { [Console]::Error.WriteLine(\"[clab-auto-summarize] trigger detected at $((Get-Date).ToUniversalTime().ToString('o')) for cwd=$($evt.cwd)\") }; exit 0",
+        "timeoutSec": 5,
+        "comment": "Detects deterministic `summarize:` prefix and logs to stderr (CLI surfaces it as a hook diagnostic). Does not — and cannot — auto-invoke the extension; see lab §5 on the runtime limitation."
+      }
+    ]
+  }
+}

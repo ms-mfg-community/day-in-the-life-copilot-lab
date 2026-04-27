@@ -17,6 +17,42 @@ audience: "Workshop presenter / facilitator"
 > Pacing is governed by `workshop/timing-plan.md`. Per-module
 > advanced outcomes live in `workshop/curriculum.md`.
 
+## Delivery artifacts (hackathon variant)
+
+Open these before each session; rehearse against them the day before.
+
+- **Slide deck:** `workshop/site/hackathon.html` — open in a browser
+  on the presenter machine. Press `S` to launch presenter mode
+  (speaker notes + clock on the second screen).
+- **Presenter script:** `docs/workshop/presenter-script.md` — read
+  during rehearsal; keep open in a side pane during delivery for the
+  per-slide narration.
+- **Schedule data:** `workshop/site/agenda.json` — slide 3 reads this
+  at runtime. If the agenda shifts, edit the JSON; do not hand-edit
+  the deck.
+
+### Regenerating slide screenshots
+
+If the deck changes and you need refreshed PNGs (for handouts or
+review), run:
+
+```
+node scripts/workshop/screenshot-slides.mjs
+```
+
+Output lands in `.orchestrator/screenshots/` (1920×1080 PNG per slide).
+
+### Smoke-testing presenter mode
+
+Before a live session, verify presenter mode still launches cleanly:
+
+```
+node scripts/workshop/test-presenter-mode.mjs
+```
+
+The script opens the deck, triggers `S`, and confirms the speaker-notes
+window renders. Run it as part of pre-flight when the deck has changed.
+
 ## Pre-flight — the day before
 
 1. Run `scripts/preflight.sh` (macOS/Linux) or `scripts/preflight.ps1`
