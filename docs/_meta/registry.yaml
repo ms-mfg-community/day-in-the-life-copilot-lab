@@ -1,0 +1,150 @@
+# Day-in-the-Life Copilot Lab — Content Registry
+#
+# Single source of truth for versions, services, and pacing that appear across
+# labs, workflows, and CI. The Phase 4 weekly audit agent reads this file,
+# compares against upstream sources, and opens a PR when drift is detected.
+#
+# Rules:
+#   - Keep keys stable; the audit workflow matches on them.
+#   - Labs that would otherwise hardcode a version MUST link to this file
+#     (see tests/content-currency/registry-consumed.test.ts).
+#   - Never place secrets here.
+
+schema_version: 1
+
+copilot_cli_version_floor: "1.0.37"
+
+gh_aw_schema_version: "2026.04"
+
+# MCP server pins — explicit versions verified against npm registry on 2026-04-27
+# (see fix-regression/verification/verified-findings.md § V05). Floating `@latest`
+# tags remain in the per-server `mcp-configs/*/individual/*.json` files for the
+# weekly audit to detect drift; this registry records the *known-good* version.
+mcp_servers:
+  - name: context7
+    transport: stdio
+    pin: "2.2.1"
+    npm_package: "@upstash/context7-mcp"
+    last_verified: "2026-04-27"
+  - name: memory
+    transport: stdio
+    pin: "2026.1.26"
+    npm_package: "@modelcontextprotocol/server-memory"
+    last_verified: "2026-04-27"
+  - name: sequential-thinking
+    transport: stdio
+    pin: "2025.12.18"
+    npm_package: "@modelcontextprotocol/server-sequential-thinking"
+    last_verified: "2026-04-27"
+  - name: microsoft-learn
+    transport: http
+    pin: latest
+  - name: workiq
+    transport: stdio
+    pin: "0.4.1"
+    npm_package: "@microsoft/workiq"
+    last_verified: "2026-04-27"
+  - name: fabric
+    transport: stdio
+    pin: "1.0.0"           # @microsoft/fabric-mcp — first GA on 2026-04-14
+    npm_package: "@microsoft/fabric-mcp"
+    last_verified: "2026-04-27"
+
+models:
+  default: auto
+  cheap:
+    - claude-haiku-4.5
+    - gpt-5-mini
+  standard:
+    - claude-sonnet-4.6
+    - gpt-5.2
+  premium:
+    - claude-opus-4.7
+    - claude-opus-4.6
+    - gpt-5.3-codex
+
+# Pace-field semantics (Phase 1 audit):
+#   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline
+#     "⏱️ Presenter pace: X minutes" callout at the top of each lab.
+#     Matches tests/lab-structure/*.test.ts frontmatter assertions.
+#   pace_workshop_minutes  — realistic presenter-demo time inside the
+#     4-hour advanced workshop. Includes narrative setup, live demo with
+#     room for one mistake, and transition. Consumed by
+#     workshop/curriculum.md via tests/workshop/time-budget.test.ts.
+#   pace_self_minutes      — self-paced/solo completion time.
+labs:
+  lab01:
+    title: "Exploring Copilot Configuration"
+    pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
+    pace_self_minutes: 10
+  lab02:
+    title: "Custom Instructions & AGENTS.md"
+    pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
+    pace_self_minutes: 15
+  lab03:
+    title: "Creating a .NET Development Agent"
+    pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
+    pace_self_minutes: 15
+  lab04:
+    title: "Skills & Prompts"
+    pace_presenter_minutes: 4
+    pace_workshop_minutes: 6
+    pace_self_minutes: 15
+  lab05:
+    title: "MCP Server Configuration"
+    pace_presenter_minutes: 3
+    pace_workshop_minutes: 10
+    pace_self_minutes: 15
+  lab06:
+    title: "Hooks"
+    pace_presenter_minutes: 3
+    pace_workshop_minutes: 4
+    pace_self_minutes: 10
+  lab07:
+    title: "Multi-Agent Orchestration"
+    pace_presenter_minutes: 4
+    pace_workshop_minutes: 25
+    pace_self_minutes: 20
+  lab08:
+    title: "GitHub Agentic Workflows: PRD Generation"
+    pace_presenter_minutes: 5
+    pace_workshop_minutes: 12
+    pace_self_minutes: 15
+  lab09:
+    title: "Copilot Coding Agent & Code Review"
+    pace_presenter_minutes: 5
+    pace_workshop_minutes: 13
+    pace_self_minutes: 20
+  lab10:
+    title: "Context, Memory & Learning"
+    pace_presenter_minutes: 5
+    pace_workshop_minutes: 7
+    pace_self_minutes: 20
+  lab11:
+    title: "Building & Distributing a Copilot Plugin (Enterprise Marketplace Pattern)"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 20
+    pace_self_minutes: 25
+  lab12:
+    title: "Fabric MCP with Copilot CLI & VS Code"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 20
+    pace_self_minutes: 30
+  lab13:
+    title: "A2A Concepts with Copilot CLI ACP"
+    pace_presenter_minutes: 10
+    pace_workshop_minutes: 10
+    pace_self_minutes: 35
+  lab14:
+    title: "Orchestrator + tmux Pattern (Deep-Dive)"
+    pace_presenter_minutes: 15
+    pace_workshop_minutes: 15
+    pace_self_minutes: 45
+
+audit:
+  # Phase 4 weekly-audit workflow thresholds.
+  draft_pr_if_changes_exceed: 25
+  broken_link_retries: 2

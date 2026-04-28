@@ -74,7 +74,7 @@
       "description": "HTTP fetch for retrieving and processing web content",
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+      "args": ["-y", "@kazuph/mcp-fetch@1.6.2"]
     },
     "lsp-typescript": {
       "description": "TypeScript language intelligence — type info, diagnostics, definitions, references, type tracing",

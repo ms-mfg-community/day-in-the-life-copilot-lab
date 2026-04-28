@@ -1,3 +1,12 @@
+---
+title: "Creating a .NET Development Agent"
+lab_number: 3
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 3 — Creating a .NET Development Agent
 
 In this lab you will create a custom agent specialized for .NET development with ContosoUniversity.
@@ -12,7 +21,7 @@ References:
 
 Before creating your own agent, let's understand what makes up an agent file.
 
-🖥️ **In your terminal:**
+🖥️ **In your terminal (From the repository root):**
 
 1. Look at an existing agent to understand the structure:
 
@@ -50,155 +59,40 @@ tools: ["read", "edit", "execute", "search"]  # Available tools
 | `agent` | Delegate to other agents |
 | `web` | Search the web |
 
-## 3.2 Create the Agent File
+## 3.2 Create the Agent File (per track)
 
-Now let's create a .NET development agent specialized for ContosoUniversity.
+The exercise here is to create a **track-specific** dev agent — one that knows your codebase's project layout, build commands, and conventions. The full agent body lives in your track's appendix:
 
-🖥️ **In your terminal:**
+- **.NET track:** [`labs/appendices/dotnet/lab03.md`](appendices/dotnet/lab03.md) — `dotnet-dev` agent with EF Core / xUnit conventions
+- **Node track:** [`labs/appendices/node/lab03.md`](appendices/node/lab03.md) — `node-dev` agent with Fastify / Drizzle conventions
 
-1. Create the agent file:
+All paths in the appendices are relative to the repository root — `cd` there before running any of the appendix commands.
 
-**WSL/Bash:**
-````bash
-cat > .github/agents/dotnet-dev.agent.md << 'AGENT'
----
-name: "dotnet-dev"
-description: "Specialized .NET development agent for ContosoUniversity. Expertise in clean architecture, EF Core, ASP.NET MVC, dependency injection, and C# best practices."
-tools: ["read", "edit", "execute", "search"]
----
+Both appendices walk through:
 
-# .NET Development Agent
+1. Creating **`.github/agents/<track>-dev.agent.md`** — note the **`.agent.md`** suffix is **mandatory** (not stylistic). *Copilot CLI globs `**/*.agent.md` to discover agents; a plain `.md` file will not be picked up.*
+2. A system prompt that names the project layout, coding standards, and review checklist.
+3. Verifying the agent loads with `head -5` (or `Get-Content -Head 5`).
 
-You are a .NET development specialist working on the ContosoUniversity application. You implement features following clean architecture, DDD principles, and .NET best practices.
+> 🔄 **Restart required after creating the agent file**
+>
+> Copilot CLI and the VS Code Copilot extension discover `.github/agents/*.agent.md` files **once at session start** — agent definitions are **not** hot-reloaded when you save. Skip the restart and `@<track>-dev` will return *"unknown agent"* even though the file is on disk.
+>
+> After creating (or editing) the agent file:
+>
+> 1. Exit your current Copilot CLI session: type `exit` (or press <kbd>Ctrl</kbd>+<kbd>D</kbd>).
+> 2. Restart it: `copilot`.
+> 3. In VS Code, run **Developer: Reload Window** from the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) so the extension re-reads `.github/agents/`.
 
-## When Invoked
-
-1. Check the solution builds: `dotnet build ContosoUniversity.sln`
-2. Review the relevant project layer before making changes
-3. Follow the architecture: Core → Infrastructure → Web
-4. Implement with proper dependency injection and async patterns
-
-## ContosoUniversity Architecture
-
-```
-ContosoUniversity.Core/           # Domain models, interfaces, validation
-ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
-ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
-ContosoUniversity.Tests/          # xUnit tests
-ContosoUniversity.PlaywrightTests/ # E2E tests
-```
-
-## Coding Standards
-
-- **Async all the way**: Use `async Task<IActionResult>` for controller actions
-- **Constructor injection**: Inject `IRepository<T>`, never `new` up services
-- **Null checks with early return**: `if (id == null) return NotFound();`
-- **EF Core async**: Use `ToListAsync()`, `FirstOrDefaultAsync()`, `SaveChangesAsync()`
-- **No SELECT ***: Project only needed columns with `.Select()`
-- **Data Annotations**: `[Required]`, `[StringLength]`, `[Range]` on models
-
-## Development Commands
-
-```bash
-dotnet build ContosoUniversity.sln            # Build all projects
-dotnet test ContosoUniversity.Tests/           # Run tests
-dotnet run --project ContosoUniversity.Web     # Run the app
-```
-
-## Review Checklist
-
-- [ ] `dotnet build` succeeds
-- [ ] Existing tests pass
-- [ ] Async/await used correctly
-- [ ] Repository pattern used for data access
-- [ ] Input validation on controller actions
-- [ ] No hardcoded secrets
-AGENT
-````
-
-<details>
-<summary><strong>PowerShell alternative</strong></summary>
-
-````powershell
-@'
----
-name: "dotnet-dev"
-description: "Specialized .NET development agent for ContosoUniversity. Expertise in clean architecture, EF Core, ASP.NET MVC, dependency injection, and C# best practices."
-tools: ["read", "edit", "execute", "search"]
----
-
-# .NET Development Agent
-
-You are a .NET development specialist working on the ContosoUniversity application. You implement features following clean architecture, DDD principles, and .NET best practices.
-
-## When Invoked
-
-1. Check the solution builds: `dotnet build ContosoUniversity.sln`
-2. Review the relevant project layer before making changes
-3. Follow the architecture: Core → Infrastructure → Web
-4. Implement with proper dependency injection and async patterns
-
-## ContosoUniversity Architecture
-
-```
-ContosoUniversity.Core/           # Domain models, interfaces, validation
-ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
-ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
-ContosoUniversity.Tests/          # xUnit tests
-ContosoUniversity.PlaywrightTests/ # E2E tests
-```
-
-## Coding Standards
-
-- **Async all the way**: Use `async Task<IActionResult>` for controller actions
-- **Constructor injection**: Inject `IRepository<T>`, never `new` up services
-- **Null checks with early return**: `if (id == null) return NotFound();`
-- **EF Core async**: Use `ToListAsync()`, `FirstOrDefaultAsync()`, `SaveChangesAsync()`
-- **No SELECT ***: Project only needed columns with `.Select()`
-- **Data Annotations**: `[Required]`, `[StringLength]`, `[Range]` on models
-
-## Development Commands
-
-```bash
-dotnet build ContosoUniversity.sln            # Build all projects
-dotnet test ContosoUniversity.Tests/           # Run tests
-dotnet run --project ContosoUniversity.Web     # Run the app
-```
-
-## Review Checklist
-
-- [ ] `dotnet build` succeeds
-- [ ] Existing tests pass
-- [ ] Async/await used correctly
-- [ ] Repository pattern used for data access
-- [ ] Input validation on controller actions
-- [ ] No hardcoded secrets
-'@ | Out-File -FilePath .github/agents/dotnet-dev.agent.md -Encoding utf8
-````
-
-</details>
-
-2. Verify the agent was created:
-
-**WSL/Bash:**
-```bash
-head -5 .github/agents/dotnet-dev.agent.md
-```
-
-**PowerShell:**
-```powershell
-Get-Content .github/agents/dotnet-dev.agent.md -Head 5
-```
-
-You should see the YAML frontmatter with `name: "dotnet-dev"`.
-
-> 💡 **Verify the agent loads:** Start a new Copilot session and try `@dotnet-dev What files are in this project?`. If the agent responds, it's working. If you get "unknown agent", check the file is saved in `.github/agents/`.
+> 💡 **Verify the agent loads:** After restarting, try `@<track>-dev What files are in this project?`. If the agent responds, it's working. If you still get "unknown agent", confirm the filename ends in `.agent.md` (not `.md`) and lives under `.github/agents/`.
 
 ## 3.3 Configure Tools and MCP Servers
 
 The agent we created uses basic tools. Let's understand how to add MCP server access.
 
-🖥️ **In your terminal:**
+> 📚 **This section is a preview.** [Lab 05](lab05.md) is the canonical MCP configuration lab — it covers per-server scoping, credential handling, and the centralized `mcp-configs/` source of truth. The snippet below shows just enough to wire an MCP server into an agent's frontmatter; defer the full setup walkthrough to lab 05.
+
+🖥️ **In your terminal (From the repository root):**
 
 1. View the current MCP configuration:
 
@@ -231,20 +125,34 @@ mcp-servers: ["context7"]
 
 Let's test our new agent by asking it to analyze the ContosoUniversity codebase.
 
-🖥️ **In your terminal:**
+🖥️ **In your terminal (From the repository root):**
 
-1. Start Copilot CLI:
+1. Non-interactive smoke test — verify the agent loaded and responds without entering the REPL:
+
+**WSL/Bash:**
+```bash
+copilot --prompt "@dotnet-dev List the files under dotnet/ContosoUniversity.Core/Models/ and name the entities." --allow-all-tools
+```
+
+**PowerShell:**
+```powershell
+copilot --prompt '@dotnet-dev List the files under dotnet/ContosoUniversity.Core/Models/ and name the entities.' --allow-all-tools
+```
+
+If you see *"unknown agent"*, you skipped the 🔄 restart in §3.2 — exit and re-run `copilot`.
+
+2. For an interactive session, start the REPL and invoke the agent:
+
 ```bash
 copilot
 ```
 
-2. Invoke the agent:
 ```
-@dotnet-dev Analyze the ContosoUniversity.Core project. What models exist and what are their relationships?
+@dotnet-dev Analyze the dotnet/ContosoUniversity.Core project. What models exist and what are their relationships?
 ```
 
 3. The agent should:
-   - Read files from `ContosoUniversity.Core/Models/`
+   - Read files from `dotnet/ContosoUniversity.Core/Models/`
    - Identify: Student, Course, Instructor, Enrollment, Department, OfficeAssignment
    - Describe relationships (Student has Enrollments, Course has Enrollments, etc.)
 

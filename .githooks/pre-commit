@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — canonical pre-commit hook for this repo.
+#
+# Activated by:  make setup-hooks   (runs `git config core.hooksPath .githooks`)
+# or directly:   git config core.hooksPath .githooks
+#
+# Responsibilities:
+#   1. Strip outputs[] and reset execution_count on every staged *.ipynb.
+#      Backed by scripts/hooks/pre-commit-strip-notebook-outputs.sh, which
+#      is the implementation learners meet in Lab 12. Re-stages the rewritten
+#      file so the commit captures the cleaned version.
+#
+# Keep this wrapper small. New behaviors should live in scripts/hooks/ and
+# be called from here so the composition stays visible.
+
+set -euo pipefail
+
+# Allow invocation with explicit paths (useful for tests and manual debugging):
+#   .githooks/pre-commit path/to/notebook.ipynb
+# When git invokes us it passes no arguments — we fall back to scanning the
+# staging area.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+STRIP_SCRIPT="${REPO_ROOT}/scripts/hooks/pre-commit-strip-notebook-outputs.sh"
+
+if [ ! -x "${STRIP_SCRIPT}" ]; then
+  echo "ERROR: ${STRIP_SCRIPT} missing or not executable." >&2
+  echo "       Reinstall hooks with: make setup-hooks" >&2
+  exit 1
+fi
+
+collect_notebooks() {
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "$@"
+    return
+  fi
+  # Staged, non-deleted .ipynb paths only.
+  git diff --cached --name-only --diff-filter=ACMR -- '*.ipynb'
+}
+
+mapfile -t notebooks < <(collect_notebooks "$@")
+if [ "${#notebooks[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+"${STRIP_SCRIPT}" "${notebooks[@]}"
+
+# If git invoked us (no explicit argv), re-stage the cleaned files so the
+# commit picks up the rewritten content.
+if [ "$#" -eq 0 ]; then
+  git add -- "${notebooks[@]}"
+fi

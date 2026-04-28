@@ -1,3 +1,12 @@
+---
+title: "GitHub Agentic Workflows: PRD Generation"
+lab_number: 8
+pace:
+  presenter_minutes: 5
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 8 — GitHub Agentic Workflows: PRD Generation
 
 In this lab you will explore how GitHub Agentic Workflows (gh-aw) automate document generation. You'll examine a workflow that generates a Product Requirements Document (PRD) when a feature branch is created.
@@ -12,6 +21,24 @@ References:
 - [GitHub Agentic Workflows](https://github.com/github/gh-aw)
 - [Workflow structure](https://github.github.io/gh-aw/reference/workflow-structure/)
 - [Frontmatter reference](https://github.github.io/gh-aw/reference/frontmatter/)
+
+## 8.0 Copilot CLI currency (2026 refresh)
+
+<!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
+> 💡 Commands below reflect the current Copilot CLI surface as of this lab
+> refresh. Versions, model tiers, and MCP server pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
+> the registry rather than hardcoding values, so a single registry update
+> propagates everywhere.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
+| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+<!-- @end-include docs/_partials/currency.md -->
 
 ## 8.1 Understand gh-aw Workflow Format
 
@@ -74,14 +101,18 @@ Get-Content .github/workflows/generate-prd.md
 | `safe-outputs.create-pull-request` | (configured) | Agent creates a PR with the generated PRD |
 | `description` | (text) | Shown in the GitHub Actions UI |
 
-> 💡 The `create` event fires on any branch or tag creation, but the `if:` condition filters to only `feature/**` and `story/**` branches. Other branch names like `bugfix/` will skip the workflow.
+> 💡 The `create` event fires on any branch or tag creation, but the `if:` condition filters to only `feature/**` and `story/**` branches. Other branch names like `bugfix/` will skip the workflow. When `gh aw compile` lowers your frontmatter to `.lock.yml`, this top-level `if:` becomes a **job-level** `if:` guard on the compiled `agent` job — a single conditional fence around the whole workflow rather than per-step `if:` checks.
+
+> 🔐 **Least-privilege reminder.** Always declare `permissions:` explicitly (don't rely on the repo default). Start from `contents: read` and add only what the agent provably needs: `issues: read` to comment on backlog items, `pull-requests: write` for `safe-outputs.create-pull-request`, etc. Anything not listed is implicitly `none` for that token. Audit by running `gh aw audit .github/workflows/<name>.md` after edits.
+
+> 🧩 **MCP tool allowlist syntax.** When you list MCP-server tools in `tools:`, prefix them with `mcp__<server-name>__` — e.g. `mcp__microsoft_learn__microsoft_docs_search` exposes only that single tool from the `microsoft-learn` server, while `mcp__context7__*` opens every tool on `context7`. Bare names like `microsoft_docs_search` are treated as built-in agent tools and won't bind to the MCP server.
 
 3. Now read the Markdown body — the agent instructions:
 
 **WSL/Bash:**
 ```bash
 # Show only the Markdown body (after the second ---)
-sed -n '/^---$/,/^---$/d;p' .github/workflows/generate-prd.md
+awk '/^---$/{n++; next} n>=2' .github/workflows/generate-prd.md
 ```
 
 **PowerShell:**
@@ -156,6 +187,11 @@ jobs:
 ```
 
 > 💡 **Lock files:** The `.lock.yml` is committed alongside the `.md` file. GitHub Actions reads the lock file; the `.md` file is the human-readable source. Think of it like `package.json` → `package-lock.json`.
+
+> 🧪 **Test the workflow locally before pushing.** Two options:
+>
+> - `gh aw run --dry-run .github/workflows/generate-prd.md` — gh-aw renders the prompt and shows the resolved tool set + permissions without invoking the LLM. Catches frontmatter regressions in seconds.
+> - [`act`](https://github.com/nektos/act) — runs the compiled `.lock.yml` against a local Docker runner: `act create -W .github/workflows/generate-prd.lock.yml -e <(echo '{"ref":"refs/heads/feature/demo"}')`. Useful when you want to exercise the full Actions runtime, but `act` cannot reach Copilot's hosted engine, so the agent step itself will fail to authenticate — treat that as a successful trigger test.
 
 > ⚠️ **Why this works without compiling:** This repository ships with `generate-prd.lock.yml` already committed on `main`. For `create` events (branch/tag creation), GitHub Actions looks for workflow files **on the default branch**, not the branch being created. Since the lock file is already on `main`, creating a `feature/**` branch triggers the workflow immediately. If you were writing a *new* gh-aw workflow from scratch, you'd need to compile it and merge the `.lock.yml` to your default branch before the `create` trigger would fire.
 
@@ -411,3 +447,105 @@ See [`solutions/lab08-gh-aw-prd/generate-prd.md`](../solutions/lab08-gh-aw-prd/g
 </details>
 
 **Next:** [Lab 09 — Copilot Code Review](lab09.md)
+
+## 8.10 Cleanup
+
+> 🛠️ **Lab 08 specifics — revert before the generic sweep below.**
+>
+> If you ran `gh aw compile` (with or without arguments), gh-aw regenerates the `.lock.yml` siblings of every workflow source file in `.github/workflows/`. That's expected, but if your `git status` shows lock-file churn you didn't intend (e.g. timestamp-only drift, or a workflow you only opened to read), revert it with:
+>
+> ```bash
+> git checkout -- '.github/workflows/*.lock.yml'
+> ```
+>
+> Likewise, if §8.4–§8.6 created a feature branch on `origin`, an open PR, or a live PAT, revoke them now:
+>
+> - PAT: <https://github.com/settings/personal-access-tokens> → **Revoke**
+> - PR + branch: `gh pr close <num> --delete-branch`
+> - Repo secret: `gh secret delete COPILOT_GITHUB_TOKEN`
+
+<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
+> 🧹 **Cleanup — leave the machine the way you found it.**
+> Run this checklist before moving to the next lab. Per-lab specifics (named
+> agent / hook / extension files this lab created) should already have been
+> reverted in the steps above; this is the generic sweep that catches the
+> long-tail.
+
+🖥️ **In your terminal:**
+
+1. **Stop background processes.** Anything you started in the foreground with
+   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
+   tail-follows). If you used the bash tool in async mode, make sure those
+   shells are stopped.
+
+   **WSL/Bash:**
+   ```bash
+   jobs -l                       # any background jobs in this shell?
+   # kill them by PID — never `pkill`/`killall`
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-Job                       # any background jobs?
+   Get-Job | Stop-Job; Get-Job | Remove-Job
+   ```
+
+2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
+   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   If you edited in place without backing up, check `git status` in the lab
+   repo (workspace configs) and revert anything you didn't mean to keep.
+
+   **WSL/Bash:**
+   ```bash
+   # If you saved a backup like ~/.copilot/config.json.bak:
+   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
+   ```
+
+3. **Exit and restart `copilot` if you touched extensions or MCP.** The
+   runtime caches loaded extensions and MCP servers; reloading via
+   `extensions_reload` does **not** clear an extension whose source dir was
+   deleted. Fully exit the `copilot` process and start a fresh session.
+
+4. **Sweep the long-tail artifact paths.** These directories accumulate
+   across labs and are safe to clean once you've finished:
+
+   ```bash
+   # Per-session scratch (safe to inspect; delete only what this lab created):
+   ls ~/.copilot/lessons/        2>/dev/null
+   ls node/.a2a/                  2>/dev/null
+   ls node/.a2a-transcript-*.md   2>/dev/null
+   ls .git/CLAB_SUMMARY.md        2>/dev/null
+   ```
+
+   Delete only files that this lab created. Do not blanket-delete
+   `~/.copilot/lessons/` if other sessions wrote to it.
+
+5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
+   point git at a custom hooks dir for the duration of an exercise.
+
+   ```bash
+   git config --get core.hooksPath
+   # if set to a lab path, unset:
+   git config --unset core.hooksPath
+   ```
+
+6. **Confirm working tree is clean (or expected).**
+
+   ```bash
+   git status --short
+   ```
+
+   Any unexpected files (untracked agents, hooks, extensions, scratch
+   notebooks) should be removed or moved out of the repo before continuing.
+
+7. **Verify build is still green.** Optional but recommended after labs that
+   touched hooks, agents, or skills:
+
+   ```bash
+   dotnet build dotnet/ContosoUniversity.sln --nologo
+   ```
+
+> ✅ Once `git status --short` is empty (or shows only files you intentionally
+> kept) and the build is clean, you're ready for the next lab.
+<!-- @end-include docs/_partials/cleanup.md -->
