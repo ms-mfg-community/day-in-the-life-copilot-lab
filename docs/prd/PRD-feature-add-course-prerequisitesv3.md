@@ -46,15 +46,15 @@ Enable courses to declare one or more prerequisite courses that students must co
 
 | Project | Change |
 |---|---|
-| `dotnet/ContosoUniversity.Core` | New `CoursePrerequisite` model; add `Prerequisites` / `DependentCourses` navigation properties to `Course` |
-| `dotnet/ContosoUniversity.Infrastructure` | Register `CoursePrerequisite` in `SchoolContext`; add EF Core migration; update `Repository<Course>` includes as needed |
-| `dotnet/ContosoUniversity.Web` | Update `CourseViewModel`; update `CoursesController.Edit`; update Details/Edit views; add prerequisite validation to enrollment flow |
-| `dotnet/ContosoUniversity.Tests` | New unit tests for circular-dependency detection and enrollment validation; integration tests for the edit POST endpoint |
+| `ContosoUniversity.Core` | New `CoursePrerequisite` model; add `Prerequisites` / `DependentCourses` navigation properties to `Course` |
+| `ContosoUniversity.Infrastructure` | Register `CoursePrerequisite` in `SchoolContext`; add EF Core migration; update `Repository<Course>` includes as needed |
+| `ContosoUniversity.Web` | Update `CourseViewModel`; update `CoursesController.Edit`; update Details/Edit views; add prerequisite validation to enrollment flow |
+| `ContosoUniversity.Tests` | New unit tests for circular-dependency detection and enrollment validation; integration tests for the edit POST endpoint |
 
 ### New Domain Model
 
 ```csharp
-// dotnet/ContosoUniversity.Core/Models/CoursePrerequisite.cs
+// ContosoUniversity.Core/Models/CoursePrerequisite.cs
 public class CoursePrerequisite
 {
     public int CourseID { get; init; }           // the course that has the prerequisite
@@ -91,7 +91,7 @@ public virtual ICollection<CoursePrerequisite> DependentCourses { get; set; } = 
 
 ## 5. Testing Requirements
 
-### Unit Tests (`dotnet/ContosoUniversity.Tests`)
+### Unit Tests (`ContosoUniversity.Tests`)
 
 - `DetectCircularPrerequisite_WhenCycleExists_ReturnsFalse`
 - `DetectCircularPrerequisite_WhenNoCycle_ReturnsTrue`
@@ -99,13 +99,13 @@ public virtual ICollection<CoursePrerequisite> DependentCourses { get; set; } = 
 - `ValidatePrerequisites_WhenAllPrereqsPassed_ReturnsSuccess`
 - `ValidatePrerequisites_WhenCourseHasNoPrereqs_ReturnsSuccess`
 
-### Integration Tests (`dotnet/ContosoUniversity.Tests/Integration`)
+### Integration Tests (`ContosoUniversity.Tests/Integration`)
 
 - `CoursesController_Edit_POST_WithPrerequisites_PersistsRelationships` (via `WebApplicationFactory`)
 - `CoursesController_Edit_POST_CircularDependency_ReturnsValidationError`
 - `EnrollmentsController_POST_MissingPrerequisite_BlocksEnrollment`
 
-### E2E Tests (`dotnet/ContosoUniversity.PlaywrightTests`)
+### E2E Tests (`ContosoUniversity.PlaywrightTests`)
 
 - Admin adds a prerequisite to a course via UI → verifies it appears on Details page.
 - Student attempts enrollment without prerequisite → verifies error message is displayed.
@@ -123,6 +123,6 @@ public virtual ICollection<CoursePrerequisite> DependentCourses { get; set; } = 
 
 ## 7. Dependencies
 
-- Existing `Enrollment` model must expose `Grade` (already present in `dotnet/ContosoUniversity.Core/Models/Enrollment.cs`).
+- Existing `Enrollment` model must expose `Grade` (already present in `ContosoUniversity.Core/Models/Enrollment.cs`).
 - EF Core migrations tooling (`dotnet-ef`) must be available in the dev environment.
 - No new NuGet packages required; feature uses existing EF Core and ASP.NET Core MVC patterns already in the solution.

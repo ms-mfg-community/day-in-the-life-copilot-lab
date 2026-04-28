@@ -1,0 +1,10 @@
+{
+  "description": "Sample Memory MCP create_relations call from Lab 10.2",
+  "relations": [
+    {
+      "from": "ContosoUniversity",
+      "relationType": "uses",
+      "to": "CleanArchitecture"
+    }
+  ]
+}

@@ -28,7 +28,7 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 # Allow documentation in these paths
-ALLOWED_PATTERNS="docs/|.github/|labs/|solutions/|plugin-template/|AGENTS.md|README.md|CHANGELOG.md|LICENSE|CONTRIBUTING.md|.copilot/session-state/|.orchestrator/"
+ALLOWED_PATTERNS="docs/|.github/|labs/|solutions/|AGENTS.md|README.md|CHANGELOG.md|LICENSE|CONTRIBUTING.md|.copilot/session-state/"
 
 if echo "$FILE_PATH" | grep -qiE '\.(md|txt)$'; then
   if ! echo "$FILE_PATH" | grep -qiE "$ALLOWED_PATTERNS"; then

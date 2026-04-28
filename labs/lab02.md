@@ -1,12 +1,3 @@
----
-title: "Custom Instructions & AGENTS.md"
-lab_number: 2
-pace:
-  presenter_minutes: 4
-  self_paced_minutes: 15
-registry: docs/_meta/registry.yaml
----
-
 # 2 — Custom Instructions & AGENTS.md
 
 In this lab you will modify custom instructions and AGENTS.md to customize Copilot behavior.
@@ -24,19 +15,10 @@ The repository-wide instructions file is **always loaded** for every Copilot int
 
 🖥️ **In your terminal:**
 
-1. Open the instructions file in your preferred editor:
-
-**WSL/Bash:**
+1. Open the instructions file:
 ```bash
-"${EDITOR:-code}" .github/copilot-instructions.md
+code .github/copilot-instructions.md
 ```
-
-**PowerShell:**
-```powershell
-& ($env:EDITOR ?? 'code') .github/copilot-instructions.md
-```
-
-> 💡 `${EDITOR:-code}` falls back to `code` (VS Code) when `$EDITOR` is unset, so users on `vim`, `nvim`, `nano`, etc. get their own editor without modifying the lab.
 
 2. Add the following section at the end:
 
@@ -58,17 +40,7 @@ Copilot should reference your new conventions (async actions, repository pattern
 
 > 💡 **Why this matters:** Every Copilot interaction — chat, completions, agents — now respects these conventions. One file change, universal effect.
 
-> 🔄 **Restart required after editing config files**
->
-> Copilot CLI and the VS Code Copilot extension load instructions, `AGENTS.md`, MCP configs, agent definitions, and skill files **once at session start** — they are **not** hot-reloaded on save. The only exception is the CLI extensions subsystem, which exposes an explicit `extensions_reload` tool.
->
-> So after **any** edit in this lab (and labs 3–7):
->
-> 1. Exit your current Copilot CLI session: type `exit` (or press <kbd>Ctrl</kbd>+<kbd>D</kbd>).
-> 2. Restart it: `copilot`.
-> 3. In VS Code, run **Developer: Reload Window** from the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) so the extension re-reads `.github/`.
->
-> Skip the restart and you'll be debugging stale config — and blaming Copilot for following yesterday's rules.
+> 💡 **Verify:** After modifying instructions, restart your Copilot session (`exit` then `copilot`) to ensure changes are loaded. Ask a test question and check that the response reflects your new rules.
 
 ## 2.2 Create a Path-Specific Instruction
 
@@ -90,9 +62,7 @@ applyTo: '**/*.cshtml'
 
 - Use Tag Helpers (`asp-for`, `asp-action`) instead of HTML helpers (`@Html.`).
 - Always include `asp-validation-for` next to form inputs.
-- Use `asp-validation-summary="ModelOnly"` at the top of forms.
 - Display student names as "LastName, FirstMidName" using `@($"{item.LastName}, {item.FirstMidName}")`.
-- Include `@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }` in form pages.
 - Use Bootstrap 5 CSS classes for layout and styling.
 EOF
 ```
@@ -111,9 +81,7 @@ applyTo: '**/*.cshtml'
 
 - Use Tag Helpers (`asp-for`, `asp-action`) instead of HTML helpers (`@Html.`).
 - Always include `asp-validation-for` next to form inputs.
-- Use `asp-validation-summary="ModelOnly"` at the top of forms.
 - Display student names as "LastName, FirstMidName" using `@($"{item.LastName}, {item.FirstMidName}")`.
-- Include `@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }` in form pages.
 - Use Bootstrap 5 CSS classes for layout and styling.
 '@ | Out-File -FilePath .github/instructions/razor-views.instructions.md -Encoding utf8
 ```
@@ -136,38 +104,6 @@ This instruction only loads when Razor files (`.cshtml`) are in context — not 
 
 > 💡 **Instructions cascade.** When editing a `.cshtml` file, Copilot loads: `copilot-instructions.md` + `AGENTS.md` + `razor-views.instructions.md`. All three apply simultaneously.
 
-### 2.2.3 Verify Copilot picked up the new instruction file
-
-After the restart (see the 🔄 callout above), confirm the new path-specific instruction is actually live before moving on. This is the single most common source of "it's not working" frustration in labs 3–7.
-
-**Step 1 — Sanity-check the file on disk:**
-
-**WSL/Bash:**
-```bash
-ls -1 .github/instructions/*.instructions.md
-head -4 .github/instructions/razor-views.instructions.md
-```
-
-**PowerShell:**
-```powershell
-Get-ChildItem .github/instructions/*.instructions.md | Select-Object -ExpandProperty Name
-Get-Content .github/instructions/razor-views.instructions.md -Head 4
-```
-
-You should see `razor-views.instructions.md` listed and the YAML frontmatter (`description:` + `applyTo: '**/*.cshtml'`) at the top.
-
-**Step 2 — Probe Copilot CLI for the rule:**
-
-After restarting `copilot`, open any `.cshtml` file in the workspace (e.g., `dotnet/ContosoUniversity.Web/Views/Students/Index.cshtml`) and ask:
-
-```
-What pattern should I use for form validation summaries in this view?
-```
-
-A correctly loaded instruction will surface `asp-validation-summary="ModelOnly"` and Tag Helpers (`asp-for`, `asp-action`) — verbatim from your new file. If Copilot answers generically (or recommends `@Html.` helpers), the instruction did not load: re-check the filename ends in `.instructions.md`, the `applyTo` glob matches, and that you fully restarted the session.
-
-> 💡 **Optional CLI sanity check:** `extensions_manage operation: list` shows installed CLI extensions (a different subsystem). Instructions files don't appear there — the functional probe above is the authoritative test for instruction loading.
-
 ## 2.3 Edit AGENTS.md
 
 `AGENTS.md` provides project context — architecture, decisions, domain knowledge. Use it for the *what* and *why*; use `copilot-instructions.md` for the *rules*.
@@ -189,7 +125,7 @@ A correctly loaded instruction will surface `asp-validation-summary="ModelOnly"`
 
 **Context**: Controllers need database access but should not depend directly on Entity Framework's `SchoolContext`.
 
-**Decision**: All data access goes through `IRepository<T>` defined in `dotnet/ContosoUniversity.Core`. Implementations live in `dotnet/ContosoUniversity.Infrastructure`.
+**Decision**: All data access goes through `IRepository<T>` defined in `ContosoUniversity.Core`. Implementations live in `ContosoUniversity.Infrastructure`.
 
 **Consequences**:
 - Controllers are testable with mock repositories

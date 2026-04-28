@@ -1,6 +1,1 @@
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
-
-# Lab 12 ships a small Apache Parquet fixture (labs/fixtures/lab12/sales.parquet).
-# Mark all .parquet files as binary so Git never applies line-ending or text
-# normalization that would corrupt the file's footer/magic bytes (PAR1 ... PAR1).
-*.parquet binary

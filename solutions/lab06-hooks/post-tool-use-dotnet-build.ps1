@@ -6,7 +6,7 @@ $filePath = $env:FILE_PATH
 if ($toolName -ne "edit" -and $toolName -ne "create") { exit 0 }
 if ($filePath -notlike "*.cs") { exit 0 }
 
-$output = dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1
+$output = dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  BUILD FAILED after editing $filePath"
     Write-Host ""

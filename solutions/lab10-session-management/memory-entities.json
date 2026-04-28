@@ -1,0 +1,25 @@
+{
+  "description": "Sample Memory MCP create_entities calls from Lab 10.2 — storing decisions and context (not code facts — reindex handles those automatically)",
+  "entities": [
+    {
+      "name": "ContosoUniversity-Decisions",
+      "entityType": "decisions",
+      "observations": [
+        "Chose repository pattern over direct DbContext access for testability",
+        "Test naming convention: MethodName_Condition_ExpectedResult (team agreed 2024-Q3)",
+        "SQL Server for production, SQLite for integration tests via WebApplicationFactory",
+        "gh-aw PRD workflow triggers on feature/** branches — do NOT use for hotfixes",
+        "Code review requires approval from @code-reviewer agent before merge",
+        "Has gh-aw workflow for automated code review on pull requests",
+        "Lab orchestrator delegates to dotnet-dev, dotnet-qa, then code-reviewer"
+      ]
+    },
+    {
+      "name": "CleanArchitecture",
+      "entityType": "pattern",
+      "observations": [
+        "Core has no dependencies, Infrastructure depends on Core, Web depends on both"
+      ]
+    }
+  ]
+}

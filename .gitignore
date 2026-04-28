@@ -42,22 +42,3 @@ Thumbs.db
 
 # GitHub Sessions
 docs/.github/*
-# Vitest
-.vitest-cache/
-coverage/
-
-# Lab 12 — the committed sales.parquet fixture is regenerated via
-# scripts/generate-lab12-fixture.py. Any *additional* parquet files a
-# learner drops into labs/fixtures/lab12/ while experimenting stay local.
-labs/fixtures/lab12/*.parquet
-!labs/fixtures/lab12/sales.parquet
-
-# Lab 13 — A2A learner artifacts (per-run transcripts and hand-off scratch).
-# These are written by the two-agent loop in §A.4 + §B.2; never commit them.
-node/.a2a/
-node/.a2a-transcript-*.md
-
-# Orchestrator / dry-run artifacts (dev-only, never commit)
-.orchestrator/
-.orchestrator.bak-*/
-docs/setup-dryrun-report.md

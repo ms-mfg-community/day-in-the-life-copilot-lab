@@ -2,7 +2,7 @@
 description: "Analyze local git history to extract coding patterns and generate SKILL.md files for your team's practices"
 agent: "agent"
 tools: ["search/codebase"]
-argument-hint: "--commits <n> | --output <dir>"
+argument-hint: "--commits <n> | --output <dir> | --instincts"
 ---
 
 # Local Skill Generation
@@ -15,17 +15,15 @@ Analyze your repository's git history to extract coding patterns and generate SK
 /skill-create                    # Analyze current repo
 /skill-create --commits 100      # Analyze last 100 commits
 /skill-create --output ./skills  # Custom output directory
+/skill-create --instincts        # Also generate instincts for continuous-learning-v2
 ```
 
 ## What It Does
 
-1. **Parses Git History** — Analyzes commits, file changes, and patterns.
-2. **Detects Patterns** — Identifies recurring workflows and conventions.
-3. **Generates SKILL.md** — Creates valid skill files.
-4. **Records a lesson (optional)** — Append a note to `.copilot/lessons/log.md`
-   describing why the skill exists, so future sessions can find it without
-   re-deriving the analysis. Follow
-   [`.github/instructions/lessons.instructions.md`](../instructions/lessons.instructions.md).
+1. **Parses Git History** - Analyzes commits, file changes, and patterns
+2. **Detects Patterns** - Identifies recurring workflows and conventions
+3. **Generates SKILL.md** - Creates valid skill files
+4. **Optionally Creates Instincts** - For the continuous-learning-v2 system
 
 ## Analysis Steps
 
@@ -75,10 +73,9 @@ description: Coding patterns extracted from {repo-name}
 {detected conventions}
 ```
 
-## Related
+## Related Commands
 
-- `/consolidate-lessons` — promote durable findings from the project wiki
-  into the global wiki or flag them for the schema (`AGENTS.md` /
-  `.github/instructions/`).
-- [`.copilot/lessons/`](../../.copilot/lessons/) — the in-repo markdown
-  wiki where lessons live.
+- `/instinct-import` - Import generated instincts
+- `/instinct-status` - View learned instincts
+- `/evolve` - Cluster instincts into skills/agents
+

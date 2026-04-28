@@ -33,7 +33,7 @@ Delegate the implementation work to the .NET development agent:
 - [criterion 1]
 - [criterion 2]
 
-Ensure the build passes: `dotnet build dotnet/ContosoUniversity.sln`
+Ensure the build passes: `dotnet build ContosoUniversity.sln`
 ```
 
 Wait for the agent to complete before proceeding.
@@ -53,7 +53,7 @@ Once implementation is done, delegate testing:
 - Follow MethodName_Condition_ExpectedResult naming
 - Cover edge cases: null inputs, invalid IDs, validation errors
 
-Run all tests: `dotnet test dotnet/ContosoUniversity.Tests/`
+Run all tests: `dotnet test ContosoUniversity.Tests/`
 ```
 
 ### Phase 4: Review (delegate to @code-reviewer)

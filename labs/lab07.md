@@ -1,48 +1,12 @@
----
-title: "Multi-Agent Orchestration"
-lab_number: 7
-pace:
-  presenter_minutes: 4
-  self_paced_minutes: 20
-registry: docs/_meta/registry.yaml
----
-
 # 7 — Multi-Agent Orchestration
 
 In this lab you will create an orchestrator agent that coordinates a development workflow.
 
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 20 minutes
 
-> 💰 **Cost Budget**
-> - Expected token footprint: ~30k in / ~10k out for the full lab.
->   Most of the spend is the orchestrator agent re-reading agent
->   definitions on every delegation.
-> - Cheaper alternative: keep the top-level chat on `auto`, but pin
->   any `task` tool sub-agent dispatches in §7.4 to
->   `claude-haiku-4.5` for the simple delegations and reserve
->   `claude-opus-4.6` (the repo default) only for the planner /
->   reviewer roles.
-> - Compaction trigger: after §7.3 (orchestrator built and tested),
->   run `/clear` before §7.4's multi-agent rehearsal so you don't
->   re-send the agent-definition diffs every turn.
-> - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
-
 References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Agent handoffs](https://docs.github.com/en/copilot/reference/custom-agents-configuration#handoffs)
-
-## 7.0 Copilot CLI currency (2026 refresh)
-
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
-
-| Capability | Command / surface | Use when |
-|------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent plugin (e.g. dev + QA + reviewer bundle). |
-| **Parallel subagents** | `/fleet` | Running dev and QA agents in parallel when tasks are independent. |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Upshift the orchestrator to `models.premium`; keep workers on `models.cheap` to save tokens. |
-| **Local tool discovery** | `extensions_manage` operation `list` | Discovering which bundled agents are available before wiring a handoff. |
 
 ## 7.1 Design the Orchestration Flow
 

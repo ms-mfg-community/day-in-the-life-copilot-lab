@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize]
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 tools:
   github:
     toolsets: [pull_requests, repos]
@@ -14,9 +14,8 @@ runtimes:
     version: "8.0"
 strict: false
 safe-outputs:
-  add-comment: {}
-  add-labels:
-    allowed: [ai-review]
+  add-pr-comment:
+    labels: [ai-review]
 description: "Automated code review on pull requests using AI agent"
 ---
 ## Automated Code Review
@@ -62,7 +61,3 @@ Provide a summary comment on the PR with:
 
 Do NOT approve or request changes — only comment with suggestions.
 Keep feedback actionable and specific.
-
-After posting the review comment, add the `ai-review` label to the pull
-request (via the `add-labels` safe-output) for auditability and downstream
-filtering.

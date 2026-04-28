@@ -6,56 +6,6 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 
 ---
 
-## 🚨 Pre-Workshop Setup Checklist
-
-> **Facilitators: share this section with attendees before the session.**
-> Setup takes 15–30 minutes on a good network and can fail on restricted laptops. Attendees arriving with a failing preflight may need to switch to Codespaces to keep up.
-
-**Attendees — run this checklist end-to-end and arrive with a green preflight:**
-
-1. **Read the [Prerequisites](#prerequisites) section below** and install anything you are missing.
-2. **Authenticate the CLIs once** so the session does not start on a login prompt:
-   - `gh auth login` — GitHub CLI
-   - `copilot` (launch it once and complete the sign-in flow)
-3. **Clone the repo to a fast local filesystem.** On Windows/WSL2 this means a path **under your Linux home directory** (e.g. `~/repos/day-in-the-life-copilot-lab`), *not* `/mnt/c/…`. See the [Lab 14 compatibility matrix](labs/lab14.md#compatibility-matrix) for why.
-4. **Run the preflight script** and resolve any `FAIL` items. `WARN` items are acceptable but review them:
-   ```bash
-   # macOS, Linux, WSL2
-   scripts/preflight.sh --lab14
-
-   # Windows PowerShell (non-Lab-14 paths only; see matrix)
-   pwsh scripts/preflight.ps1 -Lab14
-   ```
-   Expected green result:
-   ```
-   Summary: 0 FAIL, 0 WARN
-   Result: READY ✅
-   ```
-   `--lab14` / `-Lab14` enables the strict Lab 14 checks (tmux required, WSL1 and Windows-PS-only become FAIL). Drop that flag if you are certain you will skip Lab 14.
-5. **Optional but recommended:** open the devcontainer once (Codespaces or local Docker/Podman) so its image is pre-pulled. See [Choose Your Path](#choose-your-path).
-
-**If preflight FAILs:**
-
-| FAIL | Fix |
-|------|-----|
-| `copilot not found` | `npm install -g @github/copilot` (Node 18+ required) |
-| `gh not found` | [Install GitHub CLI](https://cli.github.com/) then `gh auth login` |
-| `git not found` | [Install git](https://git-scm.com/downloads) |
-| `node not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org/) |
-| `tmux not found` (with `--lab14`) | Linux: `sudo apt-get install -y tmux` · macOS: `brew install tmux` · Windows: run the workshop inside WSL2 |
-| `os` is `wsl1` | Upgrade: `wsl --set-version <distro> 2` |
-| `os` is `windows` (with `--lab14`) | Switch to WSL2 or GitHub Codespaces — Lab 14's tmux-orchestrator pattern is not supported on Windows PowerShell. See the [compatibility matrix](labs/lab14.md#compatibility-matrix). |
-
-**Warnings to review:**
-
-| WARN | What it means |
-|------|---------------|
-| Repo on `/mnt/c/…` | WSL2 file I/O is ~10× slower across the Windows↔Linux boundary; file-watchers are flaky. Move the clone to `~/repos/…` before the session. |
-| `gh-aw extension not installed` | Only needed for Labs 08–09. Install with `gh extension install github/gh-aw`. |
-| No container runtime | Only needed if you intend to use the local devcontainer path. Codespaces works without it. |
-
----
-
 ## Prerequisites
 
 ### Must-Have Now
@@ -98,29 +48,6 @@ Most labs (01–07, 10) work with **any Copilot license**. A few labs require sp
 | [**Docker Desktop**](#option-b--vs-code--docker-desktop) | ~15 min | Already using Docker | ✅ Popular |
 | [**Podman**](#option-c--vs-code--podman) | ~15 min | Enterprise (Docker restricted) | ✅ Supported |
 | [**Manual**](#option-d--manual-setup) | ~20 min | Prefer direct install | Advanced |
-
-### Pick a stack: .NET track or Node track
-
-The lab ships with **two parallel implementations** of Contoso University so you can practice the
-Copilot agentic surface against the stack you actually work in:
-
-| Track | Code lives in | Install deps (manual setup) | Run tests | When to pick |
-|-------|---------------|----------------------------|-----------|--------------|
-| **.NET** (ASP.NET Core 8 + EF Core + xUnit) | [`dotnet/`](dotnet/) | _(none — `dotnet` restores on build)_ | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* | C# / ASP.NET shops, Azure App Service / Functions, Bicep deploys |
-| **Node** (Fastify 5 + Drizzle ORM + Vitest + Playwright) | [`node/`](node/) | `npm install -g pnpm && pnpm -C node install` | `make test-node` *(or `pnpm -C node test`)* | TypeScript / Node shops, Container Apps, edge / serverless TS |
-
-> **Dev-container / Codespaces users can skip the install step** — the `post-create.sh` script runs `pnpm -C node install` automatically. Manual-setup users on the Node track must install pnpm first (`npm i -g pnpm`) because the Node workspace ships a `pnpm-lock.yaml` and is only supported via pnpm; use `pnpm -C node install`, not `npm install`, inside `node/`.
-
-Both tracks share the same domain (Student / Course / Instructor / Enrollment), the same lab
-narrative, and the same `.github/` Copilot configuration. Lab bodies are language-agnostic;
-each lab links a per-track appendix under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
-and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands.
-
-Run **both** tracks with a single command:
-
-```bash
-make test-all
-```
 
 ---
 
@@ -208,11 +135,11 @@ Before starting, ensure you have all [prerequisites](#prerequisites) installed.
 1. Fork and clone this repository (see [Fork & Clone](#fork--clone) below)
 2. Build the solution:
    ```shell
-   dotnet build dotnet/ContosoUniversity.sln
+   dotnet build ContosoUniversity.sln
    ```
 3. _(Optional)_ Run the application:
    ```shell
-   dotnet run --project dotnet/ContosoUniversity.Web
+   dotnet run --project ContosoUniversity.Web
    ```
    The app starts at **https://localhost:52379** (or http://localhost:52380). Press `Ctrl+C` to stop.
 4. Open in VS Code:
@@ -271,28 +198,31 @@ Before starting, ensure you have all [prerequisites](#prerequisites) installed.
 ```bash
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
-git checkout feature/modernize
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/YOUR-USERNAME/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
-git checkout feature/modernize
 ```
 
 5. Verify the .NET project builds:
 
 ```shell
-dotnet build dotnet/ContosoUniversity.sln
+dotnet build ContosoUniversity.sln
 ```
 
-You should see `Build succeeded.` with `0 Error(s)`. A handful of nullable-reference warnings may appear in some Razor views; they do not block the labs. If you see any `Error(s)`, re-run `scripts/preflight.sh` and consult [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+You should see:
+```
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
 
 6. _(Optional)_ Run the application:
 
 ```shell
-dotnet run --project dotnet/ContosoUniversity.Web
+dotnet run --project ContosoUniversity.Web
 ```
 
 The app starts at **https://localhost:52379** (or http://localhost:52380). On first run, the database is automatically created and seeded with sample data.
@@ -325,14 +255,12 @@ Press `Ctrl+C` to stop.
 ```bash
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 cd day-in-the-life-copilot-lab
-git checkout feature/modernize
 ```
 
 **PowerShell:**
 ```powershell
 git clone https://github.com/ms-mfg-community/day-in-the-life-copilot-lab.git
 Set-Location day-in-the-life-copilot-lab
-git checkout feature/modernize
 ```
 
 2. Change the remote `origin` to point to **your** new repository:
@@ -357,13 +285,13 @@ git push --tags origin
 4. Verify the .NET project builds:
 
 ```shell
-dotnet build dotnet/ContosoUniversity.sln
+dotnet build ContosoUniversity.sln
 ```
 
 5. _(Optional)_ Run the application:
 
 ```shell
-dotnet run --project dotnet/ContosoUniversity.Web
+dotnet run --project ContosoUniversity.Web
 ```
 
 > **Tip:** To keep your copy in sync with the source, add it as an `upstream` remote:
@@ -427,11 +355,11 @@ code .
 
 | Directory | Contents | Count |
 |-----------|----------|-------|
-| `.github/skills/` | Agent skills (`SKILL.md`) | 6 |
-| `.github/prompts/` | Prompt templates (`.prompt.md`) | 19 |
+| `.github/skills/` | Agent skills (`SKILL.md`) | 10 |
+| `.github/prompts/` | Prompt templates (`.prompt.md`) | 21 |
 | `.github/hooks/` | Hook configuration | 1 |
-| `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
-| `.copilot/` | MCP server configuration (`mcp-config.json`; root `.mcp.json` mirrors it for the Copilot CLI) | 2 |
+| `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 3 |
+| `.copilot/` | MCP server configuration | 1 |
 | `scripts/hooks/` | Hook shell scripts | 17 |
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 
@@ -464,7 +392,7 @@ Get-Content AGENTS.md
 - [ ] Lab 07: Multi-Agent Orchestration
 - [ ] Lab 08: gh-aw: PRD Generation
 - [ ] Lab 09: Copilot Coding Agent & Code Review
-- [ ] Lab 10: Agent memory — personalities, lessons, and consolidation
+- [ ] Lab 10: Session Management & Memory
 ```
 
 ---
@@ -502,11 +430,11 @@ erDiagram
 
 | Project | Layer | Purpose |
 |---------|-------|---------|
-| **ContosoUniversity.Core** (`dotnet/`) | Domain | Models, interfaces, business rules |
-| **ContosoUniversity.Infrastructure** (`dotnet/`) | Data | EF Core, repositories, services |
-| **ContosoUniversity.Web** (`dotnet/`) | Presentation | MVC controllers, views, DI |
-| **ContosoUniversity.Tests** (`dotnet/`) | Testing | xUnit + WebApplicationFactory |
-| **ContosoUniversity.PlaywrightTests** (`dotnet/`) | E2E | Browser-based Playwright tests |
+| **ContosoUniversity.Core** | Domain | Models, interfaces, business rules |
+| **ContosoUniversity.Infrastructure** | Data | EF Core, repositories, services |
+| **ContosoUniversity.Web** | Presentation | MVC controllers, views, DI |
+| **ContosoUniversity.Tests** | Testing | xUnit + WebApplicationFactory |
+| **ContosoUniversity.PlaywrightTests** | E2E | Browser-based Playwright tests |
 
 ---
 
@@ -527,7 +455,7 @@ erDiagram
 | **Coding Agent** | Platform-level issue → PR implementation | 09 |
 | **Code Review** | AI-powered pull request reviews | 09 |
 | **Reindex** | Automatic semantic understanding of your codebase | 10 |
-| **Session Management** | Agent memory via markdown lessons — decisions, handoffs, project wiki | 10 |
+| **Session Management** | Memory MCP for decisions, handoffs, continuous learning | 10 |
 
 ---
 
@@ -547,18 +475,9 @@ erDiagram
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
-| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three Karpathy layers (Raw sources → Wiki → Schema), `/consolidate-lessons`, `.copilot/lessons/` |
-| [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
-| [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
-| [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
-| [Lab 14](labs/lab14.md) | Orchestrator + tmux Pattern (Deep-Dive) | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
+| [Lab 10](labs/lab10.md) | Reindex, Session Management & Memory | Reindex, Memory MCP, continuous learning, handoffs |
 
-**Total: ~5 hours** (14 labs — self-paced or presenter-led)
-
-> 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
-> standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
-> Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux.
+**Total: ~3 hours** (10 labs — self-paced or presenter-led)
 
 ---
 
@@ -568,25 +487,12 @@ This repo ships with a rich set of configurations for you to explore and extend:
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **Agents** | 3 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07 |
+| **Agents** | 2 (+ more you build!) | `planner`, `code-reviewer` — learners create more in Labs 03, 07 |
 | **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
-| **Prompts** | 23 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
-| **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
+| **Prompts** | 21 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
+| **Hooks** | 7 | Secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
-
-### Current Copilot CLI surface (2026 refresh)
-
-Version floors, model tiers, and MCP pins live in
-[`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) so labs stay in sync.
-
-| Command / surface | What it does |
-|-------------------|--------------|
-| `/plugin install owner/repo` | Install a plugin from a marketplace or private `COPILOT_PLUGIN_REGISTRIES` registry (see Lab 11). |
-| `/fleet` | Launch parallel subagents for independent work streams. |
-| `Shift+Tab` (plan mode) vs autopilot mode | Review each step vs. batch-execute well-understood tasks. |
-| `/model <tier-or-id>` | Switch models mid-session — use `models.cheap`/`standard`/`premium` tiers from the registry. |
-| `extensions_manage` | Tool discovery: list/inspect/guide/scaffold — the in-repo analogue of a marketplace. |
 
 ---
 
@@ -594,18 +500,12 @@ Version floors, model tiers, and MCP pins live in
 
 | Task | Command |
 |------|---------|
-| Run **both tracks** + lab/structure tests | `make test-all` |
-| .NET unit/integration tests | `make test-dotnet` *(or `dotnet test dotnet/ContosoUniversity.sln`)* |
-| Node unit/integration tests | `make test-node` *(or `pnpm -C node test`)* |
-| Root vitest (lab structure, build, devcontainer) | `make lint-labs` *(or `npm test`)* |
-| Activate repo-managed git hooks (strip notebook outputs) | `make setup-hooks` |
-| Compile every gh-aw workflow (authoritative agentic-workflow lint) | `make lint-workflows` *(or `gh aw compile`)* |
-| Build .NET solution | `dotnet build dotnet/ContosoUniversity.sln` |
-| Run .NET web app | `dotnet run --project dotnet/ContosoUniversity.Web` |
-| Run Node web app | `pnpm -C node dev` |
-| Compile gh-aw workflows locally | `gh aw compile` |
+| Build solution | `dotnet build ContosoUniversity.sln` |
+| Run tests | `dotnet test ContosoUniversity.sln` |
+| Run web app | `dotnet run --project ContosoUniversity.Web` |
+| Run specific test | `dotnet test --filter "FullyQualifiedName~TestName"` |
 | Check Copilot CLI | `copilot --version` |
-| Install gh-aw extension | `gh extension install github/gh-aw` |
+| Install gh-aw | `gh extension install github/gh-aw` |
 
 ---
 
@@ -614,41 +514,27 @@ Version floors, model tiers, and MCP pins live in
 ```
 day-in-the-life-copilot-lab/
 ├── .github/
-│   ├── agents/                    # Agent profiles (more created during labs)
-│   ├── skills/                    # Agent skills (SKILL.md)
-│   ├── prompts/                   # Prompt templates (.prompt.md, incl. /cost-check)
+│   ├── agents/                    # 2 agent profiles — more created during labs
+│   ├── skills/                    # 10 agent skills (SKILL.md)
+│   ├── prompts/                   # 21 prompt templates (.prompt.md)
 │   ├── hooks/                     # Hook configuration (default.json)
-│   ├── instructions/              # Path-specific instructions (.instructions.md)
+│   ├── instructions/              # 3 path-specific instructions (.instructions.md)
 │   ├── copilot-instructions.md    # Repository-wide instructions
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
 │   └── mcp-config.json            # MCP server configuration (5 servers)
-├── dotnet/                        # .NET track — ContosoUniversity solution
-│   ├── ContosoUniversity.sln
-│   ├── ContosoUniversity.Core/        # Domain models and interfaces
-│   ├── ContosoUniversity.Infrastructure/  # Data access and services
-│   ├── ContosoUniversity.Web/         # ASP.NET MVC web application
-│   ├── ContosoUniversity.Tests/       # xUnit unit and integration tests
-│   └── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
-├── node/                          # Node track — Fastify + Drizzle + Vitest
-│   ├── core/                          # Domain entities + repo interfaces
-│   ├── infra/                         # Drizzle schema, repos, in-memory db, seed
-│   ├── web/                           # Fastify app, routes, SSR views
-│   └── tests/                         # Unit + integration tests (Vitest)
-├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
-├── labs/                          # 14 hands-on lab modules + per-track appendices
-├── solutions/                     # Reference solutions
-├── docs/                          # Reference docs + token & model guide
-│   ├── _meta/                         # registry.yaml — single source of truth for versions
-│   └── token-and-model-guide.md       # Phase 7 cost / model-selection mental model
-├── scripts/
-│   ├── hooks/                         # Hook shell scripts (Bash + PowerShell)
-│   └── orchestrator/                  # Lab 14 — tmux-start, handoff, clear-context
+├── ContosoUniversity.sln          # .NET solution file
+├── ContosoUniversity.Core/        # Domain models and interfaces
+├── ContosoUniversity.Infrastructure/  # Data access and services
+├── ContosoUniversity.Web/         # ASP.NET MVC web application
+├── ContosoUniversity.Tests/       # xUnit unit and integration tests
+├── ContosoUniversity.PlaywrightTests/ # Playwright E2E tests
+├── labs/                          # Hands-on lab modules (10 labs)
+├── solutions/                     # Reference solutions for each lab
+├── docs/                          # Research and reference documentation
+├── scripts/hooks/                 # Hook shell scripts (Bash + PowerShell)
 ├── mcp-configs/                   # MCP server reference configurations
-├── tests/                         # Root vitest suite (lab structure, build, meta)
-├── Makefile                       # `make test-all` orchestrates both tracks
 ├── AGENTS.md                      # Repository-level agent context
-├── CHANGELOG.md                   # Keep-a-Changelog release notes
 └── TROUBLESHOOTING.md             # Common issues and fixes
 ```
 
@@ -656,13 +542,12 @@ day-in-the-life-copilot-lab/
 
 ## GitHub Agentic Workflows
 
-This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw) — author GitHub Actions using Markdown with YAML frontmatter. Three workflows are included:
+This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw) — author GitHub Actions using Markdown with YAML frontmatter. Two workflows are included:
 
 | Workflow | Trigger | What It Does |
 |----------|---------|-------------|
 | **PRD Generation** | Feature branch created | PM agent generates a Product Requirements Document |
 | **Code Review** | Pull request opened | Code review agent provides automated feedback |
-| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the seven freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
 
 ---
 
@@ -671,7 +556,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 14 hands-on labs — start here |
+| [Lab Modules](labs/) | 10 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |

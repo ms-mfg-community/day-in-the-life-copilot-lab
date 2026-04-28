@@ -1,12 +1,3 @@
----
-title: "MCP Server Configuration"
-lab_number: 5
-pace:
-  presenter_minutes: 3
-  self_paced_minutes: 15
-registry: docs/_meta/registry.yaml
----
-
 # 5 — MCP Server Configuration
 
 In this lab you will explore and configure Model Context Protocol (MCP) servers.
@@ -16,23 +7,6 @@ In this lab you will explore and configure Model Context Protocol (MCP) servers.
 References:
 - [MCP specification](https://spec.modelcontextprotocol.io/)
 - [Using MCP servers with Copilot](https://docs.github.com/en/copilot/using-github-copilot/using-mcp-servers-with-copilot)
-
-> 🧭 **Track appendices** — track-specific MCP server picks live in
-> [`labs/appendices/dotnet/lab05.md`](appendices/dotnet/lab05.md) and
-> [`labs/appendices/node/lab05.md`](appendices/node/lab05.md).
-
-## 5.0 Copilot CLI currency (2026 refresh)
-
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
-
-| Capability | Command / surface | Use when |
-|------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling an MCP-bundling plugin from a private or public registry. |
-| **Parallel subagents** | `/fleet` | Querying multiple MCP servers in parallel (e.g. `context7` + `microsoft-learn`). |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when wiring a new MCP server; autopilot mode when re-running well-known MCP queries. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry when the answer is already in MCP-retrieved context. |
-| **Local tool discovery** | `extensions_manage` operation `list` | Seeing which MCP-backed tools are loaded right now. |
 
 ## 5.1 Examine Existing MCP Configuration
 
@@ -113,66 +87,37 @@ Use Context7 to find Entity Framework Core migration best practices.
 
 > 💡 **What you should see:** Copilot responds with up-to-date documentation from the library. If it says "Context7 not available" or ignores the tool, the MCP server may not have started — check that `npx` is available and Node.js is installed.
 
-## 5.3 Cross-session persistence — markdown lessons, not a server
+## 5.3 Use Memory MCP for Persistence
 
-MCP gives you live tools (docs, search, structured reasoning); it
-intentionally does **not** give you cross-session memory. This repo
-solves persistence with plain markdown files the agent maintains
-itself, governed by [`.github/instructions/lessons.instructions.md`](../.github/instructions/lessons.instructions.md).
-That's the pattern Lab 10 unpacks in full — here you just see it
-working alongside MCP.
+The Memory MCP provides a knowledge graph that persists across sessions. Entities, observations, and relations survive between conversations.
 
 🖥️ **In your terminal:**
 
-1. Inspect the wiki that ships with the repo:
-
-**WSL/Bash:**
-```bash
-ls .copilot/lessons/
-head -20 .copilot/lessons/index.md
+1. In Copilot CLI, store a fact about the project:
+```
+Store in memory: ContosoUniversity uses Entity Framework Core 8 with SQL Server and follows the repository pattern. The main database context is SchoolContext.
 ```
 
-**PowerShell:**
-```powershell
-Get-ChildItem .copilot/lessons
-Get-Content .copilot/lessons/index.md | Select-Object -First 20
+2. Copilot will call `create_entities` to store this as a knowledge graph entity.
+
+3. Verify it was stored:
+```
+Search memory for "ContosoUniversity database"
 ```
 
-2. In Copilot CLI, ask the agent to record a project fact as a lesson:
+4. Store a relationship:
 ```
-Append a lesson to .copilot/lessons/log.md: ContosoUniversity uses
-Entity Framework Core 8 with SQL Server and follows the repository
-pattern; the main DbContext is SchoolContext. Follow the schema in
-.github/instructions/lessons.instructions.md and leave "Promoted to"
-blank.
+Store in memory: The Student entity has a one-to-many relationship with Enrollment. The Course entity also has a one-to-many relationship with Enrollment. Enrollment is the join table.
 ```
 
-3. Verify the append landed in git-tracked markdown:
-
-**WSL/Bash:**
-```bash
-head -30 .copilot/lessons/log.md
+5. Read back the full graph:
+```
+Show me everything stored in memory about ContosoUniversity.
 ```
 
-**PowerShell:**
-```powershell
-Get-Content .copilot/lessons/log.md | Select-Object -First 30
-```
+You should see entities with observations and relations between them.
 
-4. Open a fresh session (`/exit`, then start Copilot again) and ask:
-```
-What does this repo use for data access? Check .copilot/lessons/
-before answering.
-```
-
-The agent reads the lesson you just wrote — no knowledge-graph server,
-no embeddings, no cross-session database. Just markdown the agent
-wrote to itself, committed alongside the code.
-
-> 💡 **Why markdown, not a server?** Files are diffable, reviewable,
-> revertable, and ship with the repo. Lab 10 walks through the full
-> three-layer model (raw sources → wiki → schema) and the
-> `/consolidate-lessons` command that promotes durable lessons.
+> 💡 **Cross-session persistence**: Memory MCP data survives across Copilot sessions. Use it for project decisions, architecture notes, and context that should be available in future conversations.
 
 ## 5.4 Add a New MCP Server
 
@@ -191,6 +136,7 @@ code .copilot/mcp-config.json
 {
   "mcpServers": {
     "context7": { ... },
+    "memory": { ... },
     "sequential-thinking": { ... },
     "workiq": { ... },
     "microsoft-learn": { ... },
@@ -234,14 +180,15 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 | Server | Tools | Use Case |
 |--------|-------|----------|
 | context7 | `resolve-library-id`, `query-docs` | Library documentation |
+| memory | `create_entities`, `search_nodes`, `read_graph` | Knowledge persistence |
 | sequential-thinking | `sequentialthinking` | Structured reasoning |
 | microsoft-learn | `microsoft_docs_search`, `microsoft_docs_fetch` | Microsoft documentation |
 
 **Best practices:**
 - Use `context7` for up-to-date library docs instead of guessing from training data
+- Use `memory` for project decisions that should persist across sessions
 - Use `sequential-thinking` for complex multi-step reasoning
 - Restrict `tools` to only what's needed for security
-- For cross-session persistence, write a lesson to `.copilot/lessons/` (see §5.3) — MCP is intentionally not the memory layer in this repo
 
 </details>
 

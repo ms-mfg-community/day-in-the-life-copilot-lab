@@ -8,10 +8,7 @@
       "installUsingApt": true
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    },
-    "ghcr.io/devcontainers-extra/features/pnpm:2": {
-      "version": "latest"
+      "version": "lts"
     },
     "ghcr.io/devcontainers/features/github-cli:1": {
       "installDirectlyFromGitHubRelease": true,
@@ -28,7 +25,7 @@
         "ms-dotnettools.csharp"
       ],
       "settings": {
-        "dotnet.defaultSolution": "dotnet/ContosoUniversity.sln"
+        "dotnet.defaultSolution": "ContosoUniversity.sln"
       }
     }
   },
