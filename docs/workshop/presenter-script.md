@@ -157,7 +157,7 @@ Free. This launched in December 2024 and it's available to every GitHub account 
 
 Pro. Ten dollars a month. This is where the limits come off. Unlimited code completions. You get the full model picker — every model GitHub makes available, you can switch between them. Agent mode and MCP are unlocked. All supported IDEs, not just VS Code and JetBrains. For an individual developer who's using Copilot daily, Pro is the tier that makes sense. The jump from Free to Pro is significant in terms of capability.
 
-Business. Nineteen dollars per user per month. Everything in Pro, plus the controls that IT and platform teams care about. Policy controls — you can restrict which models are available, enforce content exclusions, manage which features are turned on or off. Audit logs for compliance. And Knowledge Bases — the ability to index internal documentation and feed it into Copilot's context. If you're rolling Copilot out to a team or an org, Business is where you get the governance layer.
+Business. Nineteen dollars per user per month. Everything in Pro, plus the controls that IT and platform teams care about. Policy controls — you can restrict which models are available, enforce content exclusions, manage which features are turned on or off. Audit logs for compliance. And Copilot Spaces — curated bundles of repos, docs, issues, and PRs that Copilot Chat grounds its answers in (Spaces replaced the retired Knowledge Bases on November 1, 2025, and they actually ship across every paid plan from Free through Enterprise — we list them under Business as a tier highlight, not an exclusive). If you're rolling Copilot out to a team or an org, Business is where you get the governance layer.
 
 Enterprise. Thirty-nine dollars per user per month. Everything in Business, plus custom fine-tuning, which is now GA. Multi-repo context, meaning Copilot can pull context from across your organization's repositories, not just the one you have open. The Copilot cloud agent (formerly Copilot coding agent — renamed April 2026 per docs.github.com/en/copilot/concepts/agents/coding-agent/about-coding-agent) is GA at this tier. And advanced security controls. Enterprise is for organizations that need the deepest integration and the most control.
 
@@ -171,7 +171,7 @@ The note bar on screen also calls out that the Free tier is great for hackathons
 - Four cards: Free (🆓), Pro (⚡), Business (🏢), Enterprise (🔒)
 - Free: 2,000 completions/mo, 50 chat messages/mo, VS Code & JetBrains, GPT-4o & Claude Haiku 4.5
 - Pro: $10/mo, unlimited completions, all models, agent mode & MCP, all IDEs
-- Business: $19/user/mo, everything in Pro, policy & model controls, audit logs, Knowledge Bases
+- Business: $19/user/mo, everything in Pro, policy & model controls, audit logs, Copilot Spaces
 - Enterprise: $39/user/mo, everything in Business, custom fine-tuning (GA), Copilot cloud agent (GA), multi-repo context, advanced security controls
 - Note bar: Free tier needs no credit card; GHES has a separate feature timeline
 
@@ -826,31 +826,10 @@ This isn't theoretical — you'll compose agents in Lab 03 where you author them
 - Workshop anchor note bar referencing Lab 03 and Lab 14
 
 ### Transition
-Agents and skills live in your repo. But what about a persistent workspace that follows you across conversations? That's Copilot Spaces.
-
-
-## Slide 31 — Copilot Spaces
-
-### What you say
-Copilot Spaces are a newer concept that solves a real pain point. How many times have you started a Copilot conversation and spent the first few messages just re-explaining your project? "Here's my repo, here's the architecture, here are the conventions I follow." Spaces eliminate that repetition.
-
-A Space is a persistent, shareable AI workspace. You create one, attach your repositories and specific files as context, add custom instructions, and that context sticks around across conversations. Next time you open a conversation in that Space, Copilot already knows your project. No re-explaining, no pasting the same file references every time.
-
-There are three key properties here. First: attach context. You select the repos, files, and instructions that define your workspace. This is the "teach Copilot about my project" step, but you only do it once. Second: persistent memory. The Space remembers your attached context across every conversation you have within it. Your third conversation has the same context as your first — it's cumulative, not ephemeral. Third: shareable. You can share a Space with teammates. Now your whole team has the same AI-assisted baseline. The new engineer who joined last week gets the same quality of Copilot responses as the senior who set up the Space, because the context — the repos, the conventions, the patterns — is already loaded.
-
-Look at the card on the right side of the slide. Creating a Space is straightforward: select repos and files as context, add custom instructions, share with your team. It's available today in VS Code and on GitHub.com.
-
-The mental model I'd give you is this: if custom instructions are your coding standards, and skills are your domain knowledge, then Spaces are your project workspace. They're the container that holds all of that context together and makes it persistent. For teams working on a complex codebase — especially when you've got junior engineers ramping up or cross-functional folks who need AI assistance but don't live in the code every day — Spaces are a force multiplier.
-
-### Slide cues
-- Two-column layout: left has three icon rows (Attach Context, Persistent Memory, Shareable); right has a centered card with galaxy emoji, "Create a Space" heading, three bullet steps, and a note bar showing availability in VS Code and GitHub.com
-- No workshop anchor on this slide
-
-### Transition
 Let's shift gears from how you configure Copilot to how it works alongside you in the editor. Next Edit Suggestions might be the most underappreciated feature in the whole suite.
 
 
-## Slide 32 — Next Edit Suggestions
+## Slide 31 — Next Edit Suggestions
 
 ### What you say
 Next Edit Suggestions — NES — is one of those features that sounds simple but fundamentally changes your editing flow once you internalize it. Here's the concept: Copilot watches your edits, figures out what you're doing, and proactively suggests the next location in your code that needs the same or a similar change.
@@ -873,7 +852,7 @@ One practical tip: NES gets better the more consistently you edit. If you make o
 NES is model-powered, which brings up an important question — which model should you actually use for what? Let's talk model selection.
 
 
-## Slide 33 — Model Selection
+## Slide 32 — Model Selection
 
 ### What you say
 Model selection is one of those decisions that can feel overwhelming given the sheer number of options, so this slide gives you a practical framework. Three tiers — fast, balanced, and deep reasoning — each mapped to the kinds of tasks where they shine.
@@ -895,7 +874,7 @@ The note bar at the bottom is important — you select models per conversation v
 Models process text — but Copilot can also process images. Let's look at vision and multimodal input.
 
 
-## Slide 34 — Vision & Multimodal
+## Slide 33 — Vision & Multimodal
 
 ### What you say
 This is one of those capabilities that's surprisingly practical once you start using it. You can attach images — screenshots, UI mockups, architecture diagrams — directly into Copilot Chat, and the model will analyze them and respond accordingly.
@@ -918,7 +897,7 @@ The broader trend here is multimodal input becoming a standard part of the devel
 We've covered the editor features. Now let's talk about extending Copilot's capabilities beyond what it can do out of the box — that's the Model Context Protocol.
 
 
-## Slide 35 — MCP
+## Slide 34 — MCP
 
 ### What you say
 Welcome to the MCP module — Model Context Protocol. This is one of the most important architectural concepts in the modern AI tooling landscape, and it's where Copilot goes from a smart autocomplete to a genuinely extensible platform.
@@ -940,7 +919,7 @@ Let's look at the core concepts that make MCP work.
 MCP defines three primary primitives — resources, prompts, and tools. Let's break each one down.
 
 
-## Slide 36 — Core Concepts 1
+## Slide 35 — Core Concepts 1
 
 ### What you say
 MCP is built on three primary primitives, and understanding these is essential before you wire up any MCP server. They're on screen as three cards — resources, prompts, and tools. Let's go through each one.
@@ -959,7 +938,7 @@ The note bar at the bottom lists our workshop MCP servers: Context7, memory, seq
 
 ### Transition
 Those are the three primitives. Next we'll look at how MCP servers actually connect to Copilot — the transport layer and configuration model.
-## Slide 37 — Core Concepts 2
+## Slide 36 — Core Concepts 2
 
 ### What you say
 
@@ -991,7 +970,7 @@ That covers the protocol layer. Now let's pivot to something immediately practic
 
 ---
 
-## Slide 38 — Generate Instructions
+## Slide 37 — Generate Instructions
 
 ### What you say
 
@@ -1025,7 +1004,7 @@ Now, instructions are about steering Copilot's behavior. But what if you want to
 
 ---
 
-## Slide 39 — Copilot Extensions
+## Slide 38 — Copilot Extensions
 
 ### What you say
 
@@ -1051,45 +1030,45 @@ So to sum up: Extensions are your fast path to vendor integrations, MCP is your 
 
 ### Transition
 
-Extensions bring third-party data into Copilot. But what about your own internal documentation — your wikis, your runbooks, your architecture decision records? That's what Knowledge Bases solve.
+Extensions bring third-party data into Copilot. But what about your own internal documentation — your wikis, your runbooks, your architecture decision records? That's what Copilot Spaces solve.
 
 ---
 
-## Slide 40 — Knowledge Bases
+## Slide 39 — Copilot Spaces
 
 ### What you say
 
-This is one of those Enterprise features that, once you see it, you immediately understand why it matters. Knowledge Bases let you index your internal documentation and codebases so Copilot can reference them during conversations.
+This is one of those features that, once you see it, you immediately understand why it matters. Copilot Spaces let you curate the exact context Copilot Chat should ground its answers in — your internal documentation, your codebases, the architecture decisions and runbooks that make your project make sense. They replaced the old Knowledge Bases when those were retired on November 1, 2025 (changelog: github.blog/changelog/2025-08-20-sunset-notice-copilot-knowledge-bases/), and the headline difference is huge: Spaces are available on every Copilot plan from Free through Enterprise, not just Business and Enterprise.
 
-Here's the problem it solves. You ask Copilot a question about your internal API — maybe it's a custom authentication service your team built. Copilot has never seen your internal docs. Without Knowledge Bases, it guesses based on common patterns and maybe hallucinates an API that doesn't exist. With Knowledge Bases, it actually searches your indexed documentation and gives you an answer grounded in your real APIs.
+Here's the problem they solve. You ask Copilot a question about your internal API — maybe it's a custom authentication service your team built. Copilot has never seen your internal docs. Without grounding, it guesses based on common patterns and maybe hallucinates an API that doesn't exist. With a Space, it pulls answers directly from the repos, files, issues, and PRs you've curated, so you get answers grounded in your real systems instead of plausible-sounding fiction.
 
-Let me walk through what's on screen. First: **index internal docs**. You connect your wikis, your documentation repos, your codebases as a searchable knowledge index. This isn't just full-text search — it's a proper semantic index that Copilot can reason over.
+Let me walk through what's on screen. First: **curate the context**. A Space is a bundle — code files, Markdown, JSON, images, GitHub issues, pull requests, and free-text notes — all reasoned over together. You decide what goes in.
 
-Second: **Copilot searches it automatically**. You don't have to explicitly tell Copilot "go check the knowledge base." During conversations, it retrieves relevant content on its own. You ask about your deployment process, and it pulls in your runbook.
+Second: **stays in sync**. Repository content inside a Space tracks GitHub automatically. You don't have to re-index when code changes; Copilot's answers reflect the latest commit on whatever branch the Space points at.
 
-Third: this is an **Enterprise and Business feature**. It's managed in your Organization or Enterprise settings. That's important because it means your admin controls what gets indexed and who has access.
+Third: **granular permissions**. Org-owned Spaces let you assign admin, editor, viewer, or no-access roles per user. Personal Spaces can be private, shared with specific GitHub users, or public view-only. That's a real access-control model, not all-or-nothing.
 
-Fourth, and this is the big one for large orgs: **multi-repository context**. On Enterprise, Copilot Chat can reference code across multiple repositories in a single conversation. You're working in the frontend repo and you need to understand the backend API contract? Copilot can span across both repos in the same conversation. That's org-wide codebase awareness.
+Fourth: **available to every plan**. This is the line that surprises people. Any Copilot license — Free, Pro, Pro+, Business, or Enterprise — can use Spaces, both in Copilot Chat on github.com and in the IDE via the GitHub MCP server (with some IDE-side limits, e.g., uploaded files aren't surfaced there).
 
-Look at the use cases on the right side of the slide. Company coding standards wiki — so every developer gets consistent guidance. Architecture decision records — so Copilot understands why you made certain choices, not just what the code does. Internal API documentation, onboarding runbooks, legacy codebase context. And cross-repo org-wide code context for the Enterprise tier.
+Look at the use cases on the right side of the slide. Company coding standards and style guides — so every developer gets consistent guidance. Architecture decision records — so Copilot understands why you made certain choices, not just what the code does. Internal API documentation, onboarding runbooks, incident postmortems built from the actual issues and PRs, and cross-repo feature context. The callout at the bottom is the real win: this reduces hallucination on internal APIs and frameworks because Copilot has your actual documentation to reference.
 
-The callout at the bottom is important: this reduces hallucination on internal APIs and frameworks. That's the real win. Copilot stops making things up about your internal systems because it has actual documentation to reference.
-
-If your organization is on Enterprise or Business, this should be one of the first things you set up.
+If your organization is on any paid plan and you haven't set up a Space yet, this should be one of the first things you do.
 
 ### Slide cues
 
-- Left column: four icon-rows — Index Internal Docs, Copilot Searches It, Enterprise & Business, Multi-Repository Context
-- Right column: blue card "Use Cases" — company coding standards wiki, ADRs, internal API docs, onboarding & runbooks, legacy codebase context, cross-repo org-wide code context
+- Left column: four icon-rows — Curate the Context (🗂️), Stays in Sync (🔄), Granular Permissions (🔒), Available to Every Plan (🧑‍💻)
+- Right column: blue card "Use Cases" — company coding standards & style guides, ADRs, internal API documentation, onboarding & runbooks, incident postmortems (issues + PRs), cross-repo feature context
 - Blue note bar: "Reduces hallucination on internal APIs & frameworks"
+- Subtitle calls out: replaced Knowledge Bases on Nov 1, 2025
+- Source cited in slide notes: docs.github.com/en/copilot/concepts/context/spaces
 
 ### Transition
 
-So that's about connecting Copilot to your org's knowledge. Now let's step outside Copilot itself for a moment and look at GitHub Models — a free playground for experimenting with AI models directly.
+So that's how you ground Copilot in your org's knowledge. Now let's step outside Copilot itself for a moment and look at GitHub Models — a free playground for experimenting with AI models directly.
 
 ---
 
-## Slide 41 — GitHub Models
+## Slide 40 — GitHub Models
 
 ### What you say
 
@@ -1119,7 +1098,7 @@ Speaking of building things quickly — let's look at GitHub Spark, which takes 
 
 ---
 
-## Slide 42 — GitHub Spark
+## Slide 41 — GitHub Spark
 
 ### What you say
 
@@ -1151,11 +1130,11 @@ Alright, we've covered the broader GitHub AI ecosystem. Now let's dive into the 
 
 ---
 
-## Slide 43 — Cloud Agent (formerly Coding Agent)
+## Slide 42 — Cloud Agent (formerly Coding Agent)
 
 ### What you say
 
-Okay, let's shift gears. Everything up to now — MCP, instructions, extensions, knowledge bases — that's all about making Copilot smarter and better connected while you're driving. The cloud agent is fundamentally different. This is Copilot working autonomously, without you in the loop.
+Okay, let's shift gears. Everything up to now — MCP, instructions, extensions, Copilot Spaces — that's all about making Copilot smarter and better connected while you're driving. The cloud agent is fundamentally different. This is Copilot working autonomously, without you in the loop.
 
 This is the section title slide for Module 4, and I want to frame this properly because it represents a real paradigm shift in how we think about developer tooling. With Agent Mode in your IDE, you're interactive — you're chatting, you're approving changes, you're steering. With the cloud agent, you assign it a task, walk away, and come back to a pull request.
 
@@ -1182,7 +1161,7 @@ So what exactly is the cloud agent? Let's break it down into its four core pilla
 
 ---
 
-## Slide 44 — What is it?
+## Slide 43 — What is it?
 
 ### What you say
 
@@ -1214,7 +1193,7 @@ Now, the cloud agent runs in GitHub Actions. But there's actually a broader stor
 
 ---
 
-## Slide 45 — Copilot in Actions
+## Slide 44 — Copilot in Actions
 
 ### What you say
 
@@ -1242,7 +1221,7 @@ Now that we've seen how the cloud agent runs, let's compare it directly against 
 
 ---
 
-## Slide 46 — Mode vs Agent
+## Slide 45 — Mode vs Agent
 
 ### What you say
 
@@ -1271,7 +1250,7 @@ So the cloud agent is autonomous — but how do you customize its behavior for d
 
 ---
 
-## Slide 47 — Custom Agents
+## Slide 46 — Custom Agents
 
 ### What you say
 
@@ -1300,7 +1279,7 @@ And the most important piece of project configuration for the cloud agent is the
 
 ---
 
-## Slide 48 — COPILOT.md
+## Slide 47 — COPILOT.md
 
 ### What you say
 
@@ -1330,7 +1309,7 @@ We'll actually write one for ContosoUniversity during the hands-on labs — you'
 ### Transition
 
 Now that we know how to configure the cloud agent, let's look at how it handles one of the most important parts of the development workflow — code review.
-## Slide 49 — Code Review
+## Slide 48 — Code Review
 
 ### What you say
 Alright, let's talk about Copilot Code Review — one of the features that genuinely changes how your team handles pull requests. The idea is simple: Copilot acts as an additional reviewer on your PRs. It reads the diff, leaves inline comments on specific lines, and in many cases suggests concrete code changes you can accept with a single click.
@@ -1353,7 +1332,7 @@ One thing worth noting: code review works on GitHub.com. This isn't an IDE featu
 ### Transition
 Those inline comments and suggestions are great, but what about the PR description itself? Let's look at how Copilot can auto-generate that too.
 
-## Slide 50 — PR Summaries
+## Slide 49 — PR Summaries
 
 ### What you say
 This one is deceptively simple but saves a surprising amount of time. Copilot PR Summaries auto-generate pull request descriptions directly from your diffs and commit messages.
@@ -1378,7 +1357,7 @@ In Lab 09, once your code-review workflow is wired up, PR Summaries are the natu
 ### Transition
 So Copilot can review your code and summarize your PRs. But what about when the code has actual security vulnerabilities? That's where Autofix comes in.
 
-## Slide 51 — Autofix
+## Slide 50 — Autofix
 
 ### What you say
 Copilot Autofix is where code review meets security scanning. The idea: when GitHub Advanced Security detects a vulnerability in your code — through CodeQL or other code scanning — Copilot automatically generates a suggested fix. Not just a warning, not just a description of the problem, but an actual code change you can apply.
@@ -1401,7 +1380,7 @@ In the lab context, this sits adjacent to Lab 09. The same PRs your code-review 
 ### Transition
 Now that we've seen the review and security surface, let's zoom out and look at what's actually happening under the hood when an agent runs — the architecture of agent mode itself.
 
-## Slide 52 — Architecture
+## Slide 51 — Architecture
 
 ### What you say
 This slide peels back the curtain on what's actually happening when you're in agent mode — whether that's Copilot in VS Code, the Copilot CLI, or the cloud agent running in the cloud. The architecture is the same pattern across all of them.
@@ -1427,7 +1406,7 @@ Understanding this loop is essential for the orchestration patterns coming next 
 ### Transition
 Now that we understand the single-agent loop, let's talk about managing agents at scale — when and how to orchestrate more than one.
 
-## Slide 53 — Agent Management
+## Slide 52 — Agent Management
 
 ### What you say
 Alright, we're entering the agent management section. This is module five of six, and it's where we shift from "how does one agent work" to "how do I orchestrate multiple agents for complex workflows."
@@ -1451,7 +1430,7 @@ This is the part of the workshop where things get genuinely interesting from a s
 ### Transition
 The first decision in agent management is simple: one session or many? Let's look at how to make that call.
 
-## Slide 54 — Sessions
+## Slide 53 — Sessions
 
 ### What you say
 This is the fundamental decision in agent management: do you stay in a single session or split across multiple? The answer depends on the shape of your task.
@@ -1476,7 +1455,7 @@ The versus layout on the slide makes this a clean comparison. Single-session on 
 ### Transition
 Once you've decided on multi-session, the next question is ordering. Do your agents run one after another, or all at once? Let's start with sequential.
 
-## Slide 55 — Sequential
+## Slide 54 — Sequential
 
 ### What you say
 Sequential orchestration is your default when the output of one agent is the input to the next. Think assembly line — each station adds value, and nothing can proceed until the previous station finishes.
@@ -1500,7 +1479,7 @@ The practical advice: default to sequential unless you can prove independence. I
 ### Transition
 But sometimes tasks genuinely are independent, and running them one at a time is just wasting time. That's when you go parallel.
 
-## Slide 56 — Parallel
+## Slide 55 — Parallel
 
 ### What you say
 Parallel orchestration is about finding independent tasks and running them at the same time. The goal is straightforward: reduce total wall-clock time by doing concurrent work.
@@ -1527,7 +1506,7 @@ Lab 07 covered this with parallel sub-agent dispatches. The takeaway: parallel i
 ### Transition
 Now let's push further — what happens when agents don't just run in parallel but actually talk to each other? That's the A2A and tmux meta-loop pattern.
 
-## Slide 57 — A2A & tmux Meta-Loop
+## Slide 56 — A2A & tmux Meta-Loop
 
 ### What you say
 This is the most advanced orchestration pattern in the workshop, and it's where we go from running agents side by side to having them actually communicate and hand off work to each other.
@@ -1550,7 +1529,7 @@ Lab 13 walks you through the ACP handshake — setting up `copilot --acp`, asser
 ### Transition
 The tmux loop works because of one thing: the handoff document. Let's zoom in on what makes a good handoff.
 
-## Slide 58 — Handoffs
+## Slide 57 — Handoffs
 
 ### What you say
 Handoff documents are the glue that makes multi-session and multi-agent workflows actually work. Without them, every new session starts from zero. With a good handoff doc, the next session — or the next agent — picks up exactly where the previous one left off.
@@ -1577,7 +1556,7 @@ This pattern works at every scale — from a solo developer breaking a long task
 ### Transition
 Alright — that's the end of the presentation block. Everything we've talked about today lands in the labs. Let's walk through the lab block.
 
-## Slide 59 — Lab Block — All Labs in Order
+## Slide 58 — Lab Block — All Labs in Order
 
 ### What you say
 This is it — the hands-on portion of the workshop. Everything we've covered in the presentation block feeds into these fourteen labs. They run in strict numeric order, one through fourteen, because each lab builds on the output of the one before it. If you skip Lab 3, Lab 4 won't have the agent it depends on. If you skip Lab 5, Lab 12 won't have the MCP foundation. So: sequential, no skipping.
@@ -1606,7 +1585,7 @@ Start with Lab 1. Work sequentially. Ask questions as you go. Let's build.
 ### Transition
 That's the entire workshop content. Let's close it out.
 
-## Slide 60 — Thank You
+## Slide 59 — Thank You
 
 ### What you say
 That's a wrap on the presentation and lab block. Thank you all for spending the day with us and for bringing your questions and energy to the labs.
