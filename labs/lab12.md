@@ -39,6 +39,24 @@ References:
 
 ---
 
+## Copilot CLI currency (2026 refresh)
+
+<!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
+> 💡 Commands below reflect the current Copilot CLI surface as of this lab
+> refresh. Versions, model tiers, and MCP server pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
+> the registry rather than hardcoding values, so a single registry update
+> propagates everywhere.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
+| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+<!-- @end-include docs/_partials/currency.md -->
+
 ## 12.0 Why a separate Fabric MCP?
 
 Fabric exposes lakehouses, notebooks, pipelines, and SQL endpoints behind a
@@ -70,7 +88,8 @@ your org pins a different fork (common in regulated tenants), update the
 | Live | Azure CLI (`az`) signed in to your Fabric tenant; access to one workspace |
 | Live | `node` 20+ (the MCP server is npm-published) |
 | Both | `jq` (used by the strip-outputs hook) |
-| Both | `python` 3.11+ with `pandas` and `pyarrow` (offline fixture build) |
+| Regenerate | `python3` 3.11+ with `pandas` and `pyarrow` (only when rebuilding `sales.parquet` via the snippet in §12.2 or `scripts/generate-lab12-fixture.py`) |
+| Offline (read) | `python3` 3.11+ with `pandas` (the §A.3 reader snippet uses `pd.read_parquet`); pyarrow is pulled in transitively |
 | Both | This repo cloned with the `feature/modernize` (or `main`) branch checked out |
 
 Quick check:
@@ -78,7 +97,9 @@ Quick check:
 ```bash
 node --version    # >= v20
 jq --version
-python -c "import pandas, pyarrow; print('ok')"
+# Use python3 explicitly — stock Ubuntu 24.04 and macOS ship only `python3`,
+# not an unversioned `python` symlink.
+python3 -c "import pandas, pyarrow; print('ok')"
 ```
 
 ---
@@ -90,7 +111,7 @@ section is a useful smoke test, and demos rarely have reliable Wi-Fi.
 
 ```bash
 mkdir -p labs/fixtures/lab12
-python - <<'PY'
+python3 - <<'PY'
 import pandas as pd
 from pathlib import Path
 df = pd.DataFrame({
@@ -121,6 +142,8 @@ above or via `python scripts/generate-lab12-fixture.py` (pandas + pyarrow
 required only when regenerating). Any *additional* parquet files you drop
 into `labs/fixtures/lab12/` while experimenting stay local — see
 `.gitignore`.
+
+> 📎 **Parquet binary diff hygiene.** The repo ships a `.gitattributes` rule that marks `*.parquet` as `binary` — `git diff` won't try to render it as text, and `git merge` won't attempt a textual three-way merge. See [§12.5.1](#1251-configure-a-notebook-aware-git-diff) for the full hygiene block (notebooks + parquet) and the test that pins it (`tests/lab-structure/gitattributes-parquet-binary.test.ts`).
 
 ---
 
@@ -181,6 +204,17 @@ Launch the CLI and ask Copilot to introspect:
   schema of the largest one in 5 bullet points.
 ```
 
+> 🎯 **Filter by capacity SKU when you have many workspaces.** Fabric workspaces are bound to a capacity (e.g. `F2`, `F8`, `P1`). When the agent enumerates, ask it to filter so you only see the SKUs you can actually run notebooks on:
+>
+> ```text
+> > List my Fabric workspaces where the capacity SKU is F8 or higher,
+>   showing workspace name, ID, region, and capacity SKU.
+> ```
+>
+> Under the hood the MCP server calls `GET /v1/workspaces` and pages results; the `capacityAssignmentProgress.capacitySku` field is what the agent filters on. Without the filter you'll see every Power BI workspace your account touches, which on enterprise tenants is often hundreds.
+
+> 🌐 **OneLake URL shape.** When the agent quotes a lakehouse path it uses the OneLake DFS endpoint with an explicit `https://` scheme: `https://onelake.dfs.fabric.microsoft.com/<workspace-guid>/<lakehouse-guid>/Tables/<table>`. The bare `onelake.dfs.fabric.microsoft.com` host without a scheme is **not** a valid URL — you'll see auth-handler errors if you paste it into `az storage` or `curl` without prepending `https://`.
+
 Then trigger a notebook cell:
 
 ```text
@@ -190,6 +224,8 @@ Then trigger a notebook cell:
 
 Copilot will call the `fabric` MCP server, which talks to the Fabric REST
 API on your behalf using the env-var token.
+
+> ⏳ **Rate limits & back-off (live path).** The Fabric REST API enforces per-tenant 429s — typically ~200 requests/minute per workspace, lower for `GET /workspaces` enumeration. If you fan out queries from a `task`-tool sub-agent, expect throttling. The MCP server honors the `Retry-After` header and back-offs exponentially (1s → 2s → 4s, capped at 30s). When you see the agent pause mid-loop, that's the back-off — let it ride; cancelling and re-running just resets the budget. For heavy enumeration, prefer one well-shaped query that returns 50 rows over 50 single-row queries.
 
 ### A.3 (Offline path) Same steps, against the Parquet fixture
 
@@ -291,6 +327,18 @@ a token into a notebook cell or commit one to settings.
 
 4. Accept the diff. Re-run the cell. Iterate.
 
+> 🐍 **Pin the interpreter so VS Code, Copilot, and your shell agree.** Inline chat and agent mode both call the active Python kernel for cell evaluation; if VS Code falls back to a system `python` that doesn't have `pandas`/`pyarrow` you'll see import errors that the lab text doesn't predict. Lock it down per-workspace by adding to `.vscode/settings.json`:
+>
+> ```jsonc
+> {
+>   // Point at the venv you used for §12.1 — adjust the path.
+>   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+>   "jupyter.notebookFileRoot": "${workspaceFolder}"
+> }
+> ```
+>
+> On Windows use `${workspaceFolder}/.venv/Scripts/python.exe`. After saving, run **Python: Select Interpreter** once to confirm VS Code picked it up; the kernel selector at the top of the notebook should show the same path.
+
 > ✏️ **Inline chat shines** at single-cell rewrites where you want fast,
 > reviewed diffs without leaving the editor.
 
@@ -337,10 +385,11 @@ regular code.
 
 ### 12.5.1 Configure a notebook-aware Git diff
 
-Add to `.gitattributes`:
+Add to `.gitattributes` — both rules together (notebooks get a structured diff, parquet stays binary so the fixture in §12.2 doesn't blow up `git diff`):
 
 ```gitattributes
-*.ipynb diff=jupyternotebook merge=jupyternotebook
+*.ipynb   diff=jupyternotebook merge=jupyternotebook
+*.parquet binary
 ```
 
 And register the driver once per machine:
@@ -350,8 +399,17 @@ git config diff.jupyternotebook.command 'git-nbdiffdriver diff'
 git config merge.jupyternotebook.driver  'git-nbmergedriver merge %O %A %B %L %P'
 ```
 
-(`pip install nbdime` first.) Now `git diff notebook.ipynb` shows
+(`pip install 'nbdime>=4'` first — nbdime 4.x ships both `git-nbdiffdriver` and `git-nbmergedriver`; older 3.x only ships the diff driver.) Now `git diff notebook.ipynb` shows
 cell-level changes instead of JSON noise.
+
+> 🧹 **Alternative one-liner — `nbstripout`.** If you'd rather strip outputs declaratively (as a `.gitattributes` filter) instead of via the pre-commit hook in §12.5.4, install `nbstripout` and let it write the `.gitattributes` block for you:
+>
+> ```bash
+> pip install nbstripout
+> nbstripout --install --attributes .gitattributes
+> ```
+>
+> That appends `*.ipynb filter=nbstripout` plus the matching `[diff]`/`[merge]` config. Pick **one** strategy per repo — the pre-commit hook (§12.5.4) and the nbstripout filter both work, but stacking them produces double-strips on every commit and confuses `git diff`. The hook is preferred for this workshop because it lets you preview what's about to be stripped before it lands.
 
 ### 12.5.2 Papermill parameter cells
 
@@ -390,7 +448,12 @@ mkdir -p .githooks
 cat > .githooks/pre-commit <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
-mapfile -t notebooks < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.ipynb$' || true)
+# `while read` form is portable to bash 3.2 (macOS stock); `mapfile`
+# would require bash 4+ and silently fails on Apple's bundled /bin/bash.
+notebooks=()
+while IFS= read -r f; do
+  notebooks+=("$f")
+done < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.ipynb$' || true)
 [ "${#notebooks[@]}" -eq 0 ] && exit 0
 scripts/hooks/pre-commit-strip-notebook-outputs.sh "${notebooks[@]}"
 git add -- "${notebooks[@]}"
@@ -422,3 +485,100 @@ secret pasted into a cell output cannot escape your machine.
 When all boxes are ticked, you've shipped the Fabric workflow Prism (the
 Fabric Data Architect agent — see [AGENTS.md](../AGENTS.md)) expects on
 every PR.
+
+## 12.7 Cleanup
+
+> 🛠️ **Lab 12 specifics — revert before the generic sweep below.**
+>
+> - **Fabric env vars (live path):** `unset FABRIC_AUTH_TOKEN FABRIC_TENANT_ID FABRIC_WORKSPACE_ID` (PowerShell: `Remove-Item Env:FABRIC_AUTH_TOKEN, Env:FABRIC_TENANT_ID, Env:FABRIC_WORKSPACE_ID -ErrorAction SilentlyContinue`). The token is short-lived, but unsetting it stops MCP from auto-launching `@microsoft/fabric-mcp` on your next `copilot` session.
+> - **Pre-commit hook:** if §12.5.4 set `core.hooksPath` to `.githooks`, revert with `git config --unset core.hooksPath` (or restore your previous value if you had one). Delete `.githooks/pre-commit` if you no longer want the strip-outputs behavior.
+> - **`.gitattributes` edits:** if you added the notebook/parquet rules from §12.5.1 only to try them, `git checkout -- .gitattributes` returns the file to its committed state. The repo already ships `*.parquet binary`, so you can leave that even if you remove the notebook rules.
+> - **Offline fixtures stay committed.** `labs/fixtures/lab12/sales.parquet` is **part of the repo** — do not delete it. Any *additional* `*.parquet` files you generated (e.g. `sales-2.parquet`) sit in the directory but are git-ignored; remove them with `git clean -fdX -- labs/fixtures/lab12/` if you want a pristine fixtures dir without touching the canonical file.
+> - **Scratch notebook (offline path):** `rm -rf ~/scratch/` (review first if you also use that dir for other work).
+> - **MCP config:** if you merged the `fabric` block into `~/.copilot/mcp-config.json` or `.vscode/mcp.json` and want to remove it, edit the file and delete just that entry — not the whole `mcpServers` object.
+
+<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
+> 🧹 **Cleanup — leave the machine the way you found it.**
+> Run this checklist before moving to the next lab. Per-lab specifics (named
+> agent / hook / extension files this lab created) should already have been
+> reverted in the steps above; this is the generic sweep that catches the
+> long-tail.
+
+🖥️ **In your terminal:**
+
+1. **Stop background processes.** Anything you started in the foreground with
+   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
+   tail-follows). If you used the bash tool in async mode, make sure those
+   shells are stopped.
+
+   **WSL/Bash:**
+   ```bash
+   jobs -l                       # any background jobs in this shell?
+   # kill them by PID — never `pkill`/`killall`
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-Job                       # any background jobs?
+   Get-Job | Stop-Job; Get-Job | Remove-Job
+   ```
+
+2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
+   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   If you edited in place without backing up, check `git status` in the lab
+   repo (workspace configs) and revert anything you didn't mean to keep.
+
+   **WSL/Bash:**
+   ```bash
+   # If you saved a backup like ~/.copilot/config.json.bak:
+   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
+   ```
+
+3. **Exit and restart `copilot` if you touched extensions or MCP.** The
+   runtime caches loaded extensions and MCP servers; reloading via
+   `extensions_reload` does **not** clear an extension whose source dir was
+   deleted. Fully exit the `copilot` process and start a fresh session.
+
+4. **Sweep the long-tail artifact paths.** These directories accumulate
+   across labs and are safe to clean once you've finished:
+
+   ```bash
+   # Per-session scratch (safe to inspect; delete only what this lab created):
+   ls ~/.copilot/lessons/        2>/dev/null
+   ls node/.a2a/                  2>/dev/null
+   ls node/.a2a-transcript-*.md   2>/dev/null
+   ls .git/CLAB_SUMMARY.md        2>/dev/null
+   ```
+
+   Delete only files that this lab created. Do not blanket-delete
+   `~/.copilot/lessons/` if other sessions wrote to it.
+
+5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
+   point git at a custom hooks dir for the duration of an exercise.
+
+   ```bash
+   git config --get core.hooksPath
+   # if set to a lab path, unset:
+   git config --unset core.hooksPath
+   ```
+
+6. **Confirm working tree is clean (or expected).**
+
+   ```bash
+   git status --short
+   ```
+
+   Any unexpected files (untracked agents, hooks, extensions, scratch
+   notebooks) should be removed or moved out of the repo before continuing.
+
+7. **Verify build is still green.** Optional but recommended after labs that
+   touched hooks, agents, or skills:
+
+   ```bash
+   dotnet build dotnet/ContosoUniversity.sln --nologo
+   ```
+
+> ✅ Once `git status --short` is empty (or shows only files you intentionally
+> kept) and the build is clean, you're ready for the next lab.
+<!-- @end-include docs/_partials/cleanup.md -->

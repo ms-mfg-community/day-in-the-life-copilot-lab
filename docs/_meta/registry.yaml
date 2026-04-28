@@ -12,26 +12,43 @@
 
 schema_version: 1
 
-copilot_cli_version_floor: "1.0.35-4"
+copilot_cli_version_floor: "1.0.37"
 
 gh_aw_schema_version: "2026.04"
 
+# MCP server pins — explicit versions verified against npm registry on 2026-04-27
+# (see fix-regression/verification/verified-findings.md § V05). Floating `@latest`
+# tags remain in the per-server `mcp-configs/*/individual/*.json` files for the
+# weekly audit to detect drift; this registry records the *known-good* version.
 mcp_servers:
   - name: context7
     transport: stdio
-    pin: latest
+    pin: "2.2.1"
+    npm_package: "@upstash/context7-mcp"
+    last_verified: "2026-04-27"
   - name: memory
     transport: stdio
-    pin: latest
+    pin: "2026.1.26"
+    npm_package: "@modelcontextprotocol/server-memory"
+    last_verified: "2026-04-27"
   - name: sequential-thinking
     transport: stdio
-    pin: latest
+    pin: "2025.12.18"
+    npm_package: "@modelcontextprotocol/server-sequential-thinking"
+    last_verified: "2026-04-27"
   - name: microsoft-learn
     transport: http
     pin: latest
   - name: workiq
     transport: stdio
-    pin: latest
+    pin: "0.4.1"
+    npm_package: "@microsoft/workiq"
+    last_verified: "2026-04-27"
+  - name: fabric
+    transport: stdio
+    pin: "1.0.0"           # @microsoft/fabric-mcp — first GA on 2026-04-14
+    npm_package: "@microsoft/fabric-mcp"
+    last_verified: "2026-04-27"
 
 models:
   default: auto

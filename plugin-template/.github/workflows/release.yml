@@ -31,7 +31,7 @@ jobs:
       - name: Validate manifest
         run: |
           test -f manifest.yaml
-          grep -E '^version:\s+"?'"${GITHUB_REF_NAME#v}"'"?' manifest.yaml
+          grep -E '^version:\s+"?'"${GITHUB_REF_NAME#v}"'"?\s*$' manifest.yaml
 
       - name: Generate SBOM (CycloneDX)
         uses: anchore/sbom-action@v0

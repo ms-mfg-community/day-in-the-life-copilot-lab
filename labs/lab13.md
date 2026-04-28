@@ -59,6 +59,24 @@ References:
 
 ---
 
+## Copilot CLI currency (2026 refresh)
+
+<!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
+> 💡 Commands below reflect the current Copilot CLI surface as of this lab
+> refresh. Versions, model tiers, and MCP server pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
+> the registry rather than hardcoding values, so a single registry update
+> propagates everywhere.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
+| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+<!-- @end-include docs/_partials/currency.md -->
+
 ## 13.0 What is A2A — and what is ACP?
 
 | Term | What it means here |
@@ -107,6 +125,7 @@ This lab is about the cases the Lab 07 pattern can't cleanly cover.
 |------|--------------|
 | Both | Copilot CLI installed and authenticated (Lab 01 setup) |
 | Both | The Phase 3 Node app builds locally: `make test-node` is green |
+| Both | Node dependencies installed: `pnpm -C node install` (first time only) |
 | Live | Copilot CLI version `>= copilot_cli_version_floor` from the registry (run `copilot --version` to check) |
 | Live | A second terminal pane (or tmux split) so you can watch the peer agent's pane |
 | Concept | No extra setup — uses only the in-process `task` tool |
@@ -114,7 +133,9 @@ This lab is about the cases the Lab 07 pattern can't cleanly cover.
 Quick check:
 
 ```bash
+pnpm -C node install         # first time only — installs vitest, etc.
 copilot --version            # compare against docs/_meta/registry.yaml
+copilot --help | grep -q -- '--acp' && echo "ACP: yes" || echo "ACP: missing — bump CLI"
 make test-node               # confirm baseline
 ```
 
@@ -122,8 +143,8 @@ make test-node               # confirm baseline
 
 ## Part A — A two-agent task: implementer + critic
 
-You will modify a small piece of the Node app (the Students repository's
-list endpoint) using two agents:
+You will modify a small piece of the Node app (the Students JSON list
+endpoint at `node/web/routes/students-api.ts`) using two agents:
 
 | Peer | Role | Tool allowlist | Model hint |
 |------|------|---------------|------------|
@@ -135,10 +156,12 @@ list endpoint) using two agents:
 Use this contract for the worked example. (You can substitute any small
 slice of the Node app; the pedagogy is the same.)
 
-> Add a `?limit=N` query parameter to `GET /students`. Cap at 100. If
-> `N` is non-numeric or negative, return `400` with a JSON error body
-> matching the existing error shape. Keep existing tests green; add at
-> least one new test per branch.
+> Add a `?limit=N` query parameter to `GET /api/students` (the JSON
+> list endpoint in `node/web/routes/students-api.ts` — **not** the
+> `GET /students` HTML page route). Cap at 100. If `N` is non-numeric
+> or negative, return `400` with a JSON error body matching the
+> existing error shape. Keep existing tests green; add at least one
+> new test per branch.
 
 ### A.2 Drive the flow from your main Copilot CLI session (concept path)
 
@@ -149,13 +172,29 @@ learners on locked-down environments can still complete the lab.
 
 ```text
 You (driver) → task(name="implementer", agent_type="general-purpose",
-                    mode="background", prompt="<contract from A.1 +
+                    mode="background", model="claude-opus-4.6",
+                    prompt="<contract from A.1 +
                     'edit code, run vitest, report when green'>")
             → task(name="critic", agent_type="rubber-duck",
-                    mode="background", prompt="<contract from A.1 +
+                    mode="background", model="claude-haiku-4.5",
+                    prompt="<contract from A.1 +
                     'review the implementer's diff; demand tests for
                     every branch; you may NOT edit files'>")
 ```
+
+> 💸 **Pass `model=…` explicitly.** The cost-budget block at the top
+> of this lab only holds if you pin the cheap model on the critic and
+> the strong model on the implementer. The `task` tool defaults to
+> your **session** model, which silently routes everything through
+> whatever you have selected (often `claude-opus-4.7`) and blows the
+> budget. The example above shows the canonical pinning.
+
+> 🚧 **Trust boundary on the concept path.** `agent_type="rubber-duck"`
+> still has the full CLI tool surface for investigation (including
+> `bash` and `lsp`); the "read-only" cell in the table above is
+> enforced by **convention** on the concept path and by `--available-tools`
+> on the live path in §A.3. Treat the concept path as a learning
+> simulator, not a hardened sandbox.
 
 After both agents are spawned, drive the conversation:
 
@@ -181,11 +220,18 @@ its own configuration:
 
 ```bash
 # Pane 2 — start the critic peer with a strict, read-only config.
-COPILOT_AGENT_ID=critic copilot \
+COPILOT_AGENT_NAME=critic copilot \
   --agent rubber-duck \
-  --tool-allowlist 'view,grep,glob,lsp' \
-  --listen-acp
+  --available-tools='view,grep,glob,lsp' \
+  --acp
 ```
+
+> 🪪 **Flag verification.** Tool names follow the CLI's allowlist
+> syntax — see `copilot --help | grep allow-tool` for the canonical
+> list and `--allow-tool='shell(git:*)'` syntax for scoped shell
+> access. The exact ACP-mode subcommand names follow the version
+> pinned in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml);
+> always cross-check `copilot --help` before assuming a flag exists.
 
 In your **driver** pane (Pane 1), register the peer and exchange
 messages using your CLI's ACP commands (the exact CLI subcommand names
@@ -315,7 +361,7 @@ for the cheaper ones first:
 | **Single agent + `task` sub-agents** (Lab 07) | Parallel research threads, same trust boundary |
 | **Single agent + rubber-duck critique** | You want a sanity-check pass without standing up a peer (see the `rubber-duck` agent type and the `code-reviewer` custom agent) |
 | **A2A peers** (this lab) | Roles must hold opposing incentives or live in different trust boundaries |
-| **Orchestrator + tmux pattern** (Lab 14, next cycle) | A2A made operational across many phases — long-lived orchestrator pane, short-lived workers, `/clear` between phases |
+| **Orchestrator + tmux pattern** ([Lab 14](lab14.md)) | A2A made operational across many phases — long-lived orchestrator pane, short-lived workers, `/clear` between phases |
 
 Two skills already in this repo are direct prerequisites for getting A2A
 right:
@@ -342,10 +388,98 @@ Before you close the lab, confirm:
 
 ### Next steps
 
-- **[Lab 14](lab14.md)** (next cycle) puts this pattern on rails with a
+- **[Lab 14](lab14.md)** puts this pattern on rails with a
   tmux-based orchestrator deep-dive and shipped helper scripts. The
   hand-off doc schema introduced in §B.2 is the contract Lab 14 will
   automate.
 - Try the two-agent loop on a real PR in your fork. The first time it
   catches a bug a single-agent flow missed, you'll feel why the
   pattern earns its overhead.
+
+## 13.6 Cleanup
+
+<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
+> 🧹 **Cleanup — leave the machine the way you found it.**
+> Run this checklist before moving to the next lab. Per-lab specifics (named
+> agent / hook / extension files this lab created) should already have been
+> reverted in the steps above; this is the generic sweep that catches the
+> long-tail.
+
+🖥️ **In your terminal:**
+
+1. **Stop background processes.** Anything you started in the foreground with
+   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
+   tail-follows). If you used the bash tool in async mode, make sure those
+   shells are stopped.
+
+   **WSL/Bash:**
+   ```bash
+   jobs -l                       # any background jobs in this shell?
+   # kill them by PID — never `pkill`/`killall`
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-Job                       # any background jobs?
+   Get-Job | Stop-Job; Get-Job | Remove-Job
+   ```
+
+2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
+   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   If you edited in place without backing up, check `git status` in the lab
+   repo (workspace configs) and revert anything you didn't mean to keep.
+
+   **WSL/Bash:**
+   ```bash
+   # If you saved a backup like ~/.copilot/config.json.bak:
+   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
+   ```
+
+3. **Exit and restart `copilot` if you touched extensions or MCP.** The
+   runtime caches loaded extensions and MCP servers; reloading via
+   `extensions_reload` does **not** clear an extension whose source dir was
+   deleted. Fully exit the `copilot` process and start a fresh session.
+
+4. **Sweep the long-tail artifact paths.** These directories accumulate
+   across labs and are safe to clean once you've finished:
+
+   ```bash
+   # Per-session scratch (safe to inspect; delete only what this lab created):
+   ls ~/.copilot/lessons/        2>/dev/null
+   ls node/.a2a/                  2>/dev/null
+   ls node/.a2a-transcript-*.md   2>/dev/null
+   ls .git/CLAB_SUMMARY.md        2>/dev/null
+   ```
+
+   Delete only files that this lab created. Do not blanket-delete
+   `~/.copilot/lessons/` if other sessions wrote to it.
+
+5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
+   point git at a custom hooks dir for the duration of an exercise.
+
+   ```bash
+   git config --get core.hooksPath
+   # if set to a lab path, unset:
+   git config --unset core.hooksPath
+   ```
+
+6. **Confirm working tree is clean (or expected).**
+
+   ```bash
+   git status --short
+   ```
+
+   Any unexpected files (untracked agents, hooks, extensions, scratch
+   notebooks) should be removed or moved out of the repo before continuing.
+
+7. **Verify build is still green.** Optional but recommended after labs that
+   touched hooks, agents, or skills:
+
+   ```bash
+   dotnet build dotnet/ContosoUniversity.sln --nologo
+   ```
+
+> ✅ Once `git status --short` is empty (or shows only files you intentionally
+> kept) and the build is clean, you're ready for the next lab.
+<!-- @end-include docs/_partials/cleanup.md -->

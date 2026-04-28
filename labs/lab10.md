@@ -38,9 +38,20 @@ at once.
 > Markdown round-trips are cheap; no knowledge-graph server chews tokens
 > on every turn. Run Layer 1 and Layer 2 on `claude-haiku-4.5` or
 > `gpt-5-mini` (mechanical edits); stay on `auto` or upshift to
-> `claude-opus-4.6` only for the §10.4 consolidation pass. `/clear`
+> `claude-opus-4.7` only for the §10.4 consolidation pass. `/clear`
 > between §10.3 and §10.4. Full guidance:
 > [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
+>
+> **Tier picker for this lab:**
+>
+> | Tier | Model | When to use it here | Rough cost vs. Opus 4.7 |
+> |------|-------|--------------------|-------------------------|
+> | Cheap | `claude-haiku-4.5` / `gpt-5-mini` | §10.1–10.3 schema + log appends, file reads | ≈ 1/15× |
+> | Standard | `claude-sonnet-4.6` / `gpt-5.4` | Mid-complexity edits, schema drafting | ≈ 1/5× |
+> | Premium (prior gen) | `claude-opus-4.6` | `task`-tool sub-agent dispatches per repo policy — pin here, not 4.7 | ≈ 0.7× |
+> | Premium (current) | `claude-opus-4.7` | §10.4 interactive consolidation pass only | 1.0× (baseline) |
+>
+> Opus 4.7 is roughly 30–40 % more expensive per token than 4.6 and noticeably better at multi-document reconciliation; Haiku 4.5 is the new low-tier default and ~15× cheaper than 4.7 for the routine append/read loops in §10.1–10.3. Sub-agents launched via the `task` tool stay pinned to `claude-opus-4.6` (see repo `copilot-instructions.md`); the upshift to 4.7 applies only to your interactive pane during §10.4.
 
 References:
 - [Repository indexing](https://docs.github.com/en/copilot/concepts/context/repository-indexing)
@@ -51,38 +62,21 @@ References:
 
 ## 10.0 Copilot CLI surface check (2026 refresh)
 
-> 💡 Commands and tiers below are pinned in
-> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). If the registry
-> moves, this lab follows; you should not see hardcoded versions in the body.
+<!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
+> 💡 Commands below reflect the current Copilot CLI surface as of this lab
+> refresh. Versions, model tiers, and MCP server pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
+> the registry rather than hardcoding values, so a single registry update
+> propagates everywhere.
 
 | Capability | Command / surface | Use when |
 |------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling an org-shared lessons bundle or memory-adjacent tooling (Lab 11). |
-| **Parallel subagents** | `/fleet` | Running many short-lived workers under one long-lived orchestrator (Lab 14). |
-| **Plan mode vs autopilot mode** | `Shift+Tab` cycles interactive → plan mode → autopilot mode | Plan mode while the agent writes lessons; autopilot mode for consolidation runs. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Switch between `models.cheap`, `models.standard`, and `models.premium` tiers from the registry without restarting. |
-| **Local tool discovery** | `extensions_manage` operation `list` / `inspect` | See every skill, agent, and hook contributing to the session's context right now. |
-
-### Reindex: the thing that isn't a layer
-
-**Reindex** is automatic semantic indexing of code that already lives in
-the repo. You don't manage it, you don't decide what it stores, and it
-never persists anything that isn't already in source control.
-
-🖥️ **Try it:**
-
-```
-How does the repository pattern work in ContosoUniversity?
-What happens when a student enrolls in a course? Trace controller → DB.
-```
-
-Copilot answers by searching semantically — it knows "enrolls" relates to
-the `Enrollment` entity, its controller, and the repository methods even
-when the literal word "enroll" doesn't appear in those files. That's
-reindex doing its job. If your question can be answered by reading the
-code, **stop here**. The three layers below are for everything else.
-
----
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
+| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+<!-- @end-include docs/_partials/currency.md -->
 
 ## 10.1 Layer 1 — Raw sources (session-scoped)
 
@@ -119,12 +113,12 @@ That file is real on disk — inspect it:
 
 **WSL/Bash:**
 ```bash
-cat ~/.copilot/session-state/*/plan.md 2>/dev/null | head -20
+cat ~/.copilot/session-state/*/plan.md 2>/dev/null | head -60
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content $HOME/.copilot/session-state/*/plan.md -ErrorAction SilentlyContinue | Select-Object -First 20
+Get-Content $HOME/.copilot/session-state/*/plan.md -ErrorAction SilentlyContinue | Select-Object -First 60
 ```
 
 > 💡 **Rule of thumb:** if a teammate joining tomorrow would need this
@@ -270,15 +264,15 @@ sessions and across contributors.
 **WSL/Bash:**
 ```bash
 ls .github/instructions/
-head -20 AGENTS.md
-head -20 .github/instructions/lessons.instructions.md
+head -60 AGENTS.md
+head -60 .github/instructions/lessons.instructions.md
 ```
 
 **PowerShell:**
 ```powershell
 Get-ChildItem .github/instructions
-Get-Content AGENTS.md | Select-Object -First 20
-Get-Content .github/instructions/lessons.instructions.md | Select-Object -First 20
+Get-Content AGENTS.md | Select-Object -First 60
+Get-Content .github/instructions/lessons.instructions.md | Select-Object -First 60
 ```
 
 You should see scoped instruction files (e.g. `dotnet.instructions.md`,
@@ -356,9 +350,11 @@ Get-Content .github/prompts/consolidate-lessons.prompt.md | Select-Object -First
 
 ### 10.4a Dry run first
 
-Always start with `--dry-run` so you can see what would change:
+Always start with `--dry-run` so you can see what would change.
+`/consolidate-lessons` is an **inner-Copilot slash command** — type it
+**in the Copilot prompt** (not in your shell):
 
-```
+```text
 /consolidate-lessons --dry-run --scope both
 ```
 
@@ -370,9 +366,10 @@ front-matter (`tags`, `scope`) and re-run the dry run.
 
 ### 10.4b Live consolidation
 
-When the dry-run looks right, run for real:
+When the dry-run looks right, run for real — again, **in the Copilot
+prompt**, not in your shell:
 
-```
+```text
 /consolidate-lessons --scope both
 ```
 
@@ -416,9 +413,17 @@ delete the lesson (keep the `log.md` history). The wiki stays a
 ### 10.4d Autopilot — one paragraph, not a feature
 
 If you want consolidation to run on a cadence, add a cron/launchd/Task
-Scheduler entry that invokes `copilot /consolidate-lessons --scope both`
-weekly. This repo does not ship a schedule — cadences are
-environment-specific and belong in your personal setup.
+Scheduler entry that launches a non-interactive Copilot session and
+sends the slash command as the prompt — for example:
+
+```bash
+copilot --prompt '/consolidate-lessons --scope both' --allow-all-tools
+```
+
+(Slash commands are inner-Copilot, so they reach the runtime via
+`--prompt`, not as bare shell arguments.) This repo does not ship a
+schedule — cadences are environment-specific and belong in your
+personal setup.
 
 ---
 
@@ -451,11 +456,11 @@ Your checklist for the next real task:
 5. **Consolidate weekly:** `/consolidate-lessons --dry-run` first; commit
    the live run when the diff is clean.
 
-🖥️ **End-of-lab handoff drill:** `/handoff_prompt` with work
-description "Completed Lab 10 — three-layer agent memory" and stop
-reason "Lab complete". The output is itself a Layer 1 artefact — it
-dies with the next session unless you graduate durable findings into
-Layer 2 or 3.
+🖥️ **End-of-lab handoff drill:** in the Copilot prompt (not your
+shell), type the slash command `/handoff_prompt` with work description
+"Completed Lab 10 — three-layer agent memory" and stop reason "Lab
+complete". The output is itself a Layer 1 artefact — it dies with the
+next session unless you graduate durable findings into Layer 2 or 3.
 
 <details>
 <summary>Key Takeaways</summary>
@@ -471,6 +476,13 @@ Promotion: L1 → L2 when durable; L2 project → L2 global when cross-repo;
 L2 → L3 when binding on every task. Nothing lives in two layers at once.
 Markdown round-trips are cheap — a weekly consolidation touches a handful
 of files and costs pennies.
+
+</details>
+
+<details>
+<summary>Solution: lab10-session-management reference materials</summary>
+
+See [`solutions/lab10-session-management/`](../solutions/lab10-session-management/) — in particular [`README.md`](../solutions/lab10-session-management/README.md), [`sample-handoff.md`](../solutions/lab10-session-management/sample-handoff.md), and [`sample-checkpoint-log.txt`](../solutions/lab10-session-management/sample-checkpoint-log.txt) — for the complete reference implementation.
 
 </details>
 
@@ -496,3 +508,137 @@ You've now mapped every memory surface the local Copilot CLI exposes:
   as a PR that fixes a bug — it teaches every future session at once.
 
 **Return to:** [README](../README.md)
+
+## 10.6 Cleanup
+
+### Lab 10–specific: prune the global lessons folder
+
+`~/.copilot/lessons/` is a per-workstation Layer 2 surface. Across many
+lab runs it accumulates topic files, `log.md` entries, and stub
+indexes that other sessions wrote. Before moving on, decide whether to
+**keep** the global wiki you've curated or **reset** it to a clean
+state for the next learner on this workstation.
+
+> ⚠️ Only delete files **you** created in this lab. If you share the
+> workstation, list contents first and remove individual paths — never
+> blanket-delete the directory.
+
+🖥️ **Inspect, then prune:**
+
+**WSL/Bash:**
+```bash
+# 1. List what's there:
+ls -la ~/.copilot/lessons/ 2>/dev/null
+
+# 2. Remove individual files this lab created (example):
+rm -f ~/.copilot/lessons/<topic-file-you-added>.md
+
+# 3. Full reset (only if this is your personal workstation and you
+#    want to start the global wiki over):
+rm -rf ~/.copilot/lessons
+```
+
+**PowerShell:**
+```powershell
+$lessons = Join-Path $HOME ".copilot/lessons"
+
+# 1. List what's there:
+Get-ChildItem $lessons -Force -ErrorAction SilentlyContinue
+
+# 2. Remove individual files this lab created (example):
+Remove-Item (Join-Path $lessons "<topic-file-you-added>.md") -ErrorAction SilentlyContinue
+
+# 3. Full reset (only if this is your personal workstation and you
+#    want to start the global wiki over):
+Remove-Item $lessons -Recurse -Force -ErrorAction SilentlyContinue
+```
+
+The project-scoped `.copilot/lessons/` directory is committed to the
+repo — leave it alone unless you also revert the corresponding edits
+via `git restore`.
+
+<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
+> 🧹 **Cleanup — leave the machine the way you found it.**
+> Run this checklist before moving to the next lab. Per-lab specifics (named
+> agent / hook / extension files this lab created) should already have been
+> reverted in the steps above; this is the generic sweep that catches the
+> long-tail.
+
+🖥️ **In your terminal:**
+
+1. **Stop background processes.** Anything you started in the foreground with
+   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
+   tail-follows). If you used the bash tool in async mode, make sure those
+   shells are stopped.
+
+   **WSL/Bash:**
+   ```bash
+   jobs -l                       # any background jobs in this shell?
+   # kill them by PID — never `pkill`/`killall`
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-Job                       # any background jobs?
+   Get-Job | Stop-Job; Get-Job | Remove-Job
+   ```
+
+2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
+   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   If you edited in place without backing up, check `git status` in the lab
+   repo (workspace configs) and revert anything you didn't mean to keep.
+
+   **WSL/Bash:**
+   ```bash
+   # If you saved a backup like ~/.copilot/config.json.bak:
+   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
+   ```
+
+3. **Exit and restart `copilot` if you touched extensions or MCP.** The
+   runtime caches loaded extensions and MCP servers; reloading via
+   `extensions_reload` does **not** clear an extension whose source dir was
+   deleted. Fully exit the `copilot` process and start a fresh session.
+
+4. **Sweep the long-tail artifact paths.** These directories accumulate
+   across labs and are safe to clean once you've finished:
+
+   ```bash
+   # Per-session scratch (safe to inspect; delete only what this lab created):
+   ls ~/.copilot/lessons/        2>/dev/null
+   ls node/.a2a/                  2>/dev/null
+   ls node/.a2a-transcript-*.md   2>/dev/null
+   ls .git/CLAB_SUMMARY.md        2>/dev/null
+   ```
+
+   Delete only files that this lab created. Do not blanket-delete
+   `~/.copilot/lessons/` if other sessions wrote to it.
+
+5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
+   point git at a custom hooks dir for the duration of an exercise.
+
+   ```bash
+   git config --get core.hooksPath
+   # if set to a lab path, unset:
+   git config --unset core.hooksPath
+   ```
+
+6. **Confirm working tree is clean (or expected).**
+
+   ```bash
+   git status --short
+   ```
+
+   Any unexpected files (untracked agents, hooks, extensions, scratch
+   notebooks) should be removed or moved out of the repo before continuing.
+
+7. **Verify build is still green.** Optional but recommended after labs that
+   touched hooks, agents, or skills:
+
+   ```bash
+   dotnet build dotnet/ContosoUniversity.sln --nologo
+   ```
+
+> ✅ Once `git status --short` is empty (or shows only files you intentionally
+> kept) and the build is clean, you're ready for the next lab.
+<!-- @end-include docs/_partials/cleanup.md -->

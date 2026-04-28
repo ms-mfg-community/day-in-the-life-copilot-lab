@@ -50,4 +50,20 @@ describe('plugin-template: org-policy allowlist', () => {
     );
     expect(mod.isAllowed(policy, 'other-org/plugin').allowed).toBe(false);
   });
+
+  // Segment-wildcard lock test (V03 #16): a single `*` must NOT cross `/`
+  // boundaries. If policy.mjs ever regresses from `[^/]+` to `.+`, this
+  // would let `contoso-internal/*` match `contoso-internal/sub/path` and
+  // silently widen the org allowlist. Lock the segment-bounded semantics.
+  it('isAllowed() segment-wildcard `*` does not cross `/` boundaries', async () => {
+    const mod = await import(pathToFileURL(POLICY_MODULE).href);
+    const policy = {
+      default_action: 'deny',
+      allowlist: [{ source: 'contoso-internal/*' }],
+    };
+    expect(
+      mod.isAllowed(policy, 'contoso-internal/foo/bar').allowed,
+    ).toBe(false);
+    expect(mod.isAllowed(policy, 'contoso-internal/foo').allowed).toBe(true);
+  });
 });
