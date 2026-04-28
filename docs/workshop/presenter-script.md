@@ -38,7 +38,7 @@ Let's look at how the day breaks down — here's the agenda.
 
 So here's the shape of the day. This is a single-day, four-hour workshop — two hundred and forty minutes, total. We split it into two major blocks.
 
-The first block is what we're doing right now: the presentation sessions. These are short, focused segments covering the full Copilot surface area. We'll start with an overview of the product family — what Copilot actually includes today, which features land in which IDEs, how the plan tiers break down. Then we'll shift into the CLI, which is where a huge chunk of the agentic capability lives. After that, we'll cover extensibility — custom instructions, agents, skills, prompts, hooks, MCP servers. Then we'll hit agentic workflows, the coding agent, and how all of this connects to your CI/CD pipeline.
+The first block is what we're doing right now: the presentation sessions. These are short, focused segments covering the full Copilot surface area. We'll start with an overview of the product family — what Copilot actually includes today, which features land in which IDEs, how the plan tiers break down. Then we'll shift into the CLI, which is where a huge chunk of the agentic capability lives. After that, we'll cover extensibility — custom instructions, agents, skills, prompts, hooks, MCP servers. Then we'll hit agentic workflows, the cloud agent, and how all of this connects to your CI/CD pipeline.
 
 The second block is the hands-on lab time. You'll run through the labs in sequence on your own machine. The labs map directly to the topics we cover in the presentation — so by the time you're doing Lab 3, you'll already have the context from the slides. We're not going to stop between each topic and do a lab. That context-switching kills momentum. Instead, you absorb the concepts first, then apply them all at once.
 
@@ -64,7 +64,7 @@ Here's the detailed schedule with session times — adjust the timezone dropdown
 
 Alright, this is the actual schedule view. The agenda renders dynamically from agenda.json, so what you see on screen should reflect the real session times. If the timezone isn't right for you, there's a dropdown at the top — it supports Eastern, Central, Mountain, Pacific, Alaska, and Hawaii. Central is selected by default.
 
-I won't read every line item to you — you can see it on screen. But let me call out the structure. The presentation block comes first. We'll move through the Copilot overview, the CLI deep-dive, extensibility, agentic workflows, and the coding agent. Each topic is a focused segment — we're not going to spend forty-five minutes on any one thing. The goal is to give you enough depth to understand the "why" and the "how," then let the labs cement it.
+I won't read every line item to you — you can see it on screen. But let me call out the structure. The presentation block comes first. We'll move through the Copilot overview, the CLI deep-dive, extensibility, agentic workflows, and the cloud agent. Each topic is a focused segment — we're not going to spend forty-five minutes on any one thing. The goal is to give you enough depth to understand the "why" and the "how," then let the labs cement it.
 
 After the presentation block, there's a break, and then we move into the consolidated lab block. The labs are numbered and sequential. You start with Lab 1 and work forward. Some labs build on prior ones, so don't skip around unless you're confident you know what you're doing. Each lab has clear instructions in the repo — they're markdown files with step-by-step walkthroughs.
 
@@ -99,7 +99,7 @@ Let me lay out the surface area. You've got code completion — the original fea
 
 Then there's the CLI — a full agentic platform running in your terminal. We'll spend a good chunk of time on this because it's where a lot of the most powerful capabilities live. Agent mode, MCP server integration, multi-agent orchestration, autonomous workflows — all of that runs through the CLI.
 
-Beyond that, you've got the Copilot Coding Agent — a cloud-hosted agent that can be assigned GitHub issues and autonomously writes code, opens PRs, and iterates on review feedback. It runs on the gh-aw platform, which is GitHub's agentic workflow infrastructure built on top of Actions.
+Beyond that, you've got the Copilot cloud agent — a cloud-hosted agent that can be assigned GitHub issues and autonomously writes code, opens PRs, and iterates on review feedback. It runs on the gh-aw platform, which is GitHub's agentic workflow infrastructure built on top of Actions.
 
 And then there's the extensibility layer: custom instructions, custom agents, skills, prompt files, hooks, and MCP servers. This is where Copilot stops being a generic tool and starts being tuned to your codebase, your team's conventions, and your specific workflows.
 
@@ -123,11 +123,11 @@ This is the Copilot feature matrix. It shows you which features are available in
 
 The columns are: VS Code, CLI, JetBrains, Visual Studio, Neovim, Xcode, Eclipse, and GitHub.com. The rows are the features. Green check means GA — generally available. Blue circle means preview. Dash means not applicable. Empty circle means not supported.
 
-A few things jump out. VS Code is the most feature-complete surface. It gets updates first, it supports everything from code completion to agent mode to MCP to vision to prompt files to the coding agent. If you're working in VS Code, you have access to the full platform. The CLI is a close second — it supports code completion, model picker, agent mode, MCP, skills, extensions, code review, custom instructions, prompt files, PR summaries, and the coding agent via delegate. Where it shows dashes — things like edit mode, next edit suggestions, vision — those are inherently visual IDE features that don't apply in a terminal context.
+A few things jump out. VS Code is the most feature-complete surface. It gets updates first, it supports everything from code completion to agent mode to MCP to vision to prompt files to the cloud agent. If you're working in VS Code, you have access to the full platform. The CLI is a close second — it supports code completion, model picker, agent mode, MCP, skills, extensions, code review, custom instructions, prompt files, PR summaries, and the cloud agent via delegate. Where it shows dashes — things like edit mode, next edit suggestions, vision — those are inherently visual IDE features that don't apply in a terminal context.
 
 JetBrains and Visual Studio are strong — they've got agent mode, MCP, code review, and most of the core features at GA. Eclipse added agent mode, chat, and MCP in May 2025, so it's catching up. Xcode has chat, agent mode, MCP, and code review. Neovim is the outlier — it officially supports code completion only.
 
-On the far right, GitHub.com has its own set of features: Copilot Chat, the coding agent, issues and discussions summarization, PR summaries, Copilot Spaces, and text completions. Issues and Discussions — where Copilot summarizes threads and drafts responses — is GitHub.com only.
+On the far right, GitHub.com has its own set of features: Copilot Chat, the cloud agent, issues and discussions summarization, PR summaries, Copilot Spaces, and text completions. Issues and Discussions — where Copilot summarizes threads and drafts responses — is GitHub.com only.
 
 Check the note bar at the bottom: this matrix changes frequently. The source of truth is docs.github.com/copilot/reference/copilot-feature-matrix. Bookmark that. Also worth noting: GitHub Mobile includes Copilot Chat, which isn't in this grid.
 
@@ -139,7 +139,7 @@ One more thing: skills are currently supported in VS Code, CLI, and GitHub.com o
 - Title: "Copilot Feature Matrix"
 - Subtitle: "Feature support across IDEs and platforms"
 - Table columns: Feature, VS Code, CLI, JetBrains, VS, Neovim, Xcode, Eclipse, GitHub.com
-- 19 feature rows including: Code completion, Copilot Chat, Model picker, Agent mode, MCP, Skills, Extensions, Code review, Custom instructions, Next edit suggestions, Edit mode, Vision, Prompt files, Code referencing, PR summaries, Text completions, Copilot Spaces, Copilot Coding Agent, Issues & Discussions
+- 19 feature rows including: Code completion, Copilot Chat, Model picker, Agent mode, MCP, Skills, Extensions, Code review, Custom instructions, Next edit suggestions, Edit mode, Vision, Prompt files, Code referencing, PR summaries, Text completions, Copilot Spaces, Copilot cloud agent, Issues & Discussions
 - Legend: ✅ = GA, 🔵 = Preview, — = Not applicable, ⚪ = Not supported
 - Note bar: VS Code receives updates first; check docs.github.com for current matrix; GitHub Mobile includes Copilot Chat
 
@@ -153,13 +153,13 @@ Now let's look at the plan tiers — what you get at each pricing level.
 
 Here's the plan breakdown. Four tiers: Free, Pro, Business, and Enterprise. Let me walk through each one because the boundaries matter for what your team can actually use.
 
-Free. This launched in December 2024 and it's available to every GitHub account — no credit card required. You get two thousand code completions per month and fifty chat messages per month. It works in VS Code and JetBrains. The models available are GPT-4o and Claude 3.5 Sonnet. That's a real, usable tier. If you're evaluating Copilot, or you're running a hackathon, or you just want to try it on a side project — Free gets you there. The limits are per-month and they reset, so for light usage it's perfectly fine.
+Free. This launched in December 2024 and it's available to every GitHub account — no credit card required. You get two thousand code completions per month and fifty chat messages per month. It works in VS Code and JetBrains. The models available are GPT-4o and Claude Haiku 4.5 — Claude Haiku 4.5 replaced Claude Sonnet 3.5 in the Free tier in November 2025 (changelog: github.blog/changelog/2025-11-10-claude-sonnet-3-5-deprecated-claude-haiku-4-5-available-in-copilot-free). That's a real, usable tier. If you're evaluating Copilot, or you're running a hackathon, or you just want to try it on a side project — Free gets you there. The limits are per-month and they reset, so for light usage it's perfectly fine.
 
 Pro. Ten dollars a month. This is where the limits come off. Unlimited code completions. You get the full model picker — every model GitHub makes available, you can switch between them. Agent mode and MCP are unlocked. All supported IDEs, not just VS Code and JetBrains. For an individual developer who's using Copilot daily, Pro is the tier that makes sense. The jump from Free to Pro is significant in terms of capability.
 
 Business. Nineteen dollars per user per month. Everything in Pro, plus the controls that IT and platform teams care about. Policy controls — you can restrict which models are available, enforce content exclusions, manage which features are turned on or off. Audit logs for compliance. And Knowledge Bases — the ability to index internal documentation and feed it into Copilot's context. If you're rolling Copilot out to a team or an org, Business is where you get the governance layer.
 
-Enterprise. Thirty-nine dollars per user per month. Everything in Business, plus custom fine-tuning, which is now GA. Multi-repo context, meaning Copilot can pull context from across your organization's repositories, not just the one you have open. The Copilot Coding Agent is GA at this tier. And advanced security controls. Enterprise is for organizations that need the deepest integration and the most control.
+Enterprise. Thirty-nine dollars per user per month. Everything in Business, plus custom fine-tuning, which is now GA. Multi-repo context, meaning Copilot can pull context from across your organization's repositories, not just the one you have open. The Copilot cloud agent (formerly Copilot coding agent — renamed April 2026 per docs.github.com/en/copilot/concepts/agents/coding-agent/about-coding-agent) is GA at this tier. And advanced security controls. Enterprise is for organizations that need the deepest integration and the most control.
 
 One thing to flag: if you're on GitHub Enterprise Server — GHES — the feature availability timeline is separate. Not everything that's GA on github.com is immediately available on GHES. Check the Enterprise Server docs if that's your environment.
 
@@ -169,10 +169,10 @@ The note bar on screen also calls out that the Free tier is great for hackathons
 - Title: "GitHub Copilot Plans"
 - Subtitle: "From free to enterprise — a tier for every developer"
 - Four cards: Free (🆓), Pro (⚡), Business (🏢), Enterprise (🔒)
-- Free: 2,000 completions/mo, 50 chat messages/mo, VS Code & JetBrains, GPT-4o & Claude 3.5 Sonnet
+- Free: 2,000 completions/mo, 50 chat messages/mo, VS Code & JetBrains, GPT-4o & Claude Haiku 4.5
 - Pro: $10/mo, unlimited completions, all models, agent mode & MCP, all IDEs
 - Business: $19/user/mo, everything in Pro, policy & model controls, audit logs, Knowledge Bases
-- Enterprise: $39/user/mo, everything in Business, custom fine-tuning (GA), Coding Agent (GA), multi-repo context, advanced security controls
+- Enterprise: $39/user/mo, everything in Business, custom fine-tuning (GA), Copilot cloud agent (GA), multi-repo context, advanced security controls
 - Note bar: Free tier needs no credit card; GHES has a separate feature timeline
 
 ### Transition
@@ -248,7 +248,7 @@ Alright, let's shift gears. We're leaving the IDE and moving into the terminal �
 
 This is the section header for the CLI deep-dive. We're shifting context now — everything from here forward is terminal-first. If you're someone who lives in the terminal, this is going to feel natural. If you're primarily an IDE user, pay attention, because the CLI unlocks capabilities that don't exist in the editor.
 
-The tagline on screen says it: "The full agentic platform in your terminal." That's not hyperbole. The GitHub Copilot CLI isn't a chat wrapper. It's a full agent runtime with tool use, sub-agent orchestration, MCP server integration, session management, and the ability to run headless in CI/CD pipelines. It can read and write files, execute shell commands, call external tools through MCP, delegate work to the cloud coding agent, and coordinate multiple agents in parallel.
+The tagline on screen says it: "The full agentic platform in your terminal." That's not hyperbole. The GitHub Copilot CLI isn't a chat wrapper. It's a full agent runtime with tool use, sub-agent orchestration, MCP server integration, session management, and the ability to run headless in CI/CD pipelines. It can read and write files, execute shell commands, call external tools through MCP, delegate work to the cloud agent, and coordinate multiple agents in parallel.
 
 On screen you'll see a list of reference links. Let me call out the ones worth bookmarking. First, the GitHub Blog post on CLI General Availability — that covers the launch and the core capabilities. Second, the Agentic Workflows blog post, which explains the gh-aw platform and how it connects to the CLI. Third, the "Idea to PR" guide, which walks through a real workflow from initial prompt to merged pull request using the CLI. And fourth, the official CLI documentation — that's your reference for commands, flags, configuration, and the full feature set.
 
@@ -277,7 +277,7 @@ This slide is a feature grid showing you what makes the CLI a distinct platform,
 
 `/fleet` — parallel multi-agent orchestration. This lets you spin up multiple sub-agents that run concurrently. You give each one a task, they execute in parallel, and results come back to your main session. This is the CLI's answer to "I need to do five things at once." In an IDE, you're working sequentially. In the CLI, you can fan out.
 
-`/delegate` — async handoff to the cloud coding agent. When you're in a CLI session and you hit a task that's going to take a while — a large refactor, a complex feature implementation — you can delegate it to the cloud agent. It runs on gh-aw, opens a PR when it's done, and you continue with your local work. The handoff is seamless.
+`/delegate` — async handoff to the cloud agent. When you're in a CLI session and you hit a task that's going to take a while — a large refactor, a complex feature implementation — you can delegate it to the cloud agent. It runs on gh-aw, opens a PR when it's done, and you continue with your local work. The handoff is seamless.
 
 `--yolo` — fully autonomous autopilot mode. This turns off all confirmation prompts. The agent executes tool calls — file edits, shell commands, everything — without asking for approval. Use it when you trust the task scope and you want the agent to just go. Obviously, use it on a branch, not on main.
 
@@ -296,7 +296,7 @@ The note on screen puts it well: the CLI isn't just a chat window — it's a ful
 ### Slide cues
 - Title: "Why GitHub Copilot CLI?"
 - Subtitle: "A full agentic platform in your terminal"
-- Feature grid with 10 items: /fleet (parallel multi-agent orchestration), /delegate (async handoff to cloud coding agent), --yolo (fully autonomous autopilot mode), /research (multi-step deep research with citations), --continue (session persistence & resume), /compact (compress session history), -p "task" (scriptable headless mode for CI/CD), models (per-subagent model selection), CLAUDE.md (CLAUDE.md / GEMINI.md support), LSP (custom LSP integration)
+- Feature grid with 10 items: /fleet (parallel multi-agent orchestration), /delegate (async handoff to cloud agent), --yolo (fully autonomous autopilot mode), /research (multi-step deep research with citations), --continue (session persistence & resume), /compact (compress session history), -p "task" (scriptable headless mode for CI/CD), models (per-subagent model selection), CLAUDE.md (CLAUDE.md / GEMINI.md support), LSP (custom LSP integration)
 
 ### Transition
 Those are the features — now let's look at the adoption numbers that back up why this matters.
@@ -339,7 +339,7 @@ This slide puts the two agentic execution modes side by side: the CLI agent on t
 
 Left side: `gh copilot` CLI. This is the interactive terminal agent. It runs locally on your machine. You're in the loop — you see what it's doing, you approve tool calls (unless you're in yolo mode), you guide the conversation. It's real-time, synchronous, and immediate. You can use `/fleet` to spin up parallel sub-agents, and you can use `/delegate` to hand off a task to the cloud when you want to go async.
 
-Right side: `gh-aw` — GitHub Agentic Workflows. This is the server-side orchestration layer. It runs in GitHub Actions infrastructure, in the cloud. It's event-triggered — a new issue, a PR comment, a scheduled cron, a manual dispatch. It's async, fire-and-forget. You kick off a workflow and it runs autonomously. This is what powers the Copilot Coding Agent — when you assign an issue to Copilot and it opens a PR, that's gh-aw running behind the scenes.
+Right side: `gh-aw` — GitHub Agentic Workflows. This is the server-side orchestration layer. It runs in GitHub Actions infrastructure, in the cloud. It's event-triggered — a new issue, a PR comment, a scheduled cron, a manual dispatch. It's async, fire-and-forget. You kick off a workflow and it runs autonomously. This is what powers the Copilot cloud agent — when you assign an issue to Copilot and it opens a PR, that's gh-aw running behind the scenes.
 
 The connection between them is `/delegate`. When you're in a CLI session and you delegate a task, you're handing it off from the local agent to the gh-aw cloud platform. The work continues without you. When it's done, you get a PR. That bridge — from interactive to autonomous — is what makes the two modes a single workflow rather than two separate tools.
 
@@ -356,7 +356,7 @@ For now, the mental model is: CLI for interactive, gh-aw for autonomous. `/deleg
 - Subtitle: "Two complementary agentic execution modes"
 - Two-column comparison with arrow badge between them
 - Left card (⌨️ gh copilot CLI): Interactive terminal agent, runs locally, real-time/in-the-loop, /fleet for parallel sub-agents, /delegate hands off to cloud
-- Right card (☁️ gh-aw Platform): GitHub Actions-hosted agent runner, event-triggered/runs in cloud, async — fire and forget, powers the Coding Agent, server-side orchestration layer, supports copilot/claude/codex/opencode engines
+- Right card (☁️ gh-aw Platform): GitHub Actions-hosted agent runner, event-triggered/runs in cloud, async — fire and forget, powers the cloud agent, server-side orchestration layer, supports copilot/claude/codex/opencode engines
 - Note bar: /delegate bridges CLI to gh-aw; Install: gh extension install github/gh-aw (moved from githubnext/gh-aw in Feb 2026)
 
 ### Transition
@@ -642,13 +642,13 @@ We've covered how to extend the CLI from the outside. Now let's go deeper into t
 
 Alright, new section. We've been talking about hooks, plugins, and extensions — those are the mechanisms for controlling and extending what the agent can do. Now we're going to talk about the layer that shapes how the agent thinks. This is the skills and instructions layer.
 
-There are four levers in this space: skills, instructions, prompt files, and custom agents. These are all file-based, which means they live in your repo, they're version-controlled, and they're portable. That last point is important — the same skill file works in VS Code, in the Copilot CLI, and in the coding agent. Write once, use everywhere.
+There are four levers in this space: skills, instructions, prompt files, and custom agents. These are all file-based, which means they live in your repo, they're version-controlled, and they're portable. That last point is important — the same skill file works in VS Code, in the Copilot CLI, and in the cloud agent. Write once, use everywhere.
 
 Let me frame why this section matters. The tools we covered earlier — hooks, extensions, plugins — those operate at the infrastructure level. They control what the agent is allowed to do, what tools it has access to, how its actions are packaged and distributed. Skills and instructions operate at the reasoning level. They control what the agent knows, what patterns it follows, what conventions it respects, and what workflows it can execute.
 
 Think about it this way: hooks are your guardrails — they enforce policy deterministically. Skills and instructions are your expertise — they encode domain knowledge and team standards into the agent's context. You need both. Guardrails without expertise gives you a safe but dumb agent. Expertise without guardrails gives you a capable but unpredictable agent. The combination is what makes agentic development actually work in a team setting.
 
-The four levers stack underneath every Copilot surface we've covered so far. Whether the agent is running in the CLI, in VS Code, or as a coding agent on a pull request — skills and instructions shape its behavior. They're the foundation layer.
+The four levers stack underneath every Copilot surface we've covered so far. Whether the agent is running in the CLI, in VS Code, or as a cloud agent on a pull request — skills and instructions shape its behavior. They're the foundation layer.
 
 Over the next slides we'll dig into the differences between skills and instructions, how to author them, and how they compose with everything else. This is where you go from "the agent can do things" to "the agent does things the way my team does them."
 
@@ -670,7 +670,7 @@ This is the slide you'll probably come back to after the workshop, because the d
 
 Purpose. Skills teach specialized capabilities and workflows. "Here's how to deploy to our staging environment." "Here's how to run our integration test suite." "Here's our TDD workflow." Instructions define coding standards and guidelines. "Always use immutable patterns." "Follow our naming conventions." "Include error handling in every public method." Skills are about what to do; instructions are about how to do it.
 
-Portability. Skills work across VS Code, Copilot CLI, and the coding agent. They follow the open standard at `agentskills.io`. Instructions are supported in IDEs and on GitHub.com. The portability difference matters — if you need something that works in every Copilot surface including headless coding agents, skills are your path.
+Portability. Skills work across VS Code, Copilot CLI, and the cloud agent. They follow the open standard at `agentskills.io`. Instructions are supported in IDEs and on GitHub.com. The portability difference matters — if you need something that works in every Copilot surface including headless coding agents, skills are your path.
 
 Content. Skills can contain instructions, scripts, examples, and resources. They're rich packages. Instructions are instructions only — text that tells the model what conventions to follow. Skills are heavier; instructions are lighter.
 
@@ -685,7 +685,7 @@ We'll apply this decision framework in the labs — Lab 02 for instructions and 
 ### Slide cues
 
 - Two-column comparison with "VS" badge in center
-- Left card (⚡ Agent Skills): table with rows — Purpose: "Teach specialized capabilities & workflows", Portability: "VS Code, Copilot CLI, & coding agent", Content: "Instructions, scripts, examples & resources", Scope: "Task-specific, loaded on-demand", Standard: "Open standard (`agentskills.io`)"
+- Left card (⚡ Agent Skills): table with rows — Purpose: "Teach specialized capabilities & workflows", Portability: "VS Code, Copilot CLI, & cloud agent", Content: "Instructions, scripts, examples & resources", Scope: "Task-specific, loaded on-demand", Standard: "Open standard (`agentskills.io`)"
 - Right card (📋 Custom Instructions): table with rows — Purpose: "Define coding standards & guidelines", Portability: "Supported IDE's and GitHub.com only", Content: "Instructions only", Scope: "Always applied (or via glob patterns)", Standard: "IDE-specific"
 
 ### Transition
@@ -1003,7 +1003,7 @@ The answer is custom instructions, and there are four key techniques to writing 
 
 **Second: focus on coding standards and architectural patterns.** This is where you get the highest leverage. Naming conventions, code organization preferences, which patterns you use — repository pattern, CQRS, whatever your team has standardized on. These are the things that make code reviews painful when they're inconsistent. Put them in instructions and Copilot handles it from the start.
 
-**Third: pair instructions with features.** Instructions don't exist in isolation. They combine with code review, the coding agent, and chat features for maximum impact. When you write an instruction about test coverage, that instruction applies when Copilot is doing code review on a PR, when the coding agent is autonomously writing code, and when you're chatting about your codebase. One instruction, multiple surfaces.
+**Third: pair instructions with features.** Instructions don't exist in isolation. They combine with code review, the cloud agent, and chat features for maximum impact. When you write an instruction about test coverage, that instruction applies when Copilot is doing code review on a PR, when the cloud agent is autonomously writing code, and when you're chatting about your codebase. One instruction, multiple surfaces.
 
 **Fourth: make them team-specific.** Generic best practices are fine, but the real power comes from encoding what's unique to your team. Your framework choices, your internal libraries, your deployment conventions, the things a new hire wouldn't know for six months. That's what turns instructions from a nice-to-have into a real productivity multiplier.
 
@@ -1016,7 +1016,7 @@ The key takeaway: invest thirty minutes writing good instructions and you'll sav
 - Four cards in a 2×2 grid:
   - "Write Short Statements" (accent) — self-contained, clear, actionable
   - "Coding Standards & Patterns" (blue) — architectural patterns, naming, code org
-  - "Pair with Features" (green) — code review, coding agent, chat
+  - "Pair with Features" (green) — code review, cloud agent, chat
   - "Team-Specific Standards" (orange) — unique conventions, frameworks, best practices
 
 ### Transition
@@ -1147,38 +1147,38 @@ It's available at `githubnext.com/projects/github-spark` if you want to try it o
 
 ### Transition
 
-Alright, we've covered the broader GitHub AI ecosystem. Now let's dive into the real headliner of the intermediate section — the GitHub Copilot Coding Agent.
+Alright, we've covered the broader GitHub AI ecosystem. Now let's dive into the real headliner of the intermediate section — the GitHub Copilot cloud agent.
 
 ---
 
-## Slide 43 — Coding Agent
+## Slide 43 — Cloud Agent (formerly Coding Agent)
 
 ### What you say
 
-Okay, let's shift gears. Everything up to now — MCP, instructions, extensions, knowledge bases — that's all about making Copilot smarter and better connected while you're driving. The Coding Agent is fundamentally different. This is Copilot working autonomously, without you in the loop.
+Okay, let's shift gears. Everything up to now — MCP, instructions, extensions, knowledge bases — that's all about making Copilot smarter and better connected while you're driving. The cloud agent is fundamentally different. This is Copilot working autonomously, without you in the loop.
 
-This is the section title slide for Module 4, and I want to frame this properly because it represents a real paradigm shift in how we think about developer tooling. With Agent Mode in your IDE, you're interactive — you're chatting, you're approving changes, you're steering. With the Coding Agent, you assign it a task, walk away, and come back to a pull request.
+This is the section title slide for Module 4, and I want to frame this properly because it represents a real paradigm shift in how we think about developer tooling. With Agent Mode in your IDE, you're interactive — you're chatting, you're approving changes, you're steering. With the cloud agent, you assign it a task, walk away, and come back to a pull request.
 
 It runs in GitHub Actions. It's not on your laptop. It's not in your editor. It's a headless agent executing in a CI runner, with access to your repository, your test suite, your build tools. It plans, it codes, it tests, it iterates — and when it's done, it opens a PR for you to review.
 
 That's a fundamentally different trust model, and it requires a different kind of setup. You need to tell the agent about your project — how to build, how to test, what the architecture looks like, what it should and shouldn't touch. That's what the next few slides are about.
 
-Think about the implications for a moment. Every team has that backlog of issues that are well-defined but nobody picks up — small refactors, documentation updates, straightforward bug fixes. The Coding Agent is designed for exactly that work. You write a clear issue, assign it to Copilot, and move on. The agent handles the implementation, validates it against your test suite, and surfaces a PR. Your time goes toward review and architectural decisions instead of writing boilerplate.
+Think about the implications for a moment. Every team has that backlog of issues that are well-defined but nobody picks up — small refactors, documentation updates, straightforward bug fixes. The cloud agent is designed for exactly that work. You write a clear issue, assign it to Copilot, and move on. The agent handles the implementation, validates it against your test suite, and surfaces a PR. Your time goes toward review and architectural decisions instead of writing boilerplate.
 
 That said, this isn't magic. The quality of the output depends directly on how well you've configured your project for autonomous work. Good documentation, clear testing commands, explicit guardrails — all of that matters more when there's no human correcting course in real time.
 
-Let's dig into what the Coding Agent actually is and how it works.
+Let's dig into what the cloud agent actually is and how it works.
 
 ### Slide cues
 
 - Section title slide with large robot emoji (🤖)
-- "GitHub Copilot Coding Agent" in large section title
+- "GitHub Copilot cloud agent" in large section title
 - Tagline: "GitHub Copilot intermediate"
 - Visual glow ring effect in background
 
 ### Transition
 
-So what exactly is the Coding Agent? Let's break it down into its four core pillars.
+So what exactly is the cloud agent? Let's break it down into its four core pillars.
 
 ---
 
@@ -1186,11 +1186,11 @@ So what exactly is the Coding Agent? Let's break it down into its four core pill
 
 ### What you say
 
-Let's get precise about what the Coding Agent actually is. There are four pillars here, and each one matters.
+Let's get precise about what the cloud agent actually is. There are four pillars here, and each one matters.
 
 **AI-powered development.** The agent works autonomously on issues — it plans an approach, writes code, runs tests, observes the results, and iterates. This isn't "generate a snippet and hope for the best." It's a full Plan-Act-Observe loop, the same kind of agentic behavior you see in Agent Mode, but running without you watching.
 
-**Asynchronous execution.** And this is the key differentiator. The Coding Agent operates in its own GitHub Actions-powered environment. It's not blocking your workflow. You're not sitting there waiting for it to finish. It's running on a CI runner in the cloud while you're working on something else entirely — reviewing PRs, having lunch, sleeping. The async model is what makes this practical for real work.
+**Asynchronous execution.** And this is the key differentiator. The cloud agent operates in its own GitHub Actions-powered environment. It's not blocking your workflow. You're not sitting there waiting for it to finish. It's running on a CI runner in the cloud while you're working on something else entirely — reviewing PRs, having lunch, sleeping. The async model is what makes this practical for real work.
 
 **Issue-driven.** The entry point is a GitHub issue. You write up what you need — a bug fix, a feature, a refactoring task — and you assign it to Copilot. That's the interface. No special UI, no separate tool. Issues are the work items, and Copilot picks them up just like a team member would. You can continue working on other priorities while it runs.
 
@@ -1210,7 +1210,7 @@ That's a meaningful change in the development workflow, and it raises important 
 
 ### Transition
 
-Now, the Coding Agent runs in GitHub Actions. But there's actually a broader story here — Copilot as a first-class step in your CI/CD pipelines.
+Now, the cloud agent runs in GitHub Actions. But there's actually a broader story here — Copilot as a first-class step in your CI/CD pipelines.
 
 ---
 
@@ -1218,7 +1218,7 @@ Now, the Coding Agent runs in GitHub Actions. But there's actually a broader sto
 
 ### What you say
 
-So the Coding Agent uses GitHub Actions as its runtime. But there's a separate, equally interesting capability: running Copilot as a first-class job step in your CI/CD pipelines. This is Copilot in GitHub Actions.
+So the cloud agent uses GitHub Actions as its runtime. But there's a separate, equally interesting capability: running Copilot as a first-class job step in your CI/CD pipelines. This is Copilot in GitHub Actions.
 
 The mechanic is straightforward. In any workflow YAML, you add `uses: github/copilot-action` as a step. That's it. Copilot runs as a native Actions step — not a sidecar, not a wrapper around something else. It's a proper job step with full access to the workflow context.
 
@@ -1228,7 +1228,7 @@ Let me give you some concrete use cases from the slide. **Auto-review PRs on ope
 
 Now there's an important distinction in the note bar at the bottom: this is **distinct from gh-aw**, which is the GitHub Agentic Workflows platform. Agentic Workflows orchestrate full multi-step agent tasks — they're more complex and powerful. Copilot in Actions is simpler and more focused: it's a single step in an existing pipeline. Think of gh-aw as the full autonomous workflow engine, and Copilot in Actions as the lightweight "add Copilot to this specific pipeline step" option.
 
-Both are valuable. If you want Copilot to do one focused task as part of an existing workflow, use the Actions integration. If you want Copilot to own an entire issue end-to-end, that's the Coding Agent running through the agentic workflow system.
+Both are valuable. If you want Copilot to do one focused task as part of an existing workflow, use the Actions integration. If you want Copilot to own an entire issue end-to-end, that's the cloud agent running through the agentic workflow system.
 
 ### Slide cues
 
@@ -1238,7 +1238,7 @@ Both are valuable. If you want Copilot to do one focused task as part of an exis
 
 ### Transition
 
-Now that we've seen how the Coding Agent runs, let's compare it directly against Agent Mode and Copilot Workspace — three approaches that people often confuse.
+Now that we've seen how the cloud agent runs, let's compare it directly against Agent Mode and Copilot Workspace — three approaches that people often confuse.
 
 ---
 
@@ -1250,24 +1250,24 @@ This is the comparison slide people always ask about, so let's be really clear. 
 
 **Agent Mode** — this is what you've been using in your IDE. It's interactive. You're in the loop. Copilot plans an approach, takes an action — edits a file, runs a command — observes the result, and then decides what to do next. The Plan-Act-Observe loop runs on your machine, with your immediate feedback. You see everything happening in real time, you can steer it, you can interrupt it. The feedback cycle is immediate. This is your workhorse for day-to-day development tasks where you want to stay in control.
 
-**Coding Agent** — this is the autonomous mode we just talked about. You assign a GitHub issue to Copilot. The agent reads your `COPILOT.md` for project context — build commands, architecture overview, rules. Then it works autonomously in a GitHub Actions environment. No human in the loop during execution. When it's done, it creates a pull request. You review the PR like you would from any team member. The key distinction: you're not interactive during execution. You fire and forget, then review the output.
+**cloud agent** — this is the autonomous mode we just talked about. You assign a GitHub issue to Copilot. The agent reads your `COPILOT.md` for project context — build commands, architecture overview, rules. Then it works autonomously in a GitHub Actions environment. No human in the loop during execution. When it's done, it creates a pull request. You review the PR like you would from any team member. The key distinction: you're not interactive during execution. You fire and forget, then review the output.
 
 **Copilot Workspace** — and here's the third option that's different again. You start from an issue on GitHub.com — in the browser. Workspace generates a collaborative plan: here's what I think needs to change, here's the file tree diff. But crucially, you review and edit that plan before any code gets committed. It's a collaborative planning experience. You shape the implementation, you approve the approach, and then it executes. It's GA for Enterprise and it's entirely browser-based.
 
-So think of it as a spectrum. Agent Mode: fully interactive, local, you're driving. Workspace: collaborative, browser-based, you shape the plan. Coding Agent: fully autonomous, cloud-based, you review the result. Different levels of human involvement, different execution models, different use cases.
+So think of it as a spectrum. Agent Mode: fully interactive, local, you're driving. Workspace: collaborative, browser-based, you shape the plan. cloud agent: fully autonomous, cloud-based, you review the result. Different levels of human involvement, different execution models, different use cases.
 
-In practice, you'll use all three. Agent Mode for your current feature work. Coding Agent for that backlog of small issues nobody wants to pick up. Workspace for exploring how to approach a complex change before committing to an implementation strategy.
+In practice, you'll use all three. Agent Mode for your current feature work. cloud agent for that backlog of small issues nobody wants to pick up. Workspace for exploring how to approach a complex change before committing to an implementation strategy.
 
 ### Slide cues
 
 - Three-column card layout:
   - Agent Mode (accent): iterates locally, Plan→Act→Observe, interactive, immediate feedback
-  - Coding Agent (blue): assign GitHub issues, reads COPILOT.md, works autonomously in Actions, creates PRs
+  - cloud agent (blue): assign GitHub issues, reads COPILOT.md, works autonomously in Actions, creates PRs
   - Copilot Workspace (green): start from issue on GitHub.com, collaborative plan + file tree diff, review & edit before committing, GA for Enterprise, browser-based
 
 ### Transition
 
-So the Coding Agent is autonomous — but how do you customize its behavior for different kinds of work? That's where custom agents for the Coding Agent come in.
+So the cloud agent is autonomous — but how do you customize its behavior for different kinds of work? That's where custom agents for the cloud agent come in.
 
 ---
 
@@ -1275,7 +1275,7 @@ So the Coding Agent is autonomous — but how do you customize its behavior for 
 
 ### What you say
 
-When you assign an issue to the Coding Agent, you don't have to use a one-size-fits-all approach. You can select or create a custom agent that's tailored to the specific type of work.
+When you assign an issue to the cloud agent, you don't have to use a one-size-fits-all approach. You can select or create a custom agent that's tailored to the specific type of work.
 
 This is about giving the autonomous agent the right persona and toolset for the job. Look at the two key levers on the left side of the slide.
 
@@ -1285,9 +1285,9 @@ This is about giving the autonomous agent the right persona and toolset for the 
 
 Look at the right side of the slide — you've got four example agents. An **Architecture Agent** for structural changes and design decisions. A **Kubernetes Agent** for container orchestration work. A **Testing Agent** for writing and improving test suites. A **Docs Agent** for documentation updates. Each one has a different focus, different constraints, different definitions of "done."
 
-Now, this is different from the custom agents we talked about earlier in the skills section. Those were about agent definitions in your `.github/agents/` directory for use in IDE chat — things like a QA agent or a PM agent you can `@mention` in conversation. These custom agents are specifically for the Coding Agent's autonomous execution. They determine how Copilot behaves when it's working on issues without you in the loop.
+Now, this is different from the custom agents we talked about earlier in the skills section. Those were about agent definitions in your `.github/agents/` directory for use in IDE chat — things like a QA agent or a PM agent you can `@mention` in conversation. These custom agents are specifically for the cloud agent's autonomous execution. They determine how Copilot behaves when it's working on issues without you in the loop.
 
-The practical implication: if you're going to use the Coding Agent seriously, invest time in defining agents for your common workflows. A well-defined agent with the right instructions, the right tools, and the right guardrails will produce dramatically better results than the default. It's the same principle as writing good instructions, but applied to autonomous execution where the stakes are higher because there's no human steering in real time.
+The practical implication: if you're going to use the cloud agent seriously, invest time in defining agents for your common workflows. A well-defined agent with the right instructions, the right tools, and the right guardrails will produce dramatically better results than the default. It's the same principle as writing good instructions, but applied to autonomous execution where the stakes are higher because there's no human steering in real time.
 
 ### Slide cues
 
@@ -1296,7 +1296,7 @@ The practical implication: if you're going to use the Coding Agent seriously, in
 
 ### Transition
 
-And the most important piece of project configuration for the Coding Agent is the COPILOT.md file. Let's look at what goes in it.
+And the most important piece of project configuration for the cloud agent is the COPILOT.md file. Let's look at what goes in it.
 
 ---
 
@@ -1304,9 +1304,9 @@ And the most important piece of project configuration for the Coding Agent is th
 
 ### What you say
 
-If you take one thing away from this Coding Agent section, it should be this: write a good `COPILOT.md`. It's the single most impactful thing you can do to make the Coding Agent effective.
+If you take one thing away from this cloud agent section, it should be this: write a good `COPILOT.md`. It's the single most impactful thing you can do to make the cloud agent effective.
 
-`COPILOT.md` goes in your repository root. The Coding Agent reads it automatically on every run — before it even looks at the issue it's been assigned. It's the agent's orientation document, the "here's everything you need to know about this project" file.
+`COPILOT.md` goes in your repository root. The cloud agent reads it automatically on every run — before it even looks at the issue it's been assigned. It's the agent's orientation document, the "here's everything you need to know about this project" file.
 
 So what goes in it? **Testing commands and build steps.** This is table stakes. The agent needs to know how to build your project and run your tests. If it can't validate its own changes, it's flying blind. `npm test`, `dotnet build`, `make lint` — whatever your project uses, put it in there.
 
@@ -1316,7 +1316,7 @@ So what goes in it? **Testing commands and build steps.** This is table stakes. 
 
 Now look at the example on the right side of the slide. It's simple markdown — a project name, build and test commands, architecture notes, and rules. Nothing fancy. That's the point — it's a lightweight format that's easy to write and maintain.
 
-Here's a critical distinction: **COPILOT.md versus copilot-instructions.md**. The `.github/copilot-instructions.md` file is for Copilot Chat — it steers the interactive conversation surfaces. `COPILOT.md` is the primary configuration for the autonomous Coding Agent. They serve different purposes and can coexist. Think of `copilot-instructions.md` as "how to talk to me" and `COPILOT.md` as "how to work on this project unsupervised."
+Here's a critical distinction: **COPILOT.md versus copilot-instructions.md**. The `.github/copilot-instructions.md` file is for Copilot Chat — it steers the interactive conversation surfaces. `COPILOT.md` is the primary configuration for the autonomous cloud agent. They serve different purposes and can coexist. Think of `copilot-instructions.md` as "how to talk to me" and `COPILOT.md` as "how to work on this project unsupervised."
 
 Without a `COPILOT.md`, the agent has to discover everything by exploring the codebase. It'll figure out your test commands by looking at `package.json` or your Makefile. It'll infer your architecture by reading directory structures. But that exploration takes time, costs tokens, and sometimes leads the agent down the wrong path. A good `COPILOT.md` makes the agent faster and safer. It's the difference between handing someone a codebase with no README and handing them one with clear onboarding docs.
 
@@ -1329,7 +1329,7 @@ We'll actually write one for ContosoUniversity during the hands-on labs — you'
 
 ### Transition
 
-Now that we know how to configure the Coding Agent, let's look at how it handles one of the most important parts of the development workflow — code review.
+Now that we know how to configure the cloud agent, let's look at how it handles one of the most important parts of the development workflow — code review.
 ## Slide 49 — Code Review
 
 ### What you say
@@ -1404,7 +1404,7 @@ Now that we've seen the review and security surface, let's zoom out and look at 
 ## Slide 52 — Architecture
 
 ### What you say
-This slide peels back the curtain on what's actually happening when you're in agent mode — whether that's Copilot in VS Code, the Copilot CLI, or the Coding Agent running in the cloud. The architecture is the same pattern across all of them.
+This slide peels back the curtain on what's actually happening when you're in agent mode — whether that's Copilot in VS Code, the Copilot CLI, or the cloud agent running in the cloud. The architecture is the same pattern across all of them.
 
 At the top you've got three context layers. The machine — your OS, your environment, your installed tools. The workspace — the repo, the files, the directory structure. And the Copilot agent plus the user — the system prompt, your instructions, and whatever you've typed. These three layers feed into what the slide calls the LLM Loop.
 
