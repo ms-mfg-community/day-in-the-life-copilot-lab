@@ -16,12 +16,22 @@ This appendix shows the **.NET-flavored** post-tool-use hook referenced by [Lab 
 ```bash
 #!/usr/bin/env bash
 # Post-tool-use hook: rebuild after a .cs edit.
+# Reads the Copilot CLI hook event as JSON on stdin (NOT env vars).
 set -euo pipefail
 
-if [[ "${TOOL_NAME:-}" != "edit" && "${TOOL_NAME:-}" != "create" ]]; then
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq is required for hooks." >&2
+  exit 1
+fi
+
+INPUT="$(cat)"
+TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // ""')
+FILE_PATH=$(echo "$INPUT" | jq -r '.toolArgs.file_path // .toolArgs.path // ""')
+
+if [[ "$TOOL_NAME" != "edit" && "$TOOL_NAME" != "create" && "$TOOL_NAME" != "write" ]]; then
   exit 0
 fi
-case "${FILE_PATH:-}" in
+case "$FILE_PATH" in
   *.cs|*.csproj|*.cshtml)
     echo "🔨 dotnet build (triggered by edit to $FILE_PATH)"
     dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet
@@ -32,12 +42,26 @@ esac
 ## `scripts/hooks/post-tool-use-dotnet-build.ps1`
 
 ```powershell
-if ($env:TOOL_NAME -ne 'edit' -and $env:TOOL_NAME -ne 'create') { exit 0 }
-if ($env:FILE_PATH -match '\.(cs|csproj|cshtml)$') {
-  Write-Host "🔨 dotnet build (triggered by edit to $($env:FILE_PATH))"
+# Post-tool-use hook: rebuild after a .cs edit.
+# Reads the Copilot CLI hook event as JSON on stdin (NOT env vars).
+$ErrorActionPreference = "Stop"
+
+$Event    = ($input | Out-String) | ConvertFrom-Json
+$ToolName = if ($Event.toolName) { $Event.toolName } else { "" }
+$FilePath = ""
+if ($Event.toolArgs) {
+    if     ($Event.toolArgs.file_path) { $FilePath = $Event.toolArgs.file_path }
+    elseif ($Event.toolArgs.path)      { $FilePath = $Event.toolArgs.path }
+}
+
+if ($ToolName -ne 'edit' -and $ToolName -ne 'create' -and $ToolName -ne 'write') { exit 0 }
+if ($FilePath -match '\.(cs|csproj|cshtml)$') {
+  Write-Host "🔨 dotnet build (triggered by edit to $FilePath)"
   dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet
 }
 ```
+
+> ⚠️ **Outdated guidance trap:** if you see a hook that reads `$TOOL_NAME` / `$env:TOOL_NAME` / `$FILE_PATH` from the environment, it is broken against current Copilot CLI — those vars are never exported. Use the stdin-JSON pattern above (camelCase `toolName` / `toolArgs`).
 
 ## Register the hook
 
