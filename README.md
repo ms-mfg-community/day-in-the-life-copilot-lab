@@ -427,12 +427,12 @@ code .
 
 | Directory | Contents | Count |
 |-----------|----------|-------|
-| `.github/skills/` | Agent skills (`SKILL.md`) | 10 |
-| `.github/prompts/` | Prompt templates (`.prompt.md`) | 23 |
+| `.github/skills/` | Agent skills (`SKILL.md`) | 6 |
+| `.github/prompts/` | Prompt templates (`.prompt.md`) | 19 |
 | `.github/hooks/` | Hook configuration | 1 |
-| `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 3 |
+| `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
 | `.copilot/` | MCP server configuration (`mcp-config.json`; root `.mcp.json` mirrors it for the Copilot CLI) | 2 |
-| `scripts/hooks/` | Hook shell scripts | 18 |
+| `scripts/hooks/` | Hook shell scripts | 17 |
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 
 3. Read the repository context document:
