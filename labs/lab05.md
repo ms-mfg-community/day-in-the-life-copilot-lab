@@ -197,7 +197,7 @@ code .copilot/mcp-config.json
     "fetch": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "args": ["-y", "@kazuph/mcp-fetch"],
       "tools": ["*"]
     }
   }
