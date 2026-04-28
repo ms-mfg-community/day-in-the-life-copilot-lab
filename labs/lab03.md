@@ -21,7 +21,7 @@ References:
 
 Before creating your own agent, let's understand what makes up an agent file.
 
-🖥️ **In your terminal:**
+🖥️ **In your terminal (From the repository root):**
 
 1. Look at an existing agent to understand the structure:
 
@@ -66,19 +66,33 @@ The exercise here is to create a **track-specific** dev agent — one that knows
 - **.NET track:** [`labs/appendices/dotnet/lab03.md`](appendices/dotnet/lab03.md) — `dotnet-dev` agent with EF Core / xUnit conventions
 - **Node track:** [`labs/appendices/node/lab03.md`](appendices/node/lab03.md) — `node-dev` agent with Fastify / Drizzle conventions
 
+All paths in the appendices are relative to the repository root — `cd` there before running any of the appendix commands.
+
 Both appendices walk through:
 
-1. Creating `.github/agents/<track>-dev.agent.md` with frontmatter (`name`, `description`, `tools`).
+1. Creating **`.github/agents/<track>-dev.agent.md`** — note the **`.agent.md`** suffix is **mandatory** (not stylistic). *Copilot CLI globs `**/*.agent.md` to discover agents; a plain `.md` file will not be picked up.*
 2. A system prompt that names the project layout, coding standards, and review checklist.
 3. Verifying the agent loads with `head -5` (or `Get-Content -Head 5`).
 
-> 💡 **Verify the agent loads:** Start a new Copilot session and try `@<track>-dev What files are in this project?`. If the agent responds, it's working. If you get "unknown agent", check the file is saved in `.github/agents/`.
+> 🔄 **Restart required after creating the agent file**
+>
+> Copilot CLI and the VS Code Copilot extension discover `.github/agents/*.agent.md` files **once at session start** — agent definitions are **not** hot-reloaded when you save. Skip the restart and `@<track>-dev` will return *"unknown agent"* even though the file is on disk.
+>
+> After creating (or editing) the agent file:
+>
+> 1. Exit your current Copilot CLI session: type `exit` (or press <kbd>Ctrl</kbd>+<kbd>D</kbd>).
+> 2. Restart it: `copilot`.
+> 3. In VS Code, run **Developer: Reload Window** from the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) so the extension re-reads `.github/agents/`.
+
+> 💡 **Verify the agent loads:** After restarting, try `@<track>-dev What files are in this project?`. If the agent responds, it's working. If you still get "unknown agent", confirm the filename ends in `.agent.md` (not `.md`) and lives under `.github/agents/`.
 
 ## 3.3 Configure Tools and MCP Servers
 
 The agent we created uses basic tools. Let's understand how to add MCP server access.
 
-🖥️ **In your terminal:**
+> 📚 **This section is a preview.** [Lab 05](lab05.md) is the canonical MCP configuration lab — it covers per-server scoping, credential handling, and the centralized `mcp-configs/` source of truth. The snippet below shows just enough to wire an MCP server into an agent's frontmatter; defer the full setup walkthrough to lab 05.
+
+🖥️ **In your terminal (From the repository root):**
 
 1. View the current MCP configuration:
 
@@ -111,14 +125,28 @@ mcp-servers: ["context7"]
 
 Let's test our new agent by asking it to analyze the ContosoUniversity codebase.
 
-🖥️ **In your terminal:**
+🖥️ **In your terminal (From the repository root):**
 
-1. Start Copilot CLI:
+1. Non-interactive smoke test — verify the agent loaded and responds without entering the REPL:
+
+**WSL/Bash:**
+```bash
+copilot --prompt "@dotnet-dev List the files under dotnet/ContosoUniversity.Core/Models/ and name the entities." --allow-all-tools
+```
+
+**PowerShell:**
+```powershell
+copilot --prompt '@dotnet-dev List the files under dotnet/ContosoUniversity.Core/Models/ and name the entities.' --allow-all-tools
+```
+
+If you see *"unknown agent"*, you skipped the 🔄 restart in §3.2 — exit and re-run `copilot`.
+
+2. For an interactive session, start the REPL and invoke the agent:
+
 ```bash
 copilot
 ```
 
-2. Invoke the agent:
 ```
 @dotnet-dev Analyze the dotnet/ContosoUniversity.Core project. What models exist and what are their relationships?
 ```

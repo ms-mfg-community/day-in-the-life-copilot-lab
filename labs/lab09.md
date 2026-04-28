@@ -25,16 +25,21 @@ References:
 
 ## 9.0 Copilot CLI currency (2026 refresh)
 
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+<!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
+> 💡 Commands below reflect the current Copilot CLI surface as of this lab
+> refresh. Versions, model tiers, and MCP server pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
+> the registry rather than hardcoding values, so a single registry update
+> propagates everywhere.
 
 | Capability | Command / surface | Use when |
 |------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling a reviewer-specific plugin (security, performance, accessibility). |
-| **Parallel subagents** | `/fleet` | Running multiple specialist reviewers (security + perf + style) on the same diff. |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when triaging a novel review comment; autopilot mode for "apply the suggestion" flows. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Use `models.premium` from the registry for reasoning about complex review feedback. |
-| **Local tool discovery** | `extensions_manage` operation `list` | Discovering which review-related skills and agents are active. |
+| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
+| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+<!-- @end-include docs/_partials/currency.md -->
 
 ## 9.1 Understand Copilot Code Review
 
@@ -62,7 +67,7 @@ You can configure Copilot to automatically review every pull request using **rep
 1. Go to your repository → **Settings** → **Rules** → **Rulesets**
 2. Click **New ruleset** → **New branch ruleset**
 3. Name it: `copilot-code-review`
-4. Under **Target branches**, add `lab/day-in-the-life-copilot-lab` (or your default branch)
+4. Under **Target branches**, add your default branch (`main` for upstream, or whatever the repo's "Default branch" setting shows under **Settings → General**)
 5. Under **Branch rules**, check **Require a pull request before merging**
 6. Check **Request pull request review from Copilot**
 7. Optionally enable:
@@ -116,6 +121,8 @@ Instead of making changes locally, let's describe the feature we want in a GitHu
 
 1. Create a new issue in your repository:
 
+**WSL/Bash:**
+
 ```bash
 gh issue create \
   --title "feat: add MaxEnrollment property to Course model" \
@@ -133,6 +140,30 @@ Add a \`MaxEnrollment\` property to the \`Course\` model to support enrollment c
 ## Context
 
 This is part of the course prerequisites feature. The property will be used to limit the number of students that can enroll in a course."
+```
+
+**PowerShell:**
+
+```powershell
+$body = @'
+## Description
+
+Add a `MaxEnrollment` property to the `Course` model to support enrollment caps.
+
+## Requirements
+
+- Add a `MaxEnrollment` property (int) to `dotnet/ContosoUniversity.Core/Models/Course.cs`
+- Default value should be 30
+- Add XML documentation for the new property
+- Add a unit test verifying the default value
+
+## Context
+
+This is part of the course prerequisites feature. The property will be used to limit the number of students that can enroll in a course.
+'@
+gh issue create `
+  --title "feat: add MaxEnrollment property to Course model" `
+  --body $body
 ```
 
 > 💡 **Issue quality matters.** The more specific your issue description, the better the Coding Agent's implementation. Include requirements, file paths, and context — just like you would for a human developer.
@@ -154,6 +185,12 @@ Or use the CLI:
 ```bash
 # Replace <ISSUE_NUMBER> with your issue number
 gh issue edit <ISSUE_NUMBER> --add-assignee @copilot
+```
+
+**PowerShell:**
+```powershell
+# Replace <ISSUE_NUMBER> with your issue number
+gh issue edit <ISSUE_NUMBER> --add-assignee '@copilot'
 ```
 
 ### What happens next
@@ -352,3 +389,91 @@ See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for
 </details>
 
 **Next:** [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md)
+
+## 9.12 Cleanup
+
+<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
+> 🧹 **Cleanup — leave the machine the way you found it.**
+> Run this checklist before moving to the next lab. Per-lab specifics (named
+> agent / hook / extension files this lab created) should already have been
+> reverted in the steps above; this is the generic sweep that catches the
+> long-tail.
+
+🖥️ **In your terminal:**
+
+1. **Stop background processes.** Anything you started in the foreground with
+   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
+   tail-follows). If you used the bash tool in async mode, make sure those
+   shells are stopped.
+
+   **WSL/Bash:**
+   ```bash
+   jobs -l                       # any background jobs in this shell?
+   # kill them by PID — never `pkill`/`killall`
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-Job                       # any background jobs?
+   Get-Job | Stop-Job; Get-Job | Remove-Job
+   ```
+
+2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
+   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   If you edited in place without backing up, check `git status` in the lab
+   repo (workspace configs) and revert anything you didn't mean to keep.
+
+   **WSL/Bash:**
+   ```bash
+   # If you saved a backup like ~/.copilot/config.json.bak:
+   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
+   ```
+
+3. **Exit and restart `copilot` if you touched extensions or MCP.** The
+   runtime caches loaded extensions and MCP servers; reloading via
+   `extensions_reload` does **not** clear an extension whose source dir was
+   deleted. Fully exit the `copilot` process and start a fresh session.
+
+4. **Sweep the long-tail artifact paths.** These directories accumulate
+   across labs and are safe to clean once you've finished:
+
+   ```bash
+   # Per-session scratch (safe to inspect; delete only what this lab created):
+   ls ~/.copilot/lessons/        2>/dev/null
+   ls node/.a2a/                  2>/dev/null
+   ls node/.a2a-transcript-*.md   2>/dev/null
+   ls .git/CLAB_SUMMARY.md        2>/dev/null
+   ```
+
+   Delete only files that this lab created. Do not blanket-delete
+   `~/.copilot/lessons/` if other sessions wrote to it.
+
+5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
+   point git at a custom hooks dir for the duration of an exercise.
+
+   ```bash
+   git config --get core.hooksPath
+   # if set to a lab path, unset:
+   git config --unset core.hooksPath
+   ```
+
+6. **Confirm working tree is clean (or expected).**
+
+   ```bash
+   git status --short
+   ```
+
+   Any unexpected files (untracked agents, hooks, extensions, scratch
+   notebooks) should be removed or moved out of the repo before continuing.
+
+7. **Verify build is still green.** Optional but recommended after labs that
+   touched hooks, agents, or skills:
+
+   ```bash
+   dotnet build dotnet/ContosoUniversity.sln --nologo
+   ```
+
+> ✅ Once `git status --short` is empty (or shows only files you intentionally
+> kept) and the build is clean, you're ready for the next lab.
+<!-- @end-include docs/_partials/cleanup.md -->
