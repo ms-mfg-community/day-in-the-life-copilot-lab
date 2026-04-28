@@ -1,0 +1,7 @@
+# CODEOWNERS for the Contoso Copilot plugin template.
+# Enforces review by the Copilot platform team on every change.
+
+*                                   @contoso-internal/copilot-platform
+/manifest.yaml                      @contoso-internal/copilot-platform @contoso-internal/security
+/org-policy.example.yaml            @contoso-internal/copilot-platform @contoso-internal/security
+/.github/workflows/                 @contoso-internal/copilot-platform @contoso-internal/release-engineering

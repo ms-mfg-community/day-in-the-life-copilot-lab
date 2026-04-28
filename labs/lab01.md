@@ -1,3 +1,12 @@
+---
+title: "Exploring Copilot Configuration"
+lab_number: 1
+pace:
+  presenter_minutes: 4
+  self_paced_minutes: 10
+registry: docs/_meta/registry.yaml
+---
+
 # 1 — Exploring Copilot Configuration
 
 In this lab you will discover and understand the Copilot configuration files that ship with this repository.
@@ -9,6 +18,24 @@ References:
 - [Agent skills](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-agent-skills)
 - [Custom instructions](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
 - [Prompt files](https://docs.github.com/en/copilot/using-github-copilot/using-prompt-files)
+
+## 1.0a Copilot CLI currency (2026 refresh)
+
+> 💡 The Copilot CLI surface evolves quickly. Commands are current as of this
+> refresh; versions, model tiers, and MCP pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) so labs stay
+> consistent.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
+| **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) (review each step) vs autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry for routine edits; upshift to `models.premium` for deep reasoning. |
+| **Local tool discovery** | `extensions_manage` MCP tool — operation one of `list` \| `inspect` \| `scaffold` \| `guide` (model-side tool call, **not** a slash command) | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. Ask Copilot e.g. *"run `extensions_manage` with operation `list`"*. |
+
+*Lab 11 builds an enterprise plugin that publishes to a private
+`COPILOT_PLUGIN_REGISTRIES` registry using exactly this surface.*
 
 ## 1.0 Discover Agents from the Marketplace
 
@@ -36,9 +63,19 @@ You can install plugins by name from a marketplace or directly from a GitHub rep
 # Install from a GitHub repo (most reliable method)
 copilot plugin install OWNER/REPO
 
+# Concrete worked example used later in Lab 11 — safe to install now:
+copilot plugin install github/awesome-copilot
+
 # Or install from a marketplace by name
 copilot plugin install PLUGIN-NAME@awesome-copilot
 ```
+
+> ⏭️ **Skip this step if** you're on a restricted network, you don't have a
+> GitHub auth token wired up yet, or this is a presenter-led run where the
+> instructor has already installed plugins for the class. Plugin install is
+> **not a prerequisite** for any later lab — Labs 02–10 work end-to-end without
+> a single plugin installed. Lab 11 walks you through publishing your *own*
+> plugin from scratch.
 
 ### Verify the installation
 
@@ -54,10 +91,14 @@ You should see your installed plugin listed with its name, version, and source.
 Once installed, plugins are available in your Copilot conversations. Invoke them by name:
 
 ```bash
+# Interactive: start a session, then reference the plugin
 copilot
-
-# Then in the conversation, reference the plugin:
 > /plugin-name help me with my task
+```
+
+```bash
+# Non-interactive (CI / scripted / headless): same call in one shot
+copilot --prompt "/plugin-name help me with my task" --allow-all-tools
 ```
 
 > 💡 **Key insight:** Marketplace plugins give you a head start for common workflows — but they're just the beginning. In Lab 03, you'll learn to **create your own agents** tailored to your team's specific needs. Think of marketplace plugins as patterns you can study and customize.
@@ -76,15 +117,15 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 | Directory | What | Count | Lab |
 |-----------|------|-------|-----|
-| `.github/agents/` | Specialized AI personas (`.agent.md`) | 2 (+ more in Lab 03) | Lab 03 |
-| `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 10 | Lab 04 |
-| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 21 | Lab 04 |
-| `.github/instructions/` | Path-specific rules (`.instructions.md`) | 3 | Lab 02 |
+| `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
+| `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 6 | Lab 04 |
+| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 19 | Lab 04 |
+| `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
-| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 7 | Lab 06 |
-| `.copilot/mcp-config.json` | External tool integrations | 5 servers | Lab 05 |
-| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 2 | Labs 08-09 |
+| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 4 lifecycle hook types (`PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`) | Lab 06 |
+| `.copilot/mcp-config.json` | External tool integrations | 4 servers | Lab 05 |
+| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 3 | Labs 08-09 |
 
 🖥️ **Quick look — pick any one:**
 
@@ -139,13 +180,28 @@ Copilot doesn't just do keyword text search — it uses multiple layers of code 
 🖥️ **In your terminal:**
 
 ```bash
-# Start Copilot CLI
+# Interactive: start Copilot CLI, then invoke the planner agent
 copilot
 ```
 
 Then try:
 ```
 @planner How should I add a student search feature to ContosoUniversity?
+```
+
+**Non-interactive equivalent** (handy for CI, smoke checks, or shared
+workstations where you'd rather not leave a TTY session open):
+
+```bash
+copilot --agent planner \
+  --prompt "How should I add a student search feature to ContosoUniversity?" \
+  --allow-all-tools
+```
+
+```powershell
+copilot --agent planner `
+  --prompt "How should I add a student search feature to ContosoUniversity?" `
+  --allow-all-tools
 ```
 
 > 💡 Notice how Copilot references the project's architecture, file structure, and conventions — all loaded from the configuration files we just explored. This is semantic search in action.

@@ -1,3 +1,12 @@
+---
+title: "Hooks"
+lab_number: 6
+pace:
+  presenter_minutes: 3
+  self_paced_minutes: 10
+registry: docs/_meta/registry.yaml
+---
+
 # 6 — Hooks
 
 In this lab you will explore the hook system and create a new hook for .NET build verification.
@@ -6,6 +15,10 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 
 References:
 - [Copilot hooks](https://docs.github.com/en/copilot/using-github-copilot/using-hooks)
+
+> 🧭 **Track appendices** — the post-tool-use build hook recipe per stack lives in
+> [`labs/appendices/dotnet/lab06.md`](appendices/dotnet/lab06.md) and
+> [`labs/appendices/node/lab06.md`](appendices/node/lab06.md).
 
 ## 6.1 Examine the Hook Configuration
 
@@ -141,7 +154,7 @@ if [[ "$FILE_PATH" != *.cs ]]; then
 fi
 
 # Run dotnet build and capture output
-BUILD_OUTPUT=$(dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
+BUILD_OUTPUT=$(dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
   echo "⚠️  BUILD FAILED after editing $FILE_PATH"
   echo ""
   echo "$BUILD_OUTPUT" | tail -20
@@ -180,7 +193,7 @@ if [[ "$FILE_PATH" != *.cs ]]; then
 fi
 
 # Run dotnet build and capture output
-BUILD_OUTPUT=$(dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
+BUILD_OUTPUT=$(dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1) || {
   echo "⚠️  BUILD FAILED after editing $FILE_PATH"
   echo ""
   echo "$BUILD_OUTPUT" | tail -20
@@ -210,7 +223,7 @@ $filePath = $env:FILE_PATH
 if ($toolName -ne "edit" -and $toolName -ne "create") { exit 0 }
 if ($filePath -notlike "*.cs") { exit 0 }
 
-$output = dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1
+$output = dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  BUILD FAILED after editing $filePath"
     Write-Host ""
@@ -237,7 +250,7 @@ $filePath = $env:FILE_PATH
 if ($toolName -ne "edit" -and $toolName -ne "create") { exit 0 }
 if ($filePath -notlike "*.cs") { exit 0 }
 
-$output = dotnet build ContosoUniversity.sln --nologo --verbosity quiet 2>&1
+$output = dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  BUILD FAILED after editing $filePath"
     Write-Host ""
@@ -294,14 +307,14 @@ To test the hook manually:
 **WSL/Bash:**
 ```bash
 export TOOL_NAME="edit"
-export FILE_PATH="ContosoUniversity.Web/Controllers/StudentsController.cs"
+export FILE_PATH="dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
 bash scripts/hooks/post-tool-use-dotnet-build.sh
 ```
 
 **PowerShell:**
 ```powershell
 $env:TOOL_NAME = "edit"
-$env:FILE_PATH = "ContosoUniversity.Web/Controllers/StudentsController.cs"
+$env:FILE_PATH = "dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
 .\scripts\hooks\post-tool-use-dotnet-build.ps1
 ```
 
