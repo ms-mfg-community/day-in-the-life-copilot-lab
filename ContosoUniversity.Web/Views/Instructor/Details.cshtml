@@ -34,7 +34,7 @@
         <dd class="col-sm-9">
             @if (Model.OfficeAssignment != null)
             {
-                @Html.DisplayFor(model => model.OfficeAssignment.Location)
+                @Html.DisplayFor(model => model.OfficeAssignment!.Location)
             }
             else
             {
