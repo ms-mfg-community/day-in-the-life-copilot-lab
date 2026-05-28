@@ -524,8 +524,8 @@ every PR.
    ```
 
 2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
-   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
-   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or a
+   workspace `.mcp.json`. If you stashed the original, restore it now.
    If you edited in place without backing up, check `git status` in the lab
    repo (workspace configs) and revert anything you didn't mean to keep.
 

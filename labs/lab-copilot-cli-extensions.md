@@ -54,7 +54,7 @@ Three things are called "extensions" or "tools" in the GitHub/Copilot world. The
 | **Where it runs** | External binary or interpreter, invoked by the `gh` CLI | **In-process child of the Copilot CLI**, forked as a Node.js subprocess of `copilot` | Out-of-process server (stdio or HTTP), bridged via the Model Context Protocol |
 | **What it exposes** | A new `gh <verb>` subcommand to your shell | **Tools (and lifecycle hooks) registered with the agent** via `joinSession()` | Tools, resources, prompts via MCP JSON-RPC |
 | **Who calls it** | A human at the shell, or scripts | **The Copilot agent**, mid-turn, as part of its tool loop | The Copilot agent (or any MCP client), mid-turn |
-| **Discovery** | `gh extension install owner/repo` | `.github/extensions/<name>/extension.mjs` (project) or user-level extensions dir | `.copilot/mcp-config.json` or `~/.copilot/mcp-config.json` |
+| **Discovery** | `gh extension install owner/repo` | `.github/extensions/<name>/extension.mjs` (project) or user-level extensions dir | `<workspace>/.mcp.json` (project) or `~/.copilot/mcp-config.json` (user) |
 | **Sibling lab** | `lab-gh-extensions.md` (Workstream A1) | **this lab** | `labs/lab05.md` |
 
 `gh extension` is a *shell* extension surface; the user types `gh foo`. **Copilot CLI extensions are a runtime extension surface**; the agent (not the user) decides to call the tool, in the middle of a turn, based on the tool description you wrote. MCP servers are a *protocol* extension surface; same client-side experience as a Copilot CLI extension tool, but the implementation lives behind a JSON-RPC boundary in a different process.
@@ -393,8 +393,8 @@ Then run the generic sweep below.
    ```
 
 2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
-   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
-   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
+   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or a
+   workspace `.mcp.json`. If you stashed the original, restore it now.
    If you edited in place without backing up, check `git status` in the lab
    repo (workspace configs) and revert anything you didn't mean to keep.
 
