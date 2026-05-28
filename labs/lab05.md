@@ -44,12 +44,12 @@ MCP servers extend Copilot's capabilities with external tools — documentation 
 
 **WSL/Bash:**
 ```bash
-cat .copilot/mcp-config.json
+cat ~/.copilot/mcp-config.json
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .copilot/mcp-config.json
+Get-Content ~/.copilot/mcp-config.json
 ```
 
 2. This repository ships with 5 MCP servers:
@@ -182,7 +182,7 @@ Let's add a new MCP server to the configuration. We'll add a filesystem server f
 
 1. Open the MCP configuration:
 ```bash
-code .copilot/mcp-config.json
+code ~/.copilot/mcp-config.json
 ```
 
 2. Add a new server entry. For example, to add a fetch server for web content:
@@ -224,7 +224,7 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 
 | Concept | Details |
 |---------|---------|
-| **Config location** | `.copilot/mcp-config.json` |
+| **Config location** | `~/.copilot/mcp-config.json` (user scope; workspace scope uses `<workspace>/.mcp.json`) |
 | **Server types** | `local` (stdio subprocess) or `http` (remote URL) |
 | **Tool filtering** | `"tools": ["*"]` for all, or list specific tool names |
 | **Agent access** | Use `mcp-servers` in agent frontmatter to grant server access |

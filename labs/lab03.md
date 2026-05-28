@@ -98,12 +98,12 @@ The agent we created uses basic tools. Let's understand how to add MCP server ac
 
 **WSL/Bash:**
 ```bash
-cat .copilot/mcp-config.json
+cat ~/.copilot/mcp-config.json
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .copilot/mcp-config.json
+Get-Content ~/.copilot/mcp-config.json
 ```
 
 2. Agents can reference MCP servers by adding them to the frontmatter. For example, to give the agent access to Context7 for .NET documentation lookups:
@@ -117,7 +117,7 @@ mcp-servers: ["context7"]
 ---
 ```
 
-3. The `mcp-servers` field references servers defined in `.copilot/mcp-config.json`. The agent can then use tools from those servers (e.g., `resolve-library-id` and `query-docs` from Context7).
+3. The `mcp-servers` field references servers defined in `~/.copilot/mcp-config.json`. The agent can then use tools from those servers (e.g., `resolve-library-id` and `query-docs` from Context7).
 
 > 💡 **Note**: MCP server access is optional. The base tools (`read`, `edit`, `execute`, `search`) are sufficient for most development tasks. Add MCP servers when the agent needs specific capabilities like documentation lookup or knowledge persistence.
 
