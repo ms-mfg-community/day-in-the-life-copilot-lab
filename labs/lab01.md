@@ -123,7 +123,7 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
-| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 4 lifecycle hook types (`PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`) | Lab 06 |
+| `.github/hooks/` | Lifecycle guardrails (`default.json`) | 4 lifecycle hook events (`preToolUse`, `postToolUse`, `userPromptSubmitted`, `errorOccurred`) | Lab 06 |
 | `.copilot/mcp-config.json` | External tool integrations | 4 servers | Lab 05 |
 | `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 3 | Labs 08-09 |
 
