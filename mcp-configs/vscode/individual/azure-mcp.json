@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "azure-mcp": {
+      "description": "Official Azure MCP — resource discovery, ARM operations, Azure SDK helpers across subscriptions",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest"]
+    }
+  }
+}

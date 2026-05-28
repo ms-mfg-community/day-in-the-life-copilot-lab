@@ -13,12 +13,6 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
     },
-    "memory": {
-      "description": "Knowledge graph for persisting entities and relations across sessions",
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
-    },
     "sequential-thinking": {
       "description": "Structured chain-of-thought reasoning for complex problems",
       "type": "stdio",
@@ -30,6 +24,12 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@microsoft/workiq", "mcp"]
+    },
+    "azure-mcp": {
+      "description": "Official Azure MCP — resource discovery, ARM operations, Azure SDK helpers across subscriptions",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest"]
     },
     "github": {
       "description": "GitHub API access for issues, PRs, repos, and code search",

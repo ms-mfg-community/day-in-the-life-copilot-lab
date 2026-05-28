@@ -14,13 +14,6 @@
       "args": ["-y", "@upstash/context7-mcp"],
       "tools": ["*"]
     },
-    "memory": {
-      "description": "Knowledge graph for persisting entities and relations across sessions",
-      "type": "local",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "tools": ["*"]
-    },
     "sequential-thinking": {
       "description": "Structured chain-of-thought reasoning for complex problems",
       "type": "local",
@@ -33,6 +26,13 @@
       "type": "local",
       "command": "npx",
       "args": ["-y", "@microsoft/workiq", "mcp"],
+      "tools": ["*"]
+    },
+    "azure-mcp": {
+      "description": "Official Azure MCP — resource discovery, ARM operations, Azure SDK helpers across subscriptions",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest"],
       "tools": ["*"]
     },
     "github": {

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "azure-mcp": {
+      "description": "Official Azure MCP — resource discovery, ARM operations, Azure SDK helpers across subscriptions",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest"],
+      "tools": ["*"]
+    }
+  }
+}
