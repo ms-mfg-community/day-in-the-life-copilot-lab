@@ -15,6 +15,16 @@ This appendix supplies the **.NET-track** content for [Lab 04 — Skills & Promp
 
 ## `.github/skills/dotnet-testing/SKILL.md`
 
+This appendix used to inline the full SKILL body, but the live skill at
+[`.github/skills/dotnet-testing/SKILL.md`](../../../.github/skills/dotnet-testing/SKILL.md)
+now covers **9 sections** (When to Activate, Test Naming, Unit Test Patterns,
+Integration Test Patterns, Mocking Patterns, Test Data Helpers, Edge Cases,
+Playwright E2E, Test Commands) — far more than would be readable in a heredoc.
+
+For the lab, create a minimal **stub** so you've practised the skill-authoring
+pattern (frontmatter + activation triggers + a short body), then read the live
+skill for the production-grade examples.
+
 **WSL/Bash:**
 
 ````bash
@@ -22,90 +32,27 @@ mkdir -p .github/skills/dotnet-testing
 cat > .github/skills/dotnet-testing/SKILL.md << 'SKILL'
 ---
 name: dotnet-testing
-description: .NET testing patterns for ContosoUniversity using xUnit, Moq, and WebApplicationFactory. Covers unit tests, integration tests, test infrastructure, mocking, and naming conventions.
+description: .NET testing patterns for ContosoUniversity using xUnit, Moq, and WebApplicationFactory. Covers unit tests, integration tests, mocking, and naming conventions.
 ---
 
 # .NET Testing Patterns
 
-Testing patterns and infrastructure for ASP.NET Core applications using xUnit, Moq, and WebApplicationFactory.
+Testing patterns for ASP.NET Core applications using xUnit, Moq, and WebApplicationFactory.
+
+## When to Activate
+
+Activate this skill when writing or reviewing tests under `dotnet/ContosoUniversity.Tests/`,
+when adding xUnit `[Fact]`/`[Theory]` methods, or when wiring `WebApplicationFactory`-based
+integration tests.
 
 ## Test Naming Convention
 
-Use `MethodName_Condition_ExpectedResult` for all test methods:
+Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsStudent`).
 
-- `GetByIdAsync_ValidId_ReturnsStudent`
-- `Details_NullId_ReturnsNotFound`
-- `Create_EmptyLastName_FailsValidation`
-
-## Unit Test Pattern
-
-A unit test class for `StudentsController` should:
-
-1. Mock `IRepository<Student>` with Moq.
-2. Construct the controller with the mock.
-3. Use `[Fact]` for single scenarios and `[Theory]` + `[InlineData]` for parameterised cases.
-4. Assert on the `IActionResult` shape (`ViewResult`, `RedirectToActionResult`, `NotFoundResult`).
-
-```text
-public class StudentsControllerTests
-{
-    private readonly Mock<IRepository<Student>> _mockRepo;
-    private readonly StudentsController _controller;
-
-    public StudentsControllerTests()
-    {
-        _mockRepo = new Mock<IRepository<Student>>();
-        _controller = new StudentsController(_mockRepo.Object);
-    }
-
-    [Fact]
-    public async Task Index_WithStudents_ReturnsViewWithStudentList()
-    {
-        var students = new List<Student>
-        {
-            new() { ID = 1, FirstMidName = "Carson", LastName = "Alexander" }
-        };
-        _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(students);
-
-        var result = await _controller.Index();
-
-        var viewResult = Assert.IsType<ViewResult>(result);
-        var model = Assert.IsAssignableFrom<IEnumerable<Student>>(viewResult.ViewData.Model);
-        Assert.Single(model);
-    }
-}
-```
-
-## Integration Test Pattern
-
-```text
-public class StudentIntegrationTests : IClassFixture<CustomWebApplicationFactory>
-{
-    private readonly HttpClient _client;
-
-    public StudentIntegrationTests(CustomWebApplicationFactory factory)
-    {
-        _client = factory.CreateClient();
-    }
-
-    [Fact]
-    public async Task GetStudents_ReturnsSuccessAndHtml()
-    {
-        var response = await _client.GetAsync("/Students");
-        response.EnsureSuccessStatusCode();
-    }
-}
-```
-
-## Edge Cases to Always Test
-
-| Category | Examples |
-|----------|----------|
-| Null inputs | `null` ID, `null` model |
-| Empty collections | No students in database |
-| Invalid IDs | 0, -1, non-existent |
-| Validation failures | Missing required fields |
-| Database errors | Repository throws exception |
+> 📚 **Full pattern library:** see the canonical
+> [`dotnet-testing` skill](../../../.github/skills/dotnet-testing/SKILL.md) for the
+> complete 9-section reference (controller mocking, integration fixtures,
+> Playwright E2E, edge-case checklist, common commands).
 SKILL
 ````
 
@@ -114,9 +61,35 @@ SKILL
 ````powershell
 New-Item -ItemType Directory -Path .github/skills/dotnet-testing -Force | Out-Null
 @'
-(paste the SKILL body shown above)
+---
+name: dotnet-testing
+description: .NET testing patterns for ContosoUniversity using xUnit, Moq, and WebApplicationFactory. Covers unit tests, integration tests, mocking, and naming conventions.
+---
+
+# .NET Testing Patterns
+
+Testing patterns for ASP.NET Core applications using xUnit, Moq, and WebApplicationFactory.
+
+## When to Activate
+
+Activate this skill when writing or reviewing tests under `dotnet/ContosoUniversity.Tests/`,
+when adding xUnit `[Fact]`/`[Theory]` methods, or when wiring `WebApplicationFactory`-based
+integration tests.
+
+## Test Naming Convention
+
+Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsStudent`).
+
+> 📚 **Full pattern library:** see the canonical `dotnet-testing` skill at
+> `.github/skills/dotnet-testing/SKILL.md` for the complete 9-section reference.
 '@ | Out-File -FilePath .github/skills/dotnet-testing/SKILL.md -Encoding utf8
 ````
+
+> 💡 **Why a stub here?** The lab's pedagogic goal is the skill-authoring
+> *workflow* (create dir, write frontmatter + activation triggers, point at it
+> from an agent). Once you've done that, the live skill is the source of
+> truth for the full pattern set — keeping the appendix short avoids drift
+> between this file and the production skill.
 
 ## `.github/prompts/create-dotnet-test.prompt.md`
 
