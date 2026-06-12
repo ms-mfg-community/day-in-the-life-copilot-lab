@@ -18,28 +18,34 @@ enough to get a prose review of a Node module against current Node / npm
 guidance, but it cannot run `npm test`, edit sources, or shell out.
 
 ```bash
-copilot --agent=tight-reviewer \
+copilot --allow-all-tools \
+        --agent=tight-reviewer \
         --prompt "Review node/ for async/await correctness and cite any Microsoft Learn guidance on Node 20+ best practices."
 ```
 
-Expected: a review that references specific files in `node/` (proving
-`read` worked) and cites `learn.microsoft.com` URLs (proving
-`microsoft-learn/microsoft_docs_search` worked). No test ran; no file was
-modified.
+Expected: a review that references specific files in `node/` (proving the
+read worked — the hook sees this as `view`) and cites `learn.microsoft.com`
+URLs (proving the Learn search worked — the hook sees this as
+`microsoft-learn-microsoft_docs_search`, the hyphen-joined runtime name). No
+test ran; no file was modified.
 
 ## 2 — Confirm `shell`/`execute` is blocked
 
-`npm test` requires the `shell`/`execute` tool alias, which is **not** in
-the agent's `tools:` allow-list and **not** in the
-`deny-unlisted-tools.json` hook's allow-list.
+`npm test` requires the `shell`/`execute`/`bash` tool alias, which is **not**
+in the agent's `tools:` allow-list and — under any of its runtime spellings —
+**not** in the `deny-unlisted-tools.json` hook's allow-list either. (The hook
+is keyed on concrete runtime tool names; see the namespace callout in
+[`labs/lab-hardening.md`](../../lab-hardening.md) §2.)
 
 ```bash
-copilot --agent=tight-reviewer \
+copilot --allow-all-tools \
+        --agent=tight-reviewer \
         --prompt "Run 'npm test --workspaces' and report failures."
 ```
 
-Expected: the hook emits `deny` with the reason referencing `shell`. The
-test suite does not run. This is the defense-in-depth win.
+Expected: the hook emits `deny`, with the reason naming the blocked shell
+tool (`shell`/`execute`/`bash`). The test suite does not run. This is the
+defense-in-depth win.
 
 ## 3 — Verify
 

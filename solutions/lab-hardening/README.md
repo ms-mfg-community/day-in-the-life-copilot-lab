@@ -7,7 +7,7 @@ Two files, two gates in the two-layer tool-gating model:
 | File | Gate | Purpose |
 |---|---|---|
 | `tight-reviewer.agent.md` | **Agent-side** (client allow-list) | Custom agent with `tools: [read, microsoft-learn/microsoft_docs_search]`, pinned model, `disable-model-invocation: true`, `user-invocable: false`. |
-| `deny-unlisted-tools.json` | **Runtime-side** (`preToolUse` hook) | Emits `{"permissionDecision":"deny",…}` when `toolName` is outside the same allow-list. Bash **and** PowerShell branches. |
+| `deny-unlisted-tools.json` | **Runtime-side** (`preToolUse` hook) | Emits `{"permissionDecision":"deny",…}` when `toolName` is outside the allow-list. Same two capabilities as the agent, but spelled as **concrete runtime tool names** (`view`/`glob`/`grep` for the read category; `microsoft-learn-microsoft_docs_search` hyphen-joined for the MCP tool) — a hook sees runtime names, not frontmatter categories. Bash **and** PowerShell branches. |
 
 Together they implement the deterministic-control story described in
 [`docs/copilot-config-reference.md` §6](../../docs/copilot-config-reference.md#6-two-layer-tool-gating).
@@ -59,16 +59,20 @@ Copy-Item solutions/lab-hardening/deny-unlisted-tools.json `
 3. **Positive path** — exercise a permitted tool:
 
    ```bash
-   copilot --agent=tight-reviewer \
+   copilot --allow-all-tools \
+           --agent=tight-reviewer \
            --prompt "Summarize Microsoft Learn guidance on EF Core migrations. Cite sources."
    ```
 
-   Expected: a Learn-cited summary. No deny output.
+   Expected: a Learn-cited summary. No deny output. (`--allow-all-tools`
+   lifts the CLI-layer confirmation prompts so the agent `tools:` allow-list
+   and the hook are the active gates — the point of the lab.)
 
 4. **Negative path** — attempt a denied tool:
 
    ```bash
-   copilot --agent=tight-reviewer \
+   copilot --allow-all-tools \
+           --agent=tight-reviewer \
            --prompt "Run 'dotnet build' and tell me if it is green."
    ```
 

@@ -19,27 +19,33 @@ for reviewing a .NET controller against current EF Core / ASP.NET guidance
 without letting the agent run `dotnet build` or edit source.
 
 ```bash
-copilot --agent=tight-reviewer \
+copilot --allow-all-tools \
+        --agent=tight-reviewer \
         --prompt "Review dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs against current ASP.NET Core controller guidance. Cite Microsoft Learn sources."
 ```
 
-Expected: a review that quotes the file (proving `read` worked) and cites
-`learn.microsoft.com` URLs (proving `microsoft-learn/microsoft_docs_search`
-worked). No build ran. No file was modified.
+Expected: a review that quotes the file (proving the read worked — the hook
+sees this as `view`) and cites `learn.microsoft.com` URLs (proving the Learn
+search worked — the hook sees this as `microsoft-learn-microsoft_docs_search`,
+the hyphen-joined runtime name). No build ran. No file was modified.
 
 ## 2 — Confirm `shell`/`execute` is blocked
 
-`dotnet build` requires the `shell`/`execute` tool alias, which is **not**
-in the agent's `tools:` allow-list and **not** in the
-`deny-unlisted-tools.json` hook's allow-list.
+`dotnet build` requires the `shell`/`execute`/`bash` tool alias, which is
+**not** in the agent's `tools:` allow-list and — under any of its runtime
+spellings — **not** in the `deny-unlisted-tools.json` hook's allow-list
+either. (The hook is keyed on concrete runtime tool names; see the namespace
+callout in [`labs/lab-hardening.md`](../../lab-hardening.md) §2.)
 
 ```bash
-copilot --agent=tight-reviewer \
+copilot --allow-all-tools \
+        --agent=tight-reviewer \
         --prompt "Run 'dotnet build dotnet/ContosoUniversity.sln' and report the result."
 ```
 
-Expected: the hook emits `deny` with the reason referencing `shell`.
-Build does not run. This is the defense-in-depth win.
+Expected: the hook emits `deny`, with the reason naming the blocked shell
+tool (`shell`/`execute`/`bash`). Build does not run. This is the
+defense-in-depth win.
 
 ## 3 — Verify
 

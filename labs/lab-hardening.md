@@ -186,13 +186,35 @@ regardless of which agent is active, a hook catches the case where
    - Its bash and PowerShell branches both read the event JSON from stdin,
      parse `toolName`, and emit **only** `{"permissionDecision":"deny","permissionDecisionReason":"…"}`
      when the tool is not in the allow-list.
-   - The allow-list is spelled out inline: `read`, `microsoft-learn/microsoft_docs_search`.
-     Everything else — `shell`, `edit`, `search`, any other MCP server —
-     produces a deny.
+   - The allow-list is spelled out inline. It permits exactly the two
+     capabilities the agent needs — read files, and search Microsoft Learn —
+     but it enumerates the **concrete runtime tool names** a hook actually
+     sees (see the namespace callout below): `view`/`glob`/`grep` for the
+     read category, and `microsoft-learn-microsoft_docs_search` (hyphen) for
+     the MCP tool. The agent-frontmatter spellings (`read`,
+     `microsoft-learn/microsoft_docs_search`) are kept alongside them as
+     belt-and-suspenders. Everything else — `shell`, `edit`, `search`, any
+     other MCP server — produces a deny.
 
    > ⚠️ The JSON file has a `_comment` field at the top that explicitly
    > documents *why* no `allow` or `ask` branches exist: the runtime ignores
    > them. This is a defense-in-depth design, not an omission.
+
+   > 🧩 **Two namespaces: frontmatter names vs runtime tool names.** The agent
+   > `tools:` allow-list in §1 and this hook's allow-list look like they should
+   > be byte-identical — they are not, because they live in **different
+   > namespaces**. Agent frontmatter uses *categories* (`read`) and *slash*
+   > MCP names (`microsoft-learn/microsoft_docs_search`). A `preToolUse` hook,
+   > by contrast, sees the **concrete runtime tool name** in its `toolName`
+   > payload: the `read` category surfaces as `view`, `glob`, or `grep`, and an
+   > MCP tool surfaces **hyphen-joined** as `microsoft-learn-microsoft_docs_search`.
+   > A hook allow-list must therefore enumerate those runtime names, or it will
+   > deny the very tools the agent is permitted to call. **This does not widen
+   > the blast radius:** we still permit exactly two capabilities (read files,
+   > search Learn) — we are simply spelling each one in the vocabulary of the
+   > layer doing the checking. The "smallest blast-radius" rule from §1 is
+   > intact; only the spelling changes per layer. **Takeaway:** when you author
+   > a hook allow-list, list runtime tool names, not frontmatter categories.
 
 3. **Absence of deny is allow.** If the hook exits with no output, the tool
    call proceeds. That is by design — the hook is a filter, not a
@@ -204,18 +226,25 @@ With the agent and hook both in place, confirm defense-in-depth is working.
 
 🖥️ **In your terminal:**
 
-1. **Positive path** — the agent calls a permitted tool:
+1. **Positive path** — the agent calls its permitted tools (read a file *and*
+   search Microsoft Learn):
 
    ```bash
    copilot --allow-all-tools \
            --agent=tight-reviewer \
-           --prompt "Summarize the Microsoft Learn guidance on EF Core migrations."
+           --prompt "Read .github/agents/tight-reviewer.agent.md, state its purpose in 2 bullets, then search Microsoft Learn for guidance on Copilot custom agents and cite one URL."
    ```
 
-   Expected: the call to `microsoft-learn/microsoft_docs_search` succeeds;
-   no deny output from the hook. (`--allow-all-tools` lifts the CLI-layer
-   confirmation prompts; the agent's own `tools:` allow-list and the hook
-   are still in force, which is the whole point of the lab.)
+   Expected: **both** permitted capabilities succeed with no deny output from
+   the hook — the file read (which the hook sees as `view`) and the Learn
+   lookup (which the hook sees as `microsoft-learn-microsoft_docs_search`, the
+   hyphen-joined runtime name — see the namespace callout in §2). If the hook
+   had been written against the frontmatter spellings (`read`,
+   `microsoft-learn/microsoft_docs_search`) instead of the runtime names, it
+   would wrongly deny both of these — that is the exact trap the §2 callout
+   warns about. (`--allow-all-tools` lifts the CLI-layer confirmation prompts;
+   the agent's own `tools:` allow-list and the hook are still in force, which
+   is the whole point of the lab.)
 
 2. **Negative path** — the agent attempts a denied tool:
 
