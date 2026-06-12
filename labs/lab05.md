@@ -246,9 +246,9 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 </details>
 
 <details>
-<summary>Solution: mcp-config.json with fetch server</summary>
+<summary>Solution: .mcp.json with fetch server</summary>
 
-See [`solutions/lab05-mcp-config/mcp-config.json`](../solutions/lab05-mcp-config/mcp-config.json)
+See [`solutions/lab05-mcp-config/.mcp.json`](../solutions/lab05-mcp-config/.mcp.json)
 
 </details>
 
