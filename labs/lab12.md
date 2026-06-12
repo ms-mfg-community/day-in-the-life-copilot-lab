@@ -138,7 +138,7 @@ PY
 The canonical `labs/fixtures/lab12/sales.parquet` is **committed** to the
 repo (~3 KiB) so the offline path works out of the box — no pandas install
 required just to read the lab. Regenerate it any time with the snippet
-above or via `python scripts/generate-lab12-fixture.py` (pandas + pyarrow
+above or via `python3 scripts/generate-lab12-fixture.py` (pandas + pyarrow
 required only when regenerating). Any *additional* parquet files you drop
 into `labs/fixtures/lab12/` while experimenting stay local — see
 `.gitignore`.
@@ -236,7 +236,7 @@ fixture. This is the **mock command set** equivalent of the calls above:
 
 ```bash
 # "Enumerate lakehouses"
-python -c "
+python3 -c "
 import pandas as pd, pathlib
 fixtures = pathlib.Path('labs/fixtures/lab12').glob('*.parquet')
 for p in fixtures:
@@ -245,7 +245,7 @@ for p in fixtures:
 "
 
 # "Run cell 3 — summarize the lakehouse"
-python -c "
+python3 -c "
 import pandas as pd
 df = pd.read_parquet('labs/fixtures/lab12/sales.parquet')
 print(df.groupby('region')['amount_usd'].agg(['count', 'sum']))
