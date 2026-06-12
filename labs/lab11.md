@@ -80,6 +80,14 @@ plugin is a directory with:
    then scaffold a plugin at ./my-plugin copied from plugin-template/.
    ```
 
+   > ℹ️ **If your CLI build doesn't expose the `extensions_manage` MCP tool**,
+   > scaffold directly instead — the dry-run in step 2 verifies the result
+   > either way:
+   >
+   > ```bash
+   > cp -a plugin-template my-plugin
+   > ```
+
 2. Verify the scaffold by running a dry-run install against the template:
 
    **WSL/Bash:**
