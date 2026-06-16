@@ -12,14 +12,14 @@ Generate comprehensive xUnit tests for a ContosoUniversity class.
 
 1. **Read the source file** specified by the user (or the currently open file)
 2. **Identify all public methods** that need testing
-3. **Check existing test patterns** in `ContosoUniversity.Tests/`
+3. **Check existing test patterns** in `dotnet/ContosoUniversity.Tests/`
 4. **Generate a test class** following the conventions below
 
 ## Test File Location
 
-- Controller tests → `ContosoUniversity.Tests/Controllers/{Name}ControllerTests.cs`
-- Integration tests → `ContosoUniversity.Tests/Integration/{Name}IntegrationTests.cs`
-- Model/validation tests → `ContosoUniversity.Tests/Models/{Name}Tests.cs`
+- Controller tests → `dotnet/ContosoUniversity.Tests/Controllers/{Name}ControllerTests.cs`
+- Integration tests → `dotnet/ContosoUniversity.Tests/Integration/{Name}IntegrationTests.cs`
+- Model/validation tests → `dotnet/ContosoUniversity.Tests/Models/{Name}Tests.cs`
 
 ## Required Structure
 
@@ -70,6 +70,6 @@ For each public method, generate tests for:
 
 ## After Generating
 
-1. Verify the test file compiles: `dotnet build ContosoUniversity.Tests/`
-2. Run the tests: `dotnet test ContosoUniversity.Tests/ --filter "{ClassName}"` 
+1. Verify the test file compiles: `dotnet build dotnet/ContosoUniversity.Tests/`
+2. Run the tests: `dotnet test dotnet/ContosoUniversity.Tests/ --filter "{ClassName}"` 
 3. Report results to the user

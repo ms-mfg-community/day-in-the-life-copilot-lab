@@ -1,0 +1,13 @@
+{
+  "name": "gh-clab",
+  "version": "0.1.0",
+  "description": "GitHub CLI extension (interpreted Node) that summarizes a working-tree diff via gh models.",
+  "bin": {
+    "gh-clab": "./gh-clab"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true,
+  "license": "MIT"
+}

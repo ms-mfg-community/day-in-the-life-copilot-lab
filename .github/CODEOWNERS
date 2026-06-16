@@ -1,0 +1,17 @@
+# Repo CODEOWNERS — used to auto-assign reviewers on PRs.
+#
+# The weekly content-audit workflow (.github/workflows/weekly-content-audit.md)
+# opens PRs against these paths; CODEOWNERS handles reviewer assignment so the
+# workflow itself does not need to request reviewers.
+
+*                            @ms-mfg-community/maintainers
+
+# Content registry + generated audit artefacts
+/docs/_meta/                 @ms-mfg-community/maintainers
+/labs/                       @ms-mfg-community/maintainers
+
+# Agentic workflows + supporting config
+/.github/workflows/          @ms-mfg-community/maintainers
+/.github/agents/             @ms-mfg-community/maintainers
+/.github/prompts/            @ms-mfg-community/maintainers
+/mcp-configs/                @ms-mfg-community/maintainers

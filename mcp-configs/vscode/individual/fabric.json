@@ -1,0 +1,24 @@
+{
+  "_comment": "Microsoft Fabric MCP server (@microsoft/fabric-mcp, github.com/microsoft/mcp) — VS Code format. The server authenticates via DefaultAzureCredential (your 'az login' session) and does NOT read a pasted token. Run 'az login' (Contributor+ on the workspace) before starting the server. IMPORTANT for multi-tenant Microsoft identities: AZURE_TOKEN_CREDENTIALS=AzureCliCredential + AZURE_TENANT_ID pin auth to your 'az login' session and Fabric tenant — without them DefaultAzureCredential's interactive-browser fallback signs in to your HOME tenant and lists the wrong workspaces (or 404s). Remove AZURE_TOKEN_CREDENTIALS if you use a managed identity / service principal instead. FABRIC_WORKSPACE_ID/FABRIC_TENANT_ID are informational. See labs/lab12.md.",
+  "inputs": [
+    {
+      "id": "fabric-workspace-id",
+      "type": "promptString",
+      "description": "Fabric workspace GUID (informational; the server authenticates via your 'az login' session)"
+    }
+  ],
+  "servers": {
+    "fabric": {
+      "description": "Microsoft Fabric MCP — enumerate workspaces/lakehouses/tables and query OneLake from VS Code. Authenticates via your 'az login' session (DefaultAzureCredential).",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start", "--mode", "all"],
+      "env": {
+        "FABRIC_WORKSPACE_ID": "${input:fabric-workspace-id}",
+        "FABRIC_TENANT_ID": "${env:FABRIC_TENANT_ID}",
+        "AZURE_TENANT_ID": "${env:AZURE_TENANT_ID}",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
+      }
+    }
+  }
+}

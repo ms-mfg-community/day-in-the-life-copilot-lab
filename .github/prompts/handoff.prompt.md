@@ -19,13 +19,22 @@ Current blocker: ${input:blocker:Any blockers or unresolved issues? (leave empty
    - Last 5 commits to understand trajectory and commit style
    - Run: `git status --porcelain`, `git log --oneline -5`, `git diff --stat`
 
-2. **Look for existing handoff documentation:**
-   - Check if #file:handoff.md exists
-   - Check if #file:HANDOFF.md exists
-   - Check #file:docs/SESSION_HANDOFFS/ for prior handoffs
+2. **Read the session's Layer 1 sources:**
+   - The active `plan.md` in `~/.copilot/session-state/<id>/plan.md`
+   - The session SQL todos (`SELECT * FROM todos`)
+   - Any scratch artefacts in the session `files/` folder
+
+3. **Read the in-repo wiki for durable context (Layer 2):**
+   - `.copilot/lessons/index.md` — catalog of project lessons
+   - The most recent entries in `.copilot/lessons/log.md`
+   - `~/.copilot/lessons/index.md` if it exists (global wiki)
+
+4. **Look for existing handoff documentation:**
+   - Check if `handoff.md` or `HANDOFF.md` exists at the repo root
+   - Check `docs/SESSION_HANDOFFS/` for prior handoffs
    - If found, read them and incorporate context
 
-3. **Analyze modified files:**
+5. **Analyze modified files:**
    - Read changed files to understand scope and purpose
    - Identify what features/modules are affected
    - Note any critical dependencies or relationships
@@ -74,7 +83,10 @@ Date: [current date/time]
 
 ### 5. Key Discoveries
 
-Document important learnings to avoid re-derivation:
+Document important learnings to avoid re-derivation. **Anything durable
+here is a candidate for `.copilot/lessons/log.md`** — the handoff
+itself is a Layer 1 artefact and dies with the session.
+
 - "Discovered X uses Y pattern, not Z"
 - "Tried approach A, failed because B"
 - "Critical dependency: C must happen before D"
@@ -84,11 +96,9 @@ Document important learnings to avoid re-derivation:
 
 **Created:**
 - `path/to/file1.ts` - [purpose]
-- `path/to/file2.ts` - [purpose]
 
 **Modified:**
 - `path/to/file3.ts` - [what changed and why]
-- `path/to/file4.ts` - [what changed and why]
 
 **Deleted:**
 - `path/to/file5.ts` - [why removed]
@@ -96,9 +106,9 @@ Document important learnings to avoid re-derivation:
 ### 7. Open Questions
 
 Unresolved items needing decisions or research:
-1. Question about X - [context and why it matters]
-2. Choice between A vs B - [tradeoffs]
-3. Unclear requirement Y - [what needs clarification]
+1. Question about X — [context and why it matters]
+2. Choice between A vs B — [tradeoffs]
+3. Unclear requirement Y — [what needs clarification]
 
 ### 8. Next Steps
 
@@ -122,7 +132,7 @@ Specific actionable items in priority order:
 
 ### 10. Pitfalls to Avoid
 
-Lessons learned - what NOT to do:
+Lessons learned — what NOT to do:
 - ❌ Don't try X because Y
 - ❌ Avoid pattern Z, use W instead
 - ❌ Never touch file F without also updating G
@@ -148,7 +158,7 @@ Lessons learned - what NOT to do:
 The handoff document should allow the next session to:
 - ✅ Understand context within 30 seconds
 - ✅ Know exactly where to start
-- ✅ Avoid re-deriving previous learnings
+- ✅ Avoid re-deriving previous learnings (consult `.copilot/lessons/`)
 - ✅ Make informed decisions based on documented tradeoffs
 - ✅ Verify work is on track using provided commands
 
@@ -171,86 +181,38 @@ Generate a copy/paste block for the next session:
 ### Immediate Next Step
 1. [First action to take]
 
-### Read Memory
-Use Memory MCP: memory-read_graph to get entity observations
+### Read the wiki first
+Before doing anything, read the in-repo markdown wiki:
+- `.copilot/lessons/index.md` (project catalog)
+- `~/.copilot/lessons/index.md` (global catalog, if present)
+- recent entries in `.copilot/lessons/log.md`
+
+That's how this repo persists context across sessions — plain markdown
+the agent wrote to itself, governed by
+`.github/instructions/lessons.instructions.md`.
 
 ### Recommended Agents
 [List 2-3 most relevant agents for this work]
-- typescript-dev.agent.md - for TS development
-- tdd-guide.agent.md - for test-first implementation
+- planner.agent.md — for planning the next phase
+- code-reviewer.agent.md — for review
+- tdd-guide.agent.md — for test-first implementation
 
 ### Recommended Prompts
 [List 2-3 most relevant prompts]
-- /tdd - for test-driven development
-- /code-review - after implementation
+- /tdd — for test-driven development
+- /code-review — after implementation
+- /consolidate-lessons — when the wiki accumulates entropy
 ```
 
 ### Building Agent Awareness
 
 To generate relevant agent recommendations:
-1. Read .github/agents/*.md files
+1. Read `.github/agents/*.agent.md` files
 2. Match agents to current work domain
 3. Suggest 2-3 most relevant agents
 
-Available agents (scan for current list):
-- agent-framework - Azure Agent Framework SDK
-- ai-foundry - Microsoft Foundry Platform
-- architect - System architecture
-- azure-infrastructure - Azure IaC/Bicep
-- azure-orchestrator - Cross-domain coordination
-- azure-testing - Azure DevOps testing
-- build-error-resolver - Build/type error fixes
-- code-reviewer - Code review
-- database-reviewer - PostgreSQL/database review
-- doc-updater - Documentation updates
-- doc-writer - Documentation writing
-- e2e-runner - End-to-end testing
-- fabric-data - Microsoft Fabric/data
-- go-build-resolver - Go build errors
-- go-reviewer - Go code review
-- observer - Session observation
-- planner - Planning specialist
-- refactor-cleaner - Dead code cleanup
-- security-reviewer - Security checks
-- story-writer - User stories
-- tdd-guide - Test-driven development
-- typescript-dev - TypeScript development
-- typescript-qa - TypeScript testing
-
-Available prompts (scan for current list):
-- /build-fix - Fix build errors
-- /checkpoint - Create checkpoint
-- /code-review - Code review
-- /commit - Commit changes
-- /cost-optimize - Cost optimization
-- /create-agent - Create new agent
-- /create-bicep - Create Bicep templates
-- /create-epic - Epic creation
-- /create-test - Create tests
-- /design-lakehouse - Lakehouse design
-- /e2e - E2E tests
-- /eval - Evaluation harness
-- /evolve - Evolve instincts
-- /go-build - Go build fixes
-- /go-review - Go code review
-- /go-test - Go testing
-- /handoff - This prompt
-- /hooks-check - Verify hooks
-- /instinct-export - Export instincts
-- /instinct-import - Import instincts
-- /instinct-status - Instinct status
-- /learn - Learning capture
-- /orchestrate - Multi-agent orchestration
-- /plan - Planning
-- /plan-infrastructure - Infrastructure planning
-- /refactor-clean - Refactor/cleanup
-- /security-baseline - Security baseline
-- /select-model - Model selection
-- /setup-pm - Setup package manager
-- /skill-create - Create skills
-- /tdd - TDD workflow
-- /test-coverage - Test coverage
-- /update-codemaps - Update codemaps
-- /update-docs - Update documentation
-- /verify - Verification loop
-- /waf-review - Well-Architected review
+To generate relevant prompt recommendations:
+1. List `.github/prompts/*.prompt.md` files
+2. Match prompts to the next planned step
+3. Suggest 2-3 most relevant prompts (always include
+   `/consolidate-lessons` if durable findings were captured this session)

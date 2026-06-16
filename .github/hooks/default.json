@@ -1,14 +1,6 @@
 {
   "version": 1,
   "hooks": {
-    "sessionStart": [
-      {
-        "type": "command",
-        "bash": "./.github/skills/continuous-learning-v2/agents/start-observer.sh --once",
-        "timeoutSec": 15,
-        "comment": "Analyze observations from previous session for patterns"
-      }
-    ],
     "userPromptSubmitted": [
       {
         "type": "command",
@@ -19,13 +11,6 @@
       }
     ],
     "preToolUse": [
-      {
-        "type": "command",
-        "bash": "./scripts/hooks/observe.sh pre",
-        "powershell": "./scripts/hooks/observe.ps1 pre",
-        "timeoutSec": 5,
-        "comment": "Log tool usage for continuous-learning-v2 instinct detection"
-      },
       {
         "type": "command",
         "bash": "./scripts/hooks/pre-tool-use-long-running.sh",
@@ -49,13 +34,6 @@
       }
     ],
     "postToolUse": [
-      {
-        "type": "command",
-        "bash": "./scripts/hooks/observe.sh post",
-        "powershell": "./scripts/hooks/observe.ps1 post",
-        "timeoutSec": 5,
-        "comment": "Log tool results for continuous-learning-v2 instinct detection"
-      },
       {
         "type": "command",
         "bash": "./scripts/hooks/post-tool-use-format.sh",

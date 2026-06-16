@@ -66,9 +66,9 @@
     },
     "fetch": {
       "description": "HTTP fetch for retrieving and processing web content",
-      "package": "@modelcontextprotocol/server-fetch",
+      "package": "@kazuph/mcp-fetch",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+      "args": ["-y", "@kazuph/mcp-fetch@1.6.2"]
     },
     "lsp-typescript": {
       "description": "TypeScript language intelligence — type info, diagnostics, definitions, references, type tracing",
