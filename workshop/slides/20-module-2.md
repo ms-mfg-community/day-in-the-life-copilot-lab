@@ -74,20 +74,27 @@ Parallel dispatch across them with `/fleet` (see `labs/lab05.md`) is the payoff 
 
 ## Fabric MCP — the anger part
 
-Fabric MCP needs real auth. Config lives at `mcp-configs/copilot-cli/individual/fabric.json`; `labs/lab12.md` is the full walkthrough.
+Fabric MCP needs real auth. Config lives at `mcp-configs/copilot-cli/individual/fabric.json`; its args must include `server start --mode all`. `labs/lab12.md` is the full walkthrough.
 
 ```bash
-# Token, never inline:
-export FABRIC_AUTH_TOKEN=$(az account get-access-token \
+az login
+export FABRIC_WORKSPACE_ID=<guid>
+# Multi-tenant identity? Pin auth to your az login + Fabric tenant:
+export AZURE_TENANT_ID=<guid>
+export AZURE_TOKEN_CREDENTIALS=AzureCliCredential
+
+# Optional curl smoke-test only; never inline the token:
+FABRIC_AUTH_TOKEN=$(az account get-access-token \
   --resource https://api.fabric.microsoft.com \
   --query accessToken -o tsv)
-export FABRIC_WORKSPACE_ID=<guid>
+curl -fsS -H "Authorization: Bearer $FABRIC_AUTH_TOKEN" \
+  "https://api.fabric.microsoft.com/v1/workspaces/$FABRIC_WORKSPACE_ID/lakehouses" | head
 
 copilot --additional-mcp-config @mcp-configs/copilot-cli/individual/fabric.json
 > /mcp
 ```
 
-The `env` block in the config uses `${env:FABRIC_AUTH_TOKEN}` — **never** paste the token into the file. Token lifetime is ~1 hour; if the server starts returning empty results mid-session, the token expired. Re-export and restart the session.
+The server authenticates through DefaultAzureCredential, so it uses your `az login` session (AzureCliCredential), not a pasted token. Prereq: Contributor on the Fabric workspace. On a multi-tenant identity, `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` + `AZURE_TENANT_ID` keep it silent and on the right tenant (otherwise the browser fallback lists your home tenant's workspaces). The token one-liner is only a short-lived curl smoke-test (TTL 5–60 min); **never** paste tokens into config. If Fabric starts returning empty results mid-session, re-run `az login` and restart — the cached Azure credential expired or was never present.
 
 Offline fallback for restricted networks: `labs/lab12.md` ships a Parquet-fixture path so the demo still works without a Fabric tenant.
 

@@ -65,19 +65,24 @@ then show `/env` again to point at the resolved tool list.
 
 ### Demo C — Fabric MCP + auth (~6 min)
 
-Live path — token via `az`:
+Live path — Azure CLI auth:
 
 ```bash
-export FABRIC_AUTH_TOKEN=$(az account get-access-token \
+az login
+export FABRIC_WORKSPACE_ID=<guid>
+
+# Optional curl smoke-test only; never inline the token:
+FABRIC_AUTH_TOKEN=$(az account get-access-token \
   --resource https://api.fabric.microsoft.com \
   --query accessToken -o tsv)
-export FABRIC_WORKSPACE_ID=<guid>
+curl -fsS -H "Authorization: Bearer $FABRIC_AUTH_TOKEN" \
+  "https://api.fabric.microsoft.com/v1/workspaces/$FABRIC_WORKSPACE_ID/lakehouses" | head
 copilot --additional-mcp-config @mcp-configs/copilot-cli/individual/fabric.json
 > /mcp
 > "List the lakehouses in my workspace."
 ```
 
-Point at the `env` block in `mcp-configs/copilot-cli/individual/fabric.json` — the token is **never** inline; it's `${env:FABRIC_AUTH_TOKEN}`. Call out the hour-long token lifetime as the #1 cause of silent empty results later in the session.
+Point at the auth story: Fabric MCP uses DefaultAzureCredential, so the live server uses your `az login` session, not `${env:FABRIC_AUTH_TOKEN}`. The token one-liner is only an optional pre-flight curl smoke-test (TTL 5–60 min); the hygiene lesson remains **never inline tokens**. Call out an expired or missing `az login` session as the #1 cause of silent empty results later in the session — re-run `az login`, then restart.
 
 **If no Fabric tenant / Codespaces / restricted network:** switch to the offline Parquet-fixture path documented in `labs/lab12.md`. Same teaching outcomes, no auth needed.
 
@@ -132,7 +137,8 @@ Narrate: tools are *always* namespaced by server inside Copilot CLI — collisio
 
 ## 4. Expected pitfalls
 
-- **Live Fabric token expires mid-demo.** Likely if the module is late in the day. Re-run the `az account get-access-token` one-liner; the server does **not** auto-refresh. If the tenant is unavailable, switch to the `labs/lab12.md` offline simulator path — commit to it verbally ("we're going offline now") so the room isn't confused.
+- **Live Fabric Azure CLI credential expires mid-demo.** Likely if the module is late in the day. Re-run `az login`, then restart — the server uses your Azure CLI session through DefaultAzureCredential and does not auto-refresh an expired credential. If the tenant is unavailable, switch to the `labs/lab12.md` offline simulator path — commit to it verbally ("we're going offline now") so the room isn't confused.
+- **Wrong workspaces listed (multi-tenant identity — very common with @microsoft.com accounts).** DefaultAzureCredential's browser fallback signs in to the presenter's **home tenant**, so `onelake_list_workspaces` shows the wrong workspaces (or 404s on the demo workspace). Fix live: `export AZURE_TOKEN_CREDENTIALS=AzureCliCredential` and `export AZURE_TENANT_ID=<fabric-tenant-guid>` (both — tenant var alone isn't enough), then restart. Pre-set these before the session to avoid it on stage.
 - **`npx` cold-start lag.** First-time `@upstash/context7-mcp`, `@modelcontextprotocol/server-memory`, `@microsoft/fabric-mcp@latest` all pull packages. Pre-warm before the session (`npx -y @upstash/context7-mcp --help`, etc.) so the demo doesn't sit on a dependency install.
 - **Attendee pastes a VS Code `mcp.json` and asks why it doesn't load.** Expected. Show `mcp-configs/copilot-cli/CATALOG.json` — the top-level key and the required `tools` array are the two deltas. Don't try to script-convert live; demonstrate the diff and move on.
 - **`copilot mcp list` shows a server but `/env` doesn't show its tools.** That's the `tools` allowlist filtering. This is the exact silent-empty class in Demo D — walk it back to allowlist, not to a broken server.
@@ -154,6 +160,6 @@ Narrate: tools are *always* namespaced by server inside Copilot CLI — collisio
 - **`--disable-mcp-server` beats commenting out JSON.** Cleaner for debugging and reversible per-session without touching disk.
 - **`/mcp` inside an interactive session** is a faster inspector than `copilot mcp list` outside — it shows the **resolved** set including plugin-provided servers.
 - **`--log-level debug --log-dir <dir>`** is the single most useful flag combo for MCP debugging. Every JSON-RPC request and response is in the log. Grep by server name.
-- **Fabric's `obtain_token_command` is committed** in `mcp-configs/copilot-cli/individual/fabric.json` — you never memorize the `az` incantation, you copy it from there. Treat those config files as executable documentation.
+- **Fabric's launch command is committed** in `mcp-configs/copilot-cli/individual/fabric.json` — make sure it includes `server start --mode all`, because that subcommand exposes the live Fabric tools. Treat those config files as executable documentation.
 - **Plugin-bundled MCP servers share the same namespace rules.** Installing two plugins that bundle the same server is ambiguous — `copilot plugin list` will show which plugin owns which server, and `--disable-mcp-server <name>` scopes by resolved name, not by plugin.
 - **`/fleet` is the performance multiplier.** Three MCP servers serially is three round-trips; `/fleet` asks the model to dispatch in parallel. Worth showing even if the tokens cost slightly more — latency drops ~3x on cold queries.
