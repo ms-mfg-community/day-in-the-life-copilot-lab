@@ -160,34 +160,61 @@ in the entry from [`mcp-configs/copilot-cli/individual/fabric.json`](../mcp-conf
     "fabric": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@microsoft/fabric-mcp@latest"],
+      "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start", "--mode", "all"],
       "tools": ["*"],
       "env": {
-        "FABRIC_AUTH_TOKEN":  "${env:FABRIC_AUTH_TOKEN}",
         "FABRIC_TENANT_ID":   "${env:FABRIC_TENANT_ID}",
-        "FABRIC_WORKSPACE_ID":"${env:FABRIC_WORKSPACE_ID}"
+        "FABRIC_WORKSPACE_ID":"${env:FABRIC_WORKSPACE_ID}",
+        "AZURE_TENANT_ID":    "${env:AZURE_TENANT_ID}",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
       }
     }
   }
 }
 ```
 
-> 🔐 **Auth callout:** the config NEVER contains a token. The Copilot CLI
-> resolves `${env:FABRIC_AUTH_TOKEN}` at launch from your shell. If the
-> var is empty, the MCP process fails fast — that's intentional.
+> 🔐 **Auth callout:** the `server start --mode all` args are required for
+> the live tools to load. The server authenticates through your `az login`
+> session (DefaultAzureCredential), not a token environment variable.
+> `FABRIC_AUTH_TOKEN` is optional and only used for the curl smoke-test in
+> A.2/A.3.
+>
+> 🧭 **Multi-tenant trap (read this if you're a Microsoft employee).**
+> `DefaultAzureCredential` falls back to an **interactive browser** that signs
+> you in to your **home tenant** — so on a multi-tenant identity the server
+> lists the *wrong* workspaces (or returns 404 on yours). The two env vars
+> above prevent that: `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` forces the
+> silent `az login` credential (no browser), and `AZURE_TENANT_ID` pins it to
+> your Fabric tenant. Setting `AZURE_TENANT_ID` alone is **not** enough.
+> Remove `AZURE_TOKEN_CREDENTIALS` only if you intend to use a managed
+> identity / service principal instead of `az login`.
 
-### A.2 Mint a Fabric token (Live path only)
+### A.2 Sign in with Azure CLI (Live path only)
 
 ```bash
+az login
+# If your Fabric tenant differs from your default tenant:
+# az login --tenant <your-tenant-guid>
+az account show --query tenantId -o tsv
+
 export FABRIC_TENANT_ID="<your-tenant-guid>"
 export FABRIC_WORKSPACE_ID="<your-workspace-guid>"
+
+# Pin the MCP server to your az login session + Fabric tenant (see the
+# multi-tenant trap in A.1). These two make auth silent and correct-tenant:
+export AZURE_TENANT_ID="<your-tenant-guid>"     # same GUID as FABRIC_TENANT_ID
+export AZURE_TOKEN_CREDENTIALS="AzureCliCredential"
+
+# For the curl smoke-test in A.3 only; the MCP server itself uses your
+# az login session, not this token.
 export FABRIC_AUTH_TOKEN="$(az account get-access-token \
   --resource https://api.fabric.microsoft.com \
   --query accessToken -o tsv)"
 ```
 
-For long-lived setups, store these in **Azure Key Vault** and export them
-at shell start, e.g.:
+You need at least the **Contributor** role on the Fabric workspace. For
+long-lived setups, you can source the short-lived smoke-test token from
+**Azure Key Vault** at shell start, e.g.:
 
 ```bash
 export FABRIC_AUTH_TOKEN="$(az keyvault secret show \
@@ -215,24 +242,38 @@ Launch the CLI and ask Copilot to introspect:
 
 > 🌐 **OneLake URL shape.** When the agent quotes a lakehouse path it uses the OneLake DFS endpoint with an explicit `https://` scheme: `https://onelake.dfs.fabric.microsoft.com/<workspace-guid>/<lakehouse-guid>/Tables/<table>`. The bare `onelake.dfs.fabric.microsoft.com` host without a scheme is **not** a valid URL — you'll see auth-handler errors if you paste it into `az storage` or `curl` without prepending `https://`.
 
-Then trigger a notebook cell:
+Then inspect a table through OneLake:
 
 ```text
-> Run cell 3 of the "freshness-check" notebook in the analytics
-  lakehouse and tell me whether the row count exceeds 1,000,000.
+> List the tables in my lakehouse, then show the schema of the `sales` table.
 ```
 
-Copilot will call the `fabric` MCP server, which talks to the Fabric REST
-API on your behalf using the env-var token.
+Copilot calls the `fabric` MCP server's `onelake_*` tools, which reach
+OneLake using your `az login` session.
+
+> 🗂️ **Tables live under a namespace (default `dbo`).** The
+> `onelake_list_tables` and `onelake_get_table` tools **require** a
+> `namespace` — for a standard lakehouse it's `dbo`. Without it the call
+> returns `400 "Namespace is required. Provide --namespace or --schema."`
+> The agent normally discovers it via `onelake_list_table_namespaces` and
+> retries with `dbo`; if you call a tool directly, pass `namespace=dbo`
+> (e.g., the schema of `sales` lives at namespace `dbo`, table `sales`).
+
+> 📝 **Notebook execution note:** The server has **no single-cell execution
+> tool**. To run a notebook cell, use VS Code inline chat in Part B. The
+> REST equivalent of running a whole notebook is a job submission
+> (`POST https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/items/{itemId}/jobs/RunNotebook/instances`),
+> not a single cell.
 
 > ⏳ **Rate limits & back-off (live path).** The Fabric REST API enforces per-tenant 429s — typically ~200 requests/minute per workspace, lower for `GET /workspaces` enumeration. If you fan out queries from a `task`-tool sub-agent, expect throttling. The MCP server honors the `Retry-After` header and back-offs exponentially (1s → 2s → 4s, capped at 30s). When you see the agent pause mid-loop, that's the back-off — let it ride; cancelling and re-running just resets the budget. For heavy enumeration, prefer one well-shaped query that returns 50 rows over 50 single-row queries.
 
 ### A.3 (Offline path) Same steps, against the Parquet fixture
 
-If `$FABRIC_AUTH_TOKEN` is empty, the MCP server will refuse to start.
-That's the right behavior. For the **offline simulator**, skip the MCP
-server entirely and let Copilot use plain bash + Python against the
-fixture. This is the **mock command set** equivalent of the calls above:
+If there's no usable Azure credential (for example, you haven't run
+`az login`), the MCP server will fail fast. That's the right behavior.
+For the **offline simulator**, skip the MCP server entirely and let
+Copilot use plain bash + Python against the fixture. This is the **mock
+command set** equivalent of the calls above:
 
 ```bash
 # "Enumerate lakehouses"
@@ -290,26 +331,30 @@ into your `.vscode/mcp.json` (or user `settings.json` MCP section):
 ```json
 {
   "inputs": [
-    { "id": "fabric-auth-token",   "type": "promptString", "password": true,  "description": "Fabric API token" },
-    { "id": "fabric-workspace-id", "type": "promptString",                    "description": "Fabric workspace GUID" }
+    { "id": "fabric-workspace-id", "type": "promptString", "description": "Fabric workspace GUID (informational; the server authenticates via your az login session)" }
   ],
   "servers": {
     "fabric": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@microsoft/fabric-mcp@latest"],
+      "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start", "--mode", "all"],
       "env": {
-        "FABRIC_AUTH_TOKEN":   "${input:fabric-auth-token}",
-        "FABRIC_WORKSPACE_ID": "${input:fabric-workspace-id}"
+        "FABRIC_WORKSPACE_ID": "${input:fabric-workspace-id}",
+        "FABRIC_TENANT_ID":    "${env:FABRIC_TENANT_ID}",
+        "AZURE_TENANT_ID":     "${env:AZURE_TENANT_ID}",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
       }
     }
   }
 }
 ```
 
-VS Code's `inputs` block prompts once, stores the value in the OS secret
-vault, and re-injects it into the MCP process per session. **Never** type
-a token into a notebook cell or commit one to settings.
+The server uses your `az login` session for auth, so no token prompt is
+needed; the workspace GUID input is informational. **Never** type a token
+into a notebook cell or commit one to settings. The `AZURE_TENANT_ID` /
+`AZURE_TOKEN_CREDENTIALS` pair pins auth to your Fabric tenant via `az login`
+(same multi-tenant trap as A.1) — export `AZURE_TENANT_ID` in the shell that
+launches VS Code, or replace `${env:AZURE_TENANT_ID}` with your tenant GUID.
 
 ### B.2 Open a notebook and use **inline chat** for cell-level edits
 
@@ -471,8 +516,7 @@ secret pasted into a cell output cannot escape your machine.
 ## 12.6 Wrap-up checklist
 
 - [ ] Fabric MCP entry merged into CLI **and** VS Code configs
-- [ ] `FABRIC_AUTH_TOKEN` exported from a Key Vault command (or you
-      explicitly chose the offline path)
+- [ ] Signed in with `az login` (at least Contributor on the workspace) — or explicitly chose the offline path
 - [ ] Enumerated lakehouses (live) **or** the Parquet fixture (offline)
       from Copilot CLI
 - [ ] Did a cell-level edit with inline chat in VS Code
@@ -490,7 +534,7 @@ every PR.
 
 > 🛠️ **Lab 12 specifics — revert before the generic sweep below.**
 >
-> - **Fabric env vars (live path):** `unset FABRIC_AUTH_TOKEN FABRIC_TENANT_ID FABRIC_WORKSPACE_ID` (PowerShell: `Remove-Item Env:FABRIC_AUTH_TOKEN, Env:FABRIC_TENANT_ID, Env:FABRIC_WORKSPACE_ID -ErrorAction SilentlyContinue`). The token is short-lived, but unsetting it stops MCP from auto-launching `@microsoft/fabric-mcp` on your next `copilot` session.
+> - **Fabric env vars (live path):** `unset FABRIC_AUTH_TOKEN FABRIC_TENANT_ID FABRIC_WORKSPACE_ID AZURE_TENANT_ID AZURE_TOKEN_CREDENTIALS` (PowerShell: `Remove-Item Env:FABRIC_AUTH_TOKEN, Env:FABRIC_TENANT_ID, Env:FABRIC_WORKSPACE_ID, Env:AZURE_TENANT_ID, Env:AZURE_TOKEN_CREDENTIALS -ErrorAction SilentlyContinue`). The `FABRIC_*` vars are for the smoke-test; `AZURE_TENANT_ID`/`AZURE_TOKEN_CREDENTIALS` pin the server to your `az login` session. Run `az logout` too if you want to clear that session.
 > - **Pre-commit hook:** if §12.5.4 set `core.hooksPath` to `.githooks`, revert with `git config --unset core.hooksPath` (or restore your previous value if you had one). Delete `.githooks/pre-commit` if you no longer want the strip-outputs behavior.
 > - **`.gitattributes` edits:** if you added the notebook/parquet rules from §12.5.1 only to try them, `git checkout -- .gitattributes` returns the file to its committed state. The repo already ships `*.parquet binary`, so you can leave that even if you remove the notebook rules.
 > - **Offline fixtures stay committed.** `labs/fixtures/lab12/sales.parquet` is **part of the repo** — do not delete it. Any *additional* `*.parquet` files you generated (e.g. `sales-2.parquet`) sit in the directory but are git-ignored; remove them with `git clean -fdX -- labs/fixtures/lab12/` if you want a pristine fixtures dir without touching the canonical file.

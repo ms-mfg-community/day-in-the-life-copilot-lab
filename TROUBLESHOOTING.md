@@ -91,9 +91,30 @@ The lakehouse enumeration, notebook editing, and inline-chat steps work
 identically against the simulator. See Lab 12 §12.2 (offline simulator setup)
 and §12.5 (notebook hygiene) for the full fallback flow.
 
-**If you do have Fabric access:** prefer the device-code flow in a local VS
-Code window (not Codespaces) and copy the resulting token into the Codespace
-as a Codespaces secret named `FABRIC_TOKEN`.
+**If you do have Fabric access:** launch `@microsoft/fabric-mcp` with
+`server start --mode all`; otherwise only `docs_*` tools are exposed and live
+`onelake_*` tools are unavailable. The server authenticates through
+`DefaultAzureCredential`, so it uses your Azure CLI session and does **not**
+read `FABRIC_AUTH_TOKEN`.
+
+- **401 Unauthorized:** run `az login` (or
+  `az login --tenant <fabric-tenant-guid>`) and confirm with
+  `az account show`.
+- **403 Forbidden:** ask for at least the **Contributor** role on the Fabric
+  workspace.
+- **Wrong workspaces listed / 404 on your workspace (multi-tenant identity):**
+  `DefaultAzureCredential`'s browser fallback signed you in to your **home
+  tenant**, not your Fabric tenant. Pin auth to your `az login` session with
+  `export AZURE_TOKEN_CREDENTIALS=AzureCliCredential` **and**
+  `export AZURE_TENANT_ID=<fabric-tenant-guid>` (both — the tenant var alone
+  isn't enough), then restart the server.
+- **`400 "Namespace is required"` from `onelake_list_tables`/`onelake_get_table`:**
+  these tools need a `namespace`; for a standard lakehouse it's `dbo`
+  (discover via `onelake_list_table_namespaces`).
+- **No browser / headless / Codespaces:** use
+  `az login --use-device-code`.
+- `FABRIC_AUTH_TOKEN` is only useful as an optional curl smoke-test token, for
+  example from `az account get-access-token --resource https://api.fabric.microsoft.com`.
 
 **Time:** 5 minutes
 

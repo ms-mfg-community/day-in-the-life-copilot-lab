@@ -46,9 +46,9 @@ mcp_servers:
     last_verified: "2026-04-27"
   - name: fabric
     transport: stdio
-    pin: "1.0.0"           # @microsoft/fabric-mcp — first GA on 2026-04-14
+    pin: "1.1.0"           # @microsoft/fabric-mcp — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
     npm_package: "@microsoft/fabric-mcp"
-    last_verified: "2026-04-27"
+    last_verified: "2026-06-15"
 
 models:
   default: auto
