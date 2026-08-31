@@ -1,25 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Authorization;
 using ContosoUniversity.Core.Interfaces;
 using ContosoUniversity.Core.Models;
-using ContosoUniversity.Web.Extensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ContosoUniversity.Web.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class NotificationsController : BaseController
     {
-        private readonly ILogger<NotificationsController> _logger;
-
         public NotificationsController(
             INotificationService notificationService,
             ILogger<NotificationsController> logger) : base(notificationService, logger)
         {
-            _logger = logger;
         }
 
         // GET: Notifications
@@ -38,7 +30,7 @@ namespace ContosoUniversity.Web.Controllers
             try
             {
                 // Read all available notifications from the queue
-                Notification notification;
+                Notification? notification;
                 while ((notification = await _notificationService.ReceiveNotificationAsync()) != null)
                 {
                     notifications.Add(notification);

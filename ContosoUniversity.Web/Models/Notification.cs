@@ -11,25 +11,25 @@ namespace ContosoUniversity.Web.Models
         
         [Required]
         [StringLength(100)]
-        public string EntityType { get; set; }
-        
+        public string? EntityType { get; set; }
+
         [Required]
         [StringLength(50)]
-        public string EntityId { get; set; }
-        
+        public string? EntityId { get; set; }
+
         [Required]
         [StringLength(20)]
-        public string Operation { get; set; } // CREATE, UPDATE, DELETE
-        
+        public string? Operation { get; set; } // CREATE, UPDATE, DELETE
+
         [Required]
         [StringLength(256)]
-        public string Message { get; set; }
+        public string? Message { get; set; }
         
         [Required]
         public DateTime CreatedAt { get; set; }
         
         [StringLength(100)]
-        public string CreatedBy { get; set; }
+        public string? CreatedBy { get; set; }
         
         public bool IsRead { get; set; }
         

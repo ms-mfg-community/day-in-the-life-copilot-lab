@@ -87,7 +87,7 @@ namespace ContosoUniversity.Web.Controllers
                 {
                     var course = new Course
                     {
-                        CourseID = viewModel.CourseID,
+                        CourseID = viewModel!.CourseID,
                         Title = viewModel.Title,
                         Credits = viewModel.Credits,
                         DepartmentID = viewModel.DepartmentID
@@ -123,13 +123,13 @@ namespace ContosoUniversity.Web.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error creating course: {Title}", viewModel.Title);
+                    _logger.LogError(ex, "Error creating course: {Title}", viewModel!.Title);
                     ModelState.AddModelError("", "Unable to create course. Try again, and if the problem persists, see your system administrator.");
                 }
             }
 
             var depts = await _departmentRepository.GetAllAsync();
-            ViewData["DepartmentID"] = new SelectList(depts, "DepartmentID", "Name", viewModel.DepartmentID);
+            ViewData["DepartmentID"] = new SelectList(depts, "DepartmentID", "Name", viewModel?.DepartmentID);
             return View(viewModel);
         }
 
@@ -170,7 +170,7 @@ namespace ContosoUniversity.Web.Controllers
         {
             _logger.LogInformation("POST Edit called with ID: {ID}, CourseID: {CourseID}, Title: {Title}", id, viewModel?.CourseID, viewModel?.Title);
             
-            if (id != viewModel.CourseID)
+            if (id != viewModel?.CourseID)
             {
                 return BadRequest();
             }

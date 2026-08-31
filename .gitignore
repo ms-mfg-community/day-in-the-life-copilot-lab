@@ -42,3 +42,6 @@ Thumbs.db
 
 # GitHub Sessions
 docs/.github/*
+
+# Visual Studio Code files
+.vs/
