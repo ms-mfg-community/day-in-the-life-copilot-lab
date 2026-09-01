@@ -4,7 +4,7 @@
     "sessionStart": [
       {
         "type": "command",
-        "bash": "./.github/skills/continuous-learning-v2/agents/start-observer.sh --once",
+        "bash": "./.github/skills/continuous-learning-v2/start-observer.sh --once",
         "timeoutSec": 15,
         "comment": "Analyze observations from previous session for patterns"
       }
