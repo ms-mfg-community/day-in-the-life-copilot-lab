@@ -41,6 +41,22 @@ without losing the plot.
 >   and the `/cost-check` prompt to verify your footprint between
 >   phases.
 
+> ⚠️ **Enterprise model policy changed — pinning tiers no longer holds
+> automatically.** As of the org-wide rollout completed 2026-09-01, any
+> newly-GA model an admin has **not** explicitly configured is available to
+> users **by default** (`model_default_availability_policy:
+> "default-on-unless-disabled"` in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml)).
+> This replaces the old implicit-hold/curated-allowlist behavior. Practical
+> effect for this lab: the model names pinned above (`claude-opus-4.6`,
+> `auto`, `claude-haiku-4.5` / `gpt-5-mini`, `claude-opus-4.7`) are still
+> valid choices, but a new model can silently show up as selectable in a
+> worker or orchestrator pane's `/model` picker even though nobody added it
+> to the registry's tiers. Don't assume "if it's not in the registry, it's
+> not available" — if you want a hard ceiling on cost, explicitly pin the
+> model per pane (as shown below) rather than relying on the org's model
+> list being curated for you. Org admins who want the old curated-allowlist
+> behavior must explicitly disable the global default-availability policy.
+
 > 🪞 **Meta callout — this lab teaches the pattern that built this lab.**
 > The repo you are reading was modernized using exactly the loop below.
 > The hand-off contracts under `.orchestrator/session.md` (see Lab 13

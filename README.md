@@ -552,13 +552,25 @@ erDiagram
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
 | [Lab 14](labs/lab14.md) | Orchestrator + tmux Pattern (Deep-Dive) | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
+| [Lab 15](labs/lab15.md) | LSP & Code Intelligence in Copilot CLI | Configure a language server, use go-to-definition/find-references/rename/call-hierarchy, know when Copilot still falls back to text search |
+| [Lab 16](labs/lab16.md) | Enterprise Marketplace & Plugin Governance | GA `managed-settings.json` schema, `strictKnownMarketplaces` deny-by-default, AI Controls admin walkthrough |
+| [Lab 17](labs/lab17.md) | GitHub Admin Controls for Copilot/AI | AI Controls nav, default-on model availability policy, Copilot audit log scope |
+| [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
+| [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
+| [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
-**Total: ~5 hours** (14 labs — self-paced or presenter-led)
+**Total: ~7 hours** (20 labs — self-paced or presenter-led)
 
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
 > Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux.
+> Lab 14 operationalises them with tmux. Labs 15-20 are the **2026
+> modernization track**: Lab 15 (LSP) and Lab 17 (admin controls) are
+> standalone; Lab 16 → Lab 11 are companions (marketplace governance);
+> Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
+> Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
+> [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
+> enterprise scale and should be read after Lab 17.
 
 ---
 
@@ -636,7 +648,8 @@ day-in-the-life-copilot-lab/
 │   ├── web/                           # Fastify app, routes, SSR views
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
-├── labs/                          # 14 hands-on lab modules + per-track appendices
+├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
+├── labs/                          # 20 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions

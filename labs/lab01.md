@@ -15,9 +15,9 @@ In this lab you will discover and understand the Copilot configuration files tha
 
 References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
-- [Agent skills](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-agent-skills)
-- [Custom instructions](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
-- [Prompt files](https://docs.github.com/en/copilot/using-github-copilot/using-prompt-files)
+- [Agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [Custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
+- [Prompt files](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files)
 
 ## 1.0a Copilot CLI currency (2026 refresh)
 
@@ -169,11 +169,11 @@ Copilot doesn't just do keyword text search — it uses multiple layers of code 
 | Layer | How It Works | Scope |
 |-------|-------------|-------|
 | **Semantic indexing** | Builds a meaning-based index of your codebase. Near-instant (seconds). Understands intent, not just keywords. | Local repo |
-| **LSP integration** | Interfaces with language servers (TypeScript, C#, Python, etc.) for go-to-definition, hover, references, diagnostics. Use `/lsp` to configure. | Local repo |
-| **ripgrep + glob** | Fast pattern-based search for exact matches across files | Local repo |
+| **LSP integration (GA)** | When a language server is configured (project `.github/lsp.json` or personal `~/.copilot/lsp-config.json`), Copilot CLI automatically prefers it over text search for go-to-definition, find references, hover, rename, workspace symbol search, go-to-implementation, and call hierarchy — no slash command needed. See [Lab 15 — LSP & Code Intelligence](lab15.md). | Local repo |
+| **ripgrep + glob** | Fast pattern-based search for exact matches across files — the fallback when no LSP server is configured for a language | Local repo |
 | **GitHub MCP** | Semantic code search across **any GitHub repo** you have access to — remotely. The agent can scan codebases it's never seen locally. | Remote (GitHub) |
 
-> 💡 When you ask Copilot "how does authentication work in this project?", it's using semantic search — not `grep`. It understands meaning. And with the GitHub MCP server, it can do the same across remote repos.
+> 💡 When you ask Copilot "how does authentication work in this project?", it's using semantic search — not `grep`. It understands meaning. And with the GitHub MCP server, it can do the same across remote repos. For precise symbol-level navigation (go-to-definition, rename, call hierarchy), Copilot reaches for a configured LSP server before falling back to text search.
 
 ## 1.4 Try It
 

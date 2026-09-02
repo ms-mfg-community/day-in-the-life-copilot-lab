@@ -14,8 +14,8 @@ In this lab you will create a new skill and prompt template for .NET testing.
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 15 minutes
 
 References:
-- [Agent skills](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-agent-skills)
-- [Prompt files](https://docs.github.com/en/copilot/using-github-copilot/using-prompt-files)
+- [Agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [Prompt files](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files)
 
 ## 4.1 Skills: Auto-Activating Knowledge
 
