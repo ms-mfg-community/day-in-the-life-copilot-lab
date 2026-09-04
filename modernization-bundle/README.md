@@ -13,7 +13,7 @@ install it directly, instead of hand-copying files.
 | `manifest.yaml` | Plugin metadata + entrypoints. Validated the same way as `plugin-template/manifest.yaml`. |
 | `agents/modernization-auditor.agent.md` | Bounded drift-detection agent — mechanical fixes only, never deletes or rewrites design. |
 | `skills/modernization-drift-scanner/SKILL.md` | Portable scan logic (stale refs, contradicted instructions, underused files, eval-harness contradictions, duplication) — reusable interactively or from a scheduled workflow. |
-| `hooks/block-self-edit-hook.sh` | Pre-tool-use hook that blocks any edit to this plugin's own manifest/release-workflow/CODEOWNERS — prevents privilege escalation. |
+| `hooks/block-self-edit-hook.sh` | Pre-tool-use hook that denies **edit-tool** writes to this plugin's own guardrail surface: `manifest.yaml`, `.github/workflows/release.yml`, `CODEOWNERS`, `agents/modernization-auditor.agent.md`, `scripts/*.mjs`, and the hook itself. Raises the bar for self-modification; it is **not** a complete privilege-escalation boundary — it inspects edit-tool paths only, so a shell tool (`bash rm …`) can still reach these files. Pair it with `permissions.deny` rules if you need a real boundary. |
 | `prompts/modernization-scan.prompt.md` | `/modernization-scan` — report-only entry point. |
 | `org-policy.example.yaml` | Deny-by-default allowlist policy template (same shape as Lab 11/16). |
 | `scripts/install.mjs` | `copilot plugin install --dry-run` simulator (identical contract to `plugin-template/scripts/install.mjs`). |

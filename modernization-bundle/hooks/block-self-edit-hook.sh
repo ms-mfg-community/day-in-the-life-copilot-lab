@@ -27,10 +27,14 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.toolName // ""' 2>/dev/null || echo "")"
+TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.toolName // ""' 2>/dev/null \
+  | tr '[:upper:]' '[:lower:]')"
 
+# Lowercased above: the runtime's casing is not guaranteed (lab06.md shows
+# both "edit" and "Bash"), and a case-sensitive match would silently render
+# this guard inert.
 case "$TOOL_NAME" in
-  create|edit|write|multi_edit|str_replace_editor) ;;
+  create|edit|write|multi_edit|multiedit|str_replace_editor) ;;
   *) exit 0 ;;
 esac
 
@@ -69,6 +73,9 @@ while IFS= read -r raw; do
   candidate="$(realpath -m -- "$candidate" 2>/dev/null || printf '%s' "$candidate")"
   candidate="$(printf '%s' "$candidate" | tr '[:upper:]' '[:lower:]')"
   candidate="$(printf '%s' "$candidate" | sed 's#//*#/#g')"   # collapse //
+  # Win32 silently strips trailing spaces and dots, so "manifest.yaml." and
+  # "manifest.yaml " both open the protected file. Strip them before matching.
+  candidate="$(printf '%s' "$candidate" | sed 's#[ .]*$##')"
 
   while IFS= read -r pat; do
     [ -n "$pat" ] || continue

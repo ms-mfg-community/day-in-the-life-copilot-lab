@@ -65,11 +65,11 @@ announcement):
   `.github-private` repo's default branch.
 
 Per `docs/_meta/registry.yaml` → `enterprise_managed_settings.supported_keys`,
-a configuration using the plugin-governance keys looks like this:
+a configuration using the plugin-governance keys looks like this. Shapes are
+verified against the published schema; see `registry.yaml` for the
+version-controlled key list. Save it as `copilot/managed-settings.json`:
 
 ```json
-// copilot/managed-settings.json (shapes verified against the published
-// schema — see registry.yaml for the version-controlled key list)
 {
   "extraKnownMarketplaces": {
     "contoso-plugins": {
@@ -238,8 +238,9 @@ at GA. It now also includes `permissions.deny` / `.ask` / `.allow`,
 fixed list.
 
 ✅ You can state the four-tier precedence order (MDM → server → file-based →
-user) and name the exception: `sandbox` and `permissions.*` compose
-most-restrictively instead of overriding.
+user) and name the exception: `sandbox` and `permissions.deny` / `.ask` /
+`.allow` compose most-restrictively instead of overriding. Note
+`permissions.disableBypassPermissionsMode` is **not** in that exception list.
 
 ✅ You ran the `policy.mjs` allowlist analogy and got `allowed: false` for
 an untrusted source and `allowed: true` for a trusted one.
@@ -253,7 +254,7 @@ an untrusted source and `allowed: true` for a trusted one.
 |---------|---------|
 | **Canonical path** | `copilot/managed-settings.json` in the enterprise's chosen source org's `.github-private` repo |
 | **Legacy path** | `.github/copilot/settings.json` (backward-compat only) |
-| **Precedence** | Four tiers — MDM → server → file-based → user. Exception: `sandbox` and `permissions.*` compose most-restrictively |
+| **Precedence** | Four tiers — MDM → server → file-based → user. Exception: `sandbox` and `permissions.deny` / `.ask` / `.allow` compose most-restrictively |
 | **Refresh cadence** | On every sign-in, plus hourly for already-authenticated sessions |
 | **Config entry point** | The **AI Controls** tab in enterprise settings |
 | **Deny-by-default lever** | `strictKnownMarketplaces: [ … ]` (an **array** of marketplace objects; `[]` = total lockdown) + `extraKnownMarketplaces` |

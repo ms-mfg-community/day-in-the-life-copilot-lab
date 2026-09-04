@@ -142,8 +142,9 @@ enterprise_managed_settings:
     - sandbox
     - telemetry
     - remoteControl
-  # Highest-precedence first. sandbox and permissions.* are the exception:
-  # they compose most-restrictively across delivery methods.
+  # Highest-precedence first. sandbox and permissions.deny/.ask/.allow are
+  # the exception: they compose most-restrictively across delivery methods.
+  # disableBypassPermissionsMode is NOT in that exception list.
   precedence_order:
     - mdm-managed
     - server-managed
