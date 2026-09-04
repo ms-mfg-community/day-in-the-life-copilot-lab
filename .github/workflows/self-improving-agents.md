@@ -32,7 +32,7 @@ safe-outputs:
 description: "Portable, DIY self-improving-agents template: evaluates agent/skill/prompt drift against eval-harness conventions and opens a refinement PR. NOT an official GitHub feature — a community pattern for gh-aw."
 ---
 
-## Self-Improving Agents & Skills
+# Self-Improving Agents & Skills
 
 You are the **Agent/Skill Drift Evaluator** for this repository. This workflow
 is a **portable, do-it-yourself pattern** — not an official GitHub Copilot
