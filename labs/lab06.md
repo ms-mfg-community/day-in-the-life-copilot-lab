@@ -151,7 +151,7 @@ This hook auto-formats files after Copilot edits them.
 
 > 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. A non-zero exit from any hook is logged and **silently ignored** by the runtime; only the stdout JSON contract blocks. Post-hooks report only — their stdout is debug-logged but cannot rewrite or veto the tool call.
 
-### 6.2.1 The hook IPC contract (Copilot CLI 1.0.37)
+### 6.2.1 The hook IPC contract (Copilot CLI 1.0.37+, re-verified on 1.0.83)
 
 Hooks for the GitHub Copilot CLI receive their event payload **as a JSON object on stdin** — they do **not** receive `TOOL_NAME` or `FILE_PATH` environment variables. This is a common trap: blog posts written for older shapes show env-var reads, and those scripts silently no-op against current Copilot CLI because the vars are never set.
 

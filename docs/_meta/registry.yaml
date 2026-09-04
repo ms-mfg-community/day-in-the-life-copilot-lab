@@ -12,9 +12,20 @@
 
 schema_version: 1
 
+# Verified published on npm 2026-09-04: `npm view @github/copilot versions`
+# lists 1.0.82 (published 2026-08-29); dist-tag `latest` was 1.0.83.
+# Keep this at the LOWEST version the labs actually require, not `latest` —
+# every learner is held to this floor by scripts/preflight.{sh,ps1}.
 copilot_cli_version_floor: "1.0.82"
 
-gh_aw_schema_version: "0.87.10"
+# The gh-aw compiler version the committed .lock.yml files were built with
+# (see the `compiler_version` field in any .github/workflows/*.lock.yml).
+# Recompiling with a different version rewrites the locks, so pin the
+# extension to match before running `gh aw compile`:
+#   gh extension install github/gh-aw --pin v0.86.2
+# NOTE: weekly-content-audit.lock.yml is still on an older schema and has
+# not been recompiled; upstream latest was v0.88.2 as of 2026-09-04.
+gh_aw_schema_version: "0.86.2"
 
 # MCP protocol revision this registry assumes labs teach against. The
 # 2026-07-28 spec is a breaking revision (stateless handshake, no
@@ -112,13 +123,34 @@ enterprise_managed_settings:
   canonical_path: "copilot/managed-settings.json"
   legacy_path: ".github/copilot/settings.json"
   source_repo_pattern: ".github-private"
+  # Verified against the published schema reference:
+  # https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings
+  # The 2026-07-01 GA changelog announced five keys; the schema has grown
+  # since. GitHub states "additional keys will be continuously added over
+  # time" — treat this as a floor and re-check on the last_verified date.
   supported_keys:
     - extraKnownMarketplaces
     - enabledPlugins
     - strictKnownMarketplaces
-    - disableBypassPermissionsMode
     - model
-  last_verified: "2026-08-31"
+    - permissions.disableBypassPermissionsMode
+    - permissions.deny
+    - permissions.ask
+    - permissions.allow
+    - allowedMcpServers
+    - deniedMcpServers
+    - sandbox
+    - telemetry
+    - remoteControl
+  # Highest-precedence first. sandbox and permissions.* are the exception:
+  # they compose most-restrictively across delivery methods.
+  precedence_order:
+    - mdm-managed
+    - server-managed
+    - file-based
+    - user-level
+  strict_known_marketplaces_ga_date: "2026-07-01"   # public preview: 2026-06-25
+  last_verified: "2026-09-04"
 
 # Pace-field semantics (Phase 1 audit):
 #   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline

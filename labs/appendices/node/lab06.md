@@ -68,7 +68,7 @@ pnpm -C node test --run
 '@ | Out-File -FilePath .github/hooks/post-tool-use-node-build.ps1 -Encoding utf8
 ````
 
-> ⚠️ **Outdated guidance trap:** if you see a hook that reads `$COPILOT_TOOL_NAME` / `$COPILOT_TOOL_PATH` / `$env:TOOL_NAME` from the environment, it is broken against current Copilot CLI 1.0.37 — those vars are never exported. Hook events arrive as JSON on stdin with camelCase `toolName` / `toolArgs` fields (see the canonical pattern above).
+> ⚠️ **Outdated guidance trap:** if you see a hook that reads `$COPILOT_TOOL_NAME` / `$COPILOT_TOOL_PATH` / `$env:TOOL_NAME` from the environment, it is broken against current Copilot CLI (contract unchanged from 1.0.37 through 1.0.83) — those vars are never exported. Hook events arrive as JSON on stdin with camelCase `toolName` / `toolArgs` fields (see the canonical pattern above).
 
 ## C. Wire it up
 
