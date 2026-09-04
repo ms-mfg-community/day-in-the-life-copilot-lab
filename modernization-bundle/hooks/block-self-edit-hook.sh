@@ -73,8 +73,10 @@ while IFS= read -r raw; do
   candidate="$(realpath -m -- "$candidate" 2>/dev/null || printf '%s' "$candidate")"
   candidate="$(printf '%s' "$candidate" | tr '[:upper:]' '[:lower:]')"
   candidate="$(printf '%s' "$candidate" | sed 's#//*#/#g')"   # collapse //
-  # Win32 silently strips trailing spaces and dots, so "manifest.yaml." and
-  # "manifest.yaml " both open the protected file. Strip them before matching.
+  # Win32 silently strips trailing spaces and dots -- at the END of the path
+  # ("manifest.yaml.") and on INTERIOR components ("hooks./block-...sh").
+  # Both resolve to the protected file, so normalise both before matching.
+  candidate="$(printf '%s' "$candidate" | sed 's#\.*/#/#g')"
   candidate="$(printf '%s' "$candidate" | sed 's#[ .]*$##')"
 
   while IFS= read -r pat; do
