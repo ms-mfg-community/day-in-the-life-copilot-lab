@@ -12,30 +12,59 @@
 
 schema_version: 1
 
-copilot_cli_version_floor: "1.0.37"
+# Verified published on npm 2026-09-04: `npm view @github/copilot versions`
+# lists 1.0.82 (published 2026-08-29); dist-tag `latest` was 1.0.83.
+# Keep this at the LOWEST version the labs actually require, not `latest` —
+# every learner is held to this floor by scripts/preflight.{sh,ps1}.
+copilot_cli_version_floor: "1.0.82"
 
-gh_aw_schema_version: "2026.04"
+# The gh-aw compiler version the committed .lock.yml files were built with
+# (see the `compiler_version` field in any .github/workflows/*.lock.yml).
+# Recompiling with a different version rewrites the locks, so pin the
+# extension to match before running `gh aw compile`:
+#   gh extension install github/gh-aw --pin v0.86.2
+# NOTE: weekly-content-audit.lock.yml is still on an older schema and has
+# not been recompiled; upstream latest was v0.88.2 as of 2026-09-04.
+gh_aw_schema_version: "0.86.2"
 
-# MCP server pins — explicit versions verified against npm registry on 2026-04-27
-# (see fix-regression/verification/verified-findings.md § V05). Floating `@latest`
-# tags remain in the per-server `mcp-configs/*/individual/*.json` files for the
-# weekly audit to detect drift; this registry records the *known-good* version.
+# MCP protocol revision this registry assumes labs teach against. The
+# 2026-07-28 spec is a breaking revision (stateless handshake, no
+# Mcp-Session-Id, server/discover RPC, subscriptions/listen replacing
+# resources/subscribe, MRTR pattern replacing server-initiated
+# sampling/elicitation/roots-list, required resultType field). See
+# https://modelcontextprotocol.io/specification/2026-07-28/changelog
+# Labs 05 and 10 explicitly teach against this revision; other labs that
+# show raw MCP request/response shapes should not describe the retired
+# 2025-11-25-era session handshake.
+mcp_protocol_spec_version: "2026-07-28"
+
+# MCP server pins — re-verified 2026-08-31 against npm registry and each
+# server's own release notes, including compatibility with the 2026-07-28
+# stateless MCP spec revision above. Floating `@latest` tags remain in the
+# per-server `mcp-configs/*/individual/*.json` files for the weekly audit to
+# detect drift; this registry records the *known-good* version.
 mcp_servers:
   - name: context7
     transport: stdio
     pin: "2.2.1"
     npm_package: "@upstash/context7-mcp"
-    last_verified: "2026-04-27"
+    last_verified: "2026-08-31"
   - name: memory
     transport: stdio
     pin: "2026.1.26"
     npm_package: "@modelcontextprotocol/server-memory"
-    last_verified: "2026-04-27"
+    last_verified: "2026-08-31"
+    note: >-
+      Persistent memory is an application-layer convention (e.g. this repo's
+      .copilot/lessons pattern), not a protocol-level session — the
+      2026-07-28 MCP spec removed protocol sessions entirely. Cross-call
+      state now uses explicit server-minted handles passed as ordinary tool
+      arguments, not an implicit session.
   - name: sequential-thinking
     transport: stdio
     pin: "2025.12.18"
     npm_package: "@modelcontextprotocol/server-sequential-thinking"
-    last_verified: "2026-04-27"
+    last_verified: "2026-08-31"
   - name: microsoft-learn
     transport: http
     pin: latest
@@ -43,25 +72,86 @@ mcp_servers:
     transport: stdio
     pin: "0.4.1"
     npm_package: "@microsoft/workiq"
-    last_verified: "2026-04-27"
+    last_verified: "2026-08-31"
   - name: fabric
     transport: stdio
-    pin: "1.1.0"           # @microsoft/fabric-mcp — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
+    pin: "1.1.0"           # @microsoft/fabric-mcp (local/OSS variant) — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
     npm_package: "@microsoft/fabric-mcp"
     last_verified: "2026-06-15"
+    note: >-
+      This pin targets the LOCAL/open-source Fabric.Mcp.Server
+      (github.com/microsoft/mcp/tree/main/servers/Fabric.Mcp.Server), used by
+      Lab 12's offline/Codespaces path. A separate REMOTE "Fabric Core MCP
+      Server" also exists (https://api.fabric.microsoft.com/v1/mcp/core,
+      Entra ID auth + RBAC, public preview since 2026-03) for live-tenant
+      work — Lab 12 should make explicit which variant each exercise uses.
 
 models:
   default: auto
   cheap:
     - claude-haiku-4.5
     - gpt-5-mini
+    - gpt-5.4-mini
   standard:
     - claude-sonnet-4.6
+    - claude-sonnet-5
     - gpt-5.2
   premium:
     - claude-opus-4.7
-    - claude-opus-4.6
+    - claude-opus-5
     - gpt-5.3-codex
+    - grok-4.6
+
+# Enterprise AI governance policy this registry assumes labs teach against.
+# Confirmed via https://github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise/ :
+# rollout began 2026-08-26, enforced org-wide by 2026-09-01. Any newly-GA
+# model an admin has NOT explicitly configured is now available to users by
+# default org-wide (a change from the prior implicit-hold behavior). Admins
+# who want the old curated-allowlist behavior must explicitly disable the
+# global "default availability" policy. Labs 14, 17, and 20 reference this.
+model_default_availability_policy: "default-on-unless-disabled"
+
+# Enterprise-managed settings. Confirmed via
+# https://github.blog/changelog/2026-07-01-enterprise-managed-settings-json-is-generally-available/
+# (fetched directly). The supported path is copilot/managed-settings.json in
+# the enterprise's chosen source organization's .github-private repo, with
+# backward compatibility for the older .github/copilot/settings.json path.
+# Configured via the AI Controls tab in enterprise settings. Supported keys
+# today: extraKnownMarketplaces, enabledPlugins, strictKnownMarketplaces,
+# disableBypassPermissionsMode, model. Labs 11, 16, and 17 reference this.
+enterprise_managed_settings:
+  canonical_path: "copilot/managed-settings.json"
+  legacy_path: ".github/copilot/settings.json"
+  source_repo_pattern: ".github-private"
+  # Verified against the published schema reference:
+  # https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings
+  # The 2026-07-01 GA changelog announced five keys; the schema has grown
+  # since. GitHub states "additional keys will be continuously added over
+  # time" — treat this as a floor and re-check on the last_verified date.
+  supported_keys:
+    - extraKnownMarketplaces
+    - enabledPlugins
+    - strictKnownMarketplaces
+    - model
+    - permissions.disableBypassPermissionsMode
+    - permissions.deny
+    - permissions.ask
+    - permissions.allow
+    - allowedMcpServers
+    - deniedMcpServers
+    - sandbox
+    - telemetry
+    - remoteControl
+  # Highest-precedence first. sandbox and permissions.deny/.ask/.allow are
+  # the exception: they compose most-restrictively across delivery methods.
+  # disableBypassPermissionsMode is NOT in that exception list.
+  precedence_order:
+    - mdm-managed
+    - server-managed
+    - file-based
+    - user-level
+  strict_known_marketplaces_ga_date: "2026-07-01"   # public preview: 2026-06-25
+  last_verified: "2026-09-04"
 
 # Pace-field semantics (Phase 1 audit):
 #   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline
@@ -143,6 +233,36 @@ labs:
     pace_presenter_minutes: 15
     pace_workshop_minutes: 15
     pace_self_minutes: 45
+  lab15:
+    title: "LSP & Code Intelligence in Copilot CLI"
+    pace_presenter_minutes: 5
+    pace_workshop_minutes: 8
+    pace_self_minutes: 20
+  lab16:
+    title: "Enterprise Marketplace & Plugin Governance"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 25
+  lab17:
+    title: "GitHub Admin Controls for Copilot/AI"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 25
+  lab18:
+    title: "Spec-Driven Design, Stacked PRs & Code Review in the Loop"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 14
+    pace_self_minutes: 30
+  lab19:
+    title: "Self-Improving Agents & Skills (gh-aw Template)"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 25
+  lab20:
+    title: "Enterprise Token Optimization & Reporting"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 25
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.

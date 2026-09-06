@@ -23,6 +23,10 @@ dotnet test
 
 A weekly gh-aw workflow (`.github/workflows/weekly-content-audit.md`) runs every Sunday at 05:00 UTC. It reads `docs/_meta/registry.yaml`, runs the seven freshness checks (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing), and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` containing safe registry/lab updates plus a generated `docs/_meta/audit-report.md`. The PR is auto-labeled (`automated`, `content-audit`, `needs-review`), reviewers are assigned via `.github/CODEOWNERS`, and the PR is opened as a draft when changes exceed `audit.draft_pr_if_changes_exceed`. Future agents: update the registry instead of hardcoding versions in labs.
 
+## Self-Improving Agents/Skills (Lab 19)
+
+A separate, portable gh-aw workflow (`.github/workflows/self-improving-agents.md`) scans this repo's own `.github/agents/`, `.github/skills/`, and `.github/prompts/` for drift (stale references, contradicted instructions, underused files, duplicated responsibility) and opens a **draft-only** PR with mechanical fixes — never a design rewrite, never a deletion, and never an edit to its own workflow file. The same scan logic is also packaged as an installable plugin at `modernization-bundle/` (built on the `plugin-template/` conventions from Lab 11) so other repos can install it via `copilot plugin install` instead of copy-pasting the workflow. See [Lab 19](labs/lab19.md) for the full walkthrough.
+
 ## Agent Suite
 
 ### Azure Specialists

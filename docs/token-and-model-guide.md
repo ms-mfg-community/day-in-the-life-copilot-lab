@@ -12,6 +12,22 @@
 > `strategic-compact` skill when you want a recommended compaction
 > point.
 
+> ⚠️ **Enterprise model availability changed (2026-09-01).** Per
+> [docs/_meta/registry.yaml](_meta/registry.yaml)'s
+> `model_default_availability_policy: "default-on-unless-disabled"`
+> (confirmed via
+> [github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise](https://github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise/)):
+> any newly-GA model an admin has **not** explicitly configured is now
+> available to users by default, org-wide — a change from the prior
+> implicit-hold/curated-allowlist behavior. Practically, this means the
+> tiers below (cheap/standard/premium) are a **recommendation**, not an
+> enforced ceiling — a brand-new model can appear in your `/model` picker
+> or `task` tool model list without anyone updating this guide or the
+> registry. If your team wants a hard, enforced ceiling on cost, an org
+> admin must explicitly disable the global default-availability policy
+> and curate the allowlist themselves; otherwise, treat "pin your team to
+> these tiers" as social convention, not a technical guarantee.
+
 > ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature today — Copilot CLI does not expose a `/cost-check` slash command for user-authored prompts. Treat the `.prompt.md` file as a reusable template you paste into a CLI session, or invoke it from Copilot Chat in your IDE.
 
 ---
@@ -59,6 +75,10 @@ work. Use them explicitly when you want to avoid escalation but `mini`
 is too weak.
 
 - **`claude-sonnet-4.6`** — current Sonnet default. Strong all-rounder.
+- **`claude-sonnet-5`** — newer Sonnet generation now in the registry's
+  `standard` tier alongside `claude-sonnet-4.6`. Prefer it for new work;
+  keep `claude-sonnet-4.6` pinned only where you've already validated a
+  workflow against it.
 - **`claude-sonnet-4.5`** — previous Sonnet generation; pin to it if a
   workflow regressed on 4.6.
 - **`claude-sonnet-4`** — the original Sonnet 4. Useful as a stable
@@ -79,6 +99,10 @@ Premium calls cost roughly 5–10× a cheap call — measure twice.
 
 - **`claude-opus-4.7`** — newest Opus. Default premium pick when you
   need the strongest reasoning available.
+- **`claude-opus-5`** — newer Opus generation, now in the registry's
+  `premium` tier alongside `claude-opus-4.7`. Prefer it for new
+  hard-reasoning work; keep `claude-opus-4.7` pinned where you've
+  already validated a workflow against it.
 - **`claude-opus-4.6`** — previous Opus generation. **This is what the
   repo's `copilot-instructions.md` tells you to set on `task` tool
   sub-agent dispatches** — it's the right balance of quality and cost
@@ -94,6 +118,10 @@ Premium calls cost roughly 5–10× a cheap call — measure twice.
   test generation) when you want a non-Anthropic second opinion.
 - **`gpt-5.2-codex`** — previous Codex generation; same niche, pinned
   for reproducibility.
+- **`grok-4.6`** — newest premium tier entrant (added to the registry's
+  `premium` list). Useful as a third independent opinion alongside the
+  Claude/GPT premium pair on hard reasoning or architecture-planning
+  tasks.
 
 ### Decision shortcut
 

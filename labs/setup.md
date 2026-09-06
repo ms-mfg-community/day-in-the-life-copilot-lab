@@ -27,6 +27,13 @@
 > pane plus short-lived worker panes driven by `scripts/orchestrator/`
 > through a strict `plan → implement → handoff → clear → qa → clear`
 > cycle (it's the same loop this repo's modernization was built with).
+> Labs 15–20 are the **2026 modernization track**: [Lab 15](lab15.md)
+> LSP-backed code intelligence, [Lab 16](lab16.md) enterprise
+> marketplace/plugin governance (`managed-settings.json`),
+> [Lab 17](lab17.md) GitHub admin AI controls, [Lab 18](lab18.md)
+> spec-driven design with stacked PRs and per-layer Code Review,
+> [Lab 19](lab19.md) a self-improving-agents gh-aw template, and
+> [Lab 20](lab20.md) enterprise-scale token optimization and reporting.
 
 ---
 

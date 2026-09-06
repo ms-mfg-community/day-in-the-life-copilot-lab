@@ -14,7 +14,7 @@ In this lab you will modify custom instructions and AGENTS.md to customize Copil
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 15 minutes
 
 References:
-- [Adding custom instructions](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
+- [Adding custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
 - [How to write a great AGENTS.md](https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/)
 - [Research: Do context files actually help?](https://www.arxiv.org/abs/2506.17056) — Evidence-based guidance on what to include
 

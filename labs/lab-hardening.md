@@ -73,18 +73,28 @@ Reference solution: [`solutions/lab-hardening/`](../solutions/lab-hardening/READ
 
 <!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
 > 💡 Commands below reflect the current Copilot CLI surface as of this lab
-> refresh. Versions, model tiers, and MCP server pins live in
-> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
-> the registry rather than hardcoding values, so a single registry update
-> propagates everywhere.
+> refresh (CLI floor per [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml):
+> see `copilot_cli_version_floor`). Versions, model tiers, and MCP server pins
+> live in the registry — labs reference it rather than hardcoding values, so a
+> single registry update propagates everywhere.
+
+> 🆕 **Terminal UX refresh (confirmed GA, ~Aug 2026):** `/plugin`, `/mcp`, and
+> `/skills` are real interactive commands backed by an in-terminal dashboard —
+> you can discover, install, and configure plugins, MCP servers, and skills
+> without hand-editing config files. The terminal also gained tabs for
+> browsing issues/PRs/gists. Config-file editing still works and is what the
+> underlying `extensions_manage` MCP tool inspects, but the dashboard is now
+> the primary interactive path for a human at the prompt.
 
 | Capability | Command / surface | Use when |
 |------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Install a plugin** | `/plugin install owner/repo` (or the `/plugin` dashboard) | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
 | **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
 | **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
-| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. Note: an enterprise's global model-default-availability policy (see [Lab 17](../labs/lab17.md)) may make additional models selectable here even if the registry's curated tiers don't list them. |
+| **Local tool discovery (model-side)** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | The agent enumerating which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Invoke as a tool call (e.g. `extensions_manage({operation: "list"})`), **not** as `/extensions_manage` — there is no such slash command. |
+| **Local tool discovery (user-side)** | `/skills`, `/plugin`, `/mcp` | The human listing or managing skills, plugins, and MCP servers from the prompt via the in-terminal dashboard. These are real built-in slashes; `/extensions manage` and `/extensions mode` are **not** — use `Shift+Tab` to toggle plan/autopilot modes. |
+| **LSP-backed code intelligence** | Automatic — no slash command | Copilot CLI transparently prefers a configured language server over text search for go-to-definition, find references, rename, and call hierarchy. See [Lab 15 — LSP & Code Intelligence](../labs/lab15.md). |
 <!-- @end-include docs/_partials/currency.md -->
 
 ## 1 — Build the `tight-reviewer` custom agent

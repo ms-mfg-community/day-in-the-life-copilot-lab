@@ -1,0 +1,36 @@
+# Copilot plugin manifest — modernization bundle
+# Packages the Day-in-the-Life Copilot Lab's Labs 15-20 modernization work
+# (LSP awareness, self-improving-agents pattern, spec-driven/stacked-PR
+# governance) as an installable, portable plugin.
+# The minimum_cli_version field MUST match docs/_meta/registry.yaml `copilot_cli_version_floor`.
+
+name: modernization-bundle
+version: 0.1.0
+description: >-
+  Self-improving-agents plugin: bundles a drift-scanning agent + skill,
+  a report-only /modernization-scan prompt, and a self-edit-blocking hook.
+  Install this plugin in any repo to get the same bounded, draft-only
+  agent/skill drift detection this lab suite uses on itself. The companion
+  gh-aw workflow (.github/workflows/self-improving-agents.md) is a separate
+  distribution shape and is NOT bundled here — copy it directly if you want
+  the scheduled-workflow form instead of the plugin form.
+minimum_cli_version: "1.0.82"
+homepage: "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab"
+license: MIT
+codeowners:
+  - "@ms-mfg-community/copilot-lab-maintainers"
+
+entrypoints:
+  agents:
+    - agents/modernization-auditor.agent.md
+  skills:
+    - skills/modernization-drift-scanner/SKILL.md
+  hooks:
+    - hooks/block-self-edit-hook.sh
+  prompts:
+    - prompts/modernization-scan.prompt.md
+
+mcp_servers:
+  - name: context7
+    transport: stdio
+    pin: latest

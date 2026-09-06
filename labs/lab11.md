@@ -26,6 +26,7 @@ workspace, and enforce an org allowlist policy that blocks untrusted sources.
 References:
 - [Finding and installing plugins](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-finding-installing)
 - [Awesome Copilot marketplace](https://github.com/github/awesome-copilot)
+- [Enterprise managed settings (GA, 2026-07-01)](https://github.blog/changelog/2026-07-01-enterprise-managed-settings-json-is-generally-available/)
 - [`plugin-template/README.md`](../plugin-template/README.md)
 - [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — CLI version floor + model tiers
 
@@ -33,18 +34,28 @@ References:
 
 <!-- @include docs/_partials/currency.md — do not edit inline; edit the partial and re-sync. -->
 > 💡 Commands below reflect the current Copilot CLI surface as of this lab
-> refresh. Versions, model tiers, and MCP server pins live in
-> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — labs reference
-> the registry rather than hardcoding values, so a single registry update
-> propagates everywhere.
+> refresh (CLI floor per [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml):
+> see `copilot_cli_version_floor`). Versions, model tiers, and MCP server pins
+> live in the registry — labs reference it rather than hardcoding values, so a
+> single registry update propagates everywhere.
+
+> 🆕 **Terminal UX refresh (confirmed GA, ~Aug 2026):** `/plugin`, `/mcp`, and
+> `/skills` are real interactive commands backed by an in-terminal dashboard —
+> you can discover, install, and configure plugins, MCP servers, and skills
+> without hand-editing config files. The terminal also gained tabs for
+> browsing issues/PRs/gists. Config-file editing still works and is what the
+> underlying `extensions_manage` MCP tool inspects, but the dashboard is now
+> the primary interactive path for a human at the prompt.
 
 | Capability | Command / surface | Use when |
 |------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
+| **Install a plugin** | `/plugin install owner/repo` (or the `/plugin` dashboard) | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
 | **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
 | **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. |
-| **Local tool discovery** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | Discovering which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Note: `extensions_manage` is an MCP tool, **not** a slash command — invoke it via the MCP surface, not via `/extensions_manage`. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. Note: an enterprise's global model-default-availability policy (see [Lab 17](../labs/lab17.md)) may make additional models selectable here even if the registry's curated tiers don't list them. |
+| **Local tool discovery (model-side)** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | The agent enumerating which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Invoke as a tool call (e.g. `extensions_manage({operation: "list"})`), **not** as `/extensions_manage` — there is no such slash command. |
+| **Local tool discovery (user-side)** | `/skills`, `/plugin`, `/mcp` | The human listing or managing skills, plugins, and MCP servers from the prompt via the in-terminal dashboard. These are real built-in slashes; `/extensions manage` and `/extensions mode` are **not** — use `Shift+Tab` to toggle plan/autopilot modes. |
+| **LSP-backed code intelligence** | Automatic — no slash command | Copilot CLI transparently prefers a configured language server over text search for go-to-definition, find references, rename, and call hierarchy. See [Lab 15 — LSP & Code Intelligence](../labs/lab15.md). |
 <!-- @end-include docs/_partials/currency.md -->
 
 ## 11.1 Anatomy of a Plugin
@@ -119,6 +130,27 @@ elsewhere, set the environment variable at the org onboarding layer
 ```sh
 export COPILOT_PLUGIN_REGISTRIES="contoso-internal/contoso-copilot-plugins"
 ```
+
+> 🆕 **GA enterprise mechanism (confirmed, 2026-07-01):** for GitHub
+> Enterprise Cloud customers, the `COPILOT_PLUGIN_REGISTRIES` env var above
+> is a *local/devcontainer-level* pin. The **official, centrally enforced**
+> mechanism is `managed-settings.json`, configured once by an enterprise
+> admin via the **AI Controls** tab in enterprise settings and stored at
+> **`copilot/managed-settings.json`** in the enterprise's chosen source
+> organization's `.github-private` repo (an older `.github/copilot/settings.json`
+> path is kept for backward compatibility, but `copilot/managed-settings.json`
+> is the current canonical path). It is fetched by Copilot clients (VS Code
+> and Copilot CLI today) on every authentication and refreshed hourly, and it
+> **takes precedence over** any local/file-based config for the keys it sets.
+> Supported keys today: `extraKnownMarketplaces`, `enabledPlugins`,
+> `strictKnownMarketplaces`, `disableBypassPermissionsMode`, `model`. This
+> repo's `org-policy.example.yaml` + `policy.mjs` (below) models the same
+> deny-by-default allowlist *idea* in a portable, framework-agnostic way you
+> can adapt for CI gating regardless of which enterprise settings mechanism
+> you're on — but for a real GitHub Enterprise Cloud rollout, configure
+> `strictKnownMarketplaces`/`enabledPlugins` in `managed-settings.json` as the
+> source of truth. See [Lab 16](lab16.md) for the full walkthrough of this
+> GA mechanism, including the schema and rollout steps.
 
 ### Release workflow
 
@@ -208,8 +240,10 @@ the plugin-template suites locally, use `npx vitest run tests/plugin-template`.
 ## What's next
 
 Lab 12 takes the same "configuration as a product" mindset into the data
-plane with Fabric MCP + notebooks. Labs 13 and 14 wire multi-plugin
-workspaces into A2A orchestration and tmux-driven execution patterns.
+plane with Fabric MCP + notebooks. Lab 16 goes deeper into the GA
+enterprise-managed-settings mechanism this lab introduced above. Labs 13
+and 14 wire multi-plugin workspaces into A2A orchestration and tmux-driven
+execution patterns.
 
 - [Lab 12](lab12.md) — Fabric MCP with Copilot CLI & VS Code (data-plane
   MCP, offline Parquet fallback, notebook hygiene).
@@ -217,6 +251,9 @@ workspaces into A2A orchestration and tmux-driven execution patterns.
   critic, trust boundaries, hand-off schema).
 - [Lab 14](lab14.md) — Orchestrator + tmux deep-dive (the pattern that
   built this repo; operationalises Lab 13's hand-off schema).
+- [Lab 16](lab16.md) — Enterprise marketplace & plugin governance: the
+  full `managed-settings.json` schema, `strictKnownMarketplaces`
+  allowlisting, and the AI Controls admin surface.
 
 ## 11.8 Cleanup
 

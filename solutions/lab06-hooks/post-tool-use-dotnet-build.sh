@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # post-tool-use-dotnet-build.sh — Verify .NET build after Copilot edits a C# file.
 #
-# Copilot CLI 1.0.37 hook IPC contract (per binary inspection of SJt/EJt):
+# Copilot CLI 1.0.37+ hook IPC contract (per binary inspection of SJt/EJt):
 #   - Event payload arrives as JSON on STDIN, NOT in env vars.
 #   - Only COPILOT_PROJECT_DIR and CLAUDE_PROJECT_DIR are exported to the child.
 #   - TOOL_NAME / FILE_PATH env vars are NEVER set — older docs are wrong.
