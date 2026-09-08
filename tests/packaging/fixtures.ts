@@ -35,7 +35,7 @@ export function fixture() {
   });
 
   const content = {
-    schemaVersion: 1,
+    schemaVersion: 1 as const,
     source: { commit: 'a'.repeat(40), archiveSha256: 'b'.repeat(64) },
     platform: {
       os: process.platform, arch: process.arch,

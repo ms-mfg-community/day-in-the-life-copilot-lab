@@ -14,12 +14,16 @@
     "build:slides": "node scripts/workshop/build-slides.mjs"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.9.0",
     "@vitest/coverage-v8": "^2.1.9",
     "ajv": "^8.17.1",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
+    "prettier": "^3.9.6",
     "reveal.js": "^6.0.1",
     "shiki": "^4.0.2",
+    "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   }
 }

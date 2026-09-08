@@ -38,6 +38,17 @@ function bundles() {
   });
 }
 
+function scriptLineEndings() {
+  return Object.fromEntries(walk(source).flatMap((path) => {
+    const bytes = readFileSync(path);
+    const executable = path.endsWith('.sh') || bytes.subarray(0, 2).toString() === '#!';
+    if (!executable || !bytes.includes(Buffer.from('\r\n')) || bytes.includes(0)) return [];
+    return [[relative(source, path), {
+      original: sha256(bytes), linux: sha256(bytes.toString('utf8').replace(/\r\n/g, '\n')),
+    }]];
+  }));
+}
+
 function requiredPaths() {
   const browsers = walk(join(runtime, 'browsers'), new Set())
     .filter((path) => /\/(chrome|headless_shell|chrome-headless-shell)$/.test(path))
@@ -51,7 +62,7 @@ function requiredPaths() {
     'tools/node_modules/.bin/mcp-server-memory', 'tools/node_modules/.bin/mcp-server-filesystem',
     'tools/node_modules/.bin/mcp-server-sequential-thinking',
     'dotnet-tools/csharp-ls', 'dotnet-tools/dotnet-ef', 'python/bin/python',
-    'gh/bin/gh', 'gh-aw/gh-aw', 'NuGet.Config', 'source.tar',
+    'gh/bin/gh', 'gh-aw/gh-aw', 'NuGet.Config', 'source.tar', 'fixtures/lab12/sales.parquet',
     ...browsers, ...feed.map((file) => `nuget-feed/${file}`),
   ];
 }
@@ -87,7 +98,7 @@ try {
   const release = sealRelease({
     schemaVersion: 1, source: sourceRecord,
     platform: { os: process.platform, arch: process.arch, nodeMajor: Number(process.versions.node.split('.')[0]), nodeAbi: process.versions.modules },
-    inputs: dependencyInputs(), bundles: bundles(), requiredPaths: requiredPaths(),
+    inputs: dependencyInputs(), scriptLineEndings: scriptLineEndings(), bundles: bundles(), requiredPaths: requiredPaths(),
     capabilities: {
       included: ['real-copilot-cli-binary', 'dotnet-source-build-test', 'node-source-build-test', 'root-vitest',
         'matching-chromium-e2e', 'local-memory-filesystem-sequential-thinking', 'csharp-typescript-lsp',

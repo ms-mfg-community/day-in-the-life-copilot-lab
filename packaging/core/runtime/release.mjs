@@ -22,6 +22,12 @@ const schema = {
       },
     },
     inputs: { type: 'object', minProperties: 1, additionalProperties: hash },
+    scriptLineEndings: {
+      type: 'object', additionalProperties: {
+        type: 'object', additionalProperties: false, required: ['original', 'linux'],
+        properties: { original: hash, linux: hash },
+      },
+    },
     bundles: {
       type: 'array', minItems: 3, items: {
         type: 'object', additionalProperties: false, required: ['name', 'target', 'archive', 'sha256'],
@@ -59,7 +65,7 @@ export function loadRelease(runtime) {
     if (targets[bundle.name] !== bundle.target) throw new Error('Invalid release bundle target');
     safePath(runtime, bundle.archive);
   }
-  for (const path of [...Object.keys(release.inputs), ...release.requiredPaths]) safePath(runtime, path);
+  for (const path of [...Object.keys(release.inputs), ...Object.keys(release.scriptLineEndings ?? {}), ...release.requiredPaths]) safePath(runtime, path);
   return release;
 }
 

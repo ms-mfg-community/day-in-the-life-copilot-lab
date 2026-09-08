@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { mcpConfiguration, lspConfiguration } from '../runtime/profile.mjs';
 import { RpcProcess } from './rpc.mjs';
+import { waitForSourceSymbol } from './lsp-source.mjs';
 
 async function withMcp(server, workspace, env, action) {
   const rpc = new RpcProcess(server.command, server.args, { cwd: workspace, env: { ...env, ...server.env } });
@@ -54,8 +55,10 @@ export async function probeMcp(workspace, runtime, env) {
       assert.ok(JSON.stringify(graph).includes(entity), 'Memory did not persist across real server processes');
     });
     const filesystemVersion = await withMcp(servers.filesystem, workspace, env, async (rpc) => {
-      const listing = await call(rpc, 'list_directory', { path: join(workspace, 'labs/fixtures') });
-      assert.ok(JSON.stringify(listing).includes('lab12'), 'Filesystem fixture listing is incomplete');
+      const root = join(workspace, 'labs/fixtures');
+      const allowed = await call(rpc, 'list_allowed_directories', {});
+      assert.ok(JSON.stringify(allowed).includes(root), 'Filesystem is not scoped to this checkout');
+      await call(rpc, 'list_directory', { path: root });
       const denied = await rpc.request('tools/call', {
         name: 'read_text_file', arguments: { path: join(workspace, 'package.json') },
       });
@@ -75,11 +78,21 @@ export async function probeMcp(workspace, runtime, env) {
   }
 }
 
-function symbolNames(symbols) {
-  return symbols.flatMap((symbol) => [symbol.name, ...symbolNames(symbol.children ?? [])]);
+function findSource(directory, extension) {
+  const ignored = new Set(['node_modules', 'bin', 'obj', '.git', '.lab-state']);
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (ignored.has(entry.name)) continue;
+    const path = join(directory, entry.name);
+    if (entry.isFile() && entry.name.endsWith(extension)) return path;
+    if (entry.isDirectory()) {
+      const nested = findSource(path, extension);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
 }
 
-async function probeLanguage(server, workspace, env, relativeFile, expectedSymbol, languageId) {
+async function probeLanguage(server, workspace, env, preferredFile, languageId, extension) {
   const root = join(workspace, server.rootUri);
   const rpc = new RpcProcess(server.command, server.args, { cwd: root, env, framed: true });
   try {
@@ -89,14 +102,16 @@ async function probeLanguage(server, workspace, env, relativeFile, expectedSymbo
       workspaceFolders: [{ uri: rootUri, name: server.rootUri }],
     });
     rpc.notify('initialized');
-    const file = join(workspace, relativeFile);
+    const preferred = join(workspace, preferredFile);
+    const file = existsSync(preferred) ? preferred : findSource(root, extension);
+    assert.ok(file, `No ${languageId} source is available for an LSP readiness request`);
     const uri = pathToFileURL(file).href;
-    rpc.notify('textDocument/didOpen', { textDocument: { uri, languageId, version: 1, text: readFileSync(file, 'utf8') } });
-    const symbols = await rpc.request('textDocument/documentSymbol', { textDocument: { uri } });
-    assert.ok(Array.isArray(symbols) && symbolNames(symbols).includes(expectedSymbol), `LSP did not resolve ${expectedSymbol}`);
+    const text = readFileSync(file, 'utf8');
+    rpc.notify('textDocument/didOpen', { textDocument: { uri, languageId, version: 1, text } });
+    const grounded = await waitForSourceSymbol(rpc, uri, text);
     await rpc.request('shutdown');
     rpc.notify('exit');
-    return { file: relativeFile, symbol: expectedSymbol };
+    return { file: relative(workspace, file), symbol: grounded.name };
   } finally {
     await rpc.close();
   }
@@ -105,8 +120,8 @@ async function probeLanguage(server, workspace, env, relativeFile, expectedSymbo
 export async function probeLsp(workspace, runtime, env) {
   const servers = lspConfiguration(runtime).lspServers;
   const [typescript, csharp] = await Promise.all([
-    probeLanguage(servers.typescript, workspace, env, 'node/web/server.ts', 'main', 'typescript'),
-    probeLanguage(servers.csharp, workspace, env, 'dotnet/ContosoUniversity.Core/Models/Student.cs', 'Student', 'csharp'),
+    probeLanguage(servers.typescript, workspace, env, 'node/web/server.ts', 'typescript', '.ts'),
+    probeLanguage(servers.csharp, workspace, env, 'dotnet/ContosoUniversity.Core/Models/Student.cs', 'csharp', '.cs'),
   ]);
   return { typescript, csharp };
 }

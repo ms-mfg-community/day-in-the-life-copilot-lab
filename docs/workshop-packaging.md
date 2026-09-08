@@ -108,16 +108,24 @@ dependency inputs, unowned dependency directories, conflicting initialization, o
 damaged initialized state produce errors. There is no `--ignore-failed-sources`,
 registry retry, reset, or successful skip.
 
+Some committed legacy Unix scripts have CRLF line endings. First initialization
+converts those scripts to LF **only when their bytes still match the committed
+hash recorded in the release**, preserving executable permissions. Already-edited
+LF scripts are untouched; modified CRLF scripts fail clearly rather than being
+rewritten. Resume never repeats this conversion. The original Git archive remains
+unchanged and hash-bound to its commit, and the release records both original and
+compatible script hashes. This does not edit or commit a maintainer's dirty hooks.
+
 ## State and configuration
 
 | State | First creation / resume / replacement container |
 | --- | --- |
-| Source and worktrees | Remain editable in the checkout. Initialization never copies source over attendee changes. Each worktree initializes its own dependencies and state. |
+| Source and worktrees | Remain editable in the checkout. Only checksum-matching pristine Unix scripts receive the first-run LF compatibility conversion described above; attendee edits are never replaced. Each worktree initializes its own dependencies and state. |
 | `.lab-state/state.json` and dependency ownership markers | Initialize once; match the release before use. Interrupted hydration can continue only where ownership is provable. A stale initialization lock requires investigation, not automatic removal. |
 | `.lab-state/nuget`, root/Node `node_modules` | Writable, attendee-owned hydrated copies. Resume verifies ownership; it does not reinstall missing initialized trees. pnpm's bundled store stays at its fixed image path. |
 | `.lab-state/contoso-node.db` | Prepared Node startup opts into a file database. Transactional initialization records completion separately from row counts, so deleting all rows does not cause reseeding. The unprepared Node default stays in-memory. |
 | `.lab-state/contoso-dotnet.db` | Prepared Development configuration opts into SQLite and transactional, marker-based initialization. Existing data and deliberate deletions survive resume; initialization failures stop the prepared app. The default app/test configuration keeps its prior initializer. |
-| Memory and lessons | Memory is checkout-local; existing `.copilot/lessons` and source-based lab work stay in the checkout. Readiness uses separate disposable probe data and does not rewrite attendee memory. |
+| Memory, lessons and fixtures | Memory is checkout-local; existing `.copilot/lessons` and source-based lab work stay in the checkout. Readiness uses separate disposable memory probe data and an immutable image copy of the Parquet fixture; it does not rewrite or demand unchanged attendee memory/data. |
 | CLI credentials, sessions and user-level LSP edits | Isolated under the attendee's home, not baked into the image or automatically exported. Treat home state as disposable across container replacement; renew sign-in and deliberately export non-secret customizations when needed. |
 | Tool registrations | Missing per-user gh-aw/LSP registrations are restored from image content; edited LSP configuration and existing registrations are not overwritten. |
 

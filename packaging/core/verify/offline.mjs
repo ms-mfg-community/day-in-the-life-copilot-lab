@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
@@ -27,6 +27,22 @@ function verifyIsolation() {
   }
   for (const file of ['.config/gh/hosts.yml', '.copilot/config.json']) {
     assert.equal(existsSync(join(process.env.HOME, file)), false, `The image contains user authentication state: ${file}`);
+  }
+}
+
+function exerciseHooks(workspace, env) {
+  for (const track of [workspace, join(workspace, 'node')]) {
+    const probe = join(track, '.lab-state/format-probe.js');
+    mkdirSync(join(track, '.lab-state'), { recursive: true });
+    writeFileSync(probe, 'const sample={ready:true}\n');
+    const result = spawnSync('bash', [join(workspace, 'scripts/hooks/post-tool-use-format.sh')], {
+      cwd: track, env, encoding: 'utf8',
+      input: JSON.stringify({ cwd: track, toolName: 'write', toolArgs: { file_path: probe } }),
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(probe, 'utf8'), 'const sample = { ready: true };\n', 'The actual format hook silently skipped its work');
+    const tsc = execFileSync('npx', ['--no-install', 'tsc', '--version'], { cwd: track, env, encoding: 'utf8' });
+    assert.match(tsc, /^Version /);
   }
 }
 
@@ -80,6 +96,7 @@ async function applications(workspace, marker, env, createAttendee) {
 function fingerprints(workspace) {
   const paths = [
     'node/web/views/layout.ts', 'dotnet/ContosoUniversity.Web/Views/Home/Index.cshtml',
+    'node/web/server.ts', 'labs/fixtures/lab12/sales.parquet',
     '.lab-state/memory.jsonl', '.lab-state/contoso-node.db', '.lab-state/contoso-dotnet.db',
   ];
   return Object.fromEntries(paths.map((path) => [path, sha256(readFileSync(join(workspace, path)))]));
@@ -101,13 +118,26 @@ async function firstRun() {
   checkout(FIRST);
   proveDeniedEndpoints(FIRST);
   command(FIRST, 'initialization', 'lab-core', ['init']);
+  assert.equal(execFileSync('git', ['config', '--local', 'core.hooksPath'], { cwd: FIRST, encoding: 'utf8' }).trim(), '.githooks');
   const env = coreEnvironment(FIRST, runtime);
+  exerciseHooks(FIRST, env);
   command(FIRST, 'shell-lint', 'shellcheck', ['packaging/core/build.sh', 'packaging/core/build/os.sh',
     'packaging/core/build/dependencies.sh', 'packaging/core/build/content.sh', 'packaging/core/lab-core', 'packaging/core/copilot'], env);
   command(FIRST, 'root-regressions', 'npm', ['test', '--', '--run', 'tests/packaging', 'tests/devcontainer', 'tests/build', 'tests/hooks', '--coverage'], env);
   command(FIRST, 'node-coverage', 'pnpm', ['-C', 'node', 'test', '--coverage'], env);
   const marker = `SOURCE_EDIT_${randomUUID()}`;
   exerciseSourceEdits(FIRST, marker, env);
+  const serverFile = join(FIRST, 'node/web/server.ts');
+  const serverSource = readFileSync(serverFile, 'utf8');
+  assert.equal((serverSource.match(/\bmain\b/g) ?? []).length, 2);
+  writeFileSync(serverFile, serverSource.replace(/\bmain\b/g, 'runAttendeeApp'));
+  command(FIRST, 'attendee-fixture-edit', 'python', ['-c', [
+    'import pandas as pd;',
+    'path="labs/fixtures/lab12/sales.parquet";',
+    'df=pd.read_parquet(path); df["attendee_note"]="preserved"; df.to_parquet(path,index=False)',
+  ].join('')], env);
+  command(FIRST, 'edited-source-readiness', 'lab-core', ['ready']);
+  command(FIRST, 'node-renamed-entrypoint-build', 'pnpm', ['-C', 'node', 'build'], env);
   command(FIRST, 'node-e2e', 'pnpm', ['-C', 'node', 'exec', 'playwright', 'test'], { ...env, CI: 'true' });
   command(FIRST, 'real-copilot-version', 'copilot', ['--version'], env);
   await applications(FIRST, marker, env, true);

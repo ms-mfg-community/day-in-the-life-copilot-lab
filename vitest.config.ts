@@ -9,8 +9,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: [
-        'packaging/core/runtime/{io,release,initialize,profile,copilot}.mjs',
+        'packaging/core/runtime/{io,release,initialize,profile,copilot,scripts}.mjs',
         'packaging/core/build/inputs.mjs',
+        'packaging/core/verify/lsp-source.mjs',
       ],
       // Process entrypoints/probes are exercised by the real offline container
       // gate; this floor measures the reusable initialization and config logic.

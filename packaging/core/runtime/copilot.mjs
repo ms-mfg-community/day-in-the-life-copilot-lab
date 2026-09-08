@@ -6,6 +6,7 @@ import { assertPlainPath, readJson, writeJson } from './io.mjs';
 const PROJECT_MCP = ['.mcp.json', '.github/mcp.json', '.copilot/mcp-config.json'];
 
 export function prepareUserTools(context, runtime, env) {
+  assertPlainPath(context.workspace, 'labs/fixtures');
   const home = env.HOME;
   if (!home) throw new Error('A writable per-user HOME is required; no shared credential directory is supported');
   const copilotHome = join(home, '.copilot-lab-core', context.state.workspaceId);

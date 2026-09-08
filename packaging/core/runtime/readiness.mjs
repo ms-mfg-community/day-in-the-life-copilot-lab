@@ -50,6 +50,10 @@ function probeTools(workspace, runtime, env) {
     throw new Error('Both prepared .NET SDKs are required');
   }
   run(process.execPath, [join(workspace, 'node_modules/vitest/vitest.mjs'), '--version'], workspace, env);
+  for (const track of [workspace, join(workspace, 'node')]) {
+    run(join(track, 'node_modules/.bin/prettier'), ['--version'], track, env);
+    run('npx', ['--no-install', 'tsc', '--version'], track, env);
+  }
   run(process.execPath, ['-e', [
     'const {createRequire}=require("node:module");',
     'const r=createRequire(process.cwd()+"/node/package.json");',
@@ -64,8 +68,8 @@ export async function checkReadiness(context, runtime, env) {
   const tools = probeTools(workspace, runtime, env);
   probeTmux(workspace, env);
   const python = run('python', ['-c', [
-    'import json,pandas as pd,pyarrow;',
-    'df=pd.read_parquet("labs/fixtures/lab12/sales.parquet");',
+    'import json,os,pandas as pd,pyarrow;',
+    'df=pd.read_parquet(os.path.join(os.environ["LAB_RUNTIME"],"fixtures/lab12/sales.parquet"));',
     'assert list(df.columns)==["order_id","region","amount_usd","ts"]; assert len(df)==5;',
     'print(json.dumps({"rows":len(df),"pandas":pd.__version__,"pyarrow":pyarrow.__version__}))',
   ].join('')], workspace, env);

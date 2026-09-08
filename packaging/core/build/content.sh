@@ -4,6 +4,8 @@ trap 'printf "prepared-core: dependency preparation failed at line %s\n" "$LINEN
 
 runtime=/opt/lab
 source=/build/source
+mkdir -p "$runtime/fixtures/lab12"
+cp labs/fixtures/lab12/sales.parquet "$runtime/fixtures/lab12/sales.parquet"
 "$runtime/python/bin/python" -c 'import pandas as pd; import pyarrow; df=pd.read_parquet("labs/fixtures/lab12/sales.parquet"); assert list(df.columns)==["order_id","region","amount_usd","ts"]; assert len(df)==5'
 
 pnpm -C node build

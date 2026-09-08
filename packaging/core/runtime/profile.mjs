@@ -2,11 +2,13 @@ import { join } from 'node:path';
 
 export function coreEnvironment(workspace, runtime, inherited = process.env) {
   const state = join(workspace, '.lab-state');
+  const separator = process.platform === 'win32' ? ';' : ':';
+  const path = [join(runtime, 'bin'), join(runtime, 'tools/node_modules/.bin'), join(runtime, 'dotnet-tools'),
+    join(runtime, 'python/bin'), ...(inherited.PATH ?? '').split(separator)].filter(Boolean);
   return {
     ...inherited,
     LAB_WORKSPACE: workspace, LAB_RUNTIME: runtime,
-    PATH: [join(runtime, 'bin'), join(runtime, 'tools/node_modules/.bin'), join(runtime, 'dotnet-tools'), join(runtime, 'python/bin'), inherited.PATH]
-      .filter(Boolean).join(process.platform === 'win32' ? ';' : ':'),
+    PATH: [...new Set(path)].join(separator),
     NUGET_PACKAGES: join(state, 'nuget'),
     RestoreSources: join(runtime, 'nuget-feed'),
     RestoreConfigFile: join(runtime, 'NuGet.Config'),

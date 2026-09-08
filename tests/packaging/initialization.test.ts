@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { fixture, put } from './fixtures.js';
+import { digest, fixture, put } from './fixtures.js';
 import { initializeWorkspace, inspectWorkspace } from '../../packaging/core/runtime/initialize.mjs';
 import { loadRelease, assertCompatible, sealRelease } from '../../packaging/core/runtime/release.mjs';
 
@@ -10,6 +10,19 @@ function setup() {
   const data = fixture();
   temporary.push(data.root);
   return data;
+}
+
+function withLegacyScript() {
+  const data = setup();
+  const original = '#!/bin/sh\r\nprintf prepared\r\n';
+  const linux = original.replace(/\r\n/g, '\n');
+  put(join(data.workspace, 'scripts/example.sh'), original);
+  const { releaseId, ...content } = data.release;
+  const release = sealRelease({
+    ...content, scriptLineEndings: { 'scripts/example.sh': { original: digest(original), linux: digest(linux) } },
+  });
+  put(join(data.runtime, 'release.json'), JSON.stringify(release));
+  return { ...data, original, linux };
 }
 
 afterEach(() => {
@@ -150,6 +163,32 @@ describe('prepared core local initialization', () => {
     expect(() => initializeWorkspace(workspace, runtime)).toThrow(/ownership mismatch/);
     put(join(workspace, '.lab-state/state.json'), 'not json');
     expect(() => inspectWorkspace(workspace, runtime)).toThrow(/Cannot read JSON/);
+  });
+
+  it('normalizes only known pristine CRLF executable source at first initialization', () => {
+    const { workspace, runtime, linux } = withLegacyScript();
+    initializeWorkspace(workspace, runtime);
+    expect(readFileSync(join(workspace, 'scripts/example.sh'), 'utf8')).toBe(linux);
+    put(join(workspace, 'scripts/example.sh'), '#!/bin/sh\nprintf attendee\n');
+    initializeWorkspace(workspace, runtime);
+    expect(readFileSync(join(workspace, 'scripts/example.sh'), 'utf8')).toContain('attendee');
+  });
+
+  it('refuses to rewrite modified CRLF scripts and does not partially hydrate', () => {
+    const { workspace, runtime } = withLegacyScript();
+    const edited = '#!/bin/sh\r\nprintf attendee-work\r\n';
+    put(join(workspace, 'scripts/example.sh'), edited);
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/refusing to rewrite/);
+    expect(readFileSync(join(workspace, 'scripts/example.sh'), 'utf8')).toBe(edited);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+  });
+
+  it('never normalizes source again on resume', () => {
+    const { workspace, runtime, original } = withLegacyScript();
+    initializeWorkspace(workspace, runtime);
+    put(join(workspace, 'scripts/example.sh'), original);
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/refusing to rewrite/);
+    expect(readFileSync(join(workspace, 'scripts/example.sh'), 'utf8')).toBe(original);
   });
 });
 

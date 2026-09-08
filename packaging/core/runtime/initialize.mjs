@@ -7,6 +7,7 @@ import {
 import { dirname, join } from 'node:path';
 import { assertPlainPath, readJson, safePath, writeJson } from './io.mjs';
 import { assertCompatible, loadRelease, verifyInputs, verifyRuntime } from './release.mjs';
+import { normalizePristineScripts, planScriptCompatibility } from './scripts.mjs';
 
 const STATE = '.lab-state';
 const MARKER = '.lab-bundle.json';
@@ -87,6 +88,7 @@ export function inspectWorkspace(directory, runtime) {
   const state = readState(workspace, release);
   if (state?.status !== 'ready') throw new Error('Workspace is not initialized; run lab-core init once');
   inspectTargets(workspace, release, state);
+  planScriptCompatibility(workspace, release, false);
   return { workspace, release, state };
 }
 
@@ -98,15 +100,18 @@ export function initializeWorkspace(directory, runtime) {
   verifyRuntime(runtime, release);
   const previous = readState(workspace, release);
   inspectTargets(workspace, release, previous);
+  planScriptCompatibility(workspace, release, previous?.status !== 'ready');
   const lock = acquireLock(workspace);
   try {
     const current = readState(workspace, release);
     inspectTargets(workspace, release, current);
+    const repairs = planScriptCompatibility(workspace, release, current?.status !== 'ready');
     if (current?.status === 'ready') return { workspace, release, state: current };
     const initial = current ?? {
       releaseId: release.releaseId, workspaceId: randomUUID(), status: 'initializing', completed: [],
     };
     writeJson(join(workspace, STATE, 'state.json'), initial);
+    normalizePristineScripts(repairs);
     const state = release.bundles.reduce((progress, bundle) => {
       hydrate(workspace, runtime, release, bundle);
       const next = { ...progress, completed: [...new Set([...progress.completed, bundle.name])] };
