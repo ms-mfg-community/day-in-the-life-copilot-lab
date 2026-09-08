@@ -1,0 +1,4 @@
+# Direct requirements mirror docs/_meta/registry.yaml: prepared_core.python.
+# requirements.lock is the Linux CPython 3.11 wheel closure, including hashes.
+pandas==2.3.3
+pyarrow==21.0.0

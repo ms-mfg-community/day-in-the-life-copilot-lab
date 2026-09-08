@@ -1,0 +1,24 @@
+{
+  "name": "Prepared core - staged, not an attendee entry point",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+  "postCreateCommand": "lab-core init",
+  "postStartCommand": "lab-core ready",
+  "remoteEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE": "true"
+  },
+  "forwardPorts": [3000, 52380],
+  "portsAttributes": {
+    "3000": {
+      "label": "ContosoUniversity Node (development)",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    },
+    "52380": {
+      "label": "ContosoUniversity .NET (development HTTP)",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    }
+  }
+}

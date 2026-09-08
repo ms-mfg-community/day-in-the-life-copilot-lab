@@ -1,0 +1,18 @@
+{
+  "name": "lab-core-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prepared Linux tooling; exact versions are checked against docs/_meta/registry.yaml.",
+  "dependencies": {
+    "@github/copilot": "1.0.82",
+    "@modelcontextprotocol/server-filesystem": "2026.8.31",
+    "@modelcontextprotocol/server-memory": "2026.1.26",
+    "@modelcontextprotocol/server-sequential-thinking": "2025.12.18",
+    "ajv": "8.17.1",
+    "js-yaml": "4.1.0",
+    "pnpm": "10.34.5",
+    "typescript": "5.9.3",
+    "typescript-language-server": "6.0.0"
+  }
+}

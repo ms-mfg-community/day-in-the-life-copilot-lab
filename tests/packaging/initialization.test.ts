@@ -1,0 +1,129 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { existsSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fixture, put } from './fixtures.js';
+import { initializeWorkspace } from '../../packaging/core/runtime/initialize.mjs';
+import { loadRelease, assertCompatible } from '../../packaging/core/runtime/release.mjs';
+
+const temporary: string[] = [];
+function setup() {
+  const data = fixture();
+  temporary.push(data.root);
+  return data;
+}
+
+afterEach(() => {
+  for (const path of temporary.splice(0)) rmSync(path, { recursive: true, force: true });
+});
+
+describe('prepared core local initialization', () => {
+  it('hydrates both JavaScript closures and NuGet from actual sealed archives', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    for (const target of ['node_modules', 'node/node_modules', '.lab-state/nuget']) {
+      expect(readFileSync(join(workspace, target, 'content.txt'), 'utf8')).toContain('sealed dependencies');
+    }
+    expect(JSON.parse(readFileSync(join(workspace, '.lab-state/state.json'), 'utf8')).status).toBe('ready');
+  });
+
+  it('preserves edited source, memory, configuration, and dependencies on resume', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    const files = ['node/web/example.ts', '.lab-state/memory.jsonl', '.lab-state/mcp.json', 'node_modules/content.txt'];
+    for (const file of files) put(join(workspace, file), 'attendee work\n');
+    const before = statSync(join(workspace, 'node_modules/content.txt')).mtimeMs;
+    initializeWorkspace(workspace, runtime);
+    for (const file of files) expect(readFileSync(join(workspace, file), 'utf8')).toBe('attendee work\n');
+    expect(statSync(join(workspace, 'node_modules/content.txt')).mtimeMs).toBe(before);
+  });
+
+  it('supports renamed checkouts without replacing their state', () => {
+    const { root, workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    put(join(workspace, '.lab-state/memory.jsonl'), 'remember me\n');
+    const renamed = join(root, 'another checkout name');
+    renameSync(workspace, renamed);
+    initializeWorkspace(renamed, runtime);
+    expect(readFileSync(join(renamed, '.lab-state/memory.jsonl'), 'utf8')).toBe('remember me\n');
+  });
+
+  it('fails before mutation when any bundled archive is missing', () => {
+    const { workspace, runtime } = setup();
+    rmSync(join(runtime, 'bundles/node.tar.gz'));
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/missing.*bundle|bundle.*missing/i);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+    expect(existsSync(join(workspace, '.lab-state/state.json'))).toBe(false);
+  });
+
+  it('rejects corrupt bundles without downloading or partially hydrating', () => {
+    const { workspace, runtime } = setup();
+    put(join(runtime, 'bundles/nuget.tar.gz'), 'corrupt');
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/checksum/i);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+  });
+
+  it('rejects dependency drift but accepts ordinary source edits', () => {
+    const { workspace, runtime } = setup();
+    put(join(workspace, 'node/web/example.ts'), 'export const answer = 42;\n');
+    initializeWorkspace(workspace, runtime);
+    put(join(workspace, 'node/package.json'), '{"changed":true}\n');
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/dependency.*drift/i);
+    expect(readFileSync(join(workspace, 'node/web/example.ts'), 'utf8')).toContain('42');
+  });
+
+  it('does not overwrite dependencies it did not initialize', () => {
+    const { workspace, runtime } = setup();
+    put(join(workspace, 'node/node_modules/content.txt'), 'pre-existing\n');
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/unowned|existing dependencies/i);
+    expect(readFileSync(join(workspace, 'node/node_modules/content.txt'), 'utf8')).toBe('pre-existing\n');
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+  });
+
+  it('fails rather than reinstalling a damaged resumed workspace', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    rmSync(join(workspace, 'node/node_modules'), { recursive: true });
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/missing.*initialized|initialized.*missing/i);
+    expect(existsSync(join(workspace, 'node/node_modules'))).toBe(false);
+  });
+
+  it('rejects another release and retains attendee work', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    const state = join(workspace, '.lab-state/state.json');
+    const original = JSON.parse(readFileSync(state, 'utf8'));
+    put(state, JSON.stringify({ ...original, releaseId: 'c'.repeat(64) }));
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/release mismatch/i);
+    expect(JSON.parse(readFileSync(state, 'utf8')).releaseId).toBe('c'.repeat(64));
+  });
+
+  it('rejects a concurrent initializer without touching the workspace', () => {
+    const { workspace, runtime } = setup();
+    put(join(workspace, '.lab-state/initializing.lock'), 'another initializer');
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/initializ.*lock|already.*initializ/i);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+  });
+});
+
+describe('release boundary validation', () => {
+  it('rejects native ABI and platform mismatches', () => {
+    const { runtime } = setup();
+    const release = loadRelease(runtime);
+    expect(() => assertCompatible(release, { os: 'wrong', arch: process.arch, nodeMajor: 1, nodeAbi: '1' }))
+      .toThrow(/platform|ABI|runtime/i);
+  });
+
+  it('rejects malformed and self-inconsistent release records', () => {
+    const { runtime, release } = setup();
+    put(join(runtime, 'release.json'), JSON.stringify({ ...release, schemaVersion: 99 }));
+    expect(() => loadRelease(runtime)).toThrow(/release.*schema|invalid.*release/i);
+    put(join(runtime, 'release.json'), JSON.stringify({ ...release, releaseId: 'd'.repeat(64) }));
+    expect(() => loadRelease(runtime)).toThrow(/release.*checksum|release.*identity/i);
+  });
+
+  it('rejects path traversal in manifest inputs', () => {
+    const { runtime, release } = setup();
+    put(join(runtime, 'release.json'), JSON.stringify({ ...release, inputs: { '../outside': 'e'.repeat(64) } }));
+    expect(() => loadRelease(runtime)).toThrow(/path|release/i);
+  });
+});
