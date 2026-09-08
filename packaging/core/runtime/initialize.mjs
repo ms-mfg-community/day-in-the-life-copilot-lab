@@ -18,6 +18,8 @@ function readState(workspace, release) {
   if (state.releaseId !== release.releaseId) throw new Error('Workspace release mismatch; export work before an explicit upgrade');
   if (!['initializing', 'ready'].includes(state.status) || !Array.isArray(state.completed)
       || state.completed.some((name) => !release.bundles.some((bundle) => bundle.name === name))
+      || new Set(state.completed).size !== state.completed.length
+      || (state.status === 'ready' && state.completed.length !== release.bundles.length)
       || typeof state.workspaceId !== 'string' || !/^[a-f0-9-]{36}$/.test(state.workspaceId)) {
     throw new Error('Invalid workspace initialization state; no automatic reset was performed');
   }

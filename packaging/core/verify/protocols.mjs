@@ -27,6 +27,19 @@ async function call(rpc, name, args) {
   return result;
 }
 
+export async function probeAttendeeMemory(workspace, runtime, env, entity, create = false) {
+  const memory = mcpConfiguration(workspace, runtime).mcpServers.memory;
+  await withMcp(memory, workspace, env, async (rpc) => {
+    if (create) {
+      await call(rpc, 'create_entities', {
+        entities: [{ name: entity, entityType: 'attendee-work', observations: ['preserve across lifecycle changes'] }],
+      });
+    }
+    const graph = await call(rpc, 'read_graph', {});
+    assert.ok(JSON.stringify(graph).includes(entity), 'The actual memory server could not retrieve preserved attendee state');
+  });
+}
+
 export async function probeMcp(workspace, runtime, env) {
   const servers = mcpConfiguration(workspace, runtime).mcpServers;
   const scratch = mkdtempSync(join(workspace, '.lab-state/mcp-readiness-'));

@@ -8,7 +8,7 @@ namespace ContosoUniversity.PlaywrightTests;
 [TestFixture]
 public class CourseEditTests : PageTest
 {
-    private const string BaseUrl = "https://localhost:52379";
+    private static string BaseUrl => TestEndpoint.Resolve(Environment.GetEnvironmentVariable("E2E_BASE_URL"));
     
     [Test]
     public async Task EditCourse_ChangeCreditFromThreeToFour_ShouldSaveChanges()

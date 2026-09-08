@@ -9,9 +9,12 @@
     "test:watch": "vitest",
     "test:lab-structure": "vitest run tests/lab-structure",
     "test:content-currency": "vitest run tests/content-currency",
+    "test:packaging": "vitest run tests/packaging",
+    "test:packaging:coverage": "vitest run tests/packaging --coverage",
     "build:slides": "node scripts/workshop/build-slides.mjs"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
     "ajv": "^8.17.1",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",

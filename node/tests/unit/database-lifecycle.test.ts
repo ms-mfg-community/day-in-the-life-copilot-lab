@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { openApplicationDb } from '../../infra/application-db.js';
 import { createStudentRepo } from '../../infra/repos/student-repo.js';
 import type { DbHandle } from '../../infra/db.js';
+import { createFileDb } from '../../infra/db.js';
+import { createCourseRepo } from '../../infra/repos/course-repo.js';
 
 const directories: string[] = [];
 const handles: DbHandle[] = [];
@@ -38,11 +40,13 @@ describe('application database lifecycle', () => {
     const first = await open(path);
     const students = createStudentRepo(first);
     const original = await students.list();
-    await students.update(original[0].id, { lastName: 'AttendeeEdit' });
+    const student = original[0];
+    if (!student) throw new Error('The initial sample student was not created');
+    await students.update(student.id, { lastName: 'AttendeeEdit' });
     first.raw.close();
     const resumed = createStudentRepo(await open(path));
     expect(await resumed.list()).toHaveLength(original.length);
-    expect((await resumed.getById(original[0].id))?.lastName).toBe('AttendeeEdit');
+    expect((await resumed.getById(student.id))?.lastName).toBe('AttendeeEdit');
   });
 
   it('does not reseed when the attendee deliberately deletes all rows', async () => {
@@ -71,5 +75,28 @@ describe('application database lifecycle', () => {
 
   it('surfaces an inaccessible configured path instead of losing data in a fallback database', async () => {
     await expect(open(join(databasePath(), 'missing', 'database.db'))).rejects.toThrow();
+  });
+
+  it('keeps preexisting attendee rows without adding the sample dataset', async () => {
+    const path = databasePath();
+    const existing = await createFileDb(path);
+    await createCourseRepo(existing).create({ title: 'Attendee Course', credits: 3 });
+    existing.raw.close();
+    const resumed = await open(path);
+    expect(await createStudentRepo(resumed).list()).toEqual([]);
+    expect(await createCourseRepo(resumed).list()).toHaveLength(1);
+  });
+
+  it('rolls back failed initialization and permits a later complete initialization', async () => {
+    const path = databasePath();
+    const existing = await createFileDb(path);
+    existing.raw.exec("CREATE TRIGGER reject_seed BEFORE INSERT ON students BEGIN SELECT RAISE(ABORT, 'seed failure'); END;");
+    existing.raw.close();
+    await expect(open(path)).rejects.toThrow(/initialization failed/);
+    const repaired = await createFileDb(path);
+    expect(await createStudentRepo(repaired).list()).toEqual([]);
+    repaired.raw.exec('DROP TRIGGER reject_seed');
+    repaired.raw.close();
+    expect(await createStudentRepo(await open(path)).list()).toHaveLength(8);
   });
 });

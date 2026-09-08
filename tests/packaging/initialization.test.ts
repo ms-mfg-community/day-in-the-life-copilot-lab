@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { existsSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixture, put } from './fixtures.js';
-import { initializeWorkspace } from '../../packaging/core/runtime/initialize.mjs';
-import { loadRelease, assertCompatible } from '../../packaging/core/runtime/release.mjs';
+import { initializeWorkspace, inspectWorkspace } from '../../packaging/core/runtime/initialize.mjs';
+import { loadRelease, assertCompatible, sealRelease } from '../../packaging/core/runtime/release.mjs';
 
 const temporary: string[] = [];
 function setup() {
@@ -103,6 +103,54 @@ describe('prepared core local initialization', () => {
     expect(() => initializeWorkspace(workspace, runtime)).toThrow(/initializ.*lock|already.*initializ/i);
     expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
   });
+
+  it('can inspect a ready workspace but never hydrates one through readiness', () => {
+    const { workspace, runtime } = setup();
+    expect(() => inspectWorkspace(workspace, runtime)).toThrow(/not initialized/);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
+    initializeWorkspace(workspace, runtime);
+    expect(inspectWorkspace(workspace, runtime).workspace).toBe(workspace);
+  });
+
+  it('continues interrupted bookkeeping without recopying an owned artifact', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    const file = join(workspace, '.lab-state/state.json');
+    const state = JSON.parse(readFileSync(file, 'utf8'));
+    put(file, JSON.stringify({ ...state, status: 'initializing', completed: ['root', 'node'] }));
+    put(join(workspace, '.lab-state/nuget/content.txt'), 'preserved initialized content');
+    initializeWorkspace(workspace, runtime);
+    expect(readFileSync(join(workspace, '.lab-state/nuget/content.txt'), 'utf8')).toBe('preserved initialized content');
+    expect(JSON.parse(readFileSync(file, 'utf8')).completed).toEqual(['root', 'node', 'nuget']);
+  });
+
+  it('does not trust an incomplete ready marker', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    const file = join(workspace, '.lab-state/state.json');
+    const state = JSON.parse(readFileSync(file, 'utf8'));
+    put(file, JSON.stringify({ ...state, completed: ['root'] }));
+    expect(() => inspectWorkspace(workspace, runtime)).toThrow(/invalid.*state/i);
+  });
+
+  it('rejects a symlink redirecting managed state outside the checkout', () => {
+    const { root, workspace, runtime } = setup();
+    const outside = join(root, 'outside');
+    mkdirSync(outside);
+    symlinkSync(outside, join(workspace, '.lab-state'), process.platform === 'win32' ? 'junction' : 'dir');
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/symlink/);
+    expect(existsSync(join(outside, 'state.json'))).toBe(false);
+  });
+
+  it('rejects changed artifact ownership and malformed state without overwriting it', () => {
+    const { workspace, runtime } = setup();
+    initializeWorkspace(workspace, runtime);
+    const marker = join(workspace, 'node_modules/.lab-bundle.json');
+    put(marker, JSON.stringify({ releaseId: '0'.repeat(64), sha256: '1'.repeat(64) }));
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/ownership mismatch/);
+    put(join(workspace, '.lab-state/state.json'), 'not json');
+    expect(() => inspectWorkspace(workspace, runtime)).toThrow(/Cannot read JSON/);
+  });
 });
 
 describe('release boundary validation', () => {
@@ -123,7 +171,15 @@ describe('release boundary validation', () => {
 
   it('rejects path traversal in manifest inputs', () => {
     const { runtime, release } = setup();
-    put(join(runtime, 'release.json'), JSON.stringify({ ...release, inputs: { '../outside': 'e'.repeat(64) } }));
-    expect(() => loadRelease(runtime)).toThrow(/path|release/i);
+    const { releaseId, ...content } = release;
+    put(join(runtime, 'release.json'), JSON.stringify(sealRelease({ ...content, inputs: { '../outside': 'e'.repeat(64) } })));
+    expect(() => loadRelease(runtime)).toThrow(/Invalid relative content path/);
+  });
+
+  it('rejects missing tool payloads before hydration', () => {
+    const { workspace, runtime } = setup();
+    rmSync(join(runtime, 'tools/copilot'));
+    expect(() => initializeWorkspace(workspace, runtime)).toThrow(/Missing prepared runtime content/);
+    expect(existsSync(join(workspace, 'node_modules'))).toBe(false);
   });
 });

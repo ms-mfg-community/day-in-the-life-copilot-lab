@@ -1,16 +1,16 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { readJson, writeJson } from './io.mjs';
 import { probeLsp, probeMcp } from '../verify/protocols.mjs';
 
-export function run(command, args, workspace, env) {
-  try {
-    return execFileSync(command, args, { cwd: workspace, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-  } catch (error) {
-    throw new Error(`Prepared tool failed: ${command}\n${error.stderr?.toString() ?? error.message}`, { cause: error });
+export function run(command, args, workspace, env, combineOutput = false) {
+  const result = spawnSync(command, args, { cwd: workspace, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  if (result.error || result.status !== 0) {
+    throw new Error(`Prepared tool failed: ${command}\n${result.stderr || result.stdout || result.error?.message}`);
   }
+  return combineOutput ? result.stdout + result.stderr : result.stdout;
 }
 
 export function restoreWorkspace(context, runtime, env) {
@@ -41,7 +41,7 @@ function probeTools(workspace, runtime, env) {
   const tools = {
     copilot: run(join(runtime, 'tools/node_modules/.bin/copilot'), ['--no-auto-update', '--version'], workspace, env).trim(),
     gh: run('gh', ['--version'], workspace, env).split('\n')[0],
-    ghAw: run(join(runtime, 'gh-aw/gh-aw'), ['version'], workspace, env).trim(),
+    ghAw: run(join(runtime, 'gh-aw/gh-aw'), ['version'], workspace, env, true).trim(),
     pnpm: run('pnpm', ['--version'], workspace, env).trim(),
     jq: run('jq', ['--version'], workspace, env).trim(),
     dotnetSdks: run('dotnet', ['--list-sdks'], workspace, env).trim().split('\n'),

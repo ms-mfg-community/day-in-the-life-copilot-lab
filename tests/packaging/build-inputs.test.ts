@@ -42,4 +42,17 @@ describe('prepared release inputs', () => {
     expect(record.archiveSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(readFileSync(join(source, 'scripts/hooks/example.sh'), 'utf8')).toBe('unrelated attendee edit\n');
   });
+
+  it.each([
+    ['unsupported platform', /platform: linux\/amd64/, 'platform: linux/arm64', /platform/],
+    ['unsealed base', /node@sha256:[a-f0-9]{64}/, 'node:latest', /immutable digest/],
+    ['changed tool pin', /pnpm: "[^"]+"/, 'pnpm: "0.0.0"', /manifest\/lock drift/],
+  ])('rejects %s before a build', (_name, oldText, newText, message) => {
+    const root = mkdtempSync(join(tmpdir(), 'lab-inputs-test-'));
+    temporary.push(root);
+    for (const file of ['docs/_meta/registry.yaml', 'packaging/core/tools/package.json', 'packaging/core/tools/package-lock.json']) {
+      put(join(root, file), readFileSync(file, 'utf8').replace(oldText, newText));
+    }
+    expect(() => resolveInputs(root)).toThrow(message);
+  });
 });

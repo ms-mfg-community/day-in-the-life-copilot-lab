@@ -21,6 +21,8 @@ export function coreEnvironment(workspace, runtime, inherited = process.env) {
     PLAYWRIGHT_BROWSERS_PATH: join(runtime, 'browsers'),
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1', PLAYWRIGHT_SKIP_BROWSER_GC: '1',
     ASPNETCORE_ENVIRONMENT: 'Development',
+    DOTNET_ENVIRONMENT: 'Development',
+    PreparedCore__Enabled: 'true',
     ASPNETCORE_URLS: 'http://127.0.0.1:52380',
     ConnectionStrings__DefaultConnection: `Data Source=${join(state, 'contoso-dotnet.db')}`,
     CONTOSO_SQLITE_PATH: join(state, 'contoso-node.db'),

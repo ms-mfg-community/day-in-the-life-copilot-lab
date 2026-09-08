@@ -40,7 +40,7 @@ export function readJson(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
   } catch (error) {
-    throw new Error(`Cannot read JSON content at ${path}: ${error.message}`, { cause: error });
+    throw new Error(`Cannot read JSON content at ${path}: ${error.code || 'invalid JSON'}`, { cause: error });
   }
 }
 

@@ -11,7 +11,14 @@ apt-get update -qq
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   bash ca-certificates curl git jq make tmux tar unzip xz-utils \
   build-essential pkg-config python3 python3-venv python3-pip shellcheck \
-  libicu72 libssl3 zlib1g libsqlite3-0
+  libicu72 libssl3 zlib1g libsqlite3-0 \
+  libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcairo2 \
+  libcups2 libdbus-1-3 libdrm2 libgbm1 libglib2.0-0 libnspr4 libnss3 \
+  libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 \
+  libxfixes3 libxkbcommon0 libxrandr2 libxshmfence1 xvfb \
+  fonts-noto-color-emoji fonts-unifont libfontconfig1 libfreetype6 \
+  xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei \
+  fonts-tlwg-loma-otf fonts-freefont-ttf
 
 gh_version="$(node -p 'JSON.parse(require("fs").readFileSync("/tmp/lab-inputs.json")).gh.version')"
 gh_sha="$(node -p 'JSON.parse(require("fs").readFileSync("/tmp/lab-inputs.json")).gh.sha256')"
