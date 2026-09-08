@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { coreEnvironment } from '../runtime/profile.mjs';
@@ -32,8 +32,7 @@ function verifyIsolation() {
 
 function exerciseHooks(workspace, env) {
   for (const track of [workspace, join(workspace, 'node')]) {
-    const probe = join(track, '.lab-state/format-probe.js');
-    mkdirSync(join(track, '.lab-state'), { recursive: true });
+    const probe = join(track, 'prepared-format-probe.js');
     writeFileSync(probe, 'const sample={ready:true}\n');
     const result = spawnSync('bash', [join(workspace, 'scripts/hooks/post-tool-use-format.sh')], {
       cwd: track, env, encoding: 'utf8',
@@ -41,6 +40,7 @@ function exerciseHooks(workspace, env) {
     });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(readFileSync(probe, 'utf8'), 'const sample = { ready: true };\n', 'The actual format hook silently skipped its work');
+    unlinkSync(probe);
     const tsc = execFileSync('npx', ['--no-install', 'tsc', '--version'], { cwd: track, env, encoding: 'utf8' });
     assert.match(tsc, /^Version /);
   }
@@ -86,7 +86,13 @@ async function applications(workspace, marker, env, createAttendee) {
   const web = join(workspace, 'dotnet/ContosoUniversity.Web');
   mkdirSync(join(web, '.lab-state/evidence'), { recursive: true });
   await withServer(web, 'dotnet-http', 'dotnet', [join(web, 'bin/Debug/net8.0/ContosoUniversity.Web.dll')], env, DOTNET_URL, async () => {
-    assert.ok((await (await fetch(DOTNET_URL)).text()).includes(marker), 'The running .NET app ignored its rebuilt source');
+    const signIn = await fetch(`${DOTNET_URL}/Account/SignIn`, { redirect: 'manual' });
+    assert.equal(signIn.status, 302, 'The existing local development sign-in failed');
+    const cookie = signIn.headers.getSetCookie().map((value) => value.split(';')[0]).join('; ');
+    assert.ok(cookie, 'Local sign-in did not issue its per-user test cookie');
+    const home = await fetch(DOTNET_URL, { headers: { cookie }, redirect: 'manual' });
+    assert.equal(home.status, 200);
+    assert.ok((await home.text()).includes(marker), 'The running .NET app ignored its rebuilt source');
     if (createAttendee) command(workspace, 'dotnet-e2e', 'dotnet', [
       'test', DOTNET_E2E, '--no-restore',
     ], { ...env, E2E_BASE_URL: DOTNET_URL });
@@ -125,7 +131,7 @@ async function firstRun() {
     'packaging/core/build/dependencies.sh', 'packaging/core/build/content.sh', 'packaging/core/lab-core', 'packaging/core/copilot'], env);
   command(FIRST, 'root-regressions', 'npm', ['test', '--', '--run', 'tests/packaging', 'tests/devcontainer', 'tests/build', 'tests/hooks', '--coverage'], env);
   command(FIRST, 'node-coverage', 'pnpm', ['-C', 'node', 'test', '--coverage'], env);
-  const marker = `SOURCE_EDIT_${randomUUID()}`;
+  const marker = `EDIT_${randomUUID().slice(0, 8)}`;
   exerciseSourceEdits(FIRST, marker, env);
   const serverFile = join(FIRST, 'node/web/server.ts');
   const serverSource = readFileSync(serverFile, 'utf8');

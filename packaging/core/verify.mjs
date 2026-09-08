@@ -33,6 +33,8 @@ try {
     const completed = JSON.parse(docker(['inspect', container]))[0];
     if (completed.State.ExitCode !== 0) throw new Error(`Offline ${phase} verification failed (exit ${completed.State.ExitCode})`);
     docker(['cp', `${container}:/workspaces/core-verification.json`, join(output, 'verification.json')]);
+    docker(['cp', `${container}:/workspaces/renamed attendee checkout/.lab-state/evidence`,
+      join(output, `${image.Id.slice(7, 19)}-${phase}-evidence`)]);
     docker(['rm', container]);
   }
   const evidence = JSON.parse(readFileSync(join(output, 'verification.json'), 'utf8'));

@@ -22,7 +22,9 @@ export function command(workspace, name, file, args, env = process.env, expected
 }
 
 export async function withServer(workspace, name, file, args, env, url, action) {
-  const log = createWriteStream(join(workspace, '.lab-state/evidence', `${name}.log`));
+  const logRoot = join(env.LAB_WORKSPACE || workspace, '.lab-state/evidence');
+  mkdirSync(logRoot, { recursive: true });
+  const log = createWriteStream(join(logRoot, `${name}.log`));
   const child = spawn(file, args, { cwd: workspace, env, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.pipe(log);
   child.stderr.pipe(log);
@@ -34,8 +36,8 @@ export async function withServer(workspace, name, file, args, env, url, action) 
       if (startError) throw startError;
       if (child.exitCode !== null) throw new Error(`${name} exited before its endpoint was ready; see its log`);
       try {
-        const response = await fetch(url, { signal: AbortSignal.timeout(500) });
-        if (response.ok) { responsive = true; break; }
+        const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(500) });
+        if (response.status >= 200 && response.status < 400) { responsive = true; break; }
       } catch (error) {
         if (!(error instanceof TypeError) && error.name !== 'TimeoutError') throw error;
       }
