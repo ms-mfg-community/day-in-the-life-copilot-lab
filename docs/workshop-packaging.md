@@ -26,7 +26,7 @@ an ARM image. Resolve changes during release preparation, never at an event.
 | `packaging/core/python/requirements.lock` | Hashed Linux CPython wheel closure for pandas/pyarrow fixture work. No pip resolution at startup. |
 | Runtime image | Both .NET SDKs, Node, native modules built for this runtime, Python environment, Git/gh/gh-aw, Bash/jq/make/tmux, language servers, both Playwright browser revisions and their OS libraries. |
 | `/opt/lab/bundles` | Separate root npm, Node pnpm, and NuGet archives. Hydration copies installed dependency content, not compiled demo applications. |
-| `/opt/lab/inventories` | Hash-bound per-file catalogs of hydrated dependency content. Readiness verifies required files, hashes, executable status, and symlink targets; added runtime cache files are not treated as release content. |
+| `/opt/lab/inventories` | Hash-bound per-file catalogs of hydrated dependency content. Readiness verifies required files, hashes, effective execution access for the attendee, and symlink targets; added runtime cache files are not treated as release content. |
 | `/opt/lab/nuget-feed` | Local-only recovery/restore source. Missing packages cannot fall back to nuget.org. |
 | `/opt/lab/source.tar` | Exact committed source, with Git file modes. No working-tree changes, untracked credentials, host caches, or facilitator home are copied. |
 | `/opt/lab/release.json` | Source commit/archive checksum, dependency-input hashes, archive checksums, platform/ABI, required content, and explicit capability boundaries. |

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { coreEnvironment } from '../runtime/profile.mjs';
@@ -121,6 +121,20 @@ function negativeStartup() {
   assert.equal(existsSync(join(broken, 'node_modules')), false, 'Missing content triggered partial installation');
 }
 
+function deniedExecution(workspace) {
+  const executable = join(workspace, 'node/node_modules/.bin/tsx');
+  const originalMode = statSync(executable).mode & 0o777;
+  const deniedMode = originalMode & ~0o100;
+  chmodSync(executable, deniedMode);
+  try {
+    command(workspace, 'owner-execute-permission-denied', 'lab-core', ['ready'], process.env,
+      /not executable by the current user.*tsx/);
+    assert.equal(statSync(executable).mode & 0o777, deniedMode, 'Readiness silently repaired attendee permissions');
+  } finally {
+    chmodSync(executable, originalMode);
+  }
+}
+
 async function firstRun() {
   checkout(FIRST);
   proveDeniedEndpoints(FIRST);
@@ -158,6 +172,7 @@ async function firstRun() {
   } finally {
     renameSync(backup, fastify);
   }
+  deniedExecution(FIRST);
   await probeAttendeeMemory(FIRST, runtime, env, marker, true);
   const before = fingerprints(FIRST);
   command(FIRST, 'resume', 'lab-core', ['ready']);

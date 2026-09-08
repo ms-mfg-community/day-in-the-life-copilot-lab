@@ -1,5 +1,5 @@
 import Ajv from 'ajv';
-import { existsSync, lstatSync, readdirSync, readlinkSync } from 'node:fs';
+import { accessSync, constants, existsSync, lstatSync, readdirSync, readlinkSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileHash, readJson, safePath } from './io.mjs';
 
@@ -41,6 +41,14 @@ export function catalogDirectory(root) {
   return { schemaVersion: 1, entries: entries(root, root) };
 }
 
+function verifyExecutionAccess(file, path) {
+  try {
+    accessSync(file, constants.X_OK);
+  } catch (error) {
+    throw new Error(`Prepared dependency is not executable by the current user: ${path} (${error.code}); permissions were not changed`, { cause: error });
+  }
+}
+
 export function verifyCatalog(root, catalog) {
   if (!validate(catalog)) throw new Error('Invalid sealed dependency catalog');
   for (const entry of catalog.entries) {
@@ -53,9 +61,10 @@ export function verifyCatalog(root, catalog) {
     if (entry.kind === 'symlink' && readlinkSync(file) !== entry.target) {
       throw new Error(`Changed prepared dependency link: ${entry.path}`);
     }
-    if (entry.kind === 'file' && (fileHash(file) !== entry.sha256 || (entry.executable && !(stat.mode & 0o111)))) {
+    if (entry.kind === 'file' && fileHash(file) !== entry.sha256) {
       throw new Error(`Changed prepared dependency content: ${entry.path}; attendee bytes were preserved`);
     }
+    if (entry.kind === 'file' && entry.executable) verifyExecutionAccess(file, entry.path);
   }
 }
 
