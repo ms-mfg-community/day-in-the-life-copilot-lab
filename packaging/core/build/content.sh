@@ -21,7 +21,7 @@ node -e 'const {createRequire}=require("module"); const path=require("path"); co
 node /opt/lab/core/verify/browser.mjs "$source"
 
 find "$runtime/nuget-cache" -name '*.nupkg' -exec cp '{}' "$runtime/nuget-feed/" \;
-node --input-type=module -e 'import {catalogDirectory} from "/opt/lab/core/runtime/catalog.mjs"; import {writeJson} from "/opt/lab/core/runtime/io.mjs"; for(const [name,path] of [["root","/build/source/node_modules"],["node","/build/source/node/node_modules"],["nuget","/opt/lab/nuget-cache"]]) writeJson(`/opt/lab/inventories/${name}.json`,catalogDirectory(path));'
+node --input-type=module -e 'import {catalogDirectory} from "/opt/lab/core/runtime/catalog.mjs"; import {writeJson} from "/opt/lab/core/runtime/io.mjs"; for(const [name,path] of [["root","/build/source/node_modules"],["node","/build/source/node/node_modules"],["nuget","/opt/lab/nuget-cache"]]) writeJson("/opt/lab/inventories/"+name+".json",catalogDirectory(path));'
 tar -czf "$runtime/bundles/root.tar.gz" -C node_modules .
 tar -czf "$runtime/bundles/node.tar.gz" -C node/node_modules .
 tar -czf "$runtime/bundles/nuget.tar.gz" -C "$runtime/nuget-cache" .
