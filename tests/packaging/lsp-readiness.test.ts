@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { waitForSourceSymbol } from '../../packaging/core/verify/lsp-source.mjs';
+import { waitForAnySourceSymbol, waitForSourceSymbol } from '../../packaging/core/verify/lsp-source.mjs';
 
 const symbol = {
   name: 'runAttendeeApp', kind: 12,
@@ -27,5 +27,16 @@ describe('local LSP readiness', () => {
     const rpc = { request: vi.fn().mockResolvedValue({ status: 'ready' }) };
     await expect(waitForSourceSymbol(rpc, 'file:///repo/app.ts', 'function runAttendeeApp() {}'))
       .rejects.toThrow(/invalid document-symbol/);
+  });
+
+  it('accepts an import-only entry point by validating another real source document', async () => {
+    const documents = [
+      { uri: 'file:///repo/server.ts', text: "import './attendee-server.js';" },
+      { uri: 'file:///repo/attendee-server.ts', text: 'function runAttendeeApp() {}' },
+    ];
+    const rpc = { request: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([symbol]) };
+    const result = await waitForAnySourceSymbol(rpc, documents, { timeoutMs: 1000, pollMs: 1 });
+    expect(result.document.uri).toBe(documents[1].uri);
+    expect(result.symbol.name).toBe('runAttendeeApp');
   });
 });

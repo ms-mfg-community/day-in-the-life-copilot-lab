@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { inputHash, readJson, sha256, writeJson } from '../runtime/io.mjs';
+import { fileHash, inputHash, readJson, sha256, writeJson } from '../runtime/io.mjs';
 import { loadRelease, sealRelease, verifyRuntime } from '../runtime/release.mjs';
 
 const [source, runtime] = process.argv.slice(2);
@@ -34,7 +34,9 @@ function bundles() {
     { name: 'nuget', target: '.lab-state/nuget' },
   ].map((bundle) => {
     const archive = `bundles/${bundle.name}.tar.gz`;
-    return { ...bundle, archive, sha256: sha256(readFileSync(join(runtime, archive))) };
+    const catalog = `inventories/${bundle.name}.json`;
+    return { ...bundle, archive, sha256: fileHash(join(runtime, archive)),
+      catalog, catalogSha256: fileHash(join(runtime, catalog)) };
   });
 }
 

@@ -5,7 +5,7 @@ import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { mcpConfiguration, lspConfiguration } from '../runtime/profile.mjs';
 import { RpcProcess } from './rpc.mjs';
-import { waitForSourceSymbol } from './lsp-source.mjs';
+import { waitForAnySourceSymbol } from './lsp-source.mjs';
 
 async function withMcp(server, workspace, env, action) {
   const rpc = new RpcProcess(server.command, server.args, { cwd: workspace, env: { ...env, ...server.env } });
@@ -78,18 +78,14 @@ export async function probeMcp(workspace, runtime, env) {
   }
 }
 
-function findSource(directory, extension) {
+function* sourceFiles(directory, extension) {
   const ignored = new Set(['node_modules', 'bin', 'obj', '.git', '.lab-state']);
   for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     if (ignored.has(entry.name)) continue;
     const path = join(directory, entry.name);
-    if (entry.isFile() && entry.name.endsWith(extension)) return path;
-    if (entry.isDirectory()) {
-      const nested = findSource(path, extension);
-      if (nested) return nested;
-    }
+    if (entry.isFile() && entry.name.endsWith(extension)) yield path;
+    if (entry.isDirectory()) yield* sourceFiles(path, extension);
   }
-  return undefined;
 }
 
 async function probeLanguage(server, workspace, env, preferredFile, languageId, extension) {
@@ -103,15 +99,15 @@ async function probeLanguage(server, workspace, env, preferredFile, languageId, 
     });
     rpc.notify('initialized');
     const preferred = join(workspace, preferredFile);
-    const file = existsSync(preferred) ? preferred : findSource(root, extension);
-    assert.ok(file, `No ${languageId} source is available for an LSP readiness request`);
-    const uri = pathToFileURL(file).href;
-    const text = readFileSync(file, 'utf8');
-    rpc.notify('textDocument/didOpen', { textDocument: { uri, languageId, version: 1, text } });
-    const grounded = await waitForSourceSymbol(rpc, uri, text);
+    const files = [...new Set([...(existsSync(preferred) ? [preferred] : []), ...sourceFiles(root, extension)])];
+    const documents = files.map((file) => ({ file, uri: pathToFileURL(file).href, text: readFileSync(file, 'utf8') }));
+    for (const { uri, text } of documents) {
+      rpc.notify('textDocument/didOpen', { textDocument: { uri, languageId, version: 1, text } });
+    }
+    const result = await waitForAnySourceSymbol(rpc, documents);
     await rpc.request('shutdown');
     rpc.notify('exit');
-    return { file: relative(workspace, file), symbol: grounded.name };
+    return { file: relative(workspace, result.document.file), symbol: result.symbol.name };
   } finally {
     await rpc.close();
   }

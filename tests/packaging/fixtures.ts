@@ -31,7 +31,13 @@ export function fixture() {
     const archive = `bundles/${name}.tar.gz`;
     mkdirSync(dirname(join(runtime, archive)), { recursive: true });
     execFileSync('tar', ['-czf', join(runtime, archive), '-C', payload, '.']);
-    return { name, target, archive, sha256: digest(readFileSync(join(runtime, archive))) };
+    const catalog = `inventories/${name}.json`;
+    put(join(runtime, catalog), JSON.stringify({
+      schemaVersion: 1,
+      entries: [{ path: 'content.txt', kind: 'file', sha256: digest(`${name} sealed dependencies\n`), executable: false }],
+    }));
+    return { name, target, archive, sha256: digest(readFileSync(join(runtime, archive))),
+      catalog, catalogSha256: digest(readFileSync(join(runtime, catalog))) };
   });
 
   const content = {

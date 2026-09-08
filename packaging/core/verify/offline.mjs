@@ -103,6 +103,7 @@ function fingerprints(workspace) {
   const paths = [
     'node/web/views/layout.ts', 'dotnet/ContosoUniversity.Web/Views/Home/Index.cshtml',
     'node/web/server.ts', 'labs/fixtures/lab12/sales.parquet',
+    'node/web/attendee-server.ts',
     '.lab-state/memory.jsonl', '.lab-state/contoso-node.db', '.lab-state/contoso-dotnet.db',
   ];
   return Object.fromEntries(paths.map((path) => [path, sha256(readFileSync(join(workspace, path)))]));
@@ -136,7 +137,8 @@ async function firstRun() {
   const serverFile = join(FIRST, 'node/web/server.ts');
   const serverSource = readFileSync(serverFile, 'utf8');
   assert.equal((serverSource.match(/\bmain\b/g) ?? []).length, 2);
-  writeFileSync(serverFile, serverSource.replace(/\bmain\b/g, 'runAttendeeApp'));
+  writeFileSync(join(FIRST, 'node/web/attendee-server.ts'), serverSource.replace(/\bmain\b/g, 'runAttendeeApp'));
+  writeFileSync(serverFile, "import './attendee-server.js';\n");
   command(FIRST, 'attendee-fixture-edit', 'python', ['-c', [
     'import pandas as pd;',
     'path="labs/fixtures/lab12/sales.parquet";',
@@ -147,6 +149,15 @@ async function firstRun() {
   command(FIRST, 'node-e2e', 'pnpm', ['-C', 'node', 'exec', 'playwright', 'test'], { ...env, CI: 'true' });
   command(FIRST, 'real-copilot-version', 'copilot', ['--version'], env);
   await applications(FIRST, marker, env, true);
+  const fastify = join(FIRST, 'node/node_modules/fastify/fastify.js');
+  const backup = `${fastify}.verification-backup`;
+  renameSync(fastify, backup);
+  try {
+    command(FIRST, 'missing-application-dependency', 'lab-core', ['ready'], process.env, /Missing prepared dependency content.*fastify\.js/);
+    assert.equal(existsSync(fastify), false, 'Readiness silently reinstalled the missing dependency');
+  } finally {
+    renameSync(backup, fastify);
+  }
   await probeAttendeeMemory(FIRST, runtime, env, marker, true);
   const before = fingerprints(FIRST);
   command(FIRST, 'resume', 'lab-core', ['ready']);

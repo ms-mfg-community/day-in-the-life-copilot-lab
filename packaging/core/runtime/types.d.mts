@@ -5,7 +5,7 @@ export interface Release {
   platform: { os: string; arch: string; nodeMajor: number; nodeAbi: string };
   inputs: Record<string, string>;
   scriptLineEndings?: Record<string, { original: string; linux: string }>;
-  bundles: Array<{ name: string; target: string; archive: string; sha256: string }>;
+  bundles: Array<{ name: string; target: string; archive: string; sha256: string; catalog: string; catalogSha256: string }>;
   requiredPaths: string[];
   capabilities: { included: string[]; excluded: string[] };
 }

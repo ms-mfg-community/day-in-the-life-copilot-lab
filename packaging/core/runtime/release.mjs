@@ -1,7 +1,7 @@
 import Ajv from 'ajv';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { inputHash, readJson, safePath, sha256 } from './io.mjs';
+import { fileHash, inputHash, readJson, safePath, sha256 } from './io.mjs';
 
 const hash = { type: 'string', pattern: '^[a-f0-9]{64}$' };
 const strings = { type: 'array', minItems: 1, uniqueItems: true, items: { type: 'string', minLength: 1 } };
@@ -30,11 +30,12 @@ const schema = {
     },
     bundles: {
       type: 'array', minItems: 3, items: {
-        type: 'object', additionalProperties: false, required: ['name', 'target', 'archive', 'sha256'],
+        type: 'object', additionalProperties: false, required: ['name', 'target', 'archive', 'sha256', 'catalog', 'catalogSha256'],
         properties: {
           name: { enum: ['root', 'node', 'nuget', 'materials'] },
           target: { enum: ['node_modules', 'node/node_modules', '.lab-state/nuget', 'workshop/dist'] },
           archive: { type: 'string' }, sha256: hash,
+          catalog: { type: 'string' }, catalogSha256: hash,
         },
       },
     },
@@ -64,6 +65,7 @@ export function loadRelease(runtime) {
   for (const bundle of release.bundles) {
     if (targets[bundle.name] !== bundle.target) throw new Error('Invalid release bundle target');
     safePath(runtime, bundle.archive);
+    safePath(runtime, bundle.catalog);
   }
   for (const path of [...Object.keys(release.inputs), ...Object.keys(release.scriptLineEndings ?? {}), ...release.requiredPaths]) safePath(runtime, path);
   return release;
@@ -93,7 +95,11 @@ export function verifyRuntime(runtime, release) {
   for (const bundle of release.bundles) {
     const path = safePath(runtime, bundle.archive);
     if (!existsSync(path)) throw new Error(`Missing bundled content: ${bundle.name}. No package-download fallback.`);
-    if (sha256(readFileSync(path)) !== bundle.sha256) throw new Error(`Bundle checksum mismatch: ${bundle.name}`);
+    if (fileHash(path) !== bundle.sha256) throw new Error(`Bundle checksum mismatch: ${bundle.name}`);
+    const catalog = safePath(runtime, bundle.catalog);
+    if (!existsSync(catalog) || fileHash(catalog) !== bundle.catalogSha256) {
+      throw new Error(`Missing or changed dependency catalog: ${bundle.name}`);
+    }
   }
   for (const path of release.requiredPaths) {
     if (!existsSync(safePath(runtime, path))) throw new Error(`Missing prepared runtime content: ${path}`);

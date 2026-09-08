@@ -26,6 +26,7 @@ an ARM image. Resolve changes during release preparation, never at an event.
 | `packaging/core/python/requirements.lock` | Hashed Linux CPython wheel closure for pandas/pyarrow fixture work. No pip resolution at startup. |
 | Runtime image | Both .NET SDKs, Node, native modules built for this runtime, Python environment, Git/gh/gh-aw, Bash/jq/make/tmux, language servers, both Playwright browser revisions and their OS libraries. |
 | `/opt/lab/bundles` | Separate root npm, Node pnpm, and NuGet archives. Hydration copies installed dependency content, not compiled demo applications. |
+| `/opt/lab/inventories` | Hash-bound per-file catalogs of hydrated dependency content. Readiness verifies required files, hashes, executable status, and symlink targets; added runtime cache files are not treated as release content. |
 | `/opt/lab/nuget-feed` | Local-only recovery/restore source. Missing packages cannot fall back to nuget.org. |
 | `/opt/lab/source.tar` | Exact committed source, with Git file modes. No working-tree changes, untracked credentials, host caches, or facilitator home are copied. |
 | `/opt/lab/release.json` | Source commit/archive checksum, dependency-input hashes, archive checksums, platform/ABI, required content, and explicit capability boundaries. |
@@ -100,6 +101,11 @@ Corepack and NuGet configuration. No initialization path runs an installer.
 path**, using the local feed and hydrated package directory in locked mode.
 It also runs when restore assets are absent or a checkout moves. Existing source,
 databases, memory and installed dependency trees are not reseeded or replaced.
+Readiness validates the hydrated dependency catalogs, not only their ownership
+markers: a missing Fastify entry point or changed package byte fails before
+`core.ready`, without reinstalling anything. Language-server readiness can move
+to another actual source document when an entry point becomes an import-only
+file; it does not require a fixed filename or declaration name.
 See [the .NET restore/configfile contract](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-restore).
 
 Dependency manifest changes require a newly prepared release. Normal source edits

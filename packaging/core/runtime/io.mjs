@@ -1,10 +1,23 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  existsSync, lstatSync, mkdirSync, readFileSync, renameSync, writeFileSync,
+  closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, renameSync, writeFileSync,
 } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 export const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+
+export function fileHash(path) {
+  const descriptor = openSync(path, 'r');
+  const hash = createHash('sha256');
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  try {
+    let size;
+    while ((size = readSync(descriptor, buffer)) > 0) hash.update(buffer.subarray(0, size));
+    return hash.digest('hex');
+  } finally {
+    closeSync(descriptor);
+  }
+}
 
 export function safePath(root, path) {
   if (typeof path !== 'string' || !path || /(^[/\\]|^[a-z]:|(^|[/\\])\.\.([/\\]|$))/i.test(path)) {

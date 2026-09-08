@@ -9,7 +9,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: [
-        'packaging/core/runtime/{io,release,initialize,profile,copilot,scripts}.mjs',
+        'packaging/core/runtime/{io,release,initialize,profile,copilot,scripts,catalog}.mjs',
         'packaging/core/build/inputs.mjs',
         'packaging/core/verify/lsp-source.mjs',
       ],

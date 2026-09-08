@@ -6,6 +6,7 @@ import { initializeWorkspace, inspectWorkspace } from './initialize.mjs';
 import { coreEnvironment } from './profile.mjs';
 import { prepareUserTools, copilotArguments } from './copilot.mjs';
 import { checkReadiness, restoreWorkspace } from './readiness.mjs';
+import { verifyHydratedDependencies } from './catalog.mjs';
 
 function execute(command, args, workspace, env) {
   const result = spawnSync(command, args, { cwd: workspace, env, stdio: 'inherit' });
@@ -49,6 +50,7 @@ async function main() {
   const workspace = realpathSync(findWorkspace(commandDirectory));
   const runtime = process.env.LAB_RUNTIME || '/opt/lab';
   const context = command === 'init' ? initializeWorkspace(workspace, runtime) : inspectWorkspace(workspace, runtime);
+  verifyHydratedDependencies(workspace, runtime, context.release);
   const env = prepareUserTools(context, runtime, coreEnvironment(workspace, runtime));
   if (command === 'init') configureRepository(workspace, env);
   restoreWorkspace(context, runtime, env);
