@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { readJson, writeJson } from './io.mjs';
+import { disabledMcpNames } from './copilot.mjs';
 import { probeLsp, probeMcp } from '../verify/protocols.mjs';
 
 export function run(command, args, workspace, env, combineOutput = false) {
@@ -72,8 +73,20 @@ function probeTools(workspace, runtime, env) {
   return tools;
 }
 
+// The prepared `lab-core copilot` launcher reads the preserved MCP configuration
+// before it starts; readiness must reject state that would stop it.
+function probeCopilotLauncher(context, env) {
+  try {
+    return { disabledMcpServers: disabledMcpNames(context, env).length };
+  } catch (error) {
+    throw new Error(`The prepared Copilot launcher cannot start with the current MCP configuration: ${error.message}\n`
+      + 'Correct the reported file deliberately; it was not changed.', { cause: error });
+  }
+}
+
 export async function checkReadiness(context, runtime, env) {
   const { workspace, release } = context;
+  const launcher = probeCopilotLauncher(context, env);
   const tools = probeTools(workspace, runtime, env);
   probeTmux(workspace, env);
   const python = run('python', ['-c', [
@@ -85,7 +98,7 @@ export async function checkReadiness(context, runtime, env) {
   const browser = run(process.execPath, [join(runtime, 'core/verify/browser.mjs'), workspace], workspace, env);
   const [mcp, lsp] = await Promise.all([probeMcp(workspace, runtime, env), probeLsp(workspace, env)]);
   return {
-    event: 'core.ready', releaseId: release.releaseId, workspace, tools,
+    event: 'core.ready', releaseId: release.releaseId, workspace, tools, launcher,
     python: JSON.parse(python), browser: JSON.parse(browser), mcp, lsp,
     notExercised: release.capabilities.excluded,
   };

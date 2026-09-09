@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { coreEnvironment, mcpConfiguration, lspConfiguration } from '../../packaging/core/runtime/profile.mjs';
-import { copilotArguments, effectiveLspServers, prepareUserTools } from '../../packaging/core/runtime/copilot.mjs';
+import { copilotArguments, disabledMcpNames, effectiveLspServers, prepareUserTools } from '../../packaging/core/runtime/copilot.mjs';
 import { put } from './fixtures.js';
 
 const workspace = resolve('a renamed checkout');
@@ -139,5 +139,49 @@ describe('effective attendee language-server configuration', () => {
     expect(() => effectiveLspServers({})).toThrow(/COPILOT_HOME/);
     put(join(copilotHome, 'lsp-config.json'), '{ not json');
     expect(() => effectiveLspServers({ COPILOT_HOME: copilotHome })).toThrow(/lsp-config\.json/);
+  });
+
+  it('accepts the shell launch forms the CLI accepts instead of demanding a bare command', () => {
+    const { command, args, ...rest } = bundled.typescript;
+    const { env } = saved({ typescript: { ...rest, bash: `${command} ${args.join(' ')}` }, csharp: bundled.csharp });
+    const servers = effectiveLspServers(env);
+    expect(servers.typescript.bash).toBe(`${command} --stdio`);
+    expect(servers.typescript.command).toBeUndefined();
+    expect(servers.typescript.args).toEqual([]);
+  });
+
+  it('requires the fileExtensions mapping the CLI marks required', () => {
+    const { fileExtensions, ...rest } = bundled.csharp;
+    expect(() => effectiveLspServers(saved({ typescript: bundled.typescript, csharp: rest }).env))
+      .toThrow(/csharp.*fileExtensions/s);
+  });
+});
+
+describe('preserved MCP state the prepared launcher consumes', () => {
+  const workspaceWithHome = () => {
+    const root = mkdtempSync(join(tmpdir(), 'lab-launcher-mcp-test-'));
+    temporary.push(root);
+    return { workspace: join(root, 'checkout'), env: { COPILOT_HOME: join(root, 'home') } };
+  };
+
+  it('reports the names the launcher will disable', () => {
+    const { workspace, env } = workspaceWithHome();
+    put(join(workspace, '.mcp.json'), JSON.stringify({ mcpServers: { 'unexpected-remote': {} } }));
+    put(join(env.COPILOT_HOME, 'mcp-config.json'), JSON.stringify({ mcpServers: { 'user-server': {} } }));
+    expect(disabledMcpNames({ workspace }, env).sort()).toEqual(['unexpected-remote', 'user-server']);
+  });
+
+  it('rejects preserved configuration the launcher cannot read', () => {
+    const { workspace, env } = workspaceWithHome();
+    const path = join(env.COPILOT_HOME, 'mcp-config.json');
+    put(path, '{ "mcpServers": { oops }');
+    expect(() => disabledMcpNames({ workspace }, env)).toThrow(/mcp-config\.json/);
+    expect(readFileSync(path, 'utf8')).toBe('{ "mcpServers": { oops }');
+  });
+
+  it('rejects a preserved name that would collide with the prepared profile', () => {
+    const { workspace, env } = workspaceWithHome();
+    put(join(env.COPILOT_HOME, 'mcp-config.json'), JSON.stringify({ mcpServers: { 'lab-filesystem': {} } }));
+    expect(() => disabledMcpNames({ workspace }, env)).toThrow(/lab-\* MCP names conflict/);
   });
 });

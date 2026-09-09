@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { mcpConfiguration } from '../runtime/profile.mjs';
-import { effectiveLspServers } from '../runtime/copilot.mjs';
+import { effectiveLspServers, launchForm } from '../runtime/copilot.mjs';
 import { RpcProcess } from './rpc.mjs';
 import { waitForAnySourceSymbol } from './lsp-source.mjs';
 
@@ -89,9 +89,19 @@ function* sourceFiles(directory, extension) {
   }
 }
 
+// The CLI accepts command, bash and powershell launch forms; probe whichever the
+// attendee actually saved rather than assuming a bare executable.
+function launcher(server) {
+  const form = launchForm(server);
+  if (form === 'command') return { file: server.command, args: server.args };
+  if (form === 'bash') return { file: 'bash', args: ['-c', server.bash, 'lab-readiness', ...server.args] };
+  return { file: 'pwsh', args: ['-Command', server.powershell, ...server.args] };
+}
+
 async function probeLanguage(server, workspace, env, preferredFile, languageId, extension) {
   const root = join(workspace, server.rootUri);
-  const rpc = new RpcProcess(server.command, server.args, { cwd: root, env, framed: true });
+  const { file, args } = launcher(server);
+  const rpc = new RpcProcess(file, args, { cwd: root, env, framed: true });
   try {
     const rootUri = pathToFileURL(root).href;
     await rpc.request('initialize', {
@@ -117,10 +127,12 @@ async function probeLanguage(server, workspace, env, preferredFile, languageId, 
 export async function probeLsp(workspace, env) {
   const servers = effectiveLspServers(env);
   const probe = async (language, preferredFile, languageId, extension) => {
+    const server = servers[language];
+    const form = launchForm(server);
     try {
-      return await probeLanguage(servers[language], workspace, env, preferredFile, languageId, extension);
+      return await probeLanguage(server, workspace, env, preferredFile, languageId, extension);
     } catch (error) {
-      throw new Error(`The saved ${language} language server (${servers[language].command}) could not be used: ${error.message}`, { cause: error });
+      throw new Error(`The saved ${language} language server (${form}: ${server[form]}) could not be used: ${error.message}`, { cause: error });
     }
   };
   const [typescript, csharp] = await Promise.all([

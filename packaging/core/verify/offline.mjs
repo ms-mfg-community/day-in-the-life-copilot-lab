@@ -167,6 +167,26 @@ function preservedToolRegistrations(workspace) {
   } finally {
     writeFileSync(config, saved);
   }
+  const shellForm = JSON.parse(saved);
+  const { command: executable, args: launchArgs, ...rest } = shellForm.lspServers.typescript;
+  shellForm.lspServers.typescript = { ...rest, bash: `${executable} ${launchArgs.join(' ')}` };
+  writeFileSync(config, JSON.stringify(shellForm, null, 2));
+  try {
+    command(workspace, 'shell-form-language-server', 'lab-core', ['ready']);
+  } finally {
+    writeFileSync(config, saved);
+  }
+  const mcp = join(process.env.HOME, '.copilot-lab-core',
+    readJson(join(workspace, '.lab-state/state.json')).workspaceId, 'mcp-config.json');
+  const malformed = '{ "mcpServers": { oops }';
+  writeFileSync(mcp, malformed);
+  try {
+    command(workspace, 'unreadable-preserved-mcp-config', 'lab-core', ['ready'], process.env,
+      /prepared Copilot launcher cannot start/);
+    assert.equal(readFileSync(mcp, 'utf8'), malformed, 'Readiness rewrote the attendee MCP configuration');
+  } finally {
+    unlinkSync(mcp);
+  }
   command(workspace, 'restored-registration-readiness', 'lab-core', ['ready']);
 }
 

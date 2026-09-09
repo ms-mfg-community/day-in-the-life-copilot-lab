@@ -25,7 +25,9 @@ export interface LocalServer {
 }
 
 export interface LanguageServer {
-  command: string;
+  command?: string;
+  bash?: string;
+  powershell?: string;
   args: string[];
   rootUri: string;
   fileExtensions: Record<string, string>;
