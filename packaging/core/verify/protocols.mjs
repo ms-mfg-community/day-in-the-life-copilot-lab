@@ -95,7 +95,9 @@ function launcher(server) {
   const form = launchForm(server);
   if (form === 'command') return { file: server.command, args: server.args };
   if (form === 'bash') return { file: 'bash', args: ['-c', server.bash, 'lab-readiness', ...server.args] };
-  return { file: 'pwsh', args: ['-Command', server.powershell, ...server.args] };
+  // PowerShell has no positional-parameter equivalent for -Command; a shell-form
+  // script carries its own arguments rather than receiving them as command text.
+  return { file: 'pwsh', args: ['-Command', server.powershell] };
 }
 
 async function probeLanguage(server, workspace, env, preferredFile, languageId, extension) {

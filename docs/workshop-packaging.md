@@ -111,10 +111,12 @@ Readiness certifies the tools **as the attendee's own configuration resolves
 them**, not the image defaults behind it. It invokes the registered `gh aw`
 command rather than the bundled executable, and it probes the language servers
 named in the preserved `$COPILOT_HOME/lsp-config.json` rather than rebuilding
-default definitions. Saved definitions are validated against the schema the CLI
-itself applies — any of the `command`, `bash` or `powershell` launch forms is
-accepted, and the required `fileExtensions` mapping is checked — so readiness
-neither certifies a definition the CLI would reject nor rejects one it accepts.
+default definitions. The definitions it reports are validated against the schema
+the CLI itself applies — any of the `command`, `bash` or `powershell` launch
+forms is accepted, and the required `fileExtensions` mapping is checked — so a
+reported server is neither certified when the CLI would reject its definition
+nor rejected when the CLI would accept it. Servers beyond the two the prepared
+core probes are left to the CLI's own validation.
 Readiness also evaluates the preserved MCP state that `lab-core copilot` reads
 before it starts, so an unreadable `mcp-config.json` or a name colliding with the
 prepared `lab-*` profile fails at startup instead of only when the attendee first
