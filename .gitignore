@@ -61,3 +61,8 @@ node/.a2a-transcript-*.md
 .orchestrator/
 .orchestrator.bak-*/
 docs/setup-dryrun-report.md
+
+# Prepared core: per-checkout dependencies, databases, memory, and local evidence.
+.lab-state/
+.lab-hydrate-*/
+packaging/core/out/

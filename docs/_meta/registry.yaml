@@ -85,6 +85,40 @@ mcp_servers:
       Server" also exists (https://api.fabric.microsoft.com/v1/mcp/core,
       Entra ID auth + RBAC, public preview since 2026-03) for live-tenant
       work — Lab 12 should make explicit which variant each exercise uses.
+  - name: filesystem
+    transport: stdio
+    pin: "2026.8.31"
+    npm_package: "@modelcontextprotocol/server-filesystem"
+    last_verified: "2026-09-08"
+    note: "Prepared core only; restricted to this checkout's synthetic fixture directory."
+
+# Phase 1 local packaging inputs, not an approved attendee image.
+# Base digests were resolved for linux/amd64 on 2026-09-08. The tool
+# package manifest/lock are derived consumers, checked against these pins.
+prepared_core:
+  platform: linux/amd64
+  images:
+    node: "node@sha256:4d676821dff059fd00d277ee4261ef34ea712317fed0737c03941481b5760c96"
+    dotnet8: "mcr.microsoft.com/dotnet/sdk@sha256:237133a0ea20cffcfaa92588e1c8a56d58fe99f44da72dcff35aeb017119abcf"
+    dotnet9: "mcr.microsoft.com/dotnet/sdk@sha256:d50371ed5e6839058f8644f0331aaf9188ee2cdd2a8b9ee6471906290b875577"
+  debian_snapshot: "20260901T000000Z"
+  npm_tools:
+    pnpm: "10.34.5"
+    typescript: "5.9.3"
+    typescript-language-server: "6.0.0"
+    ajv: "8.17.1"
+    js-yaml: "4.1.0"
+  local_mcp: [filesystem, memory, sequential-thinking]
+  dotnet_tools:
+    csharp-ls: "0.18.0"
+    dotnet-ef: "8.0.0"
+  python:
+    pandas: "2.3.3"
+    pyarrow: "21.0.0"
+  gh:
+    version: "2.100.0"
+    sha256: "e4d4bb4498e8d007abe545b6568926793ace1b6447da598294a610018cb164be"
+  gh_aw_sha256: "b8fd100d1d56a77b842ad28375ff361215a5aa1277db6b9a05d70054cde7260e"
 
 models:
   default: auto
