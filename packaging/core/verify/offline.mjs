@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { coreEnvironment } from '../runtime/profile.mjs';
@@ -135,6 +135,41 @@ function deniedExecution(workspace) {
   }
 }
 
+function preservedToolRegistrations(workspace) {
+  const extensions = join(process.env.XDG_DATA_HOME || join(process.env.HOME, '.local/share'), 'gh/extensions');
+  const registration = join(extensions, 'gh-aw');
+  const aside = `${registration}.verification-aside`;
+  const stub = join(registration, 'gh-aw');
+  const stubSource = '#!/bin/sh\nexit 73\n';
+  renameSync(registration, aside);
+  mkdirSync(registration);
+  writeFileSync(stub, stubSource, { mode: 0o755 });
+  try {
+    command(workspace, 'incompatible-gh-aw-registration', 'lab-core', ['ready'], process.env,
+      /registered gh-aw extension/);
+    assert.equal(readFileSync(stub, 'utf8'), stubSource, 'Readiness rewrote the preserved gh-aw registration');
+  } finally {
+    unlinkSync(stub);
+    rmdirSync(registration);
+    renameSync(aside, registration);
+  }
+  const config = join(process.env.HOME, '.copilot-lab-core',
+    readJson(join(workspace, '.lab-state/state.json')).workspaceId, 'lsp-config.json');
+  const saved = readFileSync(config, 'utf8');
+  const edited = JSON.parse(saved);
+  edited.lspServers.typescript.command = '/missing-attendee-language-server';
+  const unusable = JSON.stringify(edited, null, 2);
+  writeFileSync(config, unusable);
+  try {
+    command(workspace, 'unusable-saved-language-server', 'lab-core', ['ready'], process.env,
+      /saved typescript language server .*missing-attendee-language-server/);
+    assert.equal(readFileSync(config, 'utf8'), unusable, 'Readiness overwrote the attendee language-server configuration');
+  } finally {
+    writeFileSync(config, saved);
+  }
+  command(workspace, 'restored-registration-readiness', 'lab-core', ['ready']);
+}
+
 async function firstRun() {
   checkout(FIRST);
   proveDeniedEndpoints(FIRST);
@@ -173,6 +208,7 @@ async function firstRun() {
     renameSync(backup, fastify);
   }
   deniedExecution(FIRST);
+  preservedToolRegistrations(FIRST);
   await probeAttendeeMemory(FIRST, runtime, env, marker, true);
   const before = fingerprints(FIRST);
   command(FIRST, 'resume', 'lab-core', ['ready']);

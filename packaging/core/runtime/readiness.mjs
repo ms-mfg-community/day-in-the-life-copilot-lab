@@ -8,7 +8,7 @@ import { probeLsp, probeMcp } from '../verify/protocols.mjs';
 export function run(command, args, workspace, env, combineOutput = false) {
   const result = spawnSync(command, args, { cwd: workspace, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
   if (result.error || result.status !== 0) {
-    throw new Error(`Prepared tool failed: ${command}\n${result.stderr || result.stdout || result.error?.message}`);
+    throw new Error(`Prepared tool failed: ${command}\n${result.stderr || result.stdout || result.error?.message || `exited ${result.status}`}`);
   }
   return combineOutput ? result.stdout + result.stderr : result.stdout;
 }
@@ -37,11 +37,20 @@ function probeTmux(workspace, env) {
   }
 }
 
+function probeRegisteredExtension(workspace, env) {
+  try {
+    return run('gh', ['aw', 'version'], workspace, env, true).trim();
+  } catch (error) {
+    throw new Error(`The registered gh-aw extension that the lab commands invoke is not usable: ${error.message}\n`
+      + 'Correct or remove that registration deliberately; it was not changed and nothing was downloaded.', { cause: error });
+  }
+}
+
 function probeTools(workspace, runtime, env) {
   const tools = {
     copilot: run(join(runtime, 'tools/node_modules/.bin/copilot'), ['--no-auto-update', '--version'], workspace, env).trim(),
     gh: run('gh', ['--version'], workspace, env).split('\n')[0],
-    ghAw: run(join(runtime, 'gh-aw/gh-aw'), ['version'], workspace, env, true).trim(),
+    ghAw: probeRegisteredExtension(workspace, env),
     pnpm: run('pnpm', ['--version'], workspace, env).trim(),
     jq: run('jq', ['--version'], workspace, env).trim(),
     dotnetSdks: run('dotnet', ['--list-sdks'], workspace, env).trim().split('\n'),
@@ -74,7 +83,7 @@ export async function checkReadiness(context, runtime, env) {
     'print(json.dumps({"rows":len(df),"pandas":pd.__version__,"pyarrow":pyarrow.__version__}))',
   ].join('')], workspace, env);
   const browser = run(process.execPath, [join(runtime, 'core/verify/browser.mjs'), workspace], workspace, env);
-  const [mcp, lsp] = await Promise.all([probeMcp(workspace, runtime, env), probeLsp(workspace, runtime, env)]);
+  const [mcp, lsp] = await Promise.all([probeMcp(workspace, runtime, env), probeLsp(workspace, env)]);
   return {
     event: 'core.ready', releaseId: release.releaseId, workspace, tools,
     python: JSON.parse(python), browser: JSON.parse(browser), mcp, lsp,

@@ -4,6 +4,30 @@ import { lspConfiguration, mcpConfiguration } from './profile.mjs';
 import { assertPlainPath, readJson, writeJson } from './io.mjs';
 
 const PROJECT_MCP = ['.mcp.json', '.github/mcp.json', '.copilot/mcp-config.json'];
+const REQUIRED_LANGUAGE_SERVERS = ['typescript', 'csharp'];
+
+function usableLanguageServer(server) {
+  return Boolean(server) && typeof server === 'object'
+    && typeof server.command === 'string' && server.command.length > 0
+    && Array.isArray(server.args) && server.args.every((argument) => typeof argument === 'string')
+    && typeof server.rootUri === 'string' && server.rootUri.length > 0;
+}
+
+export function effectiveLspServers(env) {
+  if (!env.COPILOT_HOME) throw new Error('COPILOT_HOME is required to read the language-server configuration the CLI actually consumes');
+  const path = join(env.COPILOT_HOME, 'lsp-config.json');
+  if (!existsSync(path)) {
+    throw new Error(`No user language-server configuration at ${path}; run lab-core init once. No bundled default was substituted.`);
+  }
+  const servers = readJson(path).lspServers;
+  return Object.fromEntries(REQUIRED_LANGUAGE_SERVERS.map((language) => {
+    const server = servers?.[language];
+    if (!usableLanguageServer(server)) {
+      throw new Error(`The saved ${language} language server in ${path} is missing or unusable; correct it deliberately. It was not changed.`);
+    }
+    return [language, server];
+  }));
+}
 
 export function prepareUserTools(context, runtime, env) {
   assertPlainPath(context.workspace, 'labs/fixtures');

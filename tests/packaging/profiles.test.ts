@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { coreEnvironment, mcpConfiguration, lspConfiguration } from '../../packaging/core/runtime/profile.mjs';
-import { copilotArguments, prepareUserTools } from '../../packaging/core/runtime/copilot.mjs';
+import { copilotArguments, effectiveLspServers, prepareUserTools } from '../../packaging/core/runtime/copilot.mjs';
 import { put } from './fixtures.js';
 
 const workspace = resolve('a renamed checkout');
@@ -88,5 +88,56 @@ describe('prepared core configuration boundaries', () => {
     expect(args).toContain('unexpected-remote');
     const config = JSON.parse(args[args.indexOf('--additional-mcp-config') + 1]);
     expect(Object.keys(config.mcpServers).every((name) => name.startsWith('lab-'))).toBe(true);
+  });
+});
+
+describe('effective attendee language-server configuration', () => {
+  const bundled = lspConfiguration(runtime).lspServers;
+  const saved = (servers: unknown) => {
+    const copilotHome = mkdtempSync(join(tmpdir(), 'lab-effective-lsp-test-'));
+    temporary.push(copilotHome);
+    const path = join(copilotHome, 'lsp-config.json');
+    const content = JSON.stringify({ lspServers: servers }, null, 2);
+    put(path, content);
+    return { env: { COPILOT_HOME: copilotHome }, path, content };
+  };
+
+  it('reads the preserved configuration the CLI consumes, not freshly built defaults', () => {
+    const attendee = { ...bundled.typescript, command: '/attendee/typescript-language-server' };
+    const { env } = saved({ typescript: attendee, csharp: bundled.csharp });
+    const servers = effectiveLspServers(env);
+    expect(servers.typescript.command).toBe('/attendee/typescript-language-server');
+    expect(servers.typescript.command).not.toBe(bundled.typescript.command);
+    expect(servers.csharp.command).toBe(bundled.csharp.command);
+  });
+
+  it('rejects an unusable saved definition instead of certifying a bundled default, and preserves it', () => {
+    const { env, path, content } = saved({ typescript: { ...bundled.typescript, command: '' }, csharp: bundled.csharp });
+    expect(() => effectiveLspServers(env)).toThrow(/typescript/);
+    expect(() => effectiveLspServers(env)).toThrow(/not (changed|overwritten)/i);
+    expect(readFileSync(path, 'utf8')).toBe(content);
+  });
+
+  it('rejects saved configuration that dropped a required language server', () => {
+    const { env } = saved({ typescript: bundled.typescript });
+    expect(() => effectiveLspServers(env)).toThrow(/csharp/);
+  });
+
+  it('rejects a saved definition with malformed arguments or source root', () => {
+    expect(() => effectiveLspServers(saved({
+      typescript: { ...bundled.typescript, args: '--stdio' }, csharp: bundled.csharp,
+    }).env)).toThrow(/typescript/);
+    expect(() => effectiveLspServers(saved({
+      typescript: bundled.typescript, csharp: { ...bundled.csharp, rootUri: '' },
+    }).env)).toThrow(/csharp/);
+  });
+
+  it('reports a missing or unreadable user configuration rather than falling back to the image', () => {
+    const copilotHome = mkdtempSync(join(tmpdir(), 'lab-absent-lsp-test-'));
+    temporary.push(copilotHome);
+    expect(() => effectiveLspServers({ COPILOT_HOME: copilotHome })).toThrow(/lsp-config\.json/);
+    expect(() => effectiveLspServers({})).toThrow(/COPILOT_HOME/);
+    put(join(copilotHome, 'lsp-config.json'), '{ not json');
+    expect(() => effectiveLspServers({ COPILOT_HOME: copilotHome })).toThrow(/lsp-config\.json/);
   });
 });

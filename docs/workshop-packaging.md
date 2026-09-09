@@ -106,6 +106,16 @@ markers: a missing Fastify entry point or changed package byte fails before
 `core.ready`, without reinstalling anything. Language-server readiness can move
 to another actual source document when an entry point becomes an import-only
 file; it does not require a fixed filename or declaration name.
+
+Readiness certifies the tools **as the attendee's own configuration resolves
+them**, not the image defaults behind it. It invokes the registered `gh aw`
+command rather than the bundled executable, and it probes the language servers
+named in the preserved `$COPILOT_HOME/lsp-config.json` rather than rebuilding
+default definitions. A preserved registration that exits nonzero, or a saved
+language-server command that cannot be launched, fails before `core.ready`
+instead of reporting a different working configuration as healthy. Incompatible
+preserved state is reported and left in place: readiness never overwrites it,
+re-registers over it, or downloads a replacement.
 See [the .NET restore/configfile contract](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-restore).
 
 Dependency manifest changes require a newly prepared release. Normal source edits
@@ -133,7 +143,7 @@ compatible script hashes. This does not edit or commit a maintainer's dirty hook
 | `.lab-state/contoso-dotnet.db` | Prepared Development configuration opts into SQLite and transactional, marker-based initialization. Existing data and deliberate deletions survive resume; initialization failures stop the prepared app. The default app/test configuration keeps its prior initializer. |
 | Memory, lessons and fixtures | Memory is checkout-local; existing `.copilot/lessons` and source-based lab work stay in the checkout. Readiness uses separate disposable memory probe data and an immutable image copy of the Parquet fixture; it does not rewrite or demand unchanged attendee memory/data. |
 | CLI credentials, sessions and user-level LSP edits | Isolated under the attendee's home, not baked into the image or automatically exported. Treat home state as disposable across container replacement; renew sign-in and deliberately export non-secret customizations when needed. |
-| Tool registrations | Missing per-user gh-aw/LSP registrations are restored from image content; edited LSP configuration and existing registrations are not overwritten. |
+| Tool registrations | Missing per-user gh-aw/LSP registrations are restored from image content; edited LSP configuration and existing registrations are not overwritten. Readiness then checks the registrations and configuration the attendee's commands actually consume, so a preserved but unusable one fails instead of being certified. |
 
 Only the prepared CLI configuration is selected; the tracked `.mcp.json`,
 `.copilot/mcp-config.json`, and `.vscode/mcp.json` defaults are left untouched.

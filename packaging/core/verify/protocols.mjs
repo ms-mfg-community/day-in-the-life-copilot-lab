@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { mcpConfiguration, lspConfiguration } from '../runtime/profile.mjs';
+import { mcpConfiguration } from '../runtime/profile.mjs';
+import { effectiveLspServers } from '../runtime/copilot.mjs';
 import { RpcProcess } from './rpc.mjs';
 import { waitForAnySourceSymbol } from './lsp-source.mjs';
 
@@ -113,11 +114,18 @@ async function probeLanguage(server, workspace, env, preferredFile, languageId, 
   }
 }
 
-export async function probeLsp(workspace, runtime, env) {
-  const servers = lspConfiguration(runtime).lspServers;
+export async function probeLsp(workspace, env) {
+  const servers = effectiveLspServers(env);
+  const probe = async (language, preferredFile, languageId, extension) => {
+    try {
+      return await probeLanguage(servers[language], workspace, env, preferredFile, languageId, extension);
+    } catch (error) {
+      throw new Error(`The saved ${language} language server (${servers[language].command}) could not be used: ${error.message}`, { cause: error });
+    }
+  };
   const [typescript, csharp] = await Promise.all([
-    probeLanguage(servers.typescript, workspace, env, 'node/web/server.ts', 'typescript', '.ts'),
-    probeLanguage(servers.csharp, workspace, env, 'dotnet/ContosoUniversity.Core/Models/Student.cs', 'csharp', '.cs'),
+    probe('typescript', 'node/web/server.ts', 'typescript', '.ts'),
+    probe('csharp', 'dotnet/ContosoUniversity.Core/Models/Student.cs', 'csharp', '.cs'),
   ]);
   return { typescript, csharp };
 }
