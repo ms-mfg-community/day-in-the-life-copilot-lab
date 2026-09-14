@@ -431,7 +431,7 @@ code .
 | `.github/prompts/` | Prompt templates (`.prompt.md`) | 19 |
 | `.github/hooks/` | Hook configuration | 1 |
 | `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
-| `.copilot/` | MCP server configuration (`mcp-config.json`; root `.mcp.json` mirrors it for the Copilot CLI) | 2 |
+| `.copilot/` | MCP server configuration (`mcp-config.json`; the root `.mcp.json` is an empty workspace-scope stub that the labs populate) | 2 |
 | `scripts/hooks/` | Hook shell scripts | 17 |
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 

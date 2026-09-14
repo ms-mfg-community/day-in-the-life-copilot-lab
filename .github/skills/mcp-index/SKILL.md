@@ -11,6 +11,5 @@ description: "Invoke BEFORE complex reasoning, library doc lookups, cross-sessio
 | context7 | Need current docs for any library or framework |
 | microsoft-learn | Azure, .NET, Microsoft product docs |
 | memory | Store or recall knowledge across sessions |
-| session-broker | Multi-agent teams, task boards, file coordination |
 
 Call the tool directly after identifying which one you need. No further reading needed.
