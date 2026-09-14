@@ -24,6 +24,11 @@ jobs:
     name: Build and verify offline
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    # The default runner shell is `bash -e {0}`, which does not set pipefail. Without it a
+    # failing assertion piped into tee would exit 0 and report a broken run as green.
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Check out ${{ inputs.revision }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,11 +83,17 @@ jobs:
           const record = read('packaging/core/out/release-record.json');
           const evidence = read('packaging/core/out/verified-image.json');
           const failures = [];
+          const identifier = (value) => typeof value === 'string' && value.length > 0;
 
-          if (record.source.commit !== expected) failures.push(`built ${record.source.commit}, expected ${expected}`);
-          if (record.releaseId !== evidence.releaseId) failures.push(`built release ${record.releaseId}, evidence records ${evidence.releaseId}`);
+          // Every check below must fail closed: absent or malformed evidence is not a pass.
+          if (!identifier(record.source?.commit)) failures.push('release record has no source commit');
+          else if (record.source.commit !== expected) failures.push(`built ${record.source.commit}, expected ${expected}`);
+
+          if (!identifier(record.releaseId) || !identifier(evidence.releaseId)) failures.push('a release identifier is missing, so evidence cannot be bound to the build');
+          else if (record.releaseId !== evidence.releaseId) failures.push(`built release ${record.releaseId}, evidence records ${evidence.releaseId}`);
+
           if (evidence.network !== 'none') failures.push(`verification ran with network ${evidence.network}`);
-          if (evidence.nonRootUid === 0) failures.push('verification ran as root');
+          if (!Number.isInteger(evidence.nonRootUid) || evidence.nonRootUid <= 0) failures.push(`verification uid ${evidence.nonRootUid} is not a non-root uid`);
           for (const lane of PASSING_LANES) {
             if (evidence[lane] !== 'pass') failures.push(`${lane} = ${evidence[lane]}`);
           }
@@ -104,5 +115,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-core-evidence-${{ steps.revision.outputs.commit }}
+          # An early failure (checkout, npm ci, build) leaves this directory absent. Erroring
+          # here would mask that failure with an artifact failure and upload nothing.
           path: packaging/core/out/
-          if-no-files-found: error
+          if-no-files-found: warn
