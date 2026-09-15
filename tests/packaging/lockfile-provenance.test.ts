@@ -14,6 +14,12 @@ const CANONICAL_REGISTRY_HOST = 'registry.npmjs.org';
 const STRONG_INTEGRITY_PREFIX = 'sha512-';
 const NPM_LOCKFILES = ['package-lock.json', 'packaging/core/tools/package-lock.json'];
 const PNPM_LOCKFILE = 'node/pnpm-lock.yaml';
+// A v1 lockfile keeps its tree under `dependencies`, so a reader that only walks
+// `packages` would inspect nothing and report green over a fully downgraded file.
+const SUPPORTED_LOCKFILE_VERSION = 3;
+// Both lockfiles carry well over a hundred downloaded entries, so this floor
+// trips only when the map is emptied, renamed or truncated, never on churn.
+const MINIMUM_DOWNLOADED_ENTRIES = 50;
 const REGENERATION_HINT =
   'regenerate with `npm install --registry https://registry.npmjs.org/` on a host that can reach npmjs';
 
@@ -22,23 +28,57 @@ interface LockfileEntry {
   readonly integrity?: string;
 }
 
+// Every downloaded entry stays in scope even when a field is absent: a `resolved`
+// tarball with no `integrity` is the weakest state of all, so it has to surface as
+// a violation rather than be filtered out of the sample.
 function readNpmLockfile(relativePath: string): ReadonlyArray<readonly [string, LockfileEntry]> {
   const raw = readFileSync(join(REPOSITORY_ROOT, relativePath), 'utf8');
-  const parsed = JSON.parse(raw) as { packages?: Record<string, LockfileEntry> };
-  return Object.entries(parsed.packages ?? {}).filter(([, entry]) => entry.resolved && entry.integrity);
+  const parsed = JSON.parse(raw) as { lockfileVersion?: number; packages?: Record<string, LockfileEntry> };
+  if (parsed.lockfileVersion !== SUPPORTED_LOCKFILE_VERSION) {
+    throw new Error(
+      `${relativePath} is lockfileVersion ${parsed.lockfileVersion}, not ${SUPPORTED_LOCKFILE_VERSION}; ${REGENERATION_HINT}`,
+    );
+  }
+  const downloaded = Object.entries(parsed.packages ?? {}).filter(
+    ([, entry]) => Boolean(entry.resolved) || Boolean(entry.integrity),
+  );
+  if (downloaded.length < MINIMUM_DOWNLOADED_ENTRIES) {
+    throw new Error(
+      `${relativePath} exposed only ${downloaded.length} downloaded entries, so these guards would pass vacuously`,
+    );
+  }
+  return downloaded;
+}
+
+function resolvedHost(resolved: string | undefined): string {
+  if (!resolved) return '<no resolved URL>';
+  try {
+    return new URL(resolved).host;
+  } catch {
+    return `<unparseable ${resolved}>`;
+  }
 }
 
 function describeViolations(
   relativePath: string,
   entries: ReadonlyArray<readonly [string, LockfileEntry]>,
 ): readonly string[] {
-  return entries.map(([name, entry]) => `${relativePath} :: ${name || '<root>'} -> ${entry.resolved} (${entry.integrity})`);
+  return entries.map(
+    ([name, entry]) =>
+      `${relativePath} :: ${name || '<root>'} -> ${entry.resolved ?? '<no resolved URL>'} (${entry.integrity ?? '<no integrity>'})`,
+  );
 }
 
 describe('lockfile provenance', () => {
+  // Named explicitly so the invariant is reviewable on its own; `readNpmLockfile`
+  // repeats it as a backstop, keeping the guards below from passing over nothing.
+  it.each(NPM_LOCKFILES)('%s exposes the package map these guards inspect', (relativePath) => {
+    expect(readNpmLockfile(relativePath).length).toBeGreaterThanOrEqual(MINIMUM_DOWNLOADED_ENTRIES);
+  });
+
   it.each(NPM_LOCKFILES)('%s resolves every package from the canonical npm registry', (relativePath) => {
     const offRegistry = readNpmLockfile(relativePath).filter(
-      ([, entry]) => new URL(entry.resolved!).host !== CANONICAL_REGISTRY_HOST,
+      ([, entry]) => resolvedHost(entry.resolved) !== CANONICAL_REGISTRY_HOST,
     );
 
     expect(
@@ -47,9 +87,9 @@ describe('lockfile provenance', () => {
     ).toEqual([]);
   });
 
-  it.each(NPM_LOCKFILES)('%s records SHA-512 integrity rather than a downgraded hash', (relativePath) => {
+  it.each(NPM_LOCKFILES)('%s records SHA-512 integrity rather than a downgraded or absent hash', (relativePath) => {
     const weakIntegrity = readNpmLockfile(relativePath).filter(
-      ([, entry]) => !entry.integrity!.startsWith(STRONG_INTEGRITY_PREFIX),
+      ([, entry]) => !entry.integrity?.startsWith(STRONG_INTEGRITY_PREFIX),
     );
 
     expect(

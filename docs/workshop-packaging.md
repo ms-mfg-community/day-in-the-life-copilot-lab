@@ -32,6 +32,14 @@ an ARM image. Resolve changes during release preparation, never at an event.
 | `/opt/lab/release.json` | Source commit/archive checksum, dependency-input hashes, archive checksums, platform/ABI, required content, and explicit capability boundaries. |
 | `/opt/lab/inventory.json`, `*-sbom.cdx.json` | Resolved tools, OS packages, Python and application inventories, browser revisions, root/tool CycloneDX inventories, and locations of retained license material. These are not a completed Phase 5 provenance/license-compliance process. |
 
+Both npm lockfiles must resolve every package from `registry.npmjs.org` with
+SHA-512 `integrity`, and stay at `lockfileVersion` 3. A corporate npm proxy
+records a maintainer-specific mirror URL and the upstream SHA-1 `dist.shasum`
+instead, which pins the release to a private shard and weakens the hash the
+image build verifies. Regenerate on a host that reaches npmjs — `npm install
+--registry https://registry.npmjs.org/` — rather than through a proxy;
+`tests/packaging/lockfile-provenance.test.ts` fails the build otherwise.
+
 The Node and .NET Playwright versions remain independent. Each version's installer
 runs during preparation, with browser garbage collection disabled. Runtime
 `PLAYWRIGHT_BROWSERS_PATH` points to the immutable shared image directory.
