@@ -4,3 +4,8 @@
 # Mark all .parquet files as binary so Git never applies line-ending or text
 # normalization that would corrupt the file's footer/magic bytes (PAR1 ... PAR1).
 *.parquet binary
+
+# Prepared runtime scripts execute in Linux even when the maintainer uses Windows.
+packaging/core/**/*.sh text eol=lf
+packaging/core/lab-core text eol=lf
+packaging/core/copilot text eol=lf

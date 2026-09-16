@@ -8,6 +8,8 @@ using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
+var preparedCore = builder.Environment.IsDevelopment()
+    && builder.Configuration.GetValue<bool>("PreparedCore:Enabled");
 
 // Add services to the container
 var initialScopes = builder.Configuration["DownstreamApi:Scopes"]?.Split(' ') ?? builder.Configuration["MicrosoftGraph:Scopes"]?.Split(' ');
@@ -103,12 +105,23 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<SchoolContext>();
         var logger = services.GetRequiredService<ILogger<Program>>();
-        await DbInitializer.InitializeAsync(context, logger);
+        if (preparedCore)
+        {
+            await PreparedDbInitializer.InitializeAsync(context, logger);
+        }
+        else
+        {
+            await DbInitializer.InitializeAsync(context, logger);
+        }
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database.");
+        if (preparedCore)
+        {
+            throw;
+        }
     }
 }
 

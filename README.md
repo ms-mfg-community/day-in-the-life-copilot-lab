@@ -92,6 +92,10 @@ Most labs (01–07, 10) work with **any Copilot license**. A few labs require sp
 
 ## Choose Your Path
 
+**Maintainer-only packaging work:** the [prepared-core Phase 1 recipe](docs/workshop-packaging.md)
+is staged separately. It is not a published or exercised browser entry point;
+the attendee setup paths below are unchanged.
+
 | Path | Time | For | Recommendation |
 |------|------|-----|----------------|
 | [**Codespaces**](#option-a--github-codespaces) | 5–10 min | In-person workshops, no local install | ⭐ **Start here** |
