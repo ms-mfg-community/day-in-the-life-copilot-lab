@@ -77,20 +77,26 @@ jobs:
           const PASSING_LANES = ['firstCreation', 'resume', 'renamedCheckout', 'additionalWorktree',
             'sourceEditBuildTest', 'nodeE2e', 'dotnetE2e', 'rebuildEquivalent'];
           const UNEXERCISED_LANES = ['codespaces', 'copilotAuthorization'];
+          const COMMIT_ID = /^[a-f0-9]{40}$/;
+          const RELEASE_ID = /^[a-f0-9]{64}$/;
+          const IMAGE_ID = /^sha256:[a-f0-9]{64}$/;
           const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
           const [expected] = process.argv.slice(2);
           const record = read('packaging/core/out/release-record.json');
           const evidence = read('packaging/core/out/verified-image.json');
           const failures = [];
-          const identifier = (value) => typeof value === 'string' && value.length > 0;
+          const identifier = (value, pattern) => typeof value === 'string' && pattern.test(value);
 
           // Every check below must fail closed: absent or malformed evidence is not a pass.
-          if (!identifier(record.source?.commit)) failures.push('release record has no source commit');
+          if (!identifier(record.source?.commit, COMMIT_ID)) failures.push('release record has a missing or malformed source commit');
           else if (record.source.commit !== expected) failures.push(`built ${record.source.commit}, expected ${expected}`);
 
-          if (!identifier(record.releaseId) || !identifier(evidence.releaseId)) failures.push('a release identifier is missing, so evidence cannot be bound to the build');
+          if (!identifier(record.releaseId, RELEASE_ID) || !identifier(evidence.releaseId, RELEASE_ID)) failures.push('a release identifier is missing or malformed, so evidence cannot be bound to the build');
           else if (record.releaseId !== evidence.releaseId) failures.push(`built release ${record.releaseId}, evidence records ${evidence.releaseId}`);
+
+          if (!identifier(record.imageId, IMAGE_ID) || !identifier(evidence.imageId, IMAGE_ID)) failures.push('an image identifier is missing or malformed, so evidence cannot be bound to the image');
+          else if (record.imageId !== evidence.imageId) failures.push(`built image ${record.imageId}, evidence records ${evidence.imageId}`);
 
           if (evidence.network !== 'none') failures.push(`verification ran with network ${evidence.network}`);
           if (!Number.isInteger(evidence.nonRootUid) || evidence.nonRootUid <= 0) failures.push(`verification uid ${evidence.nonRootUid} is not a non-root uid`);
@@ -105,7 +111,7 @@ jobs:
             process.stderr.write(`Evidence does not certify ${expected}:\n- ${failures.join('\n- ')}\n`);
             process.exit(1);
           }
-          process.stdout.write(`Evidence certifies ${expected} as release ${record.releaseId}.\n`);
+          process.stdout.write(`Evidence certifies ${expected} as release ${record.releaseId} in image ${record.imageId}.\n`);
           NODE
           node "${RUNNER_TEMP}/assert-evidence.mjs" "${{ steps.revision.outputs.commit }}" \
             | tee -a "$GITHUB_STEP_SUMMARY"
