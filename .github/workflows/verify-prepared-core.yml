@@ -1,0 +1,127 @@
+name: Verify prepared core
+
+# The prepared core image resolves its dependencies from registry.npmjs.org, which is
+# unreachable from the corporate network the lab is authored on. This workflow runs the
+# same build and offline verification on a GitHub-hosted runner, which has clean egress.
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Branch, tag, or commit to build and verify
+        required: true
+        default: feature/lab-packaging-core
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-prepared-core-${{ inputs.revision }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Build and verify offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    # The default runner shell is `bash -e {0}`, which does not set pipefail. Without it a
+    # failing assertion piped into tee would exit 0 and report a broken run as green.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out ${{ inputs.revision }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.revision }}
+          fetch-depth: 0
+
+      - name: Resolve revision to an immutable commit
+        id: revision
+        run: echo "commit=$(git rev-parse --verify 'HEAD^{commit}')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      # The image layers two full .NET SDKs onto the Node base, then adds Playwright
+      # browsers, a NuGet feed, and Python wheels. The stock runner does not have room.
+      - name: Reclaim runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/local/share/powershell /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      # Also the first real test of the root lockfile: it must resolve from
+      # registry.npmjs.org and match the recorded SHA-512 integrity.
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Build the prepared core image
+        run: node packaging/core/build.mjs --revision "${{ steps.revision.outputs.commit }}"
+
+      - name: Verify the image offline
+        run: |
+          tag="$(node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            process.stdout.write(JSON.parse(readFileSync("packaging/core/out/release-record.json", "utf8")).localTag);
+          ')"
+          node packaging/core/verify.mjs --image "$tag"
+
+      - name: Assert the evidence certifies this revision
+        run: |
+          cat > "${RUNNER_TEMP}/assert-evidence.mjs" <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const PASSING_LANES = ['firstCreation', 'resume', 'renamedCheckout', 'additionalWorktree',
+            'sourceEditBuildTest', 'nodeE2e', 'dotnetE2e', 'rebuildEquivalent'];
+          const UNEXERCISED_LANES = ['codespaces', 'copilotAuthorization'];
+          const COMMIT_ID = /^[a-f0-9]{40}$/;
+          const RELEASE_ID = /^[a-f0-9]{64}$/;
+          const IMAGE_ID = /^sha256:[a-f0-9]{64}$/;
+          const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
+
+          const [expected] = process.argv.slice(2);
+          const record = read('packaging/core/out/release-record.json');
+          const evidence = read('packaging/core/out/verified-image.json');
+          const failures = [];
+          const identifier = (value, pattern) => typeof value === 'string' && pattern.test(value);
+
+          // Every check below must fail closed: absent or malformed evidence is not a pass.
+          if (!identifier(record.source?.commit, COMMIT_ID)) failures.push('release record has a missing or malformed source commit');
+          else if (record.source.commit !== expected) failures.push(`built ${record.source.commit}, expected ${expected}`);
+
+          if (!identifier(record.releaseId, RELEASE_ID) || !identifier(evidence.releaseId, RELEASE_ID)) failures.push('a release identifier is missing or malformed, so evidence cannot be bound to the build');
+          else if (record.releaseId !== evidence.releaseId) failures.push(`built release ${record.releaseId}, evidence records ${evidence.releaseId}`);
+
+          if (!identifier(record.imageId, IMAGE_ID) || !identifier(evidence.imageId, IMAGE_ID)) failures.push('an image identifier is missing or malformed, so evidence cannot be bound to the image');
+          else if (record.imageId !== evidence.imageId) failures.push(`built image ${record.imageId}, evidence records ${evidence.imageId}`);
+
+          if (evidence.network !== 'none') failures.push(`verification ran with network ${evidence.network}`);
+          if (!Number.isInteger(evidence.nonRootUid) || evidence.nonRootUid <= 0) failures.push(`verification uid ${evidence.nonRootUid} is not a non-root uid`);
+          for (const lane of PASSING_LANES) {
+            if (evidence[lane] !== 'pass') failures.push(`${lane} = ${evidence[lane]}`);
+          }
+          for (const lane of UNEXERCISED_LANES) {
+            if (evidence[lane] !== 'not-exercised') failures.push(`${lane} = ${evidence[lane]}`);
+          }
+
+          if (failures.length) {
+            process.stderr.write(`Evidence does not certify ${expected}:\n- ${failures.join('\n- ')}\n`);
+            process.exit(1);
+          }
+          process.stdout.write(`Evidence certifies ${expected} as release ${record.releaseId} in image ${record.imageId}.\n`);
+          NODE
+          node "${RUNNER_TEMP}/assert-evidence.mjs" "${{ steps.revision.outputs.commit }}" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: prepared-core-evidence-${{ steps.revision.outputs.commit }}
+          # An early failure (checkout, npm ci, build) leaves this directory absent. Erroring
+          # here would mask that failure with an artifact failure and upload nothing.
+          path: packaging/core/out/
+          if-no-files-found: warn
