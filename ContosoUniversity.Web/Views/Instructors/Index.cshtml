@@ -22,7 +22,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model.Instructors)
+        @foreach (var item in Model.Instructors ?? Enumerable.Empty<Instructor>())
         {
             string selectedRow = "";
             if (item.ID == (int?)ViewBag.InstructorID)

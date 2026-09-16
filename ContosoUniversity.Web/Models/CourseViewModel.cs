@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace ContosoUniversity.Web.Models
@@ -10,7 +9,7 @@ namespace ContosoUniversity.Web.Models
 
         [Required]
         [StringLength(50, MinimumLength = 3)]
-        public string Title { get; set; }
+        public string Title { get; set; } = "";
 
         [Required]
         [Range(0, 5)]
