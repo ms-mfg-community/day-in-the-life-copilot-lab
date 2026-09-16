@@ -16,7 +16,7 @@ This directory contains reference implementations for each lab exercise.
 | Lab 07 | `lab07-orchestrator/` | Multi-agent orchestrator |
 | Lab 08 | `lab08-gh-aw-prd/` | PRD generation gh-aw workflow |
 | Lab 09 | `lab09-gh-aw-review/` | Custom code review gh-aw workflow (advanced alternative to built-in Copilot Code Review) |
-| Lab 10 | `lab10-session-management/` | Memory MCP samples, handoff & checkpoint examples |
+| Lab 10 | `lab10-session-management/` | Three-layer agent memory: handoff & checkpoint examples, plus pointers to the in-repo `.copilot/lessons/` wiki |
 
 ## How to Use
 

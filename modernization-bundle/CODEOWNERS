@@ -1,0 +1,7 @@
+# CODEOWNERS for the modernization-bundle Copilot plugin.
+# Enforces review on every change.
+
+*                                   @ms-mfg-community/copilot-lab-maintainers
+/manifest.yaml                      @ms-mfg-community/copilot-lab-maintainers
+/org-policy.example.yaml            @ms-mfg-community/copilot-lab-maintainers
+/.github/workflows/                 @ms-mfg-community/copilot-lab-maintainers

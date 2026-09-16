@@ -1,3 +1,12 @@
+---
+title: "MCP Server Configuration"
+lab_number: 5
+pace:
+  presenter_minutes: 3
+  self_paced_minutes: 15
+registry: docs/_meta/registry.yaml
+---
+
 # 5 — MCP Server Configuration
 
 In this lab you will explore and configure Model Context Protocol (MCP) servers.
@@ -5,8 +14,36 @@ In this lab you will explore and configure Model Context Protocol (MCP) servers.
 > ⏱️ Presenter pace: 3 minutes | Self-paced: 15 minutes
 
 References:
-- [MCP specification](https://spec.modelcontextprotocol.io/)
+- [MCP specification changelog (2026-07-28)](https://modelcontextprotocol.io/specification/2026-07-28/changelog)
 - [Using MCP servers with Copilot](https://docs.github.com/en/copilot/using-github-copilot/using-mcp-servers-with-copilot)
+
+> 🧭 **Track appendices** — track-specific MCP server picks live in
+> [`labs/appendices/dotnet/lab05.md`](appendices/dotnet/lab05.md) and
+> [`labs/appendices/node/lab05.md`](appendices/node/lab05.md).
+
+## 5.0 Copilot CLI currency (2026 refresh)
+
+> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
+> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+
+> 🆕 **MCP protocol revision (2026-07-28, confirmed breaking change):** the
+> servers below now speak the stateless MCP spec pinned at
+> `mcp_protocol_spec_version` in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
+> Protocol-level sessions and the `initialize` handshake are gone — every
+> request now carries its protocol version/capabilities inline, and a new
+> `server/discover` RPC replaces the old handshake for version negotiation.
+> This is transparent to you as a Copilot CLI user (the client handles it),
+> but if you ever read raw MCP traffic or write your own server, don't expect
+> an `Mcp-Session-Id` header or a stateful `initialize` call — see
+> [the official changelog](https://modelcontextprotocol.io/specification/2026-07-28/changelog).
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` | Pulling an MCP-bundling plugin from a private or public registry. |
+| **Parallel subagents** | `/fleet` | Querying multiple MCP servers in parallel (e.g. `context7` + `microsoft-learn`). |
+| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when wiring a new MCP server; autopilot mode when re-running well-known MCP queries. |
+| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry when the answer is already in MCP-retrieved context. |
+| **Local tool discovery** | `extensions_manage` operation `list` | Seeing which MCP-backed tools are loaded right now. |
 
 ## 5.1 Examine Existing MCP Configuration
 
@@ -18,23 +55,25 @@ MCP servers extend Copilot's capabilities with external tools — documentation 
 
 **WSL/Bash:**
 ```bash
-cat .copilot/mcp-config.json
+cat ~/.copilot/mcp-config.json
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .copilot/mcp-config.json
+Get-Content ~/.copilot/mcp-config.json
 ```
 
-2. This repository ships with 5 MCP servers:
+2. This repository ships with 6 MCP servers (kept in sync with
+   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) `mcp_servers:`):
 
 | Server | Type | Purpose |
 |--------|------|---------|
 | `context7` | local (stdio) | Third-party library documentation lookup |
-| `memory` | local (stdio) | Knowledge graph for persisting entities across sessions |
+| `memory` | local (stdio) | Knowledge-graph persistence primitive — see §5.3 for why this repo does **not** rely on it for cross-session memory |
 | `sequential-thinking` | local (stdio) | Structured chain-of-thought reasoning |
 | `workiq` | local (stdio) | Microsoft Work IQ for productivity |
 | `microsoft-learn` | http | Azure/Microsoft official documentation |
+| `fabric` | local (stdio) | Local/open-source Fabric MCP Server for OneLake/medallion patterns (see [Lab 12](lab12.md); a separate remote Fabric Core MCP Server also exists for live-tenant work) |
 
 3. Notice the two server types:
    - **local** (`"type": "local"`): Runs as a subprocess via `npx`. Uses stdio for communication.
@@ -87,37 +126,76 @@ Use Context7 to find Entity Framework Core migration best practices.
 
 > 💡 **What you should see:** Copilot responds with up-to-date documentation from the library. If it says "Context7 not available" or ignores the tool, the MCP server may not have started — check that `npx` is available and Node.js is installed.
 
-## 5.3 Use Memory MCP for Persistence
+## 5.3 Cross-session persistence — markdown lessons, not a server
 
-The Memory MCP provides a knowledge graph that persists across sessions. Entities, observations, and relations survive between conversations.
+MCP gives you live tools (docs, search, structured reasoning); this repo
+intentionally does **not** treat any MCP server as cross-session memory —
+including the `memory` server listed above, which implements the generic
+knowledge-graph *primitive* but isn't wired into this repo's persistence
+story. Instead, this repo solves persistence with plain markdown files the
+agent maintains itself, governed by [`.github/instructions/lessons.instructions.md`](../.github/instructions/lessons.instructions.md).
+That's the pattern Lab 10 unpacks in full — here you just see it
+working alongside MCP.
+
+> 🆕 **Why this distinction matters more since 2026-07-28:** the MCP spec
+> revision removed protocol-level sessions entirely (no `initialize`
+> handshake, no `Mcp-Session-Id`). Any cross-call state an MCP server needs
+> is now an explicit, server-minted handle passed back as an ordinary tool
+> argument — never an implicit session. That makes app-layer persistence
+> (like this repo's `.copilot/lessons/` markdown wiki) even more clearly a
+> *client/application* concern, not something the protocol does for you.
 
 🖥️ **In your terminal:**
 
-1. In Copilot CLI, store a fact about the project:
-```
-Store in memory: ContosoUniversity uses Entity Framework Core 8 with SQL Server and follows the repository pattern. The main database context is SchoolContext.
+1. Inspect the wiki that ships with the repo:
+
+**WSL/Bash:**
+```bash
+ls .copilot/lessons/
+head -20 .copilot/lessons/index.md
 ```
 
-2. Copilot will call `create_entities` to store this as a knowledge graph entity.
-
-3. Verify it was stored:
-```
-Search memory for "ContosoUniversity database"
-```
-
-4. Store a relationship:
-```
-Store in memory: The Student entity has a one-to-many relationship with Enrollment. The Course entity also has a one-to-many relationship with Enrollment. Enrollment is the join table.
+**PowerShell:**
+```powershell
+Get-ChildItem .copilot/lessons
+Get-Content .copilot/lessons/index.md | Select-Object -First 20
 ```
 
-5. Read back the full graph:
+2. In Copilot CLI, ask the agent to record a project fact as a lesson:
 ```
-Show me everything stored in memory about ContosoUniversity.
+Append a lesson to .copilot/lessons/log.md: ContosoUniversity uses
+Entity Framework Core 8 with SQL Server and follows the repository
+pattern; the main DbContext is SchoolContext. Follow the schema in
+.github/instructions/lessons.instructions.md and leave "Promoted to"
+blank.
 ```
 
-You should see entities with observations and relations between them.
+3. Verify the append landed in git-tracked markdown:
 
-> 💡 **Cross-session persistence**: Memory MCP data survives across Copilot sessions. Use it for project decisions, architecture notes, and context that should be available in future conversations.
+**WSL/Bash:**
+```bash
+head -30 .copilot/lessons/log.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .copilot/lessons/log.md | Select-Object -First 30
+```
+
+4. Open a fresh session (`/exit`, then start Copilot again) and ask:
+```
+What does this repo use for data access? Check .copilot/lessons/
+before answering.
+```
+
+The agent reads the lesson you just wrote — no knowledge-graph server,
+no embeddings, no cross-session database. Just markdown the agent
+wrote to itself, committed alongside the code.
+
+> 💡 **Why markdown, not a server?** Files are diffable, reviewable,
+> revertable, and ship with the repo. Lab 10 walks through the full
+> three-layer model (raw sources → wiki → schema) and the
+> `/consolidate-lessons` command that promotes durable lessons.
 
 ## 5.4 Add a New MCP Server
 
@@ -127,7 +205,7 @@ Let's add a new MCP server to the configuration. We'll add a filesystem server f
 
 1. Open the MCP configuration:
 ```bash
-code .copilot/mcp-config.json
+code ~/.copilot/mcp-config.json
 ```
 
 2. Add a new server entry. For example, to add a fetch server for web content:
@@ -136,14 +214,13 @@ code .copilot/mcp-config.json
 {
   "mcpServers": {
     "context7": { ... },
-    "memory": { ... },
     "sequential-thinking": { ... },
     "workiq": { ... },
     "microsoft-learn": { ... },
     "fetch": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "args": ["-y", "@kazuph/mcp-fetch"],
       "tools": ["*"]
     }
   }
@@ -170,7 +247,7 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 
 | Concept | Details |
 |---------|---------|
-| **Config location** | `.copilot/mcp-config.json` |
+| **Config location** | `~/.copilot/mcp-config.json` (user scope; workspace scope uses `<workspace>/.mcp.json`) |
 | **Server types** | `local` (stdio subprocess) or `http` (remote URL) |
 | **Tool filtering** | `"tools": ["*"]` for all, or list specific tool names |
 | **Agent access** | Use `mcp-servers` in agent frontmatter to grant server access |
@@ -180,22 +257,23 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 | Server | Tools | Use Case |
 |--------|-------|----------|
 | context7 | `resolve-library-id`, `query-docs` | Library documentation |
-| memory | `create_entities`, `search_nodes`, `read_graph` | Knowledge persistence |
+| memory | knowledge-graph primitive | Available but not used for this repo's persistence story — see §5.3 |
 | sequential-thinking | `sequentialthinking` | Structured reasoning |
 | microsoft-learn | `microsoft_docs_search`, `microsoft_docs_fetch` | Microsoft documentation |
+| fabric | Fabric/OneLake tools | Local Fabric MCP for Lab 12 (see registry `note` for remote-vs-local distinction) |
 
 **Best practices:**
 - Use `context7` for up-to-date library docs instead of guessing from training data
-- Use `memory` for project decisions that should persist across sessions
 - Use `sequential-thinking` for complex multi-step reasoning
 - Restrict `tools` to only what's needed for security
+- For cross-session persistence, write a lesson to `.copilot/lessons/` (see §5.3) — MCP is intentionally not the memory layer in this repo
 
 </details>
 
 <details>
-<summary>Solution: mcp-config.json with fetch server</summary>
+<summary>Solution: .mcp.json with fetch server</summary>
 
-See [`solutions/lab05-mcp-config/mcp-config.json`](../solutions/lab05-mcp-config/mcp-config.json)
+See [`solutions/lab05-mcp-config/.mcp.json`](../solutions/lab05-mcp-config/.mcp.json)
 
 </details>
 

@@ -1,0 +1,28 @@
+{
+  "_comment": "Microsoft Fabric MCP server (@microsoft/fabric-mcp, github.com/microsoft/mcp) — Copilot CLI format. The server authenticates via DefaultAzureCredential (your 'az login' session) and does NOT read FABRIC_AUTH_TOKEN. Run 'az login' with at least the Contributor workspace role before launching the CLI. IMPORTANT for multi-tenant Microsoft identities: AZURE_TOKEN_CREDENTIALS=AzureCliCredential + AZURE_TENANT_ID pin auth to your 'az login' session and Fabric tenant — without them, DefaultAzureCredential's interactive-browser fallback signs in to your HOME tenant and you'll see the wrong workspaces (or 404s). Remove AZURE_TOKEN_CREDENTIALS if you intend to use a managed identity / service principal instead of az login. FABRIC_AUTH_TOKEN is optional and only used for the pre-flight curl smoke-test in labs/lab12.md; FABRIC_WORKSPACE_ID/FABRIC_TENANT_ID are informational. See labs/lab12.md for the full setup walkthrough and the offline simulator fallback.",
+  "mcpServers": {
+    "fabric": {
+      "description": "Microsoft Fabric MCP — enumerate workspaces/lakehouses/tables and query OneLake from Copilot CLI. Authenticates via your 'az login' session (DefaultAzureCredential).",
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start", "--mode", "all"],
+      "tools": ["*"],
+      "env": {
+        "FABRIC_TENANT_ID": "${env:FABRIC_TENANT_ID}",
+        "FABRIC_WORKSPACE_ID": "${env:FABRIC_WORKSPACE_ID}",
+        "AZURE_TENANT_ID": "${env:AZURE_TENANT_ID}",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
+      },
+      "auth": {
+        "method": "azure-identity",
+        "credential": "DefaultAzureCredential (uses your 'az login' session)",
+        "login_command": "az login",
+        "min_workspace_role": "Contributor",
+        "scopes": ["https://api.fabric.microsoft.com/.default", "https://storage.azure.com/.default"],
+        "smoke_test_token_command": "az account get-access-token --resource https://api.fabric.microsoft.com --query accessToken -o tsv",
+        "warning": "NEVER paste a token into this file. The server uses your az login session; the smoke-test token is only for a manual curl check."
+      },
+      "offline_fallback": "labs/lab12.md#offline-simulator"
+    }
+  }
+}

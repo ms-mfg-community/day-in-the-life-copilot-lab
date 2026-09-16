@@ -6,12 +6,6 @@
       "args": ["-y", "@upstash/context7-mcp"],
       "tools": ["*"]
     },
-    "memory": {
-      "type": "local",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "tools": ["*"]
-    },
     "sequential-thinking": {
       "type": "local",
       "command": "npx",

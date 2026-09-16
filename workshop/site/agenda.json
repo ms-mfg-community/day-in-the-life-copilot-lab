@@ -1,0 +1,116 @@
+{
+  "title": "Advanced Copilot CLI Workshop",
+  "baseTz": "America/Chicago",
+  "days": [
+    {
+      "name": "Workshop",
+      "subtitle": "Single-day, 4-hour advanced workshop · presentation block first, lab block at the end",
+      "blocks": [
+        {
+          "type": "session",
+          "start": "08:00",
+          "end": "08:05",
+          "duration_min": 5,
+          "title": "Welcome & readiness check",
+          "description": "Top-of-day smoke test: environment, CLI auth, MCP servers reachable. Not a content module.",
+          "icon": "👋"
+        },
+        {
+          "type": "session",
+          "start": "08:05",
+          "end": "08:40",
+          "duration_min": 35,
+          "title": "M1 — Copilot CLI extensibility architecture",
+          "description": "Choose between AGENTS.md, custom agents, skills, prompts, hooks, and memory; wire them into one coherent project profile. Anchor labs: lab01/02/03/04/06/10.",
+          "icon": "🧩",
+          "section": "m1"
+        },
+        {
+          "type": "session",
+          "start": "08:40",
+          "end": "09:10",
+          "duration_min": 30,
+          "title": "M2 — MCP servers in practice",
+          "description": "Compose multiple MCP servers in one session, debug silent failures, use --additional-mcp-config for per-session overrides. Anchor labs: lab05, lab12.",
+          "icon": "🔌",
+          "section": "m2"
+        },
+        {
+          "type": "break",
+          "start": "09:10",
+          "end": "09:20",
+          "duration_min": 10,
+          "title": "Break",
+          "icon": "☕"
+        },
+        {
+          "type": "session",
+          "start": "09:20",
+          "end": "09:45",
+          "duration_min": 25,
+          "title": "M3 — Multi-agent orchestration",
+          "description": "Decompose tasks into parallel stateless sub-agent dispatches, route models by cost/judgment, know when not to spawn one. Anchor lab: lab07.",
+          "icon": "🤝",
+          "section": "m3"
+        },
+        {
+          "type": "session",
+          "start": "09:45",
+          "end": "10:10",
+          "duration_min": 25,
+          "title": "M4 — GitHub Agentic Workflows (gh-aw)",
+          "description": "Read, author, and debug gh-aw workflows on the registry-pinned schema for PRD generation and code review. Anchor labs: lab08, lab09.",
+          "icon": "⚙️",
+          "section": "m4"
+        },
+        {
+          "type": "break",
+          "start": "10:10",
+          "end": "10:20",
+          "duration_min": 10,
+          "title": "Break",
+          "icon": "☕"
+        },
+        {
+          "type": "session",
+          "start": "10:20",
+          "end": "10:40",
+          "duration_min": 20,
+          "title": "M5 — Enterprise plugin marketplace",
+          "description": "Package agents/skills/prompts/hooks as a plugin, publish to an internal marketplace, reason about versioning and blast radius. Anchor lab: lab11.",
+          "icon": "🏪",
+          "section": "m5"
+        },
+        {
+          "type": "session",
+          "start": "10:40",
+          "end": "11:05",
+          "duration_min": 25,
+          "title": "M6 — A2A / ACP + tmux orchestrator meta-loop (flagship)",
+          "description": "Stand up the tmux orchestrator (plan→implement→handoff→clear→qa) and run Copilot CLI as an ACP server. Anchor labs: lab13, lab14.",
+          "icon": "🧵",
+          "section": "m6"
+        },
+        {
+          "type": "session",
+          "start": "11:05",
+          "end": "11:20",
+          "duration_min": 15,
+          "title": "Q&A and wrap of presentation block",
+          "description": "Open Q&A on the presentation modules and pointers to follow-on labs and registry sources of truth before the lab block kicks off.",
+          "icon": "❓"
+        },
+        {
+          "type": "lab",
+          "start": "11:20",
+          "end": "12:00",
+          "duration_min": 40,
+          "title": "Lab Block — All Labs in Order",
+          "description": "Single consolidated hands-on block. Run labs in strict numeric order: Lab 01 Exploring Copilot Configuration · Lab 02 Custom Instructions & AGENTS.md · Lab 03 Creating a .NET Development Agent · Lab 04 Skills & Prompts · Lab 05 MCP Server Configuration · Lab 06 Hooks · Lab 07 Multi-Agent Orchestration · Lab 08 GitHub Agentic Workflows: PRD Generation · Lab 09 Copilot Coding Agent & Code Review · Lab 10 Agent Memory: Personalities, Lessons, and Consolidation · Lab 11 Building & Distributing a Copilot Plugin (Enterprise Marketplace) · Lab 12 Fabric MCP with Copilot CLI & VS Code · Lab 13 A2A Concepts with Copilot CLI ACP · Lab 14 Orchestrator + tmux Pattern (Deep-Dive). The 40-minute window covers in-room kickoff and triage; learners continue Labs 1→14 on their own machines after the workshop.",
+          "icon": "🧪",
+          "section": "labs"
+        }
+      ]
+    }
+  ]
+}

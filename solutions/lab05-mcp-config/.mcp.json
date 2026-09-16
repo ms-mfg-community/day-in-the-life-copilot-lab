@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "fetch": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-fetch"],
+      "tools": ["*"]
+    }
+  }
+}
