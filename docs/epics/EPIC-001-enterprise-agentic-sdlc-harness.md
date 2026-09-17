@@ -4,7 +4,8 @@
 **Created:** 2026-09-17
 **Owner:** TBD
 **Target:** Labs 21–25 + executive blueprint
-**Capability baseline verified:** 2026-09-17 (see [Appendix A](#appendix-a--verified-capability-baseline))
+**Capability baseline verified:** 2026-09-17; independently **re-verified against primary
+sources 2026-09-17** (see [Appendix A](#appendix-a--verified-capability-baseline))
 
 ---
 
@@ -347,16 +348,28 @@ stale sources.
 - [ ] Frames **`captureContent`** as the switch that captures prompts and responses, off by
       default, and presents enabling it as a **governance decision with a named approver**,
       paired with `lockCaptureContent`.
-- [ ] Documents the span tree (`invoke_agent → chat → execute_tool / execute_hook`) and the
-      GenAI attributes the query pack depends on (`gen_ai.usage.*`, `gen_ai.request.model`,
-      `gen_ai.conversation.id`, `gen_ai.tool.name`, `error.type`, `github.copilot.*`).
+- [ ] Documents the span tree — an `invoke_agent` root span with `chat` and `execute_tool`
+      children — and the GenAI attributes the query pack depends on (`gen_ai.usage.*`,
+      `gen_ai.request.model`, `gen_ai.conversation.id`, `gen_ai.tool.name`, `error.type`,
+      `github.copilot.*`). There is **no `execute_hook` span**; hook execution is not a
+      documented span type.
+- [ ] Warns that **`github.copilot.cost` is a per-request model multiplier, not a currency
+      value**, and that `github.copilot.nano_aiu` must be read from the **root `invoke_agent`
+      span only** — it is also stamped on child `chat` spans, so summing it across every span
+      double-counts. A cost report built on either mistake is wrong in the direction that
+      embarrasses you in front of finance.
 - [ ] **Offline path:** uses the CLI file exporter to land spans on local disk and runs the
       KQL pack against a fixture, so the lab completes with **no Azure subscription**.
 - [ ] **Azure path:** Bicep provisions the workspace, the DCR, and the custom tables, using
       current resource types and API versions from the registry — not hardcoded.
-- [ ] Uses the **Logs Ingestion API** (DCR `"kind": "Direct"`, DCE only when required) and
-      explicitly warns that the **HTTP Data Collector API retired 2026-09-14** — any tutorial
-      using `ods.opinsights.azure.com` or `Authorization: SharedKey` is obsolete.
+- [ ] Uses the **Logs Ingestion API** (DCR `"kind": "Direct"`; a DCE is required only for
+      private link, or for an older DCR created without the logs ingestion endpoint) and
+      explicitly warns that **Microsoft ended support for the HTTP Data Collector API on
+      2026-09-14** — any tutorial using `ods.opinsights.azure.com` or
+      `Authorization: SharedKey` is obsolete. State the nuance accurately: that date was
+      **not an ingestion shutdown**. Existing ingestion continues for TLS 1.2+ clients, but
+      the API now receives only critical security fixes and carries no SLA. Since
+      **2026-03-01** the endpoint also rejects clients that cannot negotiate TLS 1.2.
 - [ ] Assigns **`Monitoring Metrics Publisher` on the DCR** — not the workspace, not the DCE —
       and calls out that the role name says "Metrics" but is the role for ingesting logs.
 - [ ] Warns that the stream name in the POST URL must match the **`streamDeclarations` key**,
@@ -374,15 +387,19 @@ stale sources.
 - [ ] **Explicitly fences off the dead ends:** legacy Copilot metrics APIs sunset 2026-04-02;
       the audit log never carries prompts, models, tokens, or cost; **Azure Monitor is not a
       supported audit-streaming target** (Event Hubs or Blob, and you write the forwarder,
-      deduping on `event_id` because delivery is at-least-once); **Actions has no OpenTelemetry**.
+      deduping on `_document_id` because delivery is at-least-once); **Actions has no OpenTelemetry**.
 - [ ] Notes that prompt-carrying **Copilot Usage Records Streaming is preview and gated to
       EMU or GHEC-with-data-residency** — a standard GHEC tenant cannot complete that path.
 - [ ] Reporting surface: an Azure **Workbook** (GA) plus the KQL pack; notes Grafana-backed
       Azure Monitor dashboards are preview and that the legacy Log Analytics Alert API
       retired 2025-10-01 (use `ScheduledQueryRules`).
-- [ ] **Closes the loop:** shows an agent querying the workspace (Azure MCP Server exposes
-      Log Analytics KQL tools) and producing improvement recommendations, explicitly chaining
-      into [Lab 19](../../labs/lab19.md)'s self-improving-agents pattern and
+- [ ] **Closes the loop — KQL first, agent second** (matching R8's mitigation): the
+      deterministic KQL pack produces the findings, and an agent then *interprets* them into
+      recommendations. The lab must **not** be built on natural-language→KQL over an arbitrary
+      custom `_CL` table — Appendix A marks that **unverified**, and the lab has to complete
+      even if the agent step is skipped. The Azure MCP Server's Log Analytics KQL tools are
+      shown as the agent's access path. Chains explicitly into
+      [Lab 19](../../labs/lab19.md)'s self-improving-agents pattern and
       [Lab 20](../../labs/lab20.md)'s enterprise reporting.
 - [ ] Recommendations must name a target: a spec template, an agent, a prompt, a skill, or a
       training topic — closing back to U1–U4.
@@ -397,11 +414,18 @@ so the implementing session does not rediscover them.
 | Constraint | Enforced by |
 |---|---|
 | Each `labs/lab2N.md` needs frontmatter `title`, `lab_number`, `pace` | `tests/lab-structure/labs-have-frontmatter.test.ts` |
-| Each lab needs a `docs/_meta/registry.yaml` `labs:` entry with **all three** pace fields | `tests/meta/enumeration-parity.test.ts`, `tests/workshop/time-budget.test.ts` |
+| Each lab needs a `docs/_meta/registry.yaml` `labs:` entry (**key presence only**) | `tests/meta/enumeration-parity.test.ts` — it does **not** read pace fields |
+| `pace_presenter_minutes` and `pace_workshop_minutes` must be declared | `tests/workshop/time-budget.test.ts` |
 | `pace_workshop_minutes >= pace_presenter_minutes` | `tests/workshop/time-budget.test.ts` |
+| `pace_self_minutes` is **enforced by no test in the suite** | — (it carries the arc's "~2.5 hours" claim, so it must be reviewed by hand) |
 | Each lab referenced in **both** `README.md` and `labs/setup.md` (new labs are not allowlisted) | `tests/meta/enumeration-parity.test.ts` |
-| All internal markdown links resolve to files on disk | `tests/lab-structure/links-resolve.test.ts` |
+| All internal markdown links **in `labs/`** resolve to files on disk | `tests/lab-structure/links-resolve.test.ts` — it scans `labs/` only, so links in this epic doc and anywhere under `docs/` are **ungated** and must be checked by hand |
 | At least 3 labs reference `docs/_meta/registry.yaml` | `tests/content-currency/registry-consumed.test.ts` |
+
+> ⚠️ **Baseline caveat, verified 2026-09-17:** `tests/lab-structure tests/meta
+> tests/content-currency` is green (13 files, 183 tests). **`tests/workshop` is already red on
+> `main`** — 12 failures in workshop slide front-matter / curriculum parity, unrelated to this
+> epic. Any acceptance criterion that says "`tests/workshop` green" inherits that debt.
 
 Additional wiring required:
 
@@ -411,8 +435,17 @@ Additional wiring required:
 - `labs/setup.md` needs the new arc described alongside the existing 15–20 modernization track.
 - New registry keys: **`spec_kit_version: "1.0.8"`** and an Azure Monitor block carrying
   resource API versions, so no lab hardcodes a version.
-- Pacing: five labs at roughly 25–35 self-paced minutes each adds about 2.5 hours. This is a
-  deliberate curriculum decision to record, not a number to let drift.
+- Pacing: five labs at roughly 25–35 self-paced minutes each adds about 2.5 hours. Verified
+  2026-09-17: the registry's 20 `pace_self_minutes` values sum to **440 minutes (~7.3 h)**, so
+  the arc lands the suite at roughly **590 minutes (~10 hours)**. README's "~7 hours" becomes
+  **"~10 hours"**, not a rounding tweak. This is a deliberate curriculum decision to record,
+  not a number to let drift.
+- **Workshop ceiling (not yet addressed by this epic — needs a decision).**
+  `tests/workshop/time-budget.test.ts` asserts `total_minutes = 240` across modules **M1–M6**,
+  checked against `workshop/curriculum.md`. Five new labs cannot enter the 4-hour workshop
+  without displacing existing modules. The arc therefore has to be declared **self-paced only**
+  and kept out of the workshop enumeration — or the curriculum has to be rebalanced. R9 tracks
+  the README framing; this is the separate gate that has an actual test behind it.
 
 ---
 
@@ -420,7 +453,7 @@ Additional wiring required:
 
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
-| R1 | **Spec Kit release velocity** — 8 releases in 4 weeks; v1.0.8 shipped the day this epic was researched | Lab drifts mid-cohort | Pin `spec_kit_version` in the registry; add a re-verification obligation; consider adding spec-kit to the weekly content-audit checks |
+| R1 | **Spec Kit release velocity** — 9 releases in the 4 weeks to 2026-09-17; v1.0.8 shipped the day this epic was researched | Lab drifts mid-cohort | Pin `spec_kit_version` in the registry; add a re-verification obligation; consider adding spec-kit to the weekly content-audit checks |
 | R2 | **Preview gating is narrower than "GHEC"** — prompt-carrying usage records require EMU or data residency | A standard GHEC tenant cannot complete that path | Lead with OTel `captureContent`, which has no such gate; present usage records as the alternative with its gating stated up front |
 | R3 | **`captureContent` sends prompts and responses to your sink** | Source code and prompts leave the client; data-residency and privacy exposure | Treat as a governance decision with a named approver; pair with `lockCaptureContent`; make the default-off behavior explicit |
 | R4 | **Log Analytics cost and table-plan traps** | A cheap plan silently breaks the reporting module | Mandate the Analytics plan for the query pack; document that sub-31-day retention saves nothing and that deleting a table does not stop retention charges |
@@ -475,6 +508,19 @@ sessions do not re-derive it, and — more importantly — do not reach for an A
 been retired or invent a mechanism that does not exist. Full research reports are archived
 in the session workspace.
 
+**Re-verification pass, 2026-09-17 (independent, primary sources reopened).** Confirmed
+unchanged: Spec Kit v1.0.8 is still the latest release; the managed-settings `telemetry`
+sub-keys are exactly as listed and are documented for Copilot CLI and VS Code; the
+`Monitoring Metrics Publisher`-on-the-DCR requirement; the `streamDeclarations`-key-vs-
+`outputStream` trap; 1 MB per call and 64 KB per field with truncation; the Logs Ingestion
+API not auto-adjusting schema on drift; the metrics reports API returning download links
+with data from 2025-10-10 and 1-year retention; the Log Analytics Alert API retirement on
+2025-10-01; and that Azure Monitor is absent from the audit-log streaming targets, which
+are Amazon S3, Azure Blob Storage, Azure Event Hubs, Datadog, Google Cloud Storage, and
+Splunk. **Corrected in this pass:** there is no `execute_hook` span; the audit-log dedupe
+key is `_document_id`, not `event_id`; the HTTP Data Collector API's 2026-09-14 date ended
+*support*, not ingestion; and Spec Kit shipped 9 releases in the preceding 4 weeks, not 8.
+
 ### A.1 Spec Kit — verified against `github/spec-kit` v1.0.8
 
 | Capability | Status | Note |
@@ -502,6 +548,8 @@ gitignored; Git itself is an opt-in extension.
 | Capability | Status | Note |
 |---|---|---|
 | Copilot client OpenTelemetry export | **Supported product (GA)** | The real answer; CLI + VS Code |
+| Client OTel for the **GitHub Copilot app** | **Not covered by managed settings** | The `telemetry` key is documented as supported for **Copilot CLI and VS Code** only. The `epic` and `feature-spec` stages run in the Copilot app, so those two stages emit **no client OTel**. State the gap; do not imply full coverage |
+| Copilot SDK OpenTelemetry instrumentation | **Documented separately** | A third surface, with its own guidance page — not governed by the managed-settings `telemetry` key |
 | Managed-settings `telemetry` key | **Supported product** | Enterprise-enforced, cannot be overridden |
 | `captureContent` (prompts + responses) | **Supported product, off by default** | Governance decision |
 | Copilot usage metrics reports API | **GA, rearchitected** | Returns NDJSON **download links**; from 2025-10-10, 1-year retention |
@@ -513,7 +561,7 @@ gitignored; Git itself is an opt-in extension.
 | Copilot Usage Records (carry prompts) | **Preview, EMU or data-residency only** | Narrower than "GHEC" |
 | OpenTelemetry in Actions | **Does not exist** | Synthesize spans from the jobs API |
 | Azure Logs Ingestion API (DCR) | **GA** | DCE optional with `"kind": "Direct"` |
-| Azure HTTP Data Collector API | **Retired 2026-09-14** | Do not teach `SharedKey` / `ods.opinsights.azure.com` |
+| Azure HTTP Data Collector API | **Support ended 2026-09-14** | Not an ingestion shutdown — ingestion continues for TLS 1.2+ clients, but with critical security fixes only and no SLA. Pre-TLS 1.2 clients rejected since 2026-03-01. Do not teach `SharedKey` / `ods.opinsights.azure.com` |
 | Azure Workbooks | **GA** | Recommended reporting surface |
 | Grafana-backed Azure Monitor dashboards | **Preview** | Free, in-portal |
 | Legacy Log Analytics Alert API | **Retired 2025-10-01** | Use `ScheduledQueryRules` |
@@ -527,12 +575,23 @@ Before this epic's labs ship, and periodically after:
 
 1. **Spec Kit version and command surface** — releases roughly weekly; re-check the pinned
    version, the command list, and the Copilot integration layout.
-2. **Copilot CLI OTel environment-variable names** — the research flagged the CLI-side
-   env-var table as corroborated but not directly paginated. Re-read
-   `copilot-cli-reference/cli-command-reference#opentelemetry-monitoring` before
-   publishing those exact strings.
-3. **Azure resource API versions** — confirm the DCE, DCR, and workspace-table API versions
-   at implementation time and store them in the registry.
+2. **Copilot CLI OTel environment-variable names — RESOLVED 2026-09-17.** The
+   `cli-command-reference#opentelemetry-monitoring` section was read directly, closing the
+   gap the first research pass flagged. Verified names: `COPILOT_OTEL_ENABLED`,
+   `COPILOT_OTEL_EXPORTER_TYPE`, `COPILOT_OTEL_FILE_EXPORTER_PATH`,
+   `COPILOT_OTEL_SOURCE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`
+   (`http/json` default, or `http/protobuf`), `OTEL_EXPORTER_OTLP_HEADERS`,
+   `OTEL_SERVICE_NAME` (default `github-copilot`), `OTEL_RESOURCE_ATTRIBUTES`,
+   `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` (default `false`), `OTEL_LOG_LEVEL`.
+   OTel is off by default and activates when any of `COPILOT_OTEL_ENABLED=true`,
+   `OTEL_EXPORTER_OTLP_ENDPOINT`, or `COPILOT_OTEL_FILE_EXPORTER_PATH` is set. The file
+   exporter writes all signals as **JSON-lines** — that is the offline path's mechanism.
+   Concept page: `docs.github.com/en/copilot/concepts/enterprise/opentelemetry`.
+3. **Azure resource API versions — verified 2026-09-17**, to be stored in the registry rather
+   than hardcoded: `Microsoft.Insights/dataCollectionRules` **2024-03-11**,
+   `Microsoft.Insights/dataCollectionEndpoints` **2024-03-11**,
+   `Microsoft.OperationalInsights/workspaces/tables` **2025-07-01**. The Logs Ingestion
+   data-plane POST uses `api-version=2023-01-01`. Re-confirm at implementation time.
 4. **Preview→GA transitions** — Grafana-backed dashboards, Copilot Usage Records streaming,
    and Azure Copilot's observability capabilities were all preview or mid-rename at
    verification time.
