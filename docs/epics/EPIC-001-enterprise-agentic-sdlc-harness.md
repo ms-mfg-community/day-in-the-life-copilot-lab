@@ -153,12 +153,8 @@ product versus custom build
 - [ ] Contains a phased rollout sequence mapped to U1–U5, with the dependency order.
 - [ ] Contains a cost-driver section covering Copilot premium requests/AI credits, Log
       Analytics ingestion and retention, and the table-plan decision.
-- [ ] Names **every** capability Appendix A marks *You build this*, *Not supported*,
-      *Not enforced*, *Unverified*, *Not a target*, *Not covered*, or *Does not exist* — as of
-      the 2026-09-17 baseline that is **nine rows**, not two. The DIY shape is shown for the
-      two the brief depends on most (per-task agent/model binding; hard stage-order
-      enforcement in chat), and the ledger carries the rest. Do not quote a fixed count in
-      prose; let the ledger be the count.
+- [ ] Names the two requirements that are **not** natively supported (per-task agent/model
+      binding; hard stage-order enforcement in chat) and shows the DIY shape for each.
 - [ ] Every external claim carries a source link; no undated vendor-attributed numbers.
 
 ---
@@ -469,7 +465,7 @@ Additional wiring required:
 | R3 | **`captureContent` sends prompts and responses to your sink** | Source code and prompts leave the client; data-residency and privacy exposure | Treat as a governance decision with a named approver; pair with `lockCaptureContent`; make the default-off behavior explicit |
 | R4 | **Log Analytics cost and table-plan traps** | A cheap plan silently breaks the reporting module | Mandate the Analytics plan for the query pack; document that sub-31-day retention saves nothing and that deleting a table does not stop retention charges |
 | R5 | **No first-party GitHub→Azure connector exists** | Every path needs glue the org writes | Budget for the collector/forwarder explicitly in U0; do not imply a wizard exists |
-| R6 | **Several brief requirements are not native** — Appendix A's ledger marks nine rows DIY, unsupported, unenforced, or unverified; the two the brief leans on hardest are per-task agent/model binding and chat-time order enforcement | Credibility loss if oversold | Ship the load-bearing two as labelled DIY extensions with the caveat in the lab body; carry the full ledger in the blueprint and never quote a count that the ledger contradicts |
+| R6 | **Two brief requirements are not native** (per-task agent/model binding; chat-time order enforcement) | Credibility loss if oversold | Ship both as labelled DIY extensions with the caveat stated in the lab body and the blueprint ledger |
 | R7 | **No official GitHub docs for Spec Kit** (0 hits on docs.github.com) | Enterprise reviewers may question maturity | Cite `github.github.com/spec-kit` and the repo; state the documentation position honestly |
 | R8 | **Azure regional and cloud limits** — Azure Copilot unavailable in Gov/21Vianet; SRE Agent in three regions | Blueprint may not apply to sovereign-cloud customers | Record constraints in U0; keep the AI-review step backend-agnostic (KQL first, agent second) |
 | R9 | **Arc length pushes the suite past its "~7 hours" framing** | Curriculum and workshop timing drift | Treat as an explicit decision; update README and pacing in the same PR |
