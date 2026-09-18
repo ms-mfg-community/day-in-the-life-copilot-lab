@@ -9,3 +9,9 @@
 packaging/core/**/*.sh text eol=lf
 packaging/core/lab-core text eol=lf
 packaging/core/copilot text eol=lf
+
+# Copilot hook scripts are executed by bash. A CRLF in the shebang line makes
+# the interpreter "bad interpreter: /usr/bin/env bash^M" and the hook fails —
+# which for preToolUse fails closed and locks the CLI. Pinning eol=lf also stops
+# core.autocrlf=true from reporting all nine of these as permanently modified.
+scripts/hooks/**/*.sh text eol=lf
