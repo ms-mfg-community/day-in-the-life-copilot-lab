@@ -153,8 +153,12 @@ product versus custom build
 - [ ] Contains a phased rollout sequence mapped to U1–U5, with the dependency order.
 - [ ] Contains a cost-driver section covering Copilot premium requests/AI credits, Log
       Analytics ingestion and retention, and the table-plan decision.
-- [ ] Names the two requirements that are **not** natively supported (per-task agent/model
-      binding; hard stage-order enforcement in chat) and shows the DIY shape for each.
+- [ ] Names **every** capability Appendix A marks *You build this*, *Not supported*,
+      *Not enforced*, *Unverified*, *Not a target*, *Not covered*, or *Does not exist* — as of
+      the 2026-09-17 baseline that is **nine rows**, not two. The DIY shape is shown for the
+      two the brief depends on most (per-task agent/model binding; hard stage-order
+      enforcement in chat), and the ledger carries the rest. Do not quote a fixed count in
+      prose; let the ledger be the count.
 - [ ] Every external claim carries a source link; no undated vendor-attributed numbers.
 
 ---
@@ -183,7 +187,9 @@ can be installed.
       `CODEOWNERS`, `org-policy.example.yaml`, `scripts/install.mjs`, `scripts/policy.mjs`,
       `.github/workflows/release.yml`.
 - [ ] `manifest.yaml` `minimum_cli_version` matches `docs/_meta/registry.yaml`
-      `copilot_cli_version_floor` (asserted by the existing plugin-template test pattern).
+      `copilot_cli_version_floor` (the existing `tests/plugin-template/` suite hardcodes
+      `join(ROOT, 'plugin-template')`, so `enterprise-harness-bundle/` inherits **no**
+      coverage — the new test below is what asserts it).
 - [ ] Bundles at minimum: a spec-authoring agent, a task-execution agent, a QA-review agent,
       and the skills each depends on.
 - [ ] `node enterprise-harness-bundle/scripts/install.mjs` reports `ok=true`.
@@ -387,7 +393,9 @@ stale sources.
 - [ ] **Explicitly fences off the dead ends:** legacy Copilot metrics APIs sunset 2026-04-02;
       the audit log never carries prompts, models, tokens, or cost; **Azure Monitor is not a
       supported audit-streaming target** (Event Hubs or Blob, and you write the forwarder,
-      deduping on `_document_id` because delivery is at-least-once); **Actions has no OpenTelemetry**.
+      deduping on `_document_id` because delivery is at-least-once — note this is the **audit
+      log's** identifier; the separate **Copilot Usage Records Streaming** schema uses
+      `event_id`, so do not cross-apply them); **Actions has no OpenTelemetry**.
 - [ ] Notes that prompt-carrying **Copilot Usage Records Streaming is preview and gated to
       EMU or GHEC-with-data-residency** — a standard GHEC tenant cannot complete that path.
 - [ ] Reporting surface: an Azure **Workbook** (GA) plus the KQL pack; notes Grafana-backed
@@ -444,8 +452,11 @@ Additional wiring required:
   `tests/workshop/time-budget.test.ts` asserts `total_minutes = 240` across modules **M1–M6**,
   checked against `workshop/curriculum.md`. Five new labs cannot enter the 4-hour workshop
   without displacing existing modules. The arc therefore has to be declared **self-paced only**
-  and kept out of the workshop enumeration — or the curriculum has to be rebalanced. R9 tracks
-  the README framing; this is the separate gate that has an actual test behind it.
+  and kept out of the workshop enumeration — **note this does not exempt them from the pace
+  fields**: `tests/workshop/time-budget.test.ts` iterates every `registry.labs` entry and
+  requires a positive `pace_workshop_minutes` regardless of whether the lab is ever presented
+  — or the curriculum has to be rebalanced. R9 tracks the README framing; this is the separate
+  gate that has an actual test behind it.
 
 ---
 
@@ -458,7 +469,7 @@ Additional wiring required:
 | R3 | **`captureContent` sends prompts and responses to your sink** | Source code and prompts leave the client; data-residency and privacy exposure | Treat as a governance decision with a named approver; pair with `lockCaptureContent`; make the default-off behavior explicit |
 | R4 | **Log Analytics cost and table-plan traps** | A cheap plan silently breaks the reporting module | Mandate the Analytics plan for the query pack; document that sub-31-day retention saves nothing and that deleting a table does not stop retention charges |
 | R5 | **No first-party GitHub→Azure connector exists** | Every path needs glue the org writes | Budget for the collector/forwarder explicitly in U0; do not imply a wizard exists |
-| R6 | **Two brief requirements are not native** (per-task agent/model binding; chat-time order enforcement) | Credibility loss if oversold | Ship both as labelled DIY extensions with the caveat stated in the lab body and the blueprint ledger |
+| R6 | **Several brief requirements are not native** — Appendix A's ledger marks nine rows DIY, unsupported, unenforced, or unverified; the two the brief leans on hardest are per-task agent/model binding and chat-time order enforcement | Credibility loss if oversold | Ship the load-bearing two as labelled DIY extensions with the caveat in the lab body; carry the full ledger in the blueprint and never quote a count that the ledger contradicts |
 | R7 | **No official GitHub docs for Spec Kit** (0 hits on docs.github.com) | Enterprise reviewers may question maturity | Cite `github.github.com/spec-kit` and the repo; state the documentation position honestly |
 | R8 | **Azure regional and cloud limits** — Azure Copilot unavailable in Gov/21Vianet; SRE Agent in three regions | Blueprint may not apply to sovereign-cloud customers | Record constraints in U0; keep the AI-review step backend-agnostic (KQL first, agent second) |
 | R9 | **Arc length pushes the suite past its "~7 hours" framing** | Curriculum and workshop timing drift | Treat as an explicit decision; update README and pacing in the same PR |
@@ -604,3 +615,11 @@ Implementation of U0–U5 is **not** part of this epic's authoring task. The nex
 picks up from the child-issue decomposition above. The archived research reports in the
 session workspace are the evidence base for Appendix A and should be consulted before
 changing any claim in it.
+
+> ⚠️ **Appendix A supersedes the archived research where they disagree.** The 2026-09-17
+> re-verification pass corrected four claims that the research reports still carry in their
+> original form. Most importantly, the research says to dedupe the **audit log** on
+> `event_id`; the audit log's documented per-event identifier is **`_document_id`**, and
+> `event_id` belongs to the *separate* Copilot Usage Records Streaming schema. Do not walk
+> that correction backwards. Likewise, the research's `invoke_agent → chat → execute_tool`
+> span tree is correct and there is **no `execute_hook` span**.
