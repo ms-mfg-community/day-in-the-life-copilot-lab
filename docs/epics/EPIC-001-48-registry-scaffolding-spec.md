@@ -9,7 +9,8 @@
 | Decomposition item | 1 of 9 — the only child with **no dependencies**; items 2, 3, 4 and 7 block on it |
 | Spec authored | 2026-09-22 |
 | Branch this spec was written on | `feature/harness-registry-scaffolding` |
-| Status | **Awaiting approval.** Nothing in this plan has been executed. |
+| Open decisions | **None.** All three resolved 2026-09-22 — see §7. |
+| Status | **Awaiting approval to execute.** Nothing in this plan has been executed. |
 
 This document is written so that a cold-start session can execute it file-by-file without
 re-deriving anything. Every YAML and frontmatter block below is literal and pasteable.
@@ -58,17 +59,18 @@ the epic's U2 acceptance criterion. Two documents now carry a stale literal:
 version now exists. `2025-07-01` is not retired and would still deploy, so this is a
 currency choice, not a break.
 
-**Recommendation — pin `2026-03-01`, and record `2025-07-01` alongside it.** Rationale: the
+**Decided 2026-09-22 — pin `2026-03-01`, and record `2025-07-01` alongside it.** Rationale: the
 registry exists so that labs track current guidance without editing prose, the weekly
 content-audit workflow will flag the lag anyway, and Lab 25's Bicep should teach the
 current stable surface. Recording the superseded value in a comment preserves the audit
 trail and gives a fallback if `2026-03-01` turns out to carry a property change that
 breaks the lab's Bicep.
 
-> 🔹 **Decision for John.** If you would rather hold at the version the epic's research
-> validated end-to-end (`2025-07-01`) and let the audit workflow propose the bump
-> separately, say so — swap the two values in §3.2 and move the comment. Everything else
-> in this plan is unaffected.
+> 🔹 **Rejected alternative.** Holding at `2025-07-01` — the version the epic's research
+> validated end-to-end — and letting the weekly audit workflow propose the bump on its own
+> schedule. Defensible, but it would ship Lab 25 teaching a superseded API surface on day
+> one. If `2026-03-01` later proves to carry a property change that breaks the lab's Bicep,
+> the previous value recorded in §3.2 is the documented fallback.
 
 ### 1.2 Standing re-verification obligation to carry into the registry
 
@@ -736,7 +738,7 @@ and reviewable, not drift.
 |---|---|---|---|
 | 1 | Task list covers **`lab21`–`lab25`** (five labs), in both the registry task and the stub task | Covers **`lab21`–`lab26`** (six labs) | **#48's checklist is stale.** The epic was extended to Labs 21–26 by commit `b4b0e45` (U6 — Copilot App canvases, tracked as issue #59) **after** #48 was written. The epic's decomposition table (lines 583–593) lists nine items including *"8 \| Lab 26 …"*. John's decision: fold Lab 26 into #48 so there is **one** registry edit and **one** CI pass instead of #59 reopening the same file. **#48's body is not being edited** — this table is the record. |
 | 2 | Pin `spec_kit_version` to **`v1.0.8`** *("as of 2026-09-17 — re-check at implementation time")* | Pins **`1.0.9`** | The re-check was performed on 2026-09-22 as the issue instructs. `v1.0.9` shipped 2026-09-21. See §1. The issue's instruction is followed; only its example literal is stale. |
-| 3 | Azure Monitor workspace tables at **`2025-07-01`** *("Re-verify at implementation time")* | Pins **`2026-03-01`**, recording `2025-07-01` as `*_previous` | The re-verification found a newer stable version. `2025-07-01` is superseded, not retired. §1.1 carries the rationale and a documented fallback. **Flagged for John's decision.** |
+| 3 | Azure Monitor workspace tables at **`2025-07-01`** *("Re-verify at implementation time")* | Pins **`2026-03-01`**, recording `2025-07-01` as `*_previous` | The re-verification found a newer stable version. `2025-07-01` is superseded, not retired. §1.1 carries the rationale and a documented fallback. **Decided by John 2026-09-22 (§7.2).** |
 | 4 | Acceptance: *"13 files, 183 tests"* | Expects **13 files, 213 tests** | 183 is the **pre-change** baseline (confirmed §5.1). `it.each`-parameterised suites grow by 30 tests when six labs are added. The issue quotes the baseline as if it were invariant. Green is the real criterion; §5.2 shows the arithmetic. |
 | 5 | Lists four tasks, none mentioning **`README.md`** or **`labs/setup.md`** | Also edits both, minimally | `enumeration-parity` requires **three-way** enumeration. Creating the stubs without these two edits turns the gate red immediately, contradicting #48's own acceptance criterion. §2.3. Substantive integration stays with item 9. |
 | 6 | Silent on the epic's **canvas-support version floor** registry key | **Does not add it.** Deferred to #59 | See §7.1. Adding it would require inventing an unverifiable version number. |
@@ -744,9 +746,14 @@ and reviewable, not drift.
 
 ---
 
-## 7. Open decisions for John
+## 7. Decisions — resolved 2026-09-22
 
-### 7.1 The canvas-support version floor — recommend deferring to #59
+All three questions were put to John on 2026-09-22 and each was resolved in favour of the
+recommendation. They are recorded here with their reasoning **and the rejected
+alternative**, so a later reader can see the trade that was made instead of re-opening it.
+Sections 1–5 above already reflect these outcomes; nothing in the plan is contingent.
+
+### 7.1 The canvas-support version floor — deferred to #59
 
 The epic calls for one more registry key: *"New canvas registry key: a Copilot App / Copilot
 CLI canvas-support version floor, so Lab 26 does not hardcode an extension API expectation"*
@@ -754,7 +761,7 @@ CLI canvas-support version floor, so Lab 26 does not hardcode an extension API e
 
 Since Lab 26 is being folded into #48, it is fair to ask whether this key lands here too.
 
-**Recommendation: no — defer the key to #59 (Lab 26 implementation).**
+**Decision: no — defer the key to #59 (Lab 26 implementation).**
 
 Reasoning: `copilot_cli_version_floor` is a *verified* fact — the existing comment cites
 `npm view @github/copilot versions` and a publication date. There is no equivalent published
@@ -772,24 +779,25 @@ floor — against the surface actually exercised.
 The cost of deferring is one extra registry edit in #59. The cost of not deferring is a
 fabricated version number. **The trade favours deferring.**
 
-> If you would rather reserve the key now, the honest form is a commented-out placeholder
-> with no value and no `last_verified`, so nothing false is asserted. Say the word and I
-> will add it in that shape.
+> **Rejected alternative.** Reserving the key now as a commented-out placeholder with no
+> value and no `last_verified` — honest, in that it asserts nothing false, but it buys
+> nothing that #59 cannot do in the same edit that establishes the real floor.
 
-### 7.2 Workspace tables API version — confirm `2026-03-01`
+### 7.2 Workspace tables API version — `2026-03-01` confirmed
 
-§1.1. Recommendation is to pin `2026-03-01` (current stable) with `2025-07-01` recorded as
-the previous value. The alternative is holding at `2025-07-01`, which the epic's research
-validated end-to-end, and letting the weekly content-audit workflow propose the bump on its
-own schedule. Either is defensible; the plan needs one of them chosen.
+§1.1. **Decision: pin `2026-03-01`** (current stable), with `2025-07-01` recorded as the
+previous value in §3.2. Rejected alternative: holding at `2025-07-01`, which the epic's
+research validated end-to-end, and letting the weekly content-audit workflow propose the
+bump on its own schedule. Both were defensible; currency won, and recording the superseded
+value preserves both the audit trail and the fallback.
 
-### 7.3 Confirm the README/`setup.md` boundary
+### 7.3 The README / `setup.md` boundary — confirmed
 
-§2.3 and §3.4. This plan has #48 add **enumeration rows only**, leaving the total-hours line,
-the learning-path note, and the repository-structure tree to item 9. The alternative is
-allowlisting labs 21–26 in `enumeration-parity.test.ts` until item 9 lands — rejected here,
-because the allowlist requires a written justification per entry and "the content is not
-written yet" is exactly the kind of gap the gate was built to catch. Weakening a test to
+§2.3 and §3.4. **Decision: #48 adds enumeration rows only**, leaving the total-hours line,
+the learning-path note, and the repository-structure tree to item 9. Rejected alternative:
+allowlisting labs 21–26 in `enumeration-parity.test.ts` until item 9 lands — rejected
+because the allowlist requires a written justification per entry, and *"the content is not
+written yet"* is exactly the kind of gap the gate was built to catch. Weakening a test to
 accommodate a stub is the wrong direction.
 
 ---
