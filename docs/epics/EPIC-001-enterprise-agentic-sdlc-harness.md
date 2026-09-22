@@ -3,7 +3,7 @@
 **Status:** Draft
 **Created:** 2026-09-17
 **Owner:** TBD
-**Target:** Labs 21–25 + executive blueprint
+**Target:** Labs 21–26 + executive blueprint
 **Capability baseline verified:** 2026-09-17; independently **re-verified against primary
 sources 2026-09-17** (see [Appendix A](#appendix-a--verified-capability-baseline))
 
@@ -22,8 +22,9 @@ OpenTelemetry, Azure Monitor. What does not exist is an assembled, teachable blu
 takes a company from *"developers install whatever they want and prompt however they like"*
 to a **governed, measurable, auditable AI-assisted SDLC**.
 
-This epic builds that blueprint: one executive-facing document plus a five-lab arc
-(Labs 21–25) that walks a company through standing up the full harness.
+This epic builds that blueprint: one executive-facing document plus a six-lab arc
+(Labs 21–26) that walks a company through standing up the full harness and then
+operating it through practical Copilot App canvas surfaces.
 
 **Business Value**
 
@@ -86,7 +87,14 @@ architecture and build glue it no longer needs.
   │        prompts, skills, and training                                   │
   └───────────────────────┬────────────────────────────────────────────────┘
                           │
-                          └──────────► feeds back into U1–U4
+                          ├──────────► feeds back into U1–U4
+                          │
+                          ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  U6  GitHub Copilot App canvases for applied SDLC operations           │
+  │      issue/task board, code-aware workbench, release/handoff composer  │
+  │      over the same repo artifacts learners just created                │
+  └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Role → stage → artifact → surface
@@ -109,13 +117,15 @@ architecture and build glue it no longer needs.
 **In scope**
 
 - `docs/enterprise-harness-blueprint.md` — the executive-facing blueprint (U0)
-- Labs 21–25 (`labs/lab21.md` … `labs/lab25.md`) — the hands-on arc (U1–U5)
+- Labs 21–26 (`labs/lab21.md` … `labs/lab26.md`) — the hands-on arc (U1–U6)
 - A runnable enterprise plugin bundle following the `plugin-template/` conventions
 - A runnable Spec Kit preset + extension + workflow overlay + bundle
 - gh-aw workflows for the notification funnel
 - An OpenTelemetry collector configuration, deployable Bicep for the Azure sink, **and**
   an offline simulator path requiring no Azure subscription
 - A KQL query pack and Workbook definition for the reporting surface
+- A project-scoped GitHub Copilot App canvas extension that makes the harness actionable
+  against this repository's issues, PRs, checks, and ContosoUniversity code structure
 - Registry, README, and `labs/setup.md` wiring so the new labs satisfy existing CI gates
 
 **Out of scope**
@@ -125,7 +135,9 @@ architecture and build glue it no longer needs.
 - A production-grade OTel collector deployment (the lab ships a reference config, not an SRE-owned service)
 - Any first-party GitHub→Azure connector (none exists; see Appendix A)
 - Non-Azure observability backends (Datadog, Splunk, etc. are named as alternatives only)
-- The ContosoUniversity application domain — this arc is about the *harness*, not the app
+- Teaching new ContosoUniversity product features — the arc is about the *harness*. Lab 26
+  may inspect the ContosoUniversity solution and tests as realistic canvas data, but it
+  must not turn into an application-feature lab.
 
 ---
 
@@ -150,7 +162,7 @@ product versus custom build
       verification date.
 - [ ] States the licensing and tenancy prerequisites explicitly, including the two
       capabilities that require **Enterprise Managed Users or GHEC with data residency**.
-- [ ] Contains a phased rollout sequence mapped to U1–U5, with the dependency order.
+- [ ] Contains a phased rollout sequence mapped to U1–U6, with the dependency order.
 - [ ] Contains a cost-driver section covering Copilot premium requests/AI credits, Log
       Analytics ingestion and retention, and the table-plan decision.
 - [ ] Names the two requirements that are **not** natively supported (per-task agent/model
@@ -410,6 +422,73 @@ stale sources.
 
 ---
 
+### U6 — GitHub Copilot App canvases for applied SDLC operations (Lab 26)
+
+**Artifacts:** `labs/lab26.md`, `.github/extensions/enterprise-sdlc-workbench/`
+
+The practical operator surface for the harness: an SDLC board, code-aware workbench, and
+release/handoff composer implemented around this repository's own artifacts.
+
+**US-6.1**
+**As a** tech lead or scrum master
+**I want** a GitHub Copilot App canvas that shows the epic, child issues, task status, linked
+PRs, checks, and handoff state
+**So that** I can drive the SDLC from the same governed artifacts that agents act on.
+
+**US-6.2**
+**As a** developer
+**I want** the canvas to connect a selected issue or task to the relevant
+ContosoUniversity projects, tests, and repo-local agent presets
+**So that** assignment is grounded in real code context instead of a generic prompt.
+
+**US-6.3**
+**As a** release or enablement lead
+**I want** the canvas to compose a reviewable lab-release or handoff note from completed
+issues and merged PRs
+**So that** the final artifact is explainable before anything is published or announced.
+
+**Acceptance Criteria**
+- [ ] Lab is explicitly a **GitHub Copilot App canvas** lab and states the prerequisite:
+      learners need the GitHub Copilot App installed, an authenticated GitHub account with
+      Copilot access, a connected local clone of this repository, a Copilot App/CLI version
+      with canvas support, and permission to load project-scoped extensions.
+- [ ] Lab links to the official Copilot App quickstart / download path
+      (`https://docs.github.com/en/copilot/get-started/quickstart-copilot-app`) and walks
+      learners through downloading, installing, opening the app, signing in to GitHub or
+      GitHub Enterprise, connecting this repository, and confirming the app can load project
+      extensions before starting the canvas exercise.
+- [ ] Lab names the fallback for learners without Copilot App canvas support: read the
+      extension contract and run the non-UI validation only.
+- [ ] Ships one project-scoped extension under `.github/extensions/enterprise-sdlc-workbench/`
+      with a primary SDLC board view. Additional code-map and release-composer views may be
+      prebuilt reference views, but the learner builds or modifies one end-to-end canvas path.
+- [ ] SDLC board uses GitHub Issues as the source of truth, including the EPIC-001 parent
+      issue, child issues, labels/status, dependencies, linked PRs, check status, and recent
+      workflow runs. It must support fixture or dry-run mode so workshop learners do not
+      spam shared repo issues.
+- [ ] Assignment/dispatch is **dry-run by default**. When enabled against a real issue, it
+      writes an idempotent audit comment with a correlation ID, selected repo-local or
+      enterprise agent preset, execution location, and timestamp; it does **not** create the
+      project session itself.
+- [ ] Code-aware view is based on this repository's actual .NET solution structure
+      (`dotnet/ContosoUniversity.sln`, projects, tests, and recent validation output), not a
+      copied NestJS/React sample. Missing local prerequisites (`dotnet`, Docker, `gh`, auth)
+      produce clear degraded-state tiles instead of canvas failure.
+- [ ] Release/handoff composer drafts markdown from completed issues and merged PRs and saves
+      a reviewable artifact under `docs/releases/` or a lab-specific handoff path. Publishing
+      a GitHub Release, posting comments, or mutating issue state is an explicit opt-in step,
+      never the default lab path.
+- [ ] The lab explains the canvas trust boundary: `gh`, `git`, and `dotnet` calls run in the
+      extension host; credentials and tokens never enter the iframe; all repo/issue data shown
+      in the iframe is treated as untrusted display data.
+- [ ] Includes validation: extension manifest/schema checks, a dry-run data fixture, and
+      `extensions_manage inspect` / reload troubleshooting guidance. Existing tests must be
+      extended so the canvas extension does not silently rot.
+- [ ] Lab 26 cross-links to Lab 23 for stage/gate semantics, Lab 24 for task-as-prompt and
+      issue projection, and Lab 25 for telemetry/audit correlation IDs.
+
+---
+
 ## Repo integration constraints
 
 The existing vitest suite will fail if the implementation misses any of these. Recorded here
@@ -433,16 +512,19 @@ so the implementing session does not rediscover them.
 
 Additional wiring required:
 
-- `labs/lab20.md` currently ends **"Lab series complete."** — must chain to Lab 21.
-- `README.md` Lab Modules table needs five new rows; the **"Total: ~7 hours (20 labs…)"**
+- `labs/lab20.md` currently ends **"Lab series complete."** — must chain to Lab 21, and
+  Lab 25 must chain forward to Lab 26.
+- `README.md` Lab Modules table needs six new rows; the **"Total: ~7 hours (20 labs…)"**
   line and the learning-path note both need updating.
 - `labs/setup.md` needs the new arc described alongside the existing 15–20 modernization track.
 - New registry keys: **`spec_kit_version: "1.0.8"`** and an Azure Monitor block carrying
   resource API versions, so no lab hardcodes a version.
-- Pacing: five labs at roughly 25–35 self-paced minutes each adds about 2.5 hours. Verified
+- New canvas registry key: a Copilot App / Copilot CLI canvas-support version floor, so Lab 26
+  does not hardcode an extension API expectation.
+- Pacing: six labs at roughly 25–40 self-paced minutes each adds about 3 hours. Verified
   2026-09-17: the registry's 20 `pace_self_minutes` values sum to **440 minutes (~7.3 h)**, so
-  the arc lands the suite at roughly **590 minutes (~10 hours)**. README's "~7 hours" becomes
-  **"~10 hours"**, not a rounding tweak. This is a deliberate curriculum decision to record,
+  the arc lands the suite at roughly **620 minutes (~10.5 hours)**. README's "~7 hours" becomes
+  **"~10.5 hours"**, not a rounding tweak. This is a deliberate curriculum decision to record,
   not a number to let drift.
 - **Workshop ceiling (not yet addressed by this epic — needs a decision).**
   `tests/workshop/time-budget.test.ts` asserts `total_minutes = 240` across modules **M1–M6**,
@@ -469,23 +551,26 @@ Additional wiring required:
 | R7 | **No official GitHub docs for Spec Kit** (0 hits on docs.github.com) | Enterprise reviewers may question maturity | Cite `github.github.com/spec-kit` and the repo; state the documentation position honestly |
 | R8 | **Azure regional and cloud limits** — Azure Copilot unavailable in Gov/21Vianet; SRE Agent in three regions | Blueprint may not apply to sovereign-cloud customers | Record constraints in U0; keep the AI-review step backend-agnostic (KQL first, agent second) |
 | R9 | **Arc length pushes the suite past its "~7 hours" framing** | Curriculum and workshop timing drift | Treat as an explicit decision; update README and pacing in the same PR |
+| R10 | **Copilot App canvas APIs and local extension host behavior are still moving** | Lab 26 can rot faster than markdown-only labs | Pin a canvas-support version floor in the registry, validate extension shape in tests, include `extensions_manage inspect` troubleshooting, and keep mutating actions dry-run by default |
 
 **Dependencies:** Labs 11, 16, 17, 18, 19, 20 (built on and linked); `plugin-template/`;
-`modernization-bundle/`; `docs/_meta/registry.yaml`; the existing gh-aw workflow patterns.
+`modernization-bundle/`; `docs/_meta/registry.yaml`; the existing gh-aw workflow patterns;
+and the project-scoped canvas extension surface.
 
 ---
 
 ## Success criteria
 
 - [ ] `docs/enterprise-harness-blueprint.md` exists and carries a dated, cited native-vs-DIY ledger.
-- [ ] Labs 21–25 exist, are wired into the registry, README, and `labs/setup.md`, and Lab 20 chains forward.
+- [ ] Labs 21–26 exist, are wired into the registry, README, and `labs/setup.md`, and Lab 20 chains forward.
 - [ ] `npm test` (or `make test`) is green, including all lab-structure, enumeration-parity, and link-resolution gates.
 - [ ] `node enterprise-harness-bundle/scripts/install.mjs` reports `ok=true`.
 - [ ] The Spec Kit bundle installs and `specify workflow run` executes the custom stage
       sequence including at least one gate.
 - [ ] Lab 25 completes end-to-end **without an Azure subscription** via the offline path.
+- [ ] Lab 26 completes its dry-run canvas path without mutating shared GitHub issue or release state.
 - [ ] The Bicep deploys cleanly for learners who do have a subscription.
-- [ ] Every honest caveat in U0–U5 appears in the shipped content — a reviewer can find each
+- [ ] Every honest caveat in U0–U6 appears in the shipped content — a reviewer can find each
       one by searching the lab text.
 - [ ] No lab hardcodes a version that belongs in `docs/_meta/registry.yaml`.
 
@@ -504,7 +589,8 @@ Dependency order; each becomes one GitHub issue under this epic.
 | 5 | Lab 23 — custom SDLC stages, gates, and rework loop (U3) | 4 | `labs/lab23.md`, `extension.yml`, workflow overlay |
 | 6 | Lab 24 — notification funnel and executable tasks (U4) | 5 | `labs/lab24.md`, gh-aw workflows, task-prompt preset |
 | 7 | Lab 25 — telemetry, Log Analytics, and the improvement loop (U5) | 1 | `labs/lab25.md`, collector config, Bicep, offline sim, KQL pack |
-| 8 | Integration — README, setup.md, Lab 20 chaining, full suite green | 2–7 | Wiring + passing CI |
+| 8 | Lab 26 — GitHub Copilot App canvases for applied SDLC operations (U6) | 6 | `labs/lab26.md`, `.github/extensions/enterprise-sdlc-workbench/` |
+| 9 | Integration — README, setup.md, Lab 20/Lab 25 chaining, full suite green | 2–8 | Wiring + passing CI |
 
 ---
 
@@ -602,12 +688,15 @@ Before this epic's labs ship, and periodically after:
 4. **Preview→GA transitions** — Grafana-backed dashboards, Copilot Usage Records streaming,
    and Azure Copilot's observability capabilities were all preview or mid-rename at
    verification time.
+5. **Copilot App canvas extension surface** — before implementing Lab 26, re-check the
+   current project-scoped extension manifest shape, canvas open/action schemas, reload and
+   inspect workflow, and any documented local extension-host trust-boundary requirements.
 
 ---
 
 ## Handoff
 
-Implementation of U0–U5 is **not** part of this epic's authoring task. The next session
+Implementation of U0–U6 is **not** part of this epic's authoring task. The next session
 picks up from the child-issue decomposition above. The archived research reports in the
 session workspace are the evidence base for Appendix A and should be consulted before
 changing any claim in it.
