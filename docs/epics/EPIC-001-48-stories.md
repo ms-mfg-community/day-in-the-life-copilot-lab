@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **Not started.** Awaiting John's go-ahead for 48.1. |
+| Status | **In progress.** 48.1 approved by John 2026-09-23; in dev. |
 
 ---
 

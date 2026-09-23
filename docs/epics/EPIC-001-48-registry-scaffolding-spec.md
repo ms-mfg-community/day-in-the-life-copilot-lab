@@ -10,7 +10,7 @@
 | Spec authored | 2026-09-22 |
 | Branch this spec was written on | `feature/harness-registry-scaffolding` |
 | Open decisions | **None.** All three resolved 2026-09-22 — see §7. |
-| Status | **Awaiting approval to execute.** Nothing in this plan has been executed. |
+| Status | **Approved 2026-09-23 — executing through the stories.** Per-story state is in the Stories row below. |
 | Stories | [EPIC-001-48-stories.md](EPIC-001-48-stories.md) — the dev and QA breakdown of this plan, with its rework loop |
 
 This document is written so that a cold-start session can execute it file-by-file without
