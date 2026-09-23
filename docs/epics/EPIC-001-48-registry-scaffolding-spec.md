@@ -108,14 +108,17 @@ currency choice, not a break.
 
 **Decided 2026-09-22 — pin `2026-03-01`, and record `2025-07-01` alongside it.** Rationale: the
 registry exists so that labs track current guidance without editing prose, the weekly
-content-audit workflow will flag the lag anyway, and Lab 25's Bicep should teach the
+content-audit workflow will flag the lag anyway (its check 9, added 2026-09-23, re-checks
+each `*_api_version` pin in the `azure_monitor` block once the audit can run — §3.7,
+including its precondition), and Lab 25's Bicep should teach the
 current stable surface. Recording the superseded value in a comment preserves the audit
 trail and gives a fallback if `2026-03-01` turns out to carry a property change that
 breaks the lab's Bicep.
 
 > 🔹 **Rejected alternative.** Holding at `2025-07-01` — the version the epic's research
-> validated end-to-end — and letting the weekly audit workflow propose the bump on its own
-> schedule. Defensible, but it would ship Lab 25 teaching a superseded API surface on day
+> validated end-to-end — and letting the weekly audit workflow flag the bump for review on
+> its own schedule (check 9, added 2026-09-23 — §3.7). Defensible, but it would ship Lab 25
+> teaching a superseded API surface on day
 > one. If `2026-03-01` later proves to carry a property change that breaks the lab's Bicep,
 > the previous value recorded in §3.2 is the documented fallback.
 
@@ -318,7 +321,8 @@ adding unanchored labs is inert, and the 5–6 module-count and 240-minute asser
 
 ## 3. File-by-file implementation
 
-Six files changed, six files created.
+Eight files changed, six files created — counted by file, not by row: the registry
+appears on three rows and `README.md` on two.
 
 | # | File | Action |
 |---|---|---|
@@ -328,6 +332,12 @@ Six files changed, six files created.
 | 3.4 | `README.md` | add six enumeration rows |
 | 3.5 | `labs/setup.md` | add one enumeration sentence |
 | 3.6 | `labs/lab21.md` … `labs/lab26.md` | create six stubs |
+| 3.7 | `.github/workflows/weekly-content-audit.md` | add checks 8 and 9 — body only |
+| 3.7 | `docs/_meta/audit-report.template.md` | add the check 8 and 9 Summary rows and sections |
+| 3.7 | `tests/workflows/audit-report-format.test.ts` | expect nine checks |
+| 3.7 | `tests/workflows/weekly-audit-dry-run.test.ts` | expect nine checks |
+| 3.7 | `README.md` | Weekly Content Audit row: seven checks → nine |
+| 3.7 | `AGENTS.md` | Automated Content Audit paragraph: seven checks → nine |
 
 ### 3.1 `docs/_meta/registry.yaml` — `spec_kit_version`
 
@@ -676,6 +686,182 @@ sections; suggested content below.
 > any other link — to a bundle, an extension directory, a Bicep file, or an external doc
 > path that is not `http(s)` — will fail `links-resolve`.
 
+### 3.7 `.github/workflows/weekly-content-audit.md` — checks 8 and 9
+
+**Why.** Until this change the weekly content audit ran seven checks, and none of them read
+`spec_kit_version` or the `azure_monitor` block — yet §1.1 and §7.2 gave the audit as a
+reason the `2026-03-01` pin was safe. John decided on 2026-09-23 to add the keys (§6
+row 8). Both new checks are **report-only**: they flag drift as review-needed and never edit
+a key. Moving a lab to a new Spec Kit release or API version needs someone to read the
+release notes or the schema first (§1.1), so it is never a mechanical bump.
+
+**What changes, and where.**
+
+- `.github/workflows/weekly-content-audit.md` — **the body only.** The heading
+  `### The seven checks (run all of them)` becomes `### The nine checks (run all of them)`
+  (L57). Checks 8 and 9 are appended after check 7 (L66–67). The registry bullet under
+  "What to change in the PR" gains its last sentence (L71). Not one byte of the frontmatter
+  (L1–39) changes, and the lock is not recompiled — see *Why no recompile is needed*.
+- `docs/_meta/audit-report.template.md` — the Summary table gains
+  `| 8. Spec Kit release | 0 | 0 | 0 |` and `| 9. Azure Monitor API versions | 0 | 0 | 0 |`
+  before the `**Total**` row. The Checks section gains `### 8. Spec Kit release` and
+  `### 9. Azure Monitor API versions`, each `_No findings._`, after `### 7. Lab pacing`.
+- `tests/workflows/audit-report-format.test.ts` — the test title "all seven audit checks"
+  becomes "all nine"; `expected` gains the two new headings; the Summary row floor rises
+  from 10 to 12 (header + separator + 9 checks + total), with its comment and message.
+- `tests/workflows/weekly-audit-dry-run.test.ts` — the comment "The seven required checks"
+  becomes nine, and the check list gains `Spec Kit release` and `Azure Monitor API versions`.
+- Both test edits make the tests stricter; neither loosens an assertion.
+- `README.md` and `AGENTS.md` — the one sentence in each that lists the checks:
+
+  ```text
+  README.md — Weekly Content Audit row
+    before: Audits the seven freshness checks in […] (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens …
+    after:  Audits the nine freshness checks in […] (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing, Spec Kit release, Azure Monitor API versions) and opens …
+  AGENTS.md — Automated Content Audit
+    before: … runs the seven freshness checks (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing), and opens …
+    after:  … runs the nine freshness checks (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing, Spec Kit release, Azure Monitor API versions), and opens …
+  ```
+
+  The README row keeps its links. Nothing else in `README.md` changes; its Lab Modules rows
+  are §3.4's.
+
+**Literal text, identical to the workflow** — checks 8 and 9 (L66–67), then the registry
+bullet under "What to change in the PR" as it now reads (L71; its last sentence is new):
+
+```text
+8. **Spec Kit release** — compare `spec_kit_version` in the registry with the latest `github/spec-kit` release, and `spec_kit_version_last_verified` with that release's publication date. Use the `github` MCP server's release tools (`get_latest_release`, `list_releases`, `get_release_by_tag`). For each release newer than `spec_kit_version`, read its release notes and record any change to the `specify` command list or to the Copilot integration layout. This check is report-only: record drift as **review-needed**, and never edit `spec_kit_version` or `spec_kit_version_last_verified`.
+9. **Azure Monitor API versions** — for each `*_api_version` key under `azure_monitor` in the registry, confirm with `microsoft-learn` MCP that it is still the newest stable (non-preview) version. Check each resource-type key against the Microsoft Learn ARM/Bicep template reference for its resource type (`learn.microsoft.com/azure/templates/…`): `data_collection_rules_api_version` for `Microsoft.Insights/dataCollectionRules`, `data_collection_endpoints_api_version` for `Microsoft.Insights/dataCollectionEndpoints`, and `workspaces_tables_api_version` for `Microsoft.OperationalInsights/workspaces/tables`. Check `logs_ingestion_data_plane_api_version` against the Logs Ingestion API documentation (*Logs Ingestion API in Azure Monitor*). This check is report-only: record any key that is not the newest stable version as **review-needed**, and never edit the `azure_monitor` block, including `last_verified` and `workspaces_tables_api_version_previous`.
+
+- **`docs/_meta/registry.yaml`** — apply only **safe** updates: patch/minor SDK bumps, fixed redirected URLs, added MCP servers that are clearly in scope. Leave majors and model-catalogue churn for human review (record them in the report only). `spec_kit_version`, `spec_kit_version_last_verified` and the `azure_monitor` block are report-only (checks 8 and 9): never edit them, even for a patch bump; record their drift in the report as review-needed.
+```
+
+The checks name registry keys, never version literals (§4). The `*_api_version` pattern
+covers the four version keys and deliberately misses `workspaces_tables_api_version_previous`,
+which check 9 also names as never to be edited. "Even for a patch bump" matters: without it,
+the bullet's own "patch/minor SDK bumps" rule could be read as letting the audit apply a
+Spec Kit patch release by itself.
+
+**The tools the checks rely on.** The workflow grants `github` (toolsets `repos`, `issues`,
+`pull_requests`), `edit`, a restricted `bash` without `gh`, `web-fetch`, `microsoft-learn`
+and `context7`.
+
+- **Check 8 names the GitHub MCP server's release tools.**
+  - The lock runs `ghcr.io/github/github-mcp-server:v0.31.0` with
+    `GITHUB_TOOLSETS: repos,issues,pull_requests` and `GITHUB_READ_ONLY: 1` (lock L636–641).
+  - At that tag, `pkg/github/tools.go` lists `ListReleases`, `GetLatestRelease` and
+    `GetReleaseByTag` among the repository tools in `AllTools`.
+    `pkg/github/repositories.go` registers all three under
+    `ToolsetMetadataRepos` (ID `repos`) with `ReadOnlyHint: true`, so read-only mode keeps
+    them.
+  - Lockdown mode does not affect them: at `v0.31.0` it filters only issue and pull-request
+    reads (the tag's README, *Lockdown Mode*).
+  - If the lock is ever recompiled with a different server image, re-check these names.
+- **Check 9 uses the `microsoft-learn` MCP server** (`https://learn.microsoft.com/api/mcp`,
+  lock L644–646), the same source §1's records used. On 2026-09-23 it returned the
+  `Microsoft.Insights/dataCollectionRules` template reference with its version list, and
+  *Logs Ingestion API in Azure Monitor* with its `api-version` URI example.
+
+**Why no recompile is needed.** Four facts, each read from the source of gh-aw `v0.50.1`,
+the compiler that wrote the lock (lock L26):
+
+1. **The lock imports the body at run time.**
+   - Its prompt step (lock L80–143) assembles gh-aw's own system text, then includes the
+     body only by macro: `{{#runtime-import .github/workflows/weekly-content-audit.md}}`
+     (lock L142).
+   - The next step (lock L145–153) runs `actions/setup/js/interpolate_prompt.cjs`, which
+     passes the macro to `actions/setup/js/runtime_import.cjs`. That script reads the
+     checked-out `.md`, drops its frontmatter and any `<!-- -->` comment, and validates each
+     `${{ … }}` against an allowlist.
+   - `interpolate_prompt.cjs` then substitutes `${GH_AW_EXPR_…}` variables and renders
+     `{{#if …}}` blocks. A last step (lock L155) runs
+     `actions/setup/js/substitute_placeholders.cjs`, which replaces `__GH_AW_…__`
+     placeholders.
+   - So a body edit takes effect on the next run, and new body text must not contain
+     `${{`, `{{`, `${`, `<!--` or `__GH_AW_`.
+2. **The lock re-checks itself before each run.**
+   - The activation job's "Check workflow file timestamps" step (lock L70–78) runs
+     `actions/setup/js/check_workflow_timestamp_api.cjs`.
+   - That script finds the last commit that touched the `.md` and the last that touched the
+     lock (`repos.listCommits`, `per_page: 1`, at `context.sha`).
+   - If the `.md` is newer, as it is after this change, it recomputes the `.md`'s frontmatter
+     hash and compares it with the hash stored in the lock. It reads the file with
+     `repos.getContent`, so it hashes the git blob.
+   - A match logs "Lock file is up to date (frontmatter hashes match despite timestamp
+     difference)". A mismatch, or a hash it cannot compute, calls `core.setFailed`, and the
+     scheduled run fails.
+   - This path has never run. Both files were last changed in `c8df980`, and the only run so
+     far (Actions run `35491126278`, 2026-09-20) logged "Lock file is up to date (same
+     commit)".
+3. **The hash ignores plain body text.** `actions/setup/js/frontmatter_hash_pure.cjs`
+   (`computeFrontmatterHash`) hashes only three things:
+   - the frontmatter text between the two `---` lines, trimmed and with CRLF normalized;
+   - any `imports:` and their frontmatter (this workflow has none);
+   - any `${{ … }}` expression in the body that contains `env.` or `vars.`.
+
+   Its only local dependency is `./error_codes.cjs`.
+4. **The stored hash** is `d1d2a6712f5160dd646bad8901a1ca229395fb551939fba9b7242ac3a553ee03`,
+   from compiler `v0.50.1` (lock L26).
+
+So a body-only edit with no `${{` keeps the hash, and the lock stays valid without a
+recompile. A recompile is not available anyway:
+
+- the local `gh aw` is `v0.86.2`, which rejects this frontmatter
+  (`Unknown properties: context7, microsoft-learn` under `tools:`);
+- any recompile would rewrite the lock under a different compiler.
+
+That failure is pre-existing and out of scope (the stories file's §4).
+
+**Keep it that way.** A later edit that touches the frontmatter, or adds an `env.` or
+`vars.` expression to the body, changes the hash, and the scheduled run then fails until the
+lock is recompiled.
+
+**Verification — run by story 48.1 on 2026-09-23.**
+
+- *Frontmatter.* Everything up to and including the second `---` line (L1–39) is
+  byte-identical between `git show b4b0e45:.github/workflows/weekly-content-audit.md` and
+  the committed file.
+- *No expressions.* No added line in the workflow diff contains `${{` — or `{{`, `${`,
+  `<!--`, `__GH_AW_`, or a version literal.
+- *Hash.*
+  1. Fetch `frontmatter_hash_pure.cjs` and `error_codes.cjs` into a directory outside the
+     repo, with
+     `gh api "repos/github/gh-aw/contents/actions/setup/js/<file>?ref=v0.50.1"`.
+  2. Write the `b4b0e45` blob and the committed blob as LF files — the way git stores them
+     and the runner reads them — each to `<tmp>/<case>/.github/workflows/weekly-content-audit.md`.
+  3. From each `<case>` directory, run
+     `computeFrontmatterHash('.github/workflows/weekly-content-audit.md')`.
+
+  Both print the stored hash. The controls behave as expected: changing one frontmatter
+  byte, or adding `${{ env.X }}` to the body, prints a different hash, and a prose-only body
+  change does not.
+- *Tests.* `npx vitest run tests/workflows` gives `4 failed | 12 passed (16)`, before and
+  after. The four failures are the same pre-existing `gh aw compile` tests:
+  - `all-workflows-compile` › bare `gh aw compile` exits 0 from repo root;
+  - `weekly-audit-compiles` › gh aw compile succeeds on the shipped workflow;
+  - `weekly-audit-dry-run` › compiled lock.yml has cron, workflow_dispatch, and
+    create_pull_request safe-output;
+  - `weekly-audit-schema` › compiles cleanly with `gh aw compile` (schema validation).
+
+  The two edited tests fail on the unedited template and workflow, and pass on the edited
+  ones. The #48 gate suites (§5: `tests/lab-structure`, `tests/meta`,
+  `tests/content-currency`) don't include `tests/workflows`, so this change leaves the gate
+  at 13 files / 183 tests.
+
+**Precondition: the audit has to be able to run.** As of 2026-09-23 it has never completed a
+run.
+
+- Its only run was scheduled on `main` on 2026-09-20 (Actions run `35491126278`). It passed
+  activation, then failed in "Execute GitHub Copilot CLI" with `Error: Authentication
+  failed` — *"Your GitHub token may be invalid, expired, or lacking the required
+  permissions."*
+- That step authenticates with the `COPILOT_GITHUB_TOKEN` Actions secret (lock L718).
+- Until John fixes that secret, checks 8 and 9 exist but do not run, and neither do checks
+  1–7.
+- The checks also run only once this change reaches `main`, because a scheduled run uses
+  the default branch's workflow.
+- #48 touches no secret and runs no workflow. The finding is logged in the stories file's §4.
+
 ---
 
 ## 4. "No hardcoded versions" — explicit statement
@@ -797,6 +983,7 @@ and reviewable, not drift.
 | 5 | Lists four tasks, none mentioning **`README.md`** or **`labs/setup.md`** | Also edits both, minimally | `enumeration-parity` requires **three-way** enumeration. Creating the stubs without these two edits turns the gate red immediately, contradicting #48's own acceptance criterion. §2.3. Substantive integration stays with item 9. |
 | 6 | Silent on the epic's **canvas-support version floor** registry key | **Does not add it.** Deferred to #59 | See §7.1. Adding it would require inventing an unverifiable version number. |
 | 7 | Silent on the **curriculum total-hours** consequence | Computes it (**~10.8 h**, not the epic's ~10.5 h) and hands it to item 9 | §3.3.2. Recorded rather than acted on, because the README total-hours line is item 9's. |
+| 8 | Silent on the **weekly content audit** | Adds report-only checks 8 and 9 to `.github/workflows/weekly-content-audit.md`, so `spec_kit_version` and the `azure_monitor` API version pins are re-checked weekly, and updates the five files that list the audit's checks | **John decided on 2026-09-23** to add the keys to the audit. The rationale in §1.1 and §7.2 relied on the audit catching a stale pin, but its seven checks covered neither key. §3.7, which also records the precondition that the audit be able to run. |
 
 ---
 
@@ -841,8 +1028,9 @@ fabricated version number. **The trade favours deferring.**
 
 §1.1. **Decision: pin `2026-03-01`** (current stable), with `2025-07-01` recorded as the
 previous value in §3.2. Rejected alternative: holding at `2025-07-01`, which the epic's
-research validated end-to-end, and letting the weekly content-audit workflow propose the
-bump on its own schedule. Both were defensible; currency won, and recording the superseded
+research validated end-to-end, and letting the weekly content-audit workflow flag the
+bump for review on its own schedule (check 9, added 2026-09-23 — §3.7). Both were
+defensible; currency won, and recording the superseded
 value preserves both the audit trail and the fallback.
 
 ### 7.3 The README / `setup.md` boundary — confirmed
@@ -860,7 +1048,7 @@ accommodate a stub is the wrong direction.
 
 > **Run this through the stories, not directly.**
 > [EPIC-001-48-stories.md](EPIC-001-48-stories.md) splits these steps into two dev stories,
-> each closed only by its QA story: 48.1 covers steps 1, 2 and 4; 48.3 covers steps 3 and
+> each closed only by its QA story: 48.1 covers steps 1, 2, 4 and 4a; 48.3 covers steps 3 and
 > 5–7; the QA stories 48.2, 48.4 and 48.5 cover steps 8–10. Steps 11–12 apply to every
 > dev commit.
 
@@ -871,6 +1059,7 @@ incomplete work.
 - [ ] 2. `docs/_meta/registry.yaml` — add the `azure_monitor` block (§3.2)
 - [ ] 3. `docs/_meta/registry.yaml` — add `lab21`–`lab26` under `labs:` (§3.3)
 - [ ] 4. Confirm the registry still parses (§5.4 item 4)
+- [ ] 4a. Teach the weekly audit the new keys — report-only checks 8 and 9 in `.github/workflows/weekly-content-audit.md`, and the five files that list the checks (§3.7)
 - [ ] 5. Create `labs/lab21.md` … `labs/lab26.md` (§3.6) — **all six**, before running any test
 - [ ] 6. `README.md` — add the six Lab Modules rows (§3.4)
 - [ ] 7. `labs/setup.md` — add the Labs 21–26 sentence (§3.5)
