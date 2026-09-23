@@ -72,7 +72,7 @@ acceptance criterion. Two documents now carry a stale literal:
 
 > ⚠️ **Do not "correct" the pin back to 1.0.8** on the strength of the epic text — nor back
 > to `1.0.9` on the strength of this spec's first pass. The epic requires the *then-current*
-> release: on 2026-09-22 that was `1.0.9`; on 2026-09-23, the day of implementation, it is
+> release: at the 2026-09-22 pass that was `1.0.9`; on 2026-09-23, the day of implementation, it is
 > `1.0.10`.
 
 **Spec Kit release notes after `v1.0.8` — read 2026-09-23, for #51–#53 (Labs 22–24).** The
@@ -83,8 +83,9 @@ checked against the source at each tag:
   `specify bundle add`, an alias of `specify bundle install` (github/spec-kit#4504).
   `v1.0.10` adds `specify preset update <preset_id> [--from <url>] [--dev <path>]
   [--priority <N>]`, a deliberately destructive remove-then-add with no rollback
-  (github/spec-kit#4599). The seven refactor entries that reorganize the `extension`,
-  `preset`, `integration`, `bundle`, `artifact`, `workflow` and `self` command code move code
+  (github/spec-kit#4599). The eight refactor entries — one in `v1.0.9`, seven in `v1.0.10` —
+  that reorganize the `extension`, `preset`, `integration`, `bundle`, `artifact`,
+  `workflow`, `self` and `event` command code move code
   only: a static comparison of the Typer command registrations at `v1.0.8`, `v1.0.9` and
   `v1.0.10` finds no other added, removed or renamed command.
 - **Copilot integration layout — unchanged.** `tests/integrations/test_integration_copilot.py`,
@@ -354,7 +355,7 @@ content-audit workflow matches on stable key names.
 # `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>`.
 #
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 1):
-# Spec Kit releases roughly weekly — 11 releases between 2026-08-21 and
+# Spec Kit releases every few days — 11 releases between 2026-08-21 and
 # 2026-09-22. Re-check the pinned version, the command list, and the Copilot
 # integration layout before any cohort. Verified 2026-09-23 via
 # `gh api repos/github/spec-kit/releases/latest`: v1.0.10, published

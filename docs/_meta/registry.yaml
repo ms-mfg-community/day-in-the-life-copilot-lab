@@ -33,7 +33,7 @@ gh_aw_schema_version: "0.86.2"
 # `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>`.
 #
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 1):
-# Spec Kit releases roughly weekly — 11 releases between 2026-08-21 and
+# Spec Kit releases every few days — 11 releases between 2026-08-21 and
 # 2026-09-22. Re-check the pinned version, the command list, and the Copilot
 # integration layout before any cohort. Verified 2026-09-23 via
 # `gh api repos/github/spec-kit/releases/latest`: v1.0.10, published
