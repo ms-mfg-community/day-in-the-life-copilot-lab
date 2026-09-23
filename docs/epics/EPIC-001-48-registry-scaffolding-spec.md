@@ -11,6 +11,7 @@
 | Branch this spec was written on | `feature/harness-registry-scaffolding` |
 | Open decisions | **None.** All three resolved 2026-09-22 — see §7. |
 | Status | **Awaiting approval to execute.** Nothing in this plan has been executed. |
+| Stories | [EPIC-001-48-stories.md](EPIC-001-48-stories.md) — the dev and QA breakdown of this plan, with its rework loop |
 
 This document is written so that a cold-start session can execute it file-by-file without
 re-deriving anything. Every YAML and frontmatter block below is literal and pasteable.
@@ -803,6 +804,12 @@ accommodate a stub is the wrong direction.
 ---
 
 ## 8. Execution checklist
+
+> **Run this through the stories, not directly.**
+> [EPIC-001-48-stories.md](EPIC-001-48-stories.md) splits these steps into two dev stories,
+> each closed only by its QA story: 48.1 covers steps 1, 2 and 4; 48.3 covers steps 3 and
+> 5–7; the QA stories 48.2, 48.4 and 48.5 cover steps 8–10. Steps 11–12 apply to every
+> dev commit.
 
 Ordered so the tree is never in a state where the gate is red for a reason other than
 incomplete work.
