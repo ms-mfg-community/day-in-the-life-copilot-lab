@@ -23,12 +23,16 @@ re-deriving anything. Every YAML and frontmatter block below is literal and past
 
 ---
 
-## 1. Version re-verification — performed 2026-09-22
+## 1. Version re-verification — performed 2026-09-22, repeated 2026-09-23
 
 The epic's Appendix A.3 imposes a standing obligation to re-verify these values at
 implementation time rather than carrying the 2026-09-17 numbers forward. That
-re-verification was performed on **2026-09-22** against primary sources. **Two of the five
-values have moved.**
+re-verification was performed on **2026-09-22**, when this spec was written, against primary
+sources: **two of the five values had moved** (Record 1, kept as history). It was repeated
+against the same sources on **2026-09-23**, the day story 48.1 was implemented: **one more
+value has moved** — Spec Kit, again (Record 2). The registry pins the Record 2 values.
+
+**Record 1 — 2026-09-22, spec authoring (history).**
 
 | Claim | 2026-09-17 value | **Verified 2026-09-22** | Result | Primary source |
 |---|---|---|---|---|
@@ -38,23 +42,65 @@ values have moved.**
 | `Microsoft.OperationalInsights/workspaces/tables` | `2025-07-01` | **`2026-03-01`** | ⚠️ **MOVED** | ARM/Bicep reference for `workspaces/tables` — version list is `2026-03-01`, `2025-07-01`, `2025-02-01`, …; the "Latest" page's resource format emits `apiVersion: "2026-03-01"` |
 | Logs Ingestion data-plane POST | `api-version=2023-01-01` | `api-version=2023-01-01` | ✅ unchanged | *Logs Ingestion API in Azure Monitor* — every documented URI example uses `?api-version=2023-01-01` |
 
-### 1.1 Consequences of the two movements
+**Record 2 — 2026-09-23, story 48.1 implementation (current).**
 
-**Spec Kit v1.0.8 → v1.0.9.** R1 in the epic predicted exactly this ("9 releases in the 4
-weeks to 2026-09-17"). A tenth release landed on 2026-09-21, one day before this spec.
-The registry therefore pins **`1.0.9`**, not the `1.0.8` written into #48's body and into
-the epic's U2 acceptance criterion. Two documents now carry a stale literal:
+| Claim | 2026-09-22 value | **Verified 2026-09-23** | Result | Primary source |
+|---|---|---|---|---|
+| Spec Kit latest release | `v1.0.9` | **`v1.0.10`** | ⚠️ **MOVED** | `GET repos/github/spec-kit/releases/latest` → `v1.0.10`, published `2026-09-22T19:21:48Z`, not a prerelease; `gh release list` shows nothing newer |
+| `Microsoft.Insights/dataCollectionRules` | `2024-03-11` | `2024-03-11` | ✅ unchanged | ARM/Bicep reference for `Microsoft.Insights/dataCollectionRules` — version list is `2024-03-11`, `2023-03-11`, `2022-06-01`, …; the "Latest" resource format emits `apiVersion: "2024-03-11"` |
+| `Microsoft.Insights/dataCollectionEndpoints` | `2024-03-11` | `2024-03-11` | ✅ unchanged | ARM/Bicep reference for `Microsoft.Insights/dataCollectionEndpoints` — version list is `2024-03-11`, `2023-03-11`, `2022-06-01`, …; the "Latest" resource format emits `apiVersion: "2024-03-11"` |
+| `Microsoft.OperationalInsights/workspaces/tables` | `2026-03-01` | `2026-03-01` | ✅ unchanged | ARM/Bicep reference for `workspaces/tables` — version list is `2026-03-01`, `2025-07-01`, `2025-02-01`, …; the "Latest" resource format emits `apiVersion: "2026-03-01"` |
+| Logs Ingestion data-plane POST | `api-version=2023-01-01` | `api-version=2023-01-01` | ✅ unchanged | *Logs Ingestion API in Azure Monitor* — the documented URI example uses `?api-version=2023-01-01`; `Azure/azure-rest-api-specs` lists `2023-01-01` as the only stable data-plane version (`specification/monitor/data-plane/Ingestion/stable/`) |
+
+### 1.1 Consequences of the movements
+
+**Spec Kit v1.0.8 → v1.0.9 → v1.0.10.** R1 in the epic predicted exactly this ("9 releases
+in the 4 weeks to 2026-09-17"). A tenth release, `v1.0.9`, landed on 2026-09-21, one day
+before this spec, so the 2026-09-22 pass found `1.0.9`. An eleventh, `v1.0.10`, landed at
+2026-09-22T19:21:48Z, later that same day, so the 2026-09-23 pass found it. The registry
+therefore pins **`1.0.10`**, not the `1.0.8` written into #48's body and into the epic's U2
+acceptance criterion. Two documents now carry a stale literal:
 
 - #48 body — *"pinned to the then-current release (v1.0.8 as of 2026-09-17 — re-check at
-  implementation time)"*. The re-check was performed as instructed; `1.0.9` is the result.
+  implementation time)"*. The re-check was performed as instructed — `1.0.9` on 2026-09-22,
+  then `1.0.10` on 2026-09-23, the day of implementation, which is the result.
   **The instruction was followed; the parenthetical example is simply out of date.**
 - Epic U2 acceptance criterion — *"Lab pins **Spec Kit v1.0.8** via `docs/_meta/registry.yaml`
   (`spec_kit_version`), not a hardcoded string."* The **binding** half of that criterion is
   "via the registry, not a hardcoded string", and this plan satisfies it. The literal
   `v1.0.8` in that line should be read as the then-current example, not as the pin.
 
-> ⚠️ **Do not "correct" the pin back to 1.0.8** on the strength of the epic text. The epic
-> requires the *then-current* release; on 2026-09-22 that is `1.0.9`.
+> ⚠️ **Do not "correct" the pin back to 1.0.8** on the strength of the epic text — nor back
+> to `1.0.9` on the strength of this spec's first pass. The epic requires the *then-current*
+> release: on 2026-09-22 that was `1.0.9`; on 2026-09-23, the day of implementation, it is
+> `1.0.10`.
+
+**Spec Kit release notes after `v1.0.8` — read 2026-09-23, for #51–#53 (Labs 22–24).** The
+`v1.0.9` and `v1.0.10` notes (`gh release view <tag> --repo github/spec-kit`) were read and
+checked against the source at each tag:
+
+- **`specify` command list — two additions, nothing removed or renamed.** `v1.0.9` adds
+  `specify bundle add`, an alias of `specify bundle install` (github/spec-kit#4504).
+  `v1.0.10` adds `specify preset update <preset_id> [--from <url>] [--dev <path>]
+  [--priority <N>]`, a deliberately destructive remove-then-add with no rollback
+  (github/spec-kit#4599). The seven refactor entries that reorganize the `extension`,
+  `preset`, `integration`, `bundle`, `artifact`, `workflow` and `self` command code move code
+  only: a static comparison of the Typer command registrations at `v1.0.8`, `v1.0.9` and
+  `v1.0.10` finds no other added, removed or renamed command.
+- **Copilot integration layout — unchanged.** `tests/integrations/test_integration_copilot.py`,
+  which asserts both the default `.github/skills/` layout and the `--commands` layout, is
+  byte-identical at all three tags; `integrations/copilot/__init__.py` changed only by one
+  added `project_root` parameter (`v1.0.9`); the ten core commands in `templates/commands/`
+  are the same ten.
+- **Heads-up for #53.** The `v1.0.9` notes announce: *"The core /speckit.taskstoissues
+  command is planned to move out of Spec Kit core in a future release as GitHub-specific
+  issue tracking transitions to a bundled github extension. The command remains supported
+  for now."* Lab 24's acceptance criteria use `taskstoissues`; re-check before writing it.
+- **Relevant, but not command-list changes.** `v1.0.9` ships first-party `bugfix` and
+  `assess` bundles through an install-allowed `builtin://default` bundle catalog beside the
+  discovery-only `builtin://community` one (github/spec-kit#4504) — for #51. `v1.0.10` makes
+  `specify workflow overlay add` refuse to overwrite a different overlay
+  (github/spec-kit#4141) — for #52.
 
 **Workspace tables `2025-07-01` → `2026-03-01`.** A newer **stable** (non-preview) API
 version now exists. `2025-07-01` is not retired and would still deploy, so this is a
@@ -75,11 +121,13 @@ breaks the lab's Bicep.
 
 ### 1.2 Standing re-verification obligation to carry into the registry
 
-Both blocks must carry `last_verified: "2026-09-22"` **and** a comment stating the
+Both blocks must carry the date they were last verified — `spec_kit_version_last_verified`
+and `azure_monitor.last_verified`, both `"2026-09-23"` — **and** a comment stating the
 obligation, so a future reader knows the value is dated rather than permanent. Spec Kit's
-cadence — 10 releases between 2026-08-21 and 2026-09-21 — means the pin is expected to be
-stale within days, and that is acceptable *as long as it is dated*. The failure mode this
-guards against is an undated version string that a learner assumes is current.
+cadence — 11 releases between 2026-08-21 and 2026-09-22 — means the pin is expected to be
+stale within days (the `1.0.9` found on 2026-09-22 was superseded that same day), and that
+is acceptable *as long as it is dated*. The failure mode this guards against is an undated
+version string that a learner assumes is current.
 
 ### 1.3 Evidence base consulted
 
@@ -296,14 +344,15 @@ content-audit workflow matches on stable key names.
 # `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>`.
 #
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 1):
-# Spec Kit releases roughly weekly — 10 releases between 2026-08-21 and
-# 2026-09-21. Re-check the pinned version, the command list, and the Copilot
-# integration layout before any cohort. Verified 2026-09-22 via
-# `gh api repos/github/spec-kit/releases/latest`: v1.0.9, published
-# 2026-09-21T15:44:26Z. This SUPERSEDES the v1.0.8 value recorded on
-# 2026-09-17 in EPIC-001 and in issue #48's body.
-spec_kit_version: "1.0.9"
-spec_kit_version_last_verified: "2026-09-22"
+# Spec Kit releases roughly weekly — 11 releases between 2026-08-21 and
+# 2026-09-22. Re-check the pinned version, the command list, and the Copilot
+# integration layout before any cohort. Verified 2026-09-23 via
+# `gh api repos/github/spec-kit/releases/latest`: v1.0.10, published
+# 2026-09-22T19:21:48Z. This SUPERSEDES v1.0.9 (found 2026-09-22 while the
+# EPIC-001 #48 spec was written) and the v1.0.8 value recorded on 2026-09-17
+# in EPIC-001 and in issue #48's body.
+spec_kit_version: "1.0.10"
+spec_kit_version_last_verified: "2026-09-23"
 ```
 
 > **Why a sibling `*_last_verified` scalar rather than a nested map?** The existing
@@ -316,8 +365,11 @@ spec_kit_version_last_verified: "2026-09-22"
 
 ### 3.2 `docs/_meta/registry.yaml` — `azure_monitor` block
 
-**Placement.** Top-level, after `mcp_servers` and before `models`. Grouping the API
-versions in one mapping keeps Lab 25's Bicep parameterised from a single source.
+**Placement.** Top-level, immediately after the `mcp_servers` list and before the
+`# Phase 1 local packaging inputs, not an approved attendee image.` comment that heads
+`prepared_core`. (`prepared_core` sits between `mcp_servers` and `models`, so "before
+`models`" alone does not fix the position.) Grouping the API versions in one mapping keeps
+Lab 25's Bicep parameterised from a single source.
 
 ```yaml
 # Azure Monitor / Log Analytics resource API versions for Lab 25 (EPIC-001 U5).
@@ -325,7 +377,8 @@ versions in one mapping keeps Lab 25's Bicep parameterised from a single source.
 #
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 3): re-confirm
 # against the ARM/Bicep template reference before any cohort. Verified
-# 2026-09-22 against learn.microsoft.com/azure/templates/*.
+# 2026-09-23 against learn.microsoft.com/azure/templates/* and the Logs
+# Ingestion API overview; all four values unchanged since 2026-09-22.
 azure_monitor:
   # Microsoft.Insights/dataCollectionRules — newest dated version in the
   # reference version list. Unchanged since 2026-09-17.
@@ -350,7 +403,7 @@ azure_monitor:
   # Unchanged since 2026-09-17.
   logs_ingestion_data_plane_api_version: "2023-01-01"
 
-  last_verified: "2026-09-22"
+  last_verified: "2026-09-23"
 ```
 
 **Companion facts that belong in Lab 25's prose, not in the registry** (restated here so
@@ -633,8 +686,8 @@ sections; suggested content below.
 This satisfies #48's second acceptance criterion and the epic's final success criterion.
 Concretely, in the six stubs:
 
-- **no** Spec Kit version literal (`1.0.9`, `v1.0.8`, `@v1.0.x`) — Lab 22 and Lab 23 read
-  `spec_kit_version`;
+- **no** Spec Kit version literal (`1.0.10`, `1.0.9`, `v1.0.8`, `@v1.0.x`) — Lab 22 and
+  Lab 23 read `spec_kit_version`;
 - **no** Azure API version literal (`2024-03-11`, `2026-03-01`, `2025-07-01`,
   `2023-01-01`) — Lab 25's Bicep reads the `azure_monitor` block;
 - **no** Copilot CLI version literal — `copilot_cli_version_floor` already exists;
@@ -738,8 +791,8 @@ and reviewable, not drift.
 | # | #48's body says | This plan does | Why |
 |---|---|---|---|
 | 1 | Task list covers **`lab21`–`lab25`** (five labs), in both the registry task and the stub task | Covers **`lab21`–`lab26`** (six labs) | **#48's checklist is stale.** The epic was extended to Labs 21–26 by commit `b4b0e45` (U6 — Copilot App canvases, tracked as issue #59) **after** #48 was written. The epic's decomposition table (lines 583–593) lists nine items including *"8 \| Lab 26 …"*. John's decision: fold Lab 26 into #48 so there is **one** registry edit and **one** CI pass instead of #59 reopening the same file. **#48's body is not being edited** — this table is the record. |
-| 2 | Pin `spec_kit_version` to **`v1.0.8`** *("as of 2026-09-17 — re-check at implementation time")* | Pins **`1.0.9`** | The re-check was performed on 2026-09-22 as the issue instructs. `v1.0.9` shipped 2026-09-21. See §1. The issue's instruction is followed; only its example literal is stale. |
-| 3 | Azure Monitor workspace tables at **`2025-07-01`** *("Re-verify at implementation time")* | Pins **`2026-03-01`**, recording `2025-07-01` as `*_previous` | The re-verification found a newer stable version. `2025-07-01` is superseded, not retired. §1.1 carries the rationale and a documented fallback. **Decided by John 2026-09-22 (§7.2).** |
+| 2 | Pin `spec_kit_version` to **`v1.0.8`** *("as of 2026-09-17 — re-check at implementation time")* | Pins **`1.0.10`** | The re-check was performed as the issue instructs: on 2026-09-22 (`v1.0.9`, shipped 2026-09-21) and again on 2026-09-23, the day of implementation (`v1.0.10`, shipped 2026-09-22). See §1. The issue's instruction is followed; only its example literal is stale. |
+| 3 | Azure Monitor workspace tables at **`2025-07-01`** *("Re-verify at implementation time")* | Pins **`2026-03-01`**, recording `2025-07-01` as `*_previous` | The 2026-09-22 re-verification found a newer stable version, and the 2026-09-23 pass found it unchanged. `2025-07-01` is superseded, not retired. §1.1 carries the rationale and a documented fallback. **Decided by John 2026-09-22 (§7.2).** |
 | 4 | Acceptance: *"13 files, 183 tests"* | Expects **13 files, 213 tests** | 183 is the **pre-change** baseline (confirmed §5.1). `it.each`-parameterised suites grow by 30 tests when six labs are added. The issue quotes the baseline as if it were invariant. Green is the real criterion; §5.2 shows the arithmetic. |
 | 5 | Lists four tasks, none mentioning **`README.md`** or **`labs/setup.md`** | Also edits both, minimally | `enumeration-parity` requires **three-way** enumeration. Creating the stubs without these two edits turns the gate red immediately, contradicting #48's own acceptance criterion. §2.3. Substantive integration stays with item 9. |
 | 6 | Silent on the epic's **canvas-support version floor** registry key | **Does not add it.** Deferred to #59 | See §7.1. Adding it would require inventing an unverifiable version number. |
