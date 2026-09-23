@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 closed by 48.2 on 2026-09-23; 48.3 awaiting John's go-ahead. |
+| Status | **In progress.** 48.1 is back in dev for round 2. The 2026-09-23 review was not blind, so it does not count as 48.2 (John, 2026-09-23). 48.3 has not started. |
 
 ---
 
@@ -231,29 +231,40 @@ its own (`docs: log <story> round <n>`), so the log never mixes with a dev story
 
 | Round | Story | Commit reviewed | Verdict | Findings (S1 / S2 / S3) | Disposition |
 |---|---|---|---|---|---|
-| 1 | 48.1 (QA 48.2) | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **48.1 closed by 48.2, 2026-09-23.** No S1 or S2, and no check `UNVERIFIED`. Gate 13 files / 183 tests. The two S3s are held for the next dev round (below). |
+| — | 48.1 — pre-review, **not 48.2** | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **Void as a QA round** (John, 2026-09-23). The session that dispatched the dev work also ran this review, and it briefed the reviewer with the dev hand-off, the dev brief and its own expected results, so the review was not blind. 48.1 stays open, and 48.2 round 1 has still to run, in its own session. The findings stand as input: see "Carried into 48.1 round 2" below. |
 
-**Held S3s — for the next dev round.** Both are in the spec, and both are from 48.2 round 1.
-48.4 check 5 limits 48.3's diff to the §3 table, which excludes the spec. So carrying these
-into 48.3 means saying so in 48.3's brief; otherwise drop them.
+**Carried into 48.1 round 2.** Per John, 2026-09-23: add the keys to the audit, and put spec
+fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
 
+- **Audit keys** — the spec gives the weekly content-audit workflow as a reason for the
+  2026-03-01 pin. It says the workflow "will flag the lag anyway" (§1.1, from `f2b8526`) and
+  would "propose the bump on its own schedule" (§1.1's rejected alternative and §7.2, from
+  `48d8f75`). But its seven checks (`.github/workflows/weekly-content-audit.md` L59–65)
+  cover neither `spec_kit_version` nor `azure_monitor`. **Decision: add the keys.** 48.1
+  gains acceptance criteria for this (§3).
 - **F1** — §1.1: "The seven refactor entries…" leaves out an eighth,
   `chore: refactor event domain layout` (github/spec-kit#4683, `v1.0.10`), which moved
   `specify event run`. The conclusion stands. Fix: "eight … and `event`", or drop the count.
 - **F2** — the ⚠️ box in §1.1: "on 2026-09-22 that was `1.0.9`". But `v1.0.10` shipped later
   that same day, at 19:21:48Z. Fix: "at the 2026-09-22 pass that was `1.0.9`".
+- **Cadence** — "Spec Kit releases roughly weekly" (epic A.3's wording, carried into the
+  §3.1 block and the registry comment) understates the pace. The count right beside it is 11
+  releases in about 33 days. Fix the wording in both places, keeping them text-identical.
+  The epic itself is not edited.
 
-**Out-of-scope discoveries — logged, not fixed (§2 rule 10).** All are from 48.2 round 1.
+**Out-of-scope discoveries — logged, not fixed (§2 rule 10).**
 
-- **For John.** The spec gives the weekly content-audit workflow as a reason for the
-  2026-03-01 pin: it says the workflow "will flag the lag anyway" (§1.1, from `f2b8526`) and
-  would "propose the bump on its own schedule" (§1.1's rejected alternative and §7.2, from
-  `48d8f75`). That claim is unsupported. The workflow's seven checks
-  (`.github/workflows/weekly-content-audit.md` L59–65) cover neither `spec_kit_version` nor
-  `azure_monitor`. 48.1 did not touch this text. The gap matches epic R1's "consider adding
-  spec-kit" mitigation.
-- "Spec Kit releases roughly weekly" (epic A.3's wording, carried into §3.1 and the registry)
-  understates the pace. The correct count right beside it is 11 releases in about 33 days.
+- **For John: the weekly audit has never run successfully.** It has run once, on schedule on
+  `main` on 2026-09-20 (Actions run `35491126278`). That run failed in `Execute GitHub
+  Copilot CLI` with `Error: Authentication failed` and the message *"Your GitHub token may be
+  invalid, expired, or lacking the required permissions."* That is the `COPILOT_GITHUB_TOKEN`
+  Actions secret. Until the secret is fixed, no audit check runs, including the two that
+  48.1 round 2 adds.
+- **`tests/workflows` was red before this sprint.** Baseline at `afa70e6`: 4 failed / 12
+  passed. The four failures are its `gh aw compile` tests. gh-aw v0.86.2 rejects
+  `microsoft-learn` and `context7` as `tools:` entries in the workflow's frontmatter
+  (`Unknown properties`), and the committed lock was compiled with v0.50.1. 48.1 round 2
+  must add no failure here, and must not recompile the lock.
 - For information only:
   - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
     #51–#53.
