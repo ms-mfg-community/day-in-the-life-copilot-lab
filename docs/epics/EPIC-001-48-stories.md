@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 approved by John 2026-09-23; in dev. |
+| Status | **In progress.** 48.1 closed by 48.2 on 2026-09-23; 48.3 awaiting John's go-ahead. |
 
 ---
 
@@ -231,4 +231,33 @@ its own (`docs: log <story> round <n>`), so the log never mixes with a dev story
 
 | Round | Story | Commit reviewed | Verdict | Findings (S1 / S2 / S3) | Disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| 1 | 48.1 (QA 48.2) | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **48.1 closed by 48.2, 2026-09-23.** No S1 or S2, and no check `UNVERIFIED`. Gate 13 files / 183 tests. The two S3s are held for the next dev round (below). |
+
+**Held S3s — for the next dev round.** Both are in the spec, and both are from 48.2 round 1.
+48.4 check 5 limits 48.3's diff to the §3 table, which excludes the spec. So carrying these
+into 48.3 means saying so in 48.3's brief; otherwise drop them.
+
+- **F1** — §1.1: "The seven refactor entries…" leaves out an eighth,
+  `chore: refactor event domain layout` (github/spec-kit#4683, `v1.0.10`), which moved
+  `specify event run`. The conclusion stands. Fix: "eight … and `event`", or drop the count.
+- **F2** — the ⚠️ box in §1.1: "on 2026-09-22 that was `1.0.9`". But `v1.0.10` shipped later
+  that same day, at 19:21:48Z. Fix: "at the 2026-09-22 pass that was `1.0.9`".
+
+**Out-of-scope discoveries — logged, not fixed (§2 rule 10).** All are from 48.2 round 1.
+
+- **For John.** The spec gives the weekly content-audit workflow as a reason for the
+  2026-03-01 pin: it says the workflow "will flag the lag anyway" (§1.1, from `f2b8526`) and
+  would "propose the bump on its own schedule" (§1.1's rejected alternative and §7.2, from
+  `48d8f75`). That claim is unsupported. The workflow's seven checks
+  (`.github/workflows/weekly-content-audit.md` L59–65) cover neither `spec_kit_version` nor
+  `azure_monitor`. 48.1 did not touch this text. The gap matches epic R1's "consider adding
+  spec-kit" mitigation.
+- "Spec Kit releases roughly weekly" (epic A.3's wording, carried into §3.1 and the registry)
+  understates the pace. The correct count right beside it is 11 releases in about 33 days.
+- For information only:
+  - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
+    #51–#53.
+  - The Microsoft Learn Bicep and Terraform samples still use `@2022-*` API versions, so
+    Lab 25 (#54) must read the registry, not the samples.
+  - The `1.0.8` grep hits in `labs/lab06.md:154` and `labs/appendices/node/lab06.md:71` are
+    the substring of Copilot CLI `1.0.83`. Neither is a pin.
