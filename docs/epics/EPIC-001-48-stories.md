@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 is back in dev for round 2. The 2026-09-23 review was not blind, so it does not count as 48.2 (John, 2026-09-23). 48.3 has not started. |
+| Status | **In progress.** 48.1 is `Ready for QA` after round 2. Its commits are `a09a2ca`, `0f70977` and `5c8ee48`; every other commit on the branch touches only this file. 48.2 runs next, blind and in its own session (§2 rules 2 and 4). 48.3 has not started. |
 
 ---
 
@@ -289,8 +289,8 @@ fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
 - **Audit keys** — the spec gives the weekly content-audit workflow as a reason for the
   2026-03-01 pin. It says the workflow "will flag the lag anyway" (§1.1, from `f2b8526`) and
   would "propose the bump on its own schedule" (§1.1's rejected alternative and §7.2, from
-  `48d8f75`). But its seven checks (`.github/workflows/weekly-content-audit.md` L59–65)
-  cover neither `spec_kit_version` nor `azure_monitor`. **Decision: add the keys.** 48.1
+  `48d8f75`). But at `b4b0e45` its seven checks (`.github/workflows/weekly-content-audit.md`
+  L59–65) covered neither `spec_kit_version` nor `azure_monitor`. **Decision: add the keys.** 48.1
   gains acceptance criteria for this (§3).
 - **F1** — §1.1: "The seven refactor entries…" leaves out an eighth,
   `chore: refactor event domain layout` (github/spec-kit#4683, `v1.0.10`), which moved
@@ -314,7 +314,13 @@ fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
   passed. The four failures are its `gh aw compile` tests. gh-aw v0.86.2 rejects
   `microsoft-learn` and `context7` as `tools:` entries in the workflow's frontmatter
   (`Unknown properties`), and the committed lock was compiled with v0.50.1. 48.1 round 2
-  must add no failure here, and must not recompile the lock.
+  must add no failure here, and must not recompile the lock. If the lock is ever
+  recompiled, re-check the tool names in audit check 8 (spec §3.7): recompiling changes the
+  GitHub MCP server image the lock pins.
+- **Two pre-existing gaps in the audit, found in 48.1 round 2.**
+  - Check 1 tells the agent to use `web-search`, but the workflow grants `web-fetch`.
+  - `tests/workflows/audit-report-format.test.ts` counts the Summary table's rows but not
+    their labels.
 - For information only:
   - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
     #51–#53.
