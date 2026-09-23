@@ -19,8 +19,8 @@ a piece can close. Section references (§) point into the spec.
 
 | Story | Type | Owner | Title | Starts when | Closed by |
 |---|---|---|---|---|---|
-| 48.1 | Dev | Vasher | Pin the Spec Kit and Azure Monitor versions | John approves | 48.2 |
-| 48.2 | QA | judge | Verify the version pins | 48.1 is handed off | — (closes 48.1) |
+| 48.1 | Dev | Vasher | Pin the Spec Kit and Azure Monitor versions, and have the weekly audit re-check them | John approves | 48.2 |
+| 48.2 | QA | judge | Verify the version pins and the audit checks | 48.1 is handed off. Runs in its own session (§2 rule 2) | — (closes 48.1) |
 | 48.3 | Dev | Vasher | Scaffold Labs 21–26 so they pass CI from the first commit | 48.2 has closed 48.1 | 48.4 |
 | 48.4 | QA | judge | Verify the Labs 21–26 scaffolding | 48.3 is handed off | — (closes 48.3) |
 | 48.5 | QA | judge | Accept #48 against its own acceptance criteria | 48.2 and 48.4 have closed | — (readies #48 for John) |
@@ -43,13 +43,19 @@ story before 48.5 runs again.
 
 1. **A dev story is closed only by its QA story — never by its owner.** Vasher hands off;
    it does not self-certify.
-2. **QA is independent and read-only.** judge never did the dev work it reviews and never
-   edits files. The orchestrating session dispatches both agents and records every verdict
-   in the §4 sprint log.
+2. **QA is independent, read-only and blind.** A QA story runs in its own session. That
+   session takes a QA mindset and did not dispatch the dev work it reviews. The one
+   exception: the session that dispatched the dev work may run a blind-review sub-agent,
+   briefed as in rule 4, and close the story on its verdict. judge never did the dev work it
+   reviews and never edits files. Every verdict is recorded in the §4 sprint log.
+   *(John, 2026-09-23.)*
 3. **QA derives its own criteria** from the spec and the diff. The checks listed under each
    QA story are the floor, not the ceiling.
-4. **Each QA brief carries the evidence by path:** the spec, this file, the dev hand-off
-   (commit SHA, gate output, sources) and any prior verdict.
+4. **Each QA brief is blind.** It carries, by path: the spec, this file, #48's body, and the
+   commit range under review. From round 2 it also carries that QA story's own earlier
+   verdicts. It does **not** carry the dev hand-off, the dev brief, or what the orchestrator
+   expects to find. QA gathers its evidence itself. The dev hand-off stays on file, for John
+   and the orchestrator.
 5. **Verdict → state:**
 
    | judge verdict | What happens |
@@ -74,18 +80,18 @@ story before 48.5 runs again.
 
 ## 3. The stories
 
-### 48.1 — Dev — Pin the Spec Kit and Azure Monitor versions in the registry
+### 48.1 — Dev — Pin the Spec Kit and Azure Monitor versions, and have the weekly audit re-check them
 
 | | |
 |---|---|
 | Owner | Vasher |
 | Starts when | John approves |
 | Closed by | 48.2 |
-| Plan | §1, §3.1, §3.2, §4 · §8 steps 1, 2 and 4 |
+| Plan | §1, §3.1, §3.2, §3.7, §4, §6 · §8 steps 1, 2, 4 and 4a |
 
 **Story.** As the author of Labs 22, 23 and 25, I want the Spec Kit release and the Azure
-Monitor API versions pinned in `docs/_meta/registry.yaml`, so that no lab hardcodes a
-version and every pin says when it was last checked.
+Monitor API versions pinned in `docs/_meta/registry.yaml`. Then no lab hardcodes a version,
+every pin says when it was last checked, and the weekly audit re-checks each pin.
 
 **Acceptance criteria**
 
@@ -107,35 +113,76 @@ version and every pin says when it was last checked.
    recorded; if it is not 13 files / 183 tests, the difference is explained.
 7. §3.1, §3.2, §4 and §6 rows 2–3 of the spec show the same values and dates as the
    registry.
+8. **The weekly content audit re-checks both new keys** (John, 2026-09-23).
+   `.github/workflows/weekly-content-audit.md` gains two checks: check 8 for
+   `spec_kit_version`, and check 9 for every `azure_monitor.*_api_version`. Each check
+   names its primary source. Each is **report-only**: it flags drift as needs-review and
+   never edits the key. The checks name keys, not version literals (§4).
+9. **The scheduled audit still passes its lock check, with no recompile.** The workflow's
+   frontmatter is byte-identical, and no added line contains `${{`. gh-aw v0.50.1's own
+   `computeFrontmatterHash` must give the edited file the hash stored in
+   `weekly-content-audit.lock.yml`:
+   `d1d2a6712f5160dd646bad8901a1ca229395fb551939fba9b7242ac3a553ee03`. Otherwise the lock's
+   "Check workflow file timestamps" step fails the run. The lock is not recompiled.
+10. **Every place that lists the audit's checks says nine:**
+    - `docs/_meta/audit-report.template.md` — its Summary rows and its `### 8.` / `### 9.`
+      sections;
+    - `tests/workflows/audit-report-format.test.ts`;
+    - the check list in `tests/workflows/weekly-audit-dry-run.test.ts`;
+    - `README.md`'s Weekly Content Audit row;
+    - `AGENTS.md`.
 
-**Hand-off.** One local `docs:` commit, files added individually. 48.2 receives the commit
-SHA, the gate output, and each source URL with the value observed there.
+    `npx vitest run tests/workflows` fails only its four pre-existing `gh aw compile` tests
+    (logged in this file's §4).
+11. **The spec records the change:** a §3.7 section, rows in the §3 table for the files in
+    AC 8–10, a §6 departure row, and §8 step 4a. What §1.1 and §7.2 say about the audit
+    matches what it now does.
 
-### 48.2 — QA — Verify the version pins
+Round 2 also carries F1, F2 and the cadence fix (this file's §4, "Carried into 48.1
+round 2").
+
+**Hand-off.** Local commits, one per concern, each `<type>: <description>`, with files
+added individually. The orchestrator records the SHAs in the Status row. The hand-off stays
+on file and is not given to 48.2 (§2 rule 4).
+
+### 48.2 — QA — Verify the version pins and the audit checks
 
 | | |
 |---|---|
 | Owner | judge |
-| Starts when | 48.1 is handed off |
+| Starts when | 48.1 is handed off. Runs in its own session, with a blind brief (§2 rules 2 and 4) |
 | Closes | 48.1 |
 
 **Story.** As the epic owner, I want each pin checked independently against its primary
-source, so that the arc never ships a version whose `last_verified` date claims a check
-that did not happen.
+source. Then the arc never ships a version whose `last_verified` date claims a check that
+did not happen, and the weekly audit keeps each pin honest from then on.
 
 **Minimum checks**
 
-1. Every pinned value and date is confirmed by **re-opening its primary source** — 48.1's
-   evidence is a lead, not proof. A release that shipped *after* 48.1's verification date
-   is noted, not a defect: a dated pin that was true on its date is the intended state
-   (§1.2).
-2. The gate is re-run, and its count matches 48.1's.
-3. 48.1's diff touches only `docs/_meta/registry.yaml` and the spec, and only where planned.
+1. Every pinned value and date is confirmed by **re-opening its primary source**. What 48.1
+   recorded in spec §1 (Record 2) and §1.1 is what is under test; it is not evidence. A
+   release that shipped *after* 48.1's verification date is noted, not a defect: a dated pin
+   that was true on its date is the intended state (§1.2).
+2. The gate is re-run. It shows 13 files / 183 tests, or the difference is explained
+   (48.1 AC 6).
+3. 48.1's diff touches only the spec and the files that §3's table assigns to 48.1 (§3.1,
+   §3.2, §3.7), and only where planned.
 4. The spec and the registry agree on every value and date.
 5. Relative links in the edited spec still resolve — `docs/epics/` is not gated (§2.2).
 6. **Attack:** grep `labs/` and `README.md` for each newly pinned literal. None matched on
    2026-09-23. A hit in a file #48 did not touch is logged as out of scope — §4 limits the
    rule to files #48 creates or modifies.
+7. **The audit checks hold up** (48.1 AC 8–10).
+   - Checks 8 and 9 name the right keys and primary sources, and are report-only.
+   - The frontmatter is byte-identical to `b4b0e45`'s.
+   - Recompute the frontmatter hash yourself with gh-aw v0.50.1's own
+     `frontmatter_hash_pure.cjs`, and compare it with the hash stored in the lock.
+   - Every file AC 10 lists says nine.
+   - `tests/workflows` fails only its four pre-existing compile tests.
+
+   **Attack:** try to make the scheduled run fail its lock check. The lock's "Check workflow
+   file timestamps" step fails the run if the hashes differ, or if the hash cannot be
+   computed (gh-aw v0.50.1 `check_workflow_timestamp_api.cjs`).
 
 ### 48.3 — Dev — Scaffold Labs 21–26 so they pass CI from the first commit
 
@@ -194,7 +241,7 @@ enforce it.
    `README.md` row and confirm `enumeration-parity` fails, then remove the worktree. If
    the gate stays green, escalate to John: the acceptance evidence is hollow, and that is
    not a 48.3 defect.
-5. The diff touches only the files in the §3 table and nothing on §8's out-of-scope list.
+5. The diff touches only the files in §3.3–§3.6 and nothing on §8's out-of-scope list.
 
 ### 48.5 — QA — Accept #48 against its own acceptance criteria
 
@@ -210,14 +257,17 @@ where the delivered work differs from the issue text, and why.
 
 **Minimum checks**
 
-1. A fresh gate run on the branch tip, with its count recorded.
+1. A fresh gate run on the branch tip, with its count recorded. Also run
+   `npx vitest run tests/workflows`: only its four pre-existing `gh aw compile` tests may
+   fail (logged in this file's §4).
 2. Each of #48's six checklist items is met, or its departure is recorded in §6 with a
    reason.
 3. `git diff --stat b4b0e45..HEAD` lists only the planned files: the §3 table, the spec
    and this file.
 4. Commit messages follow `<type>: <description>`, no secrets are present, and nothing has
    been pushed.
-5. Every dev story was closed by its QA story, and every round is in the §4 sprint log.
+5. Every dev story was closed by its QA story, each QA verdict came from a blind brief
+   (§2 rules 2 and 4), and every round is in the §4 sprint log.
 
 **On PASS:** stop. John decides the push, the PR and its base branch, and whether these
 stories become sub-issues under #48. #48 itself closes when that PR merges.
