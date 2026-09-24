@@ -346,6 +346,42 @@ labs:
     pace_presenter_minutes: 6
     pace_workshop_minutes: 10
     pace_self_minutes: 25
+  # Labs 21-26 — EPIC-001 enterprise-harness arc. SELF-PACED ONLY: these labs
+  # are deliberately NOT in workshop/curriculum.md (the 4-hour / 240-minute
+  # budget has no room without displacing M1-M6). pace_workshop_minutes is
+  # still REQUIRED and must be >= pace_presenter_minutes — the registry
+  # workshop-pace audit in tests/workshop/time-budget.test.ts iterates EVERY
+  # registry lab with no workshop-participation filter.
+  lab21:
+    title: "The Tech Lead's Plugin & Marketplace Lockdown"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 30
+  lab22:
+    title: "Centralized Spec Kit Templates & the Org Catalog"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
+  lab23:
+    title: "Custom SDLC Stages, Gates & the Rework Loop"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
+  lab24:
+    title: "The Notification Funnel & Executable Tasks"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 30
+  lab25:
+    title: "Telemetry, Log Analytics & the Improvement Loop"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 14
+    pace_self_minutes: 45
+  lab26:
+    title: "Copilot App Canvases for Applied SDLC Operations"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.
