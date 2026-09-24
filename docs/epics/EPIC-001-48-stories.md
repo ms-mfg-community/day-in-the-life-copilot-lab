@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1, 48.2, 48.3 and 48.4 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0) on `a09a2ca`, `0f70977` and `5c8ee48`; 48.4 round 1 returned `PASS` (0 / 0 / 0) on `eebb566` — §4. Neither had an `UNVERIFIED` check. 48.5 runs next, on the branch tip. Every other commit on the branch touches only this file. |
+| Status | **Complete, pending John.** All five stories are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0) on `a09a2ca`, `0f70977` and `5c8ee48`; 48.4 round 1 returned `PASS` (0 / 0 / 0) on `eebb566`; 48.5 round 1 returned `ACCEPT WITH FINDINGS` (0 S1 / 1 S2 / 1 S3) on `b4b0e45..2ba3907` — §4. No round had an `UNVERIFIED` check. 48.5's S2 was this log missing its 48.4 entry; it is fixed by `d589996`, so 48.5 closes under §2 rule 5. **#48 is ready for John's push and PR decision, and closes when that PR merges.** Nothing has been pushed. Every commit on the branch other than the dev commits touches only this file. |
 
 ---
 
@@ -283,7 +283,33 @@ its own (`docs: log <story> round <n>`), so the log never mixes with a dev story
 |---|---|---|---|---|---|
 | — | 48.1 — pre-review, **not 48.2** | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **Void as a QA round** (John, 2026-09-23). The session that dispatched the dev work also ran this review, and it briefed the reviewer with the dev hand-off, the dev brief and its own expected results, so the review was not blind. 48.1 stays open, and 48.2 round 1 has still to run, in its own session. The findings stand as input: see "Carried into 48.1 round 2" below. |
 | 1 | 48.2 | `a09a2ca`, `0f70977`, `5c8ee48`, each against its parent | `PASS` | 0 / 0 / 0 | **48.2 closes, and so does 48.1** (§2 rule 5). 48.3 may start. Blind brief per §2 rule 4 — the spec, this file, #48's body and the three commits; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge gathered its own evidence: re-opened all five primary sources (Spec Kit releases via `gh api`; the four Azure Monitor versions via Microsoft Learn), re-ran the gate itself at **13 files / 183 tests**, recomputed the frontmatter hash with gh-aw v0.50.1's own `computeFrontmatterHash` — `d1d2a67…` on both `b4b0e45` and HEAD, matching the lock, with three negative controls proving the function is not constant — and measured the `tests/workflows` baseline itself in a throwaway worktree at `b4b0e45` (4 failed / 12 passed, identical at HEAD, so 48.1 added no failure). Full verdict, kept for a later round's brief: `~/.copilot/session-state/7384743d-3725-47ad-a0fd-fb51d35af237/files/48.2-verdict-round-1.md`. New out-of-scope observations below: O1, O5, O6. |
-| 1 | 48.4 | `eebb566`, against base `23fdda1` | `PASS` | 0 / 0 / 0 | **48.4 closes, and so does 48.3** (§2 rule 5). 48.5 may run. Blind brief per §2 rules 2 and 4 — the spec, this file, #48's body and the commit; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge measured its own prep baseline in a throwaway worktree at `23fdda1` (`time-budget.test.ts` 6 failed / 12 passed, both `registry workshop-pace audit` assertions green) and its own gate baseline at 13 files / 183 tests, then re-ran the gate at **13 files / 213 tests** — exactly §5.2's 183 + 30. Six mutation probes, not the one required, each preceded by a check that the lab was mentioned exactly once per enumeration source so the permissive `fileMentionsLab` matcher could not mask a deletion: deleting a `README.md` row, a `labs/setup.md` line or a registry entry each failed `enumeration-parity`; a wrong `lab_number` failed `labs-have-frontmatter`; a workshop pace below presenter failed the pace audit; an unbuilt-artifact link failed `links-resolve`. All restored, `git status` empty after each. Also: §3.3–§3.5's fenced blocks diffed byte-identical against the commit's added lines, all six stub titles codepoint-dumped against the registry, 23 stub links with 0 unresolved, and a full-repo sweep at both ends (`45 failed | 407 passed` → `45 failed | 437 passed`, failing-test sets identical) proving +30 passing and zero new failures. Full verdict: `~/.copilot/session-state/06e4e499-762d-4459-880e-ecb3524233c2/files/48.4-verdict-round-1.md`. New out-of-scope observations below. **Logged late** — this row was committed after 48.5 had already run, which is what 48.5 round 1 raised as its S2; see that row for the disposition. |
+| 1 | 48.4 | `eebb566`, against base `23fdda1` | `PASS` | 0 / 0 / 0 | **48.4 closes, and so does 48.3** (§2 rule 5). 48.5 may run. Blind brief per §2 rules 2 and 4 — the spec, this file, #48's body and the commit; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge measured its own prep baseline in a throwaway worktree at `23fdda1` (`time-budget.test.ts` 6 failed / 12 passed, both `registry workshop-pace audit` assertions green) and its own gate baseline at 13 files / 183 tests, then re-ran the gate at **13 files / 213 tests** — exactly §5.2's 183 + 30. Six mutation probes, not the one required, each preceded by a check that the lab was mentioned exactly once per enumeration source so the permissive `fileMentionsLab` matcher could not mask a deletion: deleting a `README.md` row, a `labs/setup.md` line or a registry entry each failed `enumeration-parity`; a wrong `lab_number` failed `labs-have-frontmatter`; a workshop pace below presenter failed the pace audit; an unbuilt-artifact link failed `links-resolve`. All restored, `git status` empty after each. Also: §3.3–§3.5's fenced blocks diffed byte-identical against the commit's added lines, all six stub titles codepoint-dumped against the registry, 23 stub links with 0 unresolved, and a full-repo sweep at both ends (`45 failed \| 407 passed` → `45 failed \| 437 passed`, failing-test sets identical) proving +30 passing and zero new failures. Full verdict: `~/.copilot/session-state/06e4e499-762d-4459-880e-ecb3524233c2/files/48.4-verdict-round-1.md`. New out-of-scope observations below. **Logged late** — this row was committed after 48.5 had already run, which is what 48.5 round 1 raised as its S2; see that row for the disposition. |
+| 1 | 48.5 | `b4b0e45..2ba3907` — the whole branch, 14 commits / 16 files | `ACCEPT WITH FINDINGS` | **0 / 1 / 1** | **48.5 closes; #48 is ready for John** (§2 rule 5 — the single S2 is fixed, by `d589996`). Fresh dispatch carrying #48's body plus the 48.2 and 48.4 verdicts, so settled ground was not re-opened. No check came back `UNVERIFIED`. judge re-measured every baseline itself in throwaway worktrees at both ends: gate 183 → **213** green, `tests/workflows` 4 failed / 12 passed at **both** ends with identical failing-test *identities*, `tests/workshop` 12 failed / 59 passed at both ends, and a full-suite sweep across the whole range (`45 failed \| 407 passed` → `45 failed \| 437 passed`, 46 `FAIL` lines each, **symmetric difference empty**) proving +30 passing and **zero new failures anywhere in the repo**. The 183 → 213 move was shown to be the modelled one, not coincidence: per-suite deltas are +6 `labs-have-frontmatter`, +6 `links-resolve`, +18 `enumeration-parity`, exactly §5.2's prediction, with all 48 other suites unchanged. All six of #48's checklist items hold, four via §6 departures that judge verified independently rather than accepted (`b4b0e45` is the canvas-lab commit; the epic's decomposition table does list nine items with item 8 = Lab 26; issue #59 exists; #47's title still says "Labs 21-25", corroborating the stale-checklist account). All 16 diff files reconciled to a spec section, a story AC or a §6 row — zero strays; `README.md` attributed separately to `eebb566` (48.3 rows) and `0f70977` (48.1 audit row). 30 registry version/date literals grepped across 45 lab files plus `README.md`: **0 hits in any file #48 touched**. 14/14 commit messages conform, 0 secret-pattern hits, nothing pushed. Blindness was attacked structurally, not just attested: `5da4b03` and `2ba3907` — both titled "record … hand-off" — change only the §1 Status row, so no gate output, dev claim or expected result ever entered the file QA receives. Full verdict: `~/.copilot/session-state/e242a477-e2f8-4170-a7f2-b1fd9f1ee206/files/48.5-verdict-round-1.md`. |
+
+**Found in 48.5 round 1** — the two findings and what happened to them.
+
+- **S2 — this log was missing its 48.4 round 1 entry, and §1's Status row contradicted the
+  sprint's own state**, still reading "48.3 is `Ready for QA`" and "48.4 has not started"
+  when 48.4 had returned `PASS` and closed 48.3. Failed 48.5 check 5 and §2 rule 2 ("Every
+  verdict is recorded in the §4 sprint log"). Not a 48.1 or 48.3 dev defect — the §4 log is
+  the orchestrating session's to write. **Fixed by `d589996`** (`docs: log 48.4 round 1`),
+  which added the row above and corrected the Status row. S2 disposed of, so 48.5 closes.
+- **S3 — O6 still open.** `CHANGELOG.md`'s `[Unreleased]` records nothing for #48: not the
+  audit going from seven checks to nine, not the two report-only registry keys, not the six
+  new labs. No #48 checklist item and no story acceptance criterion requires a changelog
+  entry, so it cannot fail a check, and under §2 rule 5 an S3 never triggers a QA round on
+  its own. The moment this log anticipated has arrived — 48.3 has landed, so one entry can
+  now cover #48 whole. → **John's call at push time**, or decomposition item 9.
+
+**Judged, not returned — the `README.md` total-hours line.** `README.md` reads
+`**Total: ~7 hours** (20 labs …)` directly above a table now listing **26**. This is
+**correct behaviour**: spec §3.4's boundary and 48.3 AC 4 both *require* the line untouched,
+and the epic's decomposition **item 9** owns it. But publishing it publishes a visible
+self-contradiction on the repository's front page, and the cost scales with how long item 9
+takes. The corrected figure is already computed and twice re-derived — §3.3.2's
+`440 + 210 = 650` min ≈ **10.8 h / 26 labs** — so the fix is one line with the arithmetic
+done. **A push decision for John, not a defect**, and 48.5 deliberately made no
+recommendation on destination or base branch.
 
 **Carried into 48.1 round 2.** Per John, 2026-09-23: add the keys to the audit, and put spec
 fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
@@ -353,6 +379,20 @@ fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
     commit. Deliberately **not** marked `UNVERIFIED`: it is not one of 48.4's checks, and
     the property it protects — the commit holds exactly its nine intended paths and no
     strays — is confirmed.
+- **Found in 48.5 round 1** (none is a defect against #48).
+  - **O9** — spec §8's twelve-step execution checklist is **entirely unticked** at the
+    branch tip, though steps 1–7 are done. Defensible: §8 itself says *"Run this through the
+    stories, not directly"*, this file is the tracker, and no acceptance criterion requires
+    ticking. Noted only so a later reader does not mistake it for undone work.
+  - **O10** — `origin/feature/epic-enterprise-harness` exists on the remote and points at
+    `b4b0e45`, this branch's base. So the base is on the remote; **none of the sprint's
+    commits is.** Recorded as evidence bearing on John's push and PR-base decision, with no
+    recommendation attached.
+  - **The weekly audit still has never run successfully** — the `COPILOT_GITHUB_TOKEN`
+    failure logged above is unchanged. Until that Actions secret is fixed, checks 8 and 9
+    never execute, so the two new pins are **not actually being re-checked weekly**. This is
+    the precondition spec §3.7 records, and it is the mechanism §1.1 and §7.2 relied on. →
+    **John / repo admin, not #48.**
 - For information only:
   - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
     #51–#53.
