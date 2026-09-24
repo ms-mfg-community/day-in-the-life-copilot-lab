@@ -34,6 +34,13 @@
 > spec-driven design with stacked PRs and per-layer Code Review,
 > [Lab 19](lab19.md) a self-improving-agents gh-aw template, and
 > [Lab 20](lab20.md) enterprise-scale token optimization and reporting.
+> Labs 21–26 are the **enterprise agentic SDLC harness** arc (self-paced):
+> [Lab 21](lab21.md) the tech lead's plugin and marketplace lockdown,
+> [Lab 22](lab22.md) centralized Spec Kit templates and the org catalog,
+> [Lab 23](lab23.md) custom SDLC stages, gates and the rework loop,
+> [Lab 24](lab24.md) the notification funnel and executable tasks,
+> [Lab 25](lab25.md) telemetry, Log Analytics and the improvement loop, and
+> [Lab 26](lab26.md) Copilot App canvases for applied SDLC operations.
 
 ---
 
