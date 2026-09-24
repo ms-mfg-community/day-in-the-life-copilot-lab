@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 and 48.2 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0, no `UNVERIFIED` check) on `a09a2ca`, `0f70977` and `5c8ee48` — §4. 48.3 is `Ready for QA`: its one commit is `eebb566`. 48.4 has not started. Every other commit on the branch touches only this file. |
+| Status | **In progress.** 48.1, 48.2, 48.3 and 48.4 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0) on `a09a2ca`, `0f70977` and `5c8ee48`; 48.4 round 1 returned `PASS` (0 / 0 / 0) on `eebb566` — §4. Neither had an `UNVERIFIED` check. 48.5 runs next, on the branch tip. Every other commit on the branch touches only this file. |
 
 ---
 
@@ -283,6 +283,7 @@ its own (`docs: log <story> round <n>`), so the log never mixes with a dev story
 |---|---|---|---|---|---|
 | — | 48.1 — pre-review, **not 48.2** | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **Void as a QA round** (John, 2026-09-23). The session that dispatched the dev work also ran this review, and it briefed the reviewer with the dev hand-off, the dev brief and its own expected results, so the review was not blind. 48.1 stays open, and 48.2 round 1 has still to run, in its own session. The findings stand as input: see "Carried into 48.1 round 2" below. |
 | 1 | 48.2 | `a09a2ca`, `0f70977`, `5c8ee48`, each against its parent | `PASS` | 0 / 0 / 0 | **48.2 closes, and so does 48.1** (§2 rule 5). 48.3 may start. Blind brief per §2 rule 4 — the spec, this file, #48's body and the three commits; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge gathered its own evidence: re-opened all five primary sources (Spec Kit releases via `gh api`; the four Azure Monitor versions via Microsoft Learn), re-ran the gate itself at **13 files / 183 tests**, recomputed the frontmatter hash with gh-aw v0.50.1's own `computeFrontmatterHash` — `d1d2a67…` on both `b4b0e45` and HEAD, matching the lock, with three negative controls proving the function is not constant — and measured the `tests/workflows` baseline itself in a throwaway worktree at `b4b0e45` (4 failed / 12 passed, identical at HEAD, so 48.1 added no failure). Full verdict, kept for a later round's brief: `~/.copilot/session-state/7384743d-3725-47ad-a0fd-fb51d35af237/files/48.2-verdict-round-1.md`. New out-of-scope observations below: O1, O5, O6. |
+| 1 | 48.4 | `eebb566`, against base `23fdda1` | `PASS` | 0 / 0 / 0 | **48.4 closes, and so does 48.3** (§2 rule 5). 48.5 may run. Blind brief per §2 rules 2 and 4 — the spec, this file, #48's body and the commit; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge measured its own prep baseline in a throwaway worktree at `23fdda1` (`time-budget.test.ts` 6 failed / 12 passed, both `registry workshop-pace audit` assertions green) and its own gate baseline at 13 files / 183 tests, then re-ran the gate at **13 files / 213 tests** — exactly §5.2's 183 + 30. Six mutation probes, not the one required, each preceded by a check that the lab was mentioned exactly once per enumeration source so the permissive `fileMentionsLab` matcher could not mask a deletion: deleting a `README.md` row, a `labs/setup.md` line or a registry entry each failed `enumeration-parity`; a wrong `lab_number` failed `labs-have-frontmatter`; a workshop pace below presenter failed the pace audit; an unbuilt-artifact link failed `links-resolve`. All restored, `git status` empty after each. Also: §3.3–§3.5's fenced blocks diffed byte-identical against the commit's added lines, all six stub titles codepoint-dumped against the registry, 23 stub links with 0 unresolved, and a full-repo sweep at both ends (`45 failed | 407 passed` → `45 failed | 437 passed`, failing-test sets identical) proving +30 passing and zero new failures. Full verdict: `~/.copilot/session-state/06e4e499-762d-4459-880e-ecb3524233c2/files/48.4-verdict-round-1.md`. New out-of-scope observations below. **Logged late** — this row was committed after 48.5 had already run, which is what 48.5 round 1 raised as its S2; see that row for the disposition. |
 
 **Carried into 48.1 round 2.** Per John, 2026-09-23: add the keys to the audit, and put spec
 fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
@@ -333,6 +334,25 @@ fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
   - **O6** — `CHANGELOG.md`'s `[Unreleased]` section records neither the audit going from
     seven checks to nine nor the two new report-only registry keys. No acceptance criterion
     requires it, and a single entry covering #48 whole reads better once 48.3 lands. → **48.5.**
+- **Found in 48.4 round 1** (blind; none is a 48.3 defect).
+  - **O5 — discharged.** Every `labNN.md` spec §3.6's "Link check" note names exists at
+    `eebb566`, and every stub link resolves — proven both by an independent resolver (23
+    links, 0 unresolved) and by `links-resolve` staying green with a broken-link probe as a
+    negative control. The residual is a wording nit in the **spec** ("this commit"), not in
+    the delivered work, and 48.3 carries no spec-edit criterion. No finding raised.
+  - **O7** — the pre-existing red surface is **wider than this log records**. The two
+    bullets above name only `tests/workshop` and `tests/workflows`. At `23fdda1` the
+    **full** suite is 15 files / 45 tests red, also spanning `tests/extensions`,
+    `tests/hooks`, `tests/orchestrator`, `tests/plugin-template` and `tests/scripts`.
+    Identical at `eebb566` — 48.3 added none. Not #48's, but worth knowing, because 48.5's
+    check 1 covers only the gate plus `tests/workflows`.
+  - **O8** — spec §5.4 item 4's warning is real, reproduced accidentally via an off-by-one
+    probe: a malformed registry surfaces as `YAMLException … Tests no tests`, a collection
+    failure rather than a clean assertion message.
+  - **`git add` individually** (§8 step 11) is a process claim and is unobservable from any
+    commit. Deliberately **not** marked `UNVERIFIED`: it is not one of 48.4's checks, and
+    the property it protects — the commit holds exactly its nine intended paths and no
+    strays — is confirmed.
 - For information only:
   - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
     #51–#53.
