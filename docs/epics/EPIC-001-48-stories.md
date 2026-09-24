@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 and 48.2 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0, no `UNVERIFIED` check) on `a09a2ca`, `0f70977` and `5c8ee48` — §4. Every other commit on the branch touches only this file. 48.3 is next and has not started. |
+| Status | **In progress.** 48.1 and 48.2 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0, no `UNVERIFIED` check) on `a09a2ca`, `0f70977` and `5c8ee48` — §4. 48.3 is `Ready for QA`: its one commit is `eebb566`. 48.4 has not started. Every other commit on the branch touches only this file. |
 
 ---
 
