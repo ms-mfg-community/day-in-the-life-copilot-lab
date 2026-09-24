@@ -11,7 +11,7 @@ a piece can close. Section references (§) point into the spec.
 | Plan | [EPIC-001-48-registry-scaffolding-spec.md](EPIC-001-48-registry-scaffolding-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-23 |
-| Status | **In progress.** 48.1 is `Ready for QA` after round 2. Its commits are `a09a2ca`, `0f70977` and `5c8ee48`; every other commit on the branch touches only this file. 48.2 runs next, blind and in its own session (§2 rules 2 and 4). 48.3 has not started. |
+| Status | **In progress.** 48.1 and 48.2 are `Closed`. 48.2 round 1 returned `PASS` (0 / 0 / 0, no `UNVERIFIED` check) on `a09a2ca`, `0f70977` and `5c8ee48` — §4. Every other commit on the branch touches only this file. 48.3 is next and has not started. |
 
 ---
 
@@ -282,6 +282,7 @@ its own (`docs: log <story> round <n>`), so the log never mixes with a dev story
 | Round | Story | Commit reviewed | Verdict | Findings (S1 / S2 / S3) | Disposition |
 |---|---|---|---|---|---|
 | — | 48.1 — pre-review, **not 48.2** | `a09a2ca` | `ACCEPT WITH FINDINGS` | 0 / 0 / 2 | **Void as a QA round** (John, 2026-09-23). The session that dispatched the dev work also ran this review, and it briefed the reviewer with the dev hand-off, the dev brief and its own expected results, so the review was not blind. 48.1 stays open, and 48.2 round 1 has still to run, in its own session. The findings stand as input: see "Carried into 48.1 round 2" below. |
+| 1 | 48.2 | `a09a2ca`, `0f70977`, `5c8ee48`, each against its parent | `PASS` | 0 / 0 / 0 | **48.2 closes, and so does 48.1** (§2 rule 5). 48.3 may start. Blind brief per §2 rule 4 — the spec, this file, #48's body and the three commits; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge gathered its own evidence: re-opened all five primary sources (Spec Kit releases via `gh api`; the four Azure Monitor versions via Microsoft Learn), re-ran the gate itself at **13 files / 183 tests**, recomputed the frontmatter hash with gh-aw v0.50.1's own `computeFrontmatterHash` — `d1d2a67…` on both `b4b0e45` and HEAD, matching the lock, with three negative controls proving the function is not constant — and measured the `tests/workflows` baseline itself in a throwaway worktree at `b4b0e45` (4 failed / 12 passed, identical at HEAD, so 48.1 added no failure). Full verdict, kept for a later round's brief: `~/.copilot/session-state/7384743d-3725-47ad-a0fd-fb51d35af237/files/48.2-verdict-round-1.md`. New out-of-scope observations below: O1, O5, O6. |
 
 **Carried into 48.1 round 2.** Per John, 2026-09-23: add the keys to the audit, and put spec
 fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
@@ -321,6 +322,17 @@ fixes where they are most relevant. 48.1 owns §1.1 and §3.1.
   - Check 1 tells the agent to use `web-search`, but the workflow grants `web-fetch`.
   - `tests/workflows/audit-report-format.test.ts` counts the Summary table's rows but not
     their labels.
+- **Found in 48.2 round 1** (blind; none is a 48.1 defect).
+  - **O1** — Spec Kit **`v1.0.11`** shipped `2026-09-24T01:35:37Z`, superseding the `1.0.10`
+    pin one day after its `2026-09-23` verification. Not a defect: a dated pin that was true
+    on its date is the intended state (spec §1.2), and audit check 8 is the designed catch.
+    Re-pin at the next cohort, not now.
+  - **O5** — spec §3.6's "Link check" note says every `labNN.md` it names — *including
+    21–26* — exists on disk "after this commit". Splitting #48 into two dev commits made
+    that ambiguous: 21–26 exist only after 48.3. §3.6 is 48.3's section. → **48.3 / 48.4.**
+  - **O6** — `CHANGELOG.md`'s `[Unreleased]` section records neither the audit going from
+    seven checks to nine nor the two new report-only registry keys. No acceptance criterion
+    requires it, and a single entry covering #48 whole reads better once 48.3 lands. → **48.5.**
 - For information only:
   - `converge.md` changed in Spec Kit `v1.0.9` (github/spec-kit#4621). This matters for
     #51–#53.
