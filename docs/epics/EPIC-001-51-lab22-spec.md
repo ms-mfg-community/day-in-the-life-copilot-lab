@@ -312,7 +312,7 @@ and the gate is green with them.
 |---|---|---|---|
 | `lab-structure/labs-have-frontmatter` | **Yes** | `title`, `lab_number`, `pace` present; `lab_number` equals the filename number | Low — keep frontmatter intact |
 | `lab-structure/links-resolve` | **Yes** | Every internal markdown link resolves on disk | ⚠️ **The live hazard** — §2.3 |
-| `meta/enumeration-parity` | **Yes (indirectly)** | Registry ↔ `README.md` ↔ `labs/setup.md` agreement | ⚠️ Title/pace must stay in lockstep — §2.4 |
+| `meta/enumeration-parity` | **Yes (indirectly)** | Each lab **ID** appears across the registry, `README.md` and `labs/setup.md` — **not** title-string equality | ⚠️ Weaker than it looks — see §2.4 |
 | `content-currency/registry-consumed` | **Yes (as a set)** | ≥ 3 labs contain the literal `docs/_meta/registry.yaml` | Low — lab22 already contains it; **must not lose it** |
 | `content-currency/cli-commands-current` | **No** | Targets labs 01, 05, 07–10 only | None |
 | `lab-structure/labs-language-agnostic` | **No** | Targets labs 03–06 only | None |
@@ -338,10 +338,10 @@ labs). **#51 adds no file to `labs/` top level, so both counts are unchanged.** 
 post-change gate is therefore **13 files / 213 tests**, identical to baseline. *If the count
 moves, stop and understand why before trusting the commit.*
 
-### 2.4 Frontmatter and registry must move together
+### 2.4 Frontmatter and registry must agree — but the gate will not tell you if they don't
 
-`labs/lab22.md` frontmatter and `docs/_meta/registry.yaml` `labs.lab22` are checked against
-each other by `enumeration-parity`:
+`labs/lab22.md` frontmatter and `docs/_meta/registry.yaml` `labs.lab22` must state the same
+values:
 
 | Frontmatter key | Registry key | Current value |
 |---|---|---|
@@ -350,9 +350,18 @@ each other by `enumeration-parity`:
 | `pace.self_paced_minutes` | `pace_self_minutes` | `35` |
 | *(none — do not invent one)* | `pace_workshop_minutes` | `12` |
 
-**#51 changes none of these.** The title stays character-for-character identical, including
-the `&`. The pace values stay as scaffolded. If a later decision changes one, both files
-change in the same commit.
+> ⚠️ **No test enforces the title agreement.** Verified by mutation probe during 51.4:
+> changing the frontmatter `title` while leaving the registry's alone leaves the full gate
+> **green at 13 files / 213 tests**. `enumeration-parity` asserts that each lab **ID** is
+> present across the registry, `README.md` and `labs/setup.md`; it never compares the title
+> *strings*. `labs-have-frontmatter` checks key presence and `lab_number` only. So this
+> agreement is a **manual check (M10), not a gated one** — and with no test CI on pull
+> requests, nothing else will catch a drift. Treat the table above as a hand-verified
+> invariant.
+
+**#51 changes none of these values.** The title stays character-for-character identical,
+including the `&`. The pace values stay as scaffolded. If a later decision changes one, both
+files change in the same commit.
 
 ---
 
@@ -693,17 +702,24 @@ literals across every lab file, and #51 must keep it there.
    contradict the very point of the section ("one bundle version pins one version of each
    component"). These are Contoso artifact versions, not Spec Kit releases, and they do not
    decay.
-4. **Verification.** The binding check is that no *pinned Spec Kit release* appears:
-   ```powershell
-   # Must return nothing: the pinned release and its recent predecessors.
-   Select-String -Path labs\lab22.md -Pattern '1\.0\.(9|10|11|12|13)\b'
-   ```
-   The blunter sweep below is a **triage aid, not the rule** — it will legitimately match
-   the `1.0.0` Contoso versions in the §22.7 excerpt. Every hit must be shown to be a
-   Contoso artifact version or a `>=` floor:
+4. **Verification.** The binding check is the **general** sweep — every semantic version in
+   the file must be shown to be a Contoso artifact version or a `>=` floor:
    ```powershell
    Select-String -Path labs\lab22.md -Pattern '\b\d+\.\d+\.\d+\b'
    ```
+   As of this writing it returns six hits: three `version: "1.0.0"` in the §22.7
+   `bundle.yml` excerpt, and three `@1.0.0` inside the quoted `bundle validate` error output
+   in the same section — all Contoso component versions (rule 3a). **Any hit that is not a
+   Contoso artifact version or a `>=` floor is a violation.**
+
+   The narrow form below is a **fast triage aid, not the rule**:
+   ```powershell
+   Select-String -Path labs\lab22.md -Pattern '1\.0\.(9|1[0-9])\b'
+   ```
+   > ⚠️ Do not make the narrow form binding. It is an enumeration of known release numbers
+   > and goes blind the moment Spec Kit ships a version outside it — on a project releasing
+   > every ~3 days, that is days away. The general sweep cannot decay; it just requires the
+   > reviewer to classify each hit.
 
 ---
 

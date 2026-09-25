@@ -241,10 +241,10 @@ a flag that was removed or a path that is empty.
 5. **The `--preset` URL trap shows the actual behaviour** — the `Warning: Preset '…' not
    found in catalog. Skipping.` text and the fact that init continues and exits 0 (§6/D3).
 6. **The catalog replacement rule is stated explicitly** in step 5 (§1.3, §6/D4).
-7. **No Spec Kit release literal** anywhere in the file:
-   `Select-String -Path labs\lab22.md -Pattern '1\.0\.(9|10|11|12|13)\b'` returns nothing
-   (§4 rule 4). Contoso artifact versions inside the labelled `bundle.yml` excerpt are
-   exempt (§4 rule 3a).
+7. **No Spec Kit release literal** anywhere in the file. Binding check (§4 rule 4):
+   `Select-String -Path labs\lab22.md -Pattern '\b\d+\.\d+\.\d+\b'` — every hit must be a
+   Contoso artifact version or a `>=` floor. Contoso versions inside the labelled
+   `bundle.yml` excerpt are exempt (§4 rule 3a).
 8. The literal `docs/_meta/registry.yaml` is **retained** (§4 rule 2) — `registry-consumed`
    counts labs containing it.
 9. Fixture artifacts are referenced as **inline code paths in backticks**, never as markdown
