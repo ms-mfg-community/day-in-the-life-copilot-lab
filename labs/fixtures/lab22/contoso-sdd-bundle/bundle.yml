@@ -22,6 +22,10 @@ provides:
     - id: "contoso-sdd"
       version: "1.0.0"
       priority: 5
+      # A preset ref REQUIRES both `priority` and `strategy` — a bundle that
+      # omits either fails `specify bundle validate`. Valid strategies are
+      # replace, prepend, append and wrap.
+      strategy: "replace"
   extensions:
     - id: "contoso-review"
       version: "1.0.0"
