@@ -1,9 +1,14 @@
 # Contoso Implementation Plan
 
 > Contoso SDD Standards — this file WRAPS the Spec Kit core plan template.
-> The `{CORE_TEMPLATE}` placeholder below is replaced at resolution time with
-> whatever the next layer down provides (an extension's plan template, or core's).
-> Delete the placeholder and you lose the core plan entirely.
+> The placeholder below (a single token on its own line, between the two rules)
+> is replaced at resolution time with whatever the next layer down provides —
+> an extension's plan template, or core's. Remove it and the wrap can no longer
+> produce output.
+>
+> Deliberately written without naming the token here: Spec Kit substring-matches
+> the whole file, so a second mention in prose would satisfy the check and mask a
+> deleted placeholder. One occurrence only.
 
 ## Architecture Review Gate — before planning
 

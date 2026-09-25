@@ -292,28 +292,35 @@ specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offli
 
 > ⚠️ **Two flags, both load-bearing.** `--path` is needed because `validate` defaults to
 > `bundle.yml` in the *current* directory, and you are standing in your project, not the
-> bundle. `--offline` is needed because **online validation resolves every reference**
-> against what is bundled, installed or in an active catalog — and none of these three are:
+> bundle. `--offline` is needed because **online validation resolves every reference** — and
+> two of these three don't exist yet:
 >
 > ```text
 > Manifest is invalid:
->   - Unresolved reference extension:contoso-review@1.0.0: …
->   - Unresolved reference preset:contoso-sdd@1.0.0: …
->   - Unresolved reference workflow:contoso-sdlc@1.0.0: …
+>   - Unresolved reference extension:contoso-review@1.0.0: extension 'contoso-review' is
+>     not bundled, installed, or present in any active catalog.
+>   - Unresolved reference workflow:contoso-sdlc@1.0.0: workflow 'contoso-sdlc' is not
+>     bundled, installed, or present in any active catalog.
 > ```
 >
-> The extension and workflow don't exist yet (Labs 23 and 24). The *preset* is unresolved
-> for a different reason: you installed it with `--dev` from a local directory, so it isn't
-> in any catalog either. `--offline` checks the manifest's **structure** and skips
-> reference resolution, which is what you want while components are still being built:
+> Note which reference is **not** in that list: `preset:contoso-sdd` resolves, because you
+> installed it in §22.4. A reference is satisfied if the component is **bundled, installed,
+> or in an active catalog** — any one of the three. That's the rule the error message states,
+> and `--dev` satisfies it by installing.
+>
+> `--offline` skips reference resolution and checks the manifest's **structure** instead,
+> which is what you want while components are still being built:
 >
 > ```text
-> ! Could not verify preset 'contoso-sdd' offline (not bundled or installed); …
+> ! Could not verify extension 'contoso-review' offline (not bundled or installed);
+>   re-run validate online to check catalogs.
+> ! Could not verify workflow 'contoso-sdlc' offline (not bundled or installed);
+>   re-run validate online to check catalogs.
 > ✓ contoso-sdd is well-formed and valid.
 > ```
 >
-> Those `!` lines are expected — `--offline` is telling you what it *didn't* check.
-> Publish the components to a catalog and the online form passes too.
+> Those `!` lines are expected — `--offline` is telling you what it *didn't* check. Once
+> Labs 23 and 24 ship the components, the online form passes too.
 
 ## 22.8 Verify
 
@@ -334,11 +341,16 @@ specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offli
 >
 > ```text
 > Warning: composition error: Wrap strategy in 'contoso-sdd v1.0.0' is missing the
-> {CORE_TEMPLATE} placeholder
+> {CORE_TEMPLATE} placeholder. The wrapper must contain {CORE_TEMPLATE} to indicate
+> where the lower-priority content should be inserted.
 > Warning: composition cannot produce output (no base layer with 'replace' strategy)
 > ```
 >
 > **Read the warnings, not the chain.** Put the placeholder back.
+>
+> The fixture deliberately contains the token **exactly once** — Spec Kit substring-matches
+> the whole file, so a second mention in a comment would satisfy the check and hide the
+> deletion.
 
 ## What you built
 
