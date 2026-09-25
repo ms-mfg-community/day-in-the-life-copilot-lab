@@ -57,6 +57,13 @@ labs/fixtures/lab12/*.parquet
 node/.a2a/
 node/.a2a-transcript-*.md
 
+# Lab 22 — Spec Kit demo projects a learner scaffolds at the repo root with
+# `specify init` (§22.2 and §22.5). The lab's own fixtures under
+# labs/fixtures/lab22/ are committed; these throwaway projects are not.
+/contoso-sdd-demo/
+/contoso-commands-demo/
+/demo/
+
 # Orchestrator / dry-run artifacts (dev-only, never commit)
 .orchestrator/
 .orchestrator.bak-*/

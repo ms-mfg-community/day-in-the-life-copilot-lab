@@ -37,12 +37,19 @@ References:
 
 You need [Lab 18](lab18.md) done, and the Spec Kit CLI at the pinned release:
 
+🖥️ **In your terminal (from the repository root).** Every path in this lab is relative to
+the repo root, and the demo project you create in §22.2 must be a direct child of it —
+otherwise the `../labs/fixtures/lab22/...` paths in §22.4, §22.7 and §22.8 will not resolve.
+
 ```bash
 uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>
 specify check
 ```
 
 Replace `<version>` with `spec_kit_version` from the registry.
+
+> 💡 The demo projects this lab creates (`contoso-sdd-demo/`, `contoso-commands-demo/`,
+> `demo/`) are learner scratch and are gitignored. Delete them when you're done.
 
 ## 22.1 The problem, and the fix that isn't
 
@@ -60,10 +67,15 @@ core and compose with it. You never edit core, so upgrading core costs nothing.
 
 ## 22.2 Initialize with the Copilot integration
 
+🖥️ **From the repository root:**
+
 ```bash
 specify init contoso-sdd-demo --integration copilot
 cd contoso-sdd-demo
 ```
+
+You are now one level below the repo root, which is why the fixture paths later in this lab
+begin with `../`.
 
 > ⚠️ **There is no `--ai` flag.** It was removed. `--integration` replaces it.
 > If you're following an older blog post, this is the first thing that will
