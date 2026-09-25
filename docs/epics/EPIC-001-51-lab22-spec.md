@@ -481,7 +481,9 @@ registry changes.
   `` `labs/fixtures/lab22/contoso-sdd/preset.yml` `` — **never** as markdown links (§2.3,
   Lab 12 convention).
 - **Name no individual community preset** (§1.1) — that list changes every release.
-- Links permitted: `lab18.md`, `lab21.md`, `../docs/_meta/registry.yaml` — all exist today.
+- Links permitted: `lab18.md` (prerequisite), `lab23.md` and `lab24.md` (where the bundle's
+  deferred extension and workflow are built, §3.4), and `../docs/_meta/registry.yaml` — all
+  exist today as stubs or files, so `links-resolve` passes.
 - Every `specify` invocation in the lab must be one verified in §1.2/§1.3. If a command is
   not in that evidence set, it does not go in the lab.
 
@@ -676,7 +678,7 @@ literals across every lab file, and #51 must keep it there.
 
 **Rules.**
 
-1. `labs/lab22.md` contains **no** Spec Kit version literal — not `1.0.12`, not `v1.0.12`,
+1. `labs/lab22.md` contains **no Spec Kit release literal** — not `1.0.12`, not `v1.0.12`,
    not `1.0.11`, not `1.0.10`. Install commands render the placeholder form
    `git+https://github.com/github/spec-kit.git@v<version>` and point at the registry.
 2. `labs/lab22.md` **retains** the literal string `docs/_meta/registry.yaml`
@@ -685,9 +687,22 @@ literals across every lab file, and #51 must keep it there.
    *Contoso artifact* versions (`version: "1.0.0"`) and **range constraints**
    (`speckit_version: ">=1.0.0"`), never the pinned release. A `>=` floor is a compatibility
    statement, not a pin, and does not decay when the registry moves.
-4. **Verification command** (must return no hits in `labs/lab22.md`):
+3a. **The same exemption extends to a labelled excerpt of a fixture quoted inside the lab.**
+   §3.2 step 10 quotes `bundle.yml`'s `provides:` block, which necessarily carries the
+   Contoso component versions — a bundle excerpt with the versions stripped would
+   contradict the very point of the section ("one bundle version pins one version of each
+   component"). These are Contoso artifact versions, not Spec Kit releases, and they do not
+   decay.
+4. **Verification.** The binding check is that no *pinned Spec Kit release* appears:
    ```powershell
-   Select-String -Path labs\lab22.md -Pattern '\b1\.0\.\d+\b'
+   # Must return nothing: the pinned release and its recent predecessors.
+   Select-String -Path labs\lab22.md -Pattern '1\.0\.(9|10|11|12|13)\b'
+   ```
+   The blunter sweep below is a **triage aid, not the rule** — it will legitimately match
+   the `1.0.0` Contoso versions in the §22.7 excerpt. Every hit must be shown to be a
+   Contoso artifact version or a `>=` floor:
+   ```powershell
+   Select-String -Path labs\lab22.md -Pattern '\b\d+\.\d+\.\d+\b'
    ```
 
 ---
@@ -748,6 +763,7 @@ and still teaches a dead end.
 | D6 | *"`bundle.yml` pinning preset + extension + workflow"* | Same, and records that **neither shipped example declares a preset** | §1.3. `provides.presets` is valid per `COMPONENT_KINDS`; the lab's bundle is a superset of the shipped ones, so a reader comparing against `bundles/bugfix` is told why they differ |
 | D7 | — | Artifacts live in `labs/fixtures/lab22/`, referenced as code paths | §2.3. The only precedent in the repo (Lab 12) does exactly this, and it keeps the gate count stable |
 | D8 | — | The lab names **no individual community preset** | §1.1. The community catalog changed in **both** releases since #48's pin — four entries added in `v1.0.11`, three more plus four version bumps in `v1.0.12` |
+| D9 | — | §4's no-literal rule is scoped to **Spec Kit release** literals, and explicitly exempts a labelled fixture excerpt quoted in the lab | §4 rules 3a and 4. §22.7 quotes `bundle.yml`'s `provides:` block, which carries Contoso component versions (`1.0.0`). Stripping them would contradict the section's own point. The original rule's blunt `1\.0\.\d+` sweep would have flagged them, so the rule now states the intent and keeps the sweep as a triage aid |
 
 ---
 
