@@ -143,7 +143,10 @@ people time:
 - A `wrap` file must contain the literal **`{CORE_TEMPLATE}`** placeholder —
   that's where the lower layer gets substituted. Look at
   `labs/fixtures/lab22/contoso-sdd/templates/plan-template.md`. Delete the
-  placeholder and you silently lose core's plan template.
+  placeholder and the wrap **cannot produce output**: Spec Kit warns
+  `composition error: Wrap strategy … is missing the {CORE_TEMPLATE} placeholder`.
+  It does warn — but the resolve output still *looks* like a chain, so read the
+  warnings rather than the chain (§22.8).
 - **Scripts are different.** They support only `replace` and `wrap`, and a
   script wrapper uses **`$CORE_SCRIPT`**, not `{CORE_TEMPLATE}`.
 
@@ -205,10 +208,11 @@ specify preset search governance
 specify preset add <a-community-preset-id>
 ```
 
-> 💡 **What you should see:** search returns results from both catalogs —
-> discovery works. The install is **refused**, and the refusal names the
-> `--from <archive-url>` form to use instead. That's the point: discovery-only
-> is a **redirect into review**, not a wall.
+> 💡 **What you should see:** search returns community results — discovery works. (The
+> Contoso catalog URL in the fixture is illustrative and unreachable, so it contributes
+> nothing; in your org it would.) The install is **refused**, and the refusal names the
+> `--from <archive-url>` form to use instead. That's the point: discovery-only is a
+> **redirect into review**, not a wall.
 
 > ⚠️ **The big one — catalog config *replaces* the defaults, it does not merge.**
 > Spec Kit resolves catalogs in this order and returns the **first layer that
@@ -224,17 +228,23 @@ specify preset add <a-community-preset-id>
 > re-declares `community` explicitly. If you add your org catalog and your
 > developers suddenly can't find *any* community preset, this is why.
 
-You can also add a catalog from the CLI instead of editing the file:
+You can also add a catalog from the CLI instead of editing the file by hand. **Do one or the
+other, not both** — if you copied the fixture above, `contoso-approved` already exists:
 
 ```bash
 specify preset catalog add https://raw.githubusercontent.com/contoso/spec-kit-catalog/main/catalog.json \
-  --name contoso-approved --priority 1 --install-allowed
+  --name contoso-approved --priority 1 --install-allowed \
+  --description "Contoso-reviewed presets. Installable."
 specify preset catalog list
 ```
 
-> 💡 As of the pinned release, `preset catalog add` is **idempotent** — adding
-> an identical entry twice is a no-op rather than an error, so re-running this
-> step is safe. A *different* entry reusing an existing name is still rejected.
+> 💡 As of the pinned release, `preset catalog add` is **idempotent** — re-running it with a
+> *byte-identical* entry is a silent no-op rather than an error. "Identical" means all of
+> `url`, `priority`, `install_allowed` **and `description`** match; that's why
+> `--description` is passed above, to match the fixture exactly. Reuse the same `--name` with
+> *any* field different and the add is **refused** with
+> `Warning: A catalog named 'contoso-approved' already exists.` and a non-zero exit —
+> use `specify preset catalog remove` first.
 
 The catalog file itself is JSON — see `labs/fixtures/lab22/catalog.json` for the
 shape your org would publish.
@@ -277,8 +287,33 @@ can never end up running this quarter's preset against last quarter's workflow.
 Validate before you publish:
 
 ```bash
-specify bundle validate
+specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offline
 ```
+
+> ⚠️ **Two flags, both load-bearing.** `--path` is needed because `validate` defaults to
+> `bundle.yml` in the *current* directory, and you are standing in your project, not the
+> bundle. `--offline` is needed because **online validation resolves every reference**
+> against what is bundled, installed or in an active catalog — and none of these three are:
+>
+> ```text
+> Manifest is invalid:
+>   - Unresolved reference extension:contoso-review@1.0.0: …
+>   - Unresolved reference preset:contoso-sdd@1.0.0: …
+>   - Unresolved reference workflow:contoso-sdlc@1.0.0: …
+> ```
+>
+> The extension and workflow don't exist yet (Labs 23 and 24). The *preset* is unresolved
+> for a different reason: you installed it with `--dev` from a local directory, so it isn't
+> in any catalog either. `--offline` checks the manifest's **structure** and skips
+> reference resolution, which is what you want while components are still being built:
+>
+> ```text
+> ! Could not verify preset 'contoso-sdd' offline (not bundled or installed); …
+> ✓ contoso-sdd is well-formed and valid.
+> ```
+>
+> Those `!` lines are expected — `--offline` is telling you what it *didn't* check.
+> Publish the components to a catalog and the online form passes too.
 
 ## 22.8 Verify
 
@@ -289,11 +324,21 @@ specify preset list                      # your preset, in precedence order
 specify preset resolve spec-template     # resolves to the preset (replace)
 specify preset resolve plan-template     # shows a composition chain (wrap)
 specify preset catalog list              # org: install allowed; community: discovery only
-specify bundle validate                  # exits 0
+specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offline
 ```
 
-> 💡 If `preset resolve plan-template` shows only one file instead of a chain,
-> your `{CORE_TEMPLATE}` placeholder is missing from the wrapper.
+> 💡 **Prove the `wrap` really depends on the placeholder.** Delete `{CORE_TEMPLATE}` from
+> `labs/fixtures/lab22/contoso-sdd/templates/plan-template.md`, reinstall the preset, and
+> re-run `specify preset resolve plan-template`. The chain still *renders* — the chain is
+> built from strategies, not from the placeholder — but Spec Kit now warns:
+>
+> ```text
+> Warning: composition error: Wrap strategy in 'contoso-sdd v1.0.0' is missing the
+> {CORE_TEMPLATE} placeholder
+> Warning: composition cannot produce output (no base layer with 'replace' strategy)
+> ```
+>
+> **Read the warnings, not the chain.** Put the placeholder back.
 
 ## What you built
 
