@@ -36,20 +36,38 @@ primary source. **The pin has moved again.**
 |---|---|---|---|---|
 | Spec Kit latest release | `v1.0.10` | **`v1.0.11`** | ⚠️ **MOVED** | `GET repos/github/spec-kit/releases/latest` → `v1.0.11`, published `2026-09-24T01:35:37Z`, `prerelease=false`. `GET repos/github/spec-kit/releases?per_page=12` shows nothing newer |
 
-Twelve releases now exist between `v1.0.0` (2026-08-21) and `v1.0.11` (2026-09-24) — a
-release roughly every three days. **R1 in the epic holds: this pin decays faster than the
-lab does.** That cadence is itself a teaching point for the lab (§3.2, the anti-fork
-argument) and the reason the registry exists.
+Twelve releases exist between `v1.0.0` (2026-08-21) and `v1.0.11` (2026-09-24) — a release
+roughly every three days.
+
+**Record 4 — 2026-09-25, story 51.1 implementation (current — this is what the registry
+pins).**
+
+Story 51.1's first acceptance criterion requires re-verifying on the day of implementation.
+That check was run roughly two hours after Record 3 was written. **The release had moved
+again, the same day.**
+
+| Claim | Record 3 value | **Verified 2026-09-25, at implementation** | Result | Primary source |
+|---|---|---|---|---|
+| Spec Kit latest release | `v1.0.11` | **`v1.0.12`** | ⚠️ **MOVED** | `GET repos/github/spec-kit/releases/latest` → `v1.0.12`, published `2026-09-25T17:48:57Z`, `prerelease=false` |
+
+**Thirteen releases in thirty-five days, two of them within twenty-six hours of each other.**
+**R1 in the epic holds, and then some: this pin decays faster than the lab that consumes it
+can be written.** That cadence is itself the lab's anti-fork argument (§3.2) and the whole
+reason the registry exists — a lab with `1.0.11` baked into its prose would have been stale
+before it was committed.
 
 > ⚠️ **Do not "correct" the pin back to `1.0.8`** on the strength of the epic's U2
-> acceptance criterion, nor to `1.0.10` on the strength of #48's registry comment. The
-> epic requires the *then-current* release. On 2026-09-25 that is **`1.0.11`**.
+> acceptance criterion, to `1.0.10` on the strength of #48's registry comment, or to
+> `1.0.11` on the strength of this spec's own Record 3. The epic requires the *then-current*
+> release. At implementation on 2026-09-25 that is **`1.0.12`**.
 
-### 1.1 What changed in `v1.0.11`, and what it means for Lab 22
+### 1.1 What changed in `v1.0.11` and `v1.0.12`, and what it means for Lab 22
 
-The `v1.0.11` release notes were read in full (`gh release view v1.0.11 --repo
-github/spec-kit`) and checked against the source at that tag. Only `v1.0.11` post-dates
-#48's `1.0.10` pin, so this is the complete delta.
+The release notes for both were read in full (`gh release view <tag> --repo github/spec-kit`)
+and checked against the source at each tag. `v1.0.11` and `v1.0.12` are the complete delta
+since #48's `1.0.10` pin.
+
+**`v1.0.11` (2026-09-24).**
 
 - **`specify` command list — no additions, removals or renames.** `chore: refactor root
   command adapters (#4687)` moves code only; the Typer command registrations under
@@ -81,14 +99,47 @@ github/spec-kit`) and checked against the source at that tag. Only `v1.0.11` pos
   core in a future release."* Lab 24 (#53) uses `taskstoissues`. **Re-check before writing
   #53** — unchanged advice from #48 spec §1.1.
 
+**`v1.0.12` (2026-09-25) — the pinned release.**
+
+- **`specify` command list — no additions, removals or renames.** Re-derived from the source
+  at the tag, not from the notes.
+- **⚠️ `refactor(presets): split domain internals into private modules (#4747)` — code
+  moved, behaviour did not.** The ~5,000-line `src/specify_cli/presets/__init__.py` is now
+  split into `_catalog.py`, `_manager.py`, `_manifest.py`, `_registry.py`, `_resolver.py`
+  and friends. **Every catalog fact in §1.3 was re-derived in the new location rather than
+  carried over on the strength of the word "refactor":** `get_active_catalogs` is now
+  `presets/_catalog.py:290` and the `install_allowed` refusal is now
+  `presets/_catalog.py:797`. Both are byte-equivalent in behaviour to `v1.0.11`. **This is
+  why §1.4 cites `_catalog.py`, not `__init__.py`** — a QA session grepping the old path at
+  this tag would find nothing and could wrongly call the claim `UNVERIFIED`.
+- **`fix: eliminate TOCTOU races in catalog_fetch() for file:// and bare path URLs (#3910)`**
+  — hardens catalog fetching. Does not change the schema, the key names, or which URLs a
+  catalog config accepts. No effect on the fixtures.
+- **`fix: sync integration manifest hashes after preset re-registration on upgrade (#4697)`**
+  — makes preset re-registration on upgrade consistent. Reinforces §3.2 step 6's "upgraded
+  as one unit" claim; changes nothing the lab types.
+- **`fix(alquimia): render /speckit-<name> invocations for the skills-only Alquimia agent
+  (#4137)`** — not Copilot, but independent corroboration that `/speckit-<name>` with a
+  **hyphen** is the skills-mode invocation across integrations (§1.2, constraint 2).
+- **Community catalog grew again** — an Agentstandards bundle, a Task Gate preset and an
+  Architecture Council extension, plus version bumps to SpecAssay and two Intake presets.
+  **Second release running in which the community list changed. §3.2's rule stands: the lab
+  names no individual community preset.**
+- **Not relevant to Lab 22:** the Bitbucket auth provider (#4629), the workflow-expression
+  filter fix (#3893), the opencode timeout guard (#3973), CI and CodeQL chores.
+- **Carried forward, for #53 not #51.** The `taskstoissues` deprecation notice is repeated
+  verbatim in the `v1.0.12` notes. Unchanged advice.
+
 ### 1.2 Constraint re-verification — #51's five "get these right" items
 
 #51's body carries five constraints with a standing note that they decay. Each was
-re-verified against the **`v1.0.11`** source tree (`git clone --depth 1 --branch v1.0.11`,
-resolving to commit `8147943512404afb9d99c6252cb9bf84369fd0b0`). All five hold. **Two need
-sharpening** before they go into a lab.
+verified against the **`v1.0.11`** source tree (commit `8147943512404afb9d99c6252cb9bf84369fd0b0`)
+when this spec was written, then **re-verified in full against the pinned
+`v1.0.12`** tree (commit `e77daa9021d20db26b878f7dfa5640fe5a42d04e`) at implementation.
+**All five hold at both tags, identically.** **Two need sharpening** before they go into a
+lab.
 
-| # | Constraint as #51 states it | Verdict at `v1.0.11` | Evidence |
+| # | Constraint as #51 states it | Verdict at `v1.0.12` | Evidence |
 |---|---|---|---|
 | 1 | `specify init <project> --integration copilot`; **`--ai` was removed** | ✅ **Confirmed** | `src/specify_cli/command_init.py` — the full option list is `--script`, `--ignore-agent-tools`, `--here`, `--force`, `--non-interactive`, `--preset`, `--integration`, `--integration-options`, `--extension`, `--trust-extension-urls`, plus four hidden no-op deprecations. **No `--ai`.** The docstring's own examples all use `--integration` |
 | 2 | Copilot gets **skills** by default at `.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-specify` (hyphen); `--integration-options="--commands"` opts into `.github/agents/` + `.github/prompts/` | ✅ **Confirmed** | `integrations/copilot/__init__.py`: `_skills_mode: bool = True`; skills dir `.github/skills`, commands dir `.github/agents`; `build_command_invocation` emits `"/speckit-" + stem.replace(".", "-")`; the `--skills` / `--commands` options are declared mutually exclusive and error if both are passed. Commands mode scaffolds `.github/agents/speckit.<cmd>.agent.md` **plus** a companion `.github/prompts/speckit.<cmd>.prompt.md` |
@@ -113,14 +164,16 @@ looks like success. (§3.2, step 4.)
 #51's body and the epic both write `specify preset resolve <name>`, which reads as a preset
 id. It is not. `presets/command_resolve.py` declares
 `template_name: str = typer.Argument(..., help="Template name to resolve (e.g.,
-spec-template)")`. **`specify preset resolve contoso-sdd` fails; `specify preset resolve
-spec-template` is correct.** The lab must use a template name in every example. (§6,
-departure D2.)
+spec-template)")`, and treats a **dotted** argument as a command name
+(`is_command = "." in template_name`, so `speckit.specify` resolves the command).
+**Neither form is a preset id: `specify preset resolve contoso-sdd` fails; `specify preset
+resolve spec-template` is correct.** The lab must use a template name in every example.
+(§6, departure D2.)
 
 ### 1.3 The verified surface Lab 22 teaches
 
-Everything below was read from the `v1.0.11` source, not from memory or from a search
-summary. These are the load-bearing facts the lab asserts.
+Everything below was read from the pinned **`v1.0.12`** source, not from memory or from a
+search summary. These are the load-bearing facts the lab asserts.
 
 **Composition strategies** (`presets/scaffold/preset.yml`, and `docs/reference/presets.md`
 §"File Resolution"):
@@ -148,7 +201,8 @@ Each file name is evaluated **independently** against that stack, so a `spec-tem
 come from a preset while `plan-template` comes from core. Preset priority defaults to `10`;
 lower = higher precedence; ties break alphabetically by preset id.
 
-**Catalog resolution order** — `presets/__init__.py::get_active_catalogs`:
+**Catalog resolution order** — `presets/_catalog.py::get_active_catalogs` (line 290 at
+`v1.0.12`; this was in `presets/__init__.py` before refactor #4747 — §1.1):
 
 1. `SPECKIT_PRESET_CATALOG_URL` env var — a single catalog replacing all defaults
 2. Project config — `.specify/preset-catalogs.yml`
@@ -167,7 +221,8 @@ lower = higher precedence; ties break alphabetically by preset id.
 > step 5 must teach it, and the shipped `preset-catalogs.yml` must re-declare community
 > explicitly.**
 
-**Enforcement of `install_allowed`** — `presets/__init__.py`, the install path:
+**Enforcement of `install_allowed`** — `presets/_catalog.py:797` at `v1.0.12`, the install
+path:
 
 ```python
 if not pack_info.get("_install_allowed", True):
@@ -208,11 +263,11 @@ catalog), `--from <url>` (`.zip`, `.tar.gz` or `.tgz`), `--dev <path>` (local di
 
 | Source | What it settled |
 |---|---|
-| `GET repos/github/spec-kit/releases/latest` and `?per_page=12` | The pin: `v1.0.11`, `2026-09-24T01:35:37Z` |
-| `gh release view v1.0.11 --repo github/spec-kit` | The full `v1.0.10 → v1.0.11` delta (§1.1) |
-| `github/spec-kit` @ `v1.0.11` (commit `8147943`) — `src/specify_cli/command_init.py` | Constraints 1, 3, 4 |
+| `GET repos/github/spec-kit/releases/latest` and `?per_page=12` | The pin: **`v1.0.12`**, `2026-09-25T17:48:57Z` |
+| `gh release view v1.0.11` and `v1.0.12 --repo github/spec-kit` | The full `v1.0.10 → v1.0.12` delta (§1.1) |
+| `github/spec-kit` @ **`v1.0.12`** (commit `e77daa9`) — `src/specify_cli/command_init.py` | Constraints 1, 3, 4 |
 | …`src/specify_cli/integrations/copilot/__init__.py` | Constraint 2 |
-| …`src/specify_cli/presets/__init__.py`, `presets/command_add.py`, `presets/catalog/command_add.py`, `presets/command_resolve.py` | Catalog stack, `install_allowed` enforcement, `preset resolve` signature |
+| …`src/specify_cli/presets/_catalog.py` (**was `presets/__init__.py` before refactor #4747**), `presets/command_add.py`, `presets/catalog/command_add.py`, `presets/command_resolve.py` | Catalog stack, `install_allowed` enforcement, `preset resolve` signature |
 | …`src/specify_cli/bundles/manifest.py`, `bundles/catalog_config.py` | `provides.presets`; the `install_policy` / `install_allowed` distinction |
 | …`presets/scaffold/preset.yml`, `presets/self-test/preset.yml`, `presets/constitution-sync/preset.yml` | `preset.yml` schema and every composition strategy |
 | …`bundles/bugfix/bundle.yml`, `bundles/assess/bundle.yml` | `bundle.yml` schema |
@@ -291,7 +346,7 @@ change in the same commit.
 
 | # | File | Action | Why |
 |---|---|---|---|
-| 1 | `docs/_meta/registry.yaml` | **Edit** — re-pin `spec_kit_version` `1.0.10` → `1.0.11`, `spec_kit_version_last_verified` `2026-09-23` → `2026-09-25`, and refresh the comment | §1 — the pin moved. Standing Appendix A.3 obligation |
+| 1 | `docs/_meta/registry.yaml` | **Edit** — re-pin `spec_kit_version` `1.0.10` → `1.0.12`, `spec_kit_version_last_verified` `2026-09-23` → `2026-09-25`, and refresh the comment | §1 — the pin moved twice. Standing Appendix A.3 obligation |
 | 2 | `labs/lab22.md` | **Replace** stub body; keep frontmatter byte-identical | The lab itself (§3.2) |
 | 3 | `labs/fixtures/lab22/contoso-sdd/preset.yml` | **Create** | Org preset manifest — three templates, one non-`replace` strategy |
 | 4 | `labs/fixtures/lab22/contoso-sdd/templates/spec-template.md` | **Create** | `replace` strategy example |
@@ -320,17 +375,18 @@ Replace from the `RE-VERIFICATION OBLIGATION` line through
 
 ```yaml
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 1):
-# Spec Kit releases every few days — 12 releases between 2026-08-21 and
-# 2026-09-24, roughly one every three days. Re-check the pinned version, the
-# command list, and the Copilot integration layout before any cohort, and at
-# the start of any work that consumes this key — do not trust
+# Spec Kit releases every few days — 13 releases between 2026-08-21 and
+# 2026-09-25, two of them within 26 hours of each other. Re-check the pinned
+# version, the command list, and the Copilot integration layout before any
+# cohort, and at the start of any work that consumes this key — do not trust
 # last_verified without re-checking. Verified 2026-09-25 via
-# `gh api repos/github/spec-kit/releases/latest`: v1.0.11, published
-# 2026-09-24T01:35:37Z, not a prerelease. This SUPERSEDES v1.0.10 (recorded
+# `gh api repos/github/spec-kit/releases/latest`: v1.0.12, published
+# 2026-09-25T17:48:57Z, not a prerelease. This SUPERSEDES v1.0.11 (published
+# 2026-09-24, pinned earlier the same day by EPIC-001 #51), v1.0.10 (recorded
 # 2026-09-23 by EPIC-001 #48), v1.0.9 (found 2026-09-22 while the #48 spec
 # was written) and the v1.0.8 value recorded on 2026-09-17 in EPIC-001 and
 # in issue #48's body.
-spec_kit_version: "1.0.11"
+spec_kit_version: "1.0.12"
 spec_kit_version_last_verified: "2026-09-25"
 ```
 
@@ -417,7 +473,7 @@ registry changes.
 
 ### 3.3 `labs/fixtures/lab22/contoso-sdd/preset.yml`
 
-Schema per `presets/scaffold/preset.yml` at `v1.0.11`. Demonstrates all three required
+Schema per `presets/scaffold/preset.yml` at `v1.0.12`. Demonstrates all three required
 composition behaviours.
 
 ```yaml
@@ -540,7 +596,7 @@ catalogs:
 
 ### 3.6 `labs/fixtures/lab22/catalog.json`
 
-The org catalog the config points at. Shape per `presets/catalog.json` at `v1.0.11`.
+The org catalog the config points at. Shape per `presets/catalog.json` at `v1.0.12`.
 
 ```json
 {
@@ -601,8 +657,8 @@ literals across every lab file, and #51 must keep it there.
 
 **Rules.**
 
-1. `labs/lab22.md` contains **no** Spec Kit version literal — not `1.0.11`, not `v1.0.11`,
-   not `1.0.10`. Install commands render the placeholder form
+1. `labs/lab22.md` contains **no** Spec Kit version literal — not `1.0.12`, not `v1.0.12`,
+   not `1.0.11`, not `1.0.10`. Install commands render the placeholder form
    `git+https://github.com/github/spec-kit.git@v<version>` and point at the registry.
 2. `labs/lab22.md` **retains** the literal string `docs/_meta/registry.yaml`
    (`registry-consumed` counts labs containing it).
@@ -664,14 +720,14 @@ and still teaches a dead end.
 
 | # | #51 says | This plan does | Why |
 |---|---|---|---|
-| D1 | *(implicitly)* pin is `1.0.10` from #48 | Re-pins to **`1.0.11`**, verified 2026-09-25 | §1. The registry's own comment carries a standing re-verification obligation; the release moved on 2026-09-24 |
+| D1 | *(implicitly)* pin is `1.0.10` from #48 | Re-pins to **`1.0.12`**, verified 2026-09-25 at implementation | §1, Records 3 and 4. The registry's own comment carries a standing re-verification obligation. `v1.0.11` shipped 2026-09-24 and `v1.0.12` shipped 2026-09-25 — the latter *while this spec was being written*, which is why the pin is `1.0.12` and not the `1.0.11` of Record 3 |
 | D2 | `specify preset resolve <name>` | Uses `specify preset resolve spec-template` — a **template** name | §1.2. The argument is `template_name`. A preset id fails |
 | D3 | *"`specify init --preset` does not accept a URL"* | Teaches it as a **silent skip with a warning and exit 0** | §1.2. It does not reject; it looks like success. The softer truth is the more dangerous one |
 | D4 | *"Org catalog via `.specify/preset-catalogs.yml` with `install_allowed: true`"* | Same, **plus** the first-match-wins replacement rule and an explicit community re-declaration | §1.3. Adding a catalog silently drops the built-in stack — the most likely learner failure |
 | D5 | `labs/lab18.md:44-45` teaches the older 5-command flow | **Logged, not fixed** | #51's body assigns it to the separate retest/fix sweep. Confirmed present at lab18 lines 44–45; out of scope here |
 | D6 | *"`bundle.yml` pinning preset + extension + workflow"* | Same, and records that **neither shipped example declares a preset** | §1.3. `provides.presets` is valid per `COMPONENT_KINDS`; the lab's bundle is a superset of the shipped ones, so a reader comparing against `bundles/bugfix` is told why they differ |
 | D7 | — | Artifacts live in `labs/fixtures/lab22/`, referenced as code paths | §2.3. The only precedent in the repo (Lab 12) does exactly this, and it keeps the gate count stable |
-| D8 | — | The lab names **no individual community preset** | §1.1. Four were added in `v1.0.11` alone |
+| D8 | — | The lab names **no individual community preset** | §1.1. The community catalog changed in **both** releases since #48's pin — four entries added in `v1.0.11`, three more plus four version bumps in `v1.0.12` |
 
 ---
 
@@ -712,8 +768,9 @@ individually with `git add <path>`; `git add .` and `git add -A` are forbidden b
 ## 8. Execution checklist
 
 1. **Re-verify the Spec Kit release one more time** at the start of implementation. If it
-   has moved past `v1.0.11`, re-run §1.1's delta read and update §1, §3.1 and §6/D1 before
-   writing anything. *(Twelve releases in thirty-four days — assume it moved.)*
+   has moved past `v1.0.12`, re-run §1.1's delta read and update §1, §1.2, §1.3, §1.4, §3.1
+   and §6/D1 before writing anything. *(Thirteen releases in thirty-five days, and `v1.0.12`
+   landed two hours after Record 3 was written — assume it moved.)*
 2. Re-pin `docs/_meta/registry.yaml` (§3.1). Verify it still parses; verify the diff is
    only the comment and the two values.
 3. Create the fixture tree (§3.3–§3.8, files 3–10).
