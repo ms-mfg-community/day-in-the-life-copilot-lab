@@ -9,6 +9,38 @@ demo app).
 ## [Unreleased]
 
 ### Added
+- **Lab 22 — Centralized Spec Kit Templates & the Org Catalog** (EPIC-001,
+  #51). The first content lab of the enterprise-harness arc: how an org
+  distributes customized spec, plan and tasks templates without forking
+  Spec Kit.
+  - `labs/lab22.md` — the resolution stack (overrides → presets →
+    extensions → core, each file resolving independently), the Copilot
+    **skills** layout (`.github/skills/speckit-<command>/SKILL.md`,
+    invoked `/speckit-<command>`) with `--integration-options="--commands"`
+    as the opt-in alternative, and the org catalog framed as a
+    supply-chain control.
+  - `labs/fixtures/lab22/` — an installable org preset demonstrating
+    three composition strategies (`replace`, `wrap` with
+    `{CORE_TEMPLATE}`, `append`), a `bundle.yml` pinning preset +
+    extension + workflow as one versioned install, and a
+    `preset-catalogs.yml` + `catalog.json` pair showing `install_allowed`
+    against a discovery-only community catalog.
+  - Three traps the lab teaches explicitly, each verified against the
+    pinned release rather than assumed: `specify init --preset` **warns
+    and exits 0** on a URL instead of rejecting it, leaving the project
+    silently unconfigured; a project `preset-catalogs.yml` **replaces**
+    the built-in catalog stack rather than merging with it; and
+    `specify preset resolve` takes a *template* name, not a preset id.
+  - `docs/_meta/registry.yaml` re-pins `spec_kit_version` to `1.0.12`
+    (verified 2026-09-25). Spec Kit shipped thirteen releases in the five
+    weeks to that date — two of them while this lab was being written —
+    so the pin moved twice during the work. No version literal appears in
+    the lab body.
+
+  The acceptance gate stays at **13 files / 213 tests**: the lab's
+  artifacts live under `labs/fixtures/lab22/`, which the suites do not
+  enumerate, so no count moved and no test was weakened.
+
 - **Registry and scaffolding for the enterprise-harness arc** (EPIC-001,
   #48 — merged via #60). Groundwork so Labs 21–26 satisfy every existing
   CI gate from their first commit, before any lab content is written.
