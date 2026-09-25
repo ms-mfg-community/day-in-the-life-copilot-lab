@@ -1,0 +1,32 @@
+schema_version: "1.0"
+
+bundle:
+  id: "contoso-sdd"
+  name: "Contoso SDD Standards"
+  version: "1.0.0"
+  role: "developer"
+  description: "Contoso's spec templates, review extension and release workflow as one versioned install."
+  author: "Contoso Platform Engineering"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=1.0.0"
+  tools: []
+  mcp: []
+
+# One bundle version pins one version of each component. Installing the bundle
+# installs all three; upgrading the bundle upgrades all three together, so a
+# repo can never end up with this preset and last quarter's workflow.
+provides:
+  presets:
+    - id: "contoso-sdd"
+      version: "1.0.0"
+      priority: 5
+  extensions:
+    - id: "contoso-review"
+      version: "1.0.0"
+  workflows:
+    - id: "contoso-sdlc"
+      version: "1.0.0"
+
+tags: ["contoso", "standards", "governance", "sdlc"]
