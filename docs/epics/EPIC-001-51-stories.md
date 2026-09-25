@@ -11,7 +11,7 @@ close. Section references (§) point into the spec unless marked "this file".
 | Plan | [EPIC-001-51-lab22-spec.md](EPIC-001-51-lab22-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-25 |
-| Status | **Draft — awaiting John's approval of this file and the spec.** No story has started. Nothing is committed. |
+| Status | **51.1 closed; 51.3 is `Ready`.** Approved by John 2026-09-25. 51.1 ran in two rounds — 51.2 round 1 returned `BLOCK` (1 S1 / 1 S2) on `9ae17d9..1fde3d5`; round 2 returned `ACCEPT WITH FINDINGS` (0 S1 / 1 S2) on `1fde3d5..3f6e706`, both round-1 findings genuinely fixed, and the round-2 S2 fixed by `PENDING-SHA`, so **51.2 closes and 51.1 closes with it** (§2 rule 5). No round had an `UNVERIFIED` check. Gate green at 13 files / 213 tests throughout. **Next: 51.3 — write `labs/lab22.md`.** Nothing has been pushed. |
 
 ---
 
@@ -176,16 +176,26 @@ source itself, so the arc never ships a manifest that Spec Kit would reject or a
    not a defect** — a dated pin that was true on its date is the intended state.
 2. **The registry diff is exactly two values and a comment**, and the file still parses.
 3. **Every manifest is checked against the source at the pinned tag**, not against the
-   spec's tables:
-   - `preset.yml` keys and strategies against `presets/scaffold/preset.yml` and the strategy
-     handling in `src/specify_cli/presets/`;
-   - `bundle.yml` against `src/specify_cli/bundles/manifest.py` — **confirm `COMPONENT_KINDS`
-     still contains `presets`**, and that `priority` on a preset ref is accepted;
+   spec's tables. **Key presence is not validity — run Spec Kit's own validators**, in a
+   venv built from the pinned tag:
+   - `bundle.yml` — `BundleManifest.from_file(...).structural_errors()` must return `[]`,
+     and `specify bundle validate` must exit 0. Confirm `COMPONENT_KINDS` still contains
+     `presets`, and that a preset ref **declares both `priority` and `strategy`** — both are
+     **required**, and `strategy` must be a member of `PRESET_STRATEGIES`;
+   - `preset.yml` — must be accepted by `PresetManifest`; check its keys and strategies
+     against `presets/scaffold/preset.yml` and the strategy handling in
+     `src/specify_cli/presets/`;
    - `preset-catalogs.yml` against `src/specify_cli/presets/catalog/command_add.py` — the
      five persisted keys, and `install_allowed` as the key name;
    - `catalog.json` against `presets/catalog.json`.
-4. **Attack the catalog claim.** Re-read `get_active_catalogs` in
-   `src/specify_cli/presets/__init__.py` and confirm for yourself whether a project-level
+
+   **Anti-vacuity control:** before trusting a clean result, re-run the same validator
+   against a deliberately broken copy and confirm it fails. A validator that accepts
+   everything has verified nothing.
+4. **Attack the catalog claim.** Find `get_active_catalogs` yourself — **grep the whole
+   `src/` tree rather than trusting a path**, since refactor #4747 moved it out of
+   `presets/__init__.py` into `presets/_catalog.py`, and it may move again. Confirm for
+   yourself whether a project-level
    `preset-catalogs.yml` **replaces** or **merges with** the built-in stack. Spec §1.3 says
    it replaces, and the whole of step 5 in the lab depends on it. If it merges, that is an
    **S1** against the spec, not a nit.
@@ -325,7 +335,8 @@ own (`docs: log <story> round <n>`), so the log never mixes with a dev story's d
 
 | Round | Story | Commit reviewed | Verdict | Findings (S1 / S2 / S3) | Disposition |
 |---|---|---|---|---|---|
-| — | — | — | — | — | *No round has run. 51.1 has not started; the spec and this file await John's approval.* |
+| 1 | 51.2 | `9ae17d9..1fde3d5` — 3 commits | `BLOCK` | **1 / 1 / 0** | **51.1 returned to `In dev`** (§2 rule 5). Blind brief per §2 rules 2 and 4 — the spec, this file, #51's body and the epic's U2; no dev hand-off, no dev brief, no orchestrator expectations. No check came back `UNVERIFIED`. judge re-derived the pin itself (`releases/latest` → `v1.0.12`, matching the registry), parsed both registry revisions to prove exactly two scalars changed with the lead paragraph and `RE-VERIFICATION OBLIGATION` header intact, recomputed the release-cadence arithmetic (13 releases; closest pair 8.3h), and ran `get_active_catalogs` against the fixture to confirm the built-in `default` catalog really is absent once a project config exists — the claim the whole of step 5 rests on. **S1: `bundle.yml` was structurally invalid** — a `provides.presets` entry *requires* `strategy`, which the fixture omitted, so `structural_errors()` returned an error and `specify bundle validate` would fail. **S2: spec §1.3 said preset refs "accept" `priority` and `strategy` when the source requires both** — named as the S1's root cause. judge also observed that **no acceptance criterion asked whether any fixture was *valid*** — AC 5/8/9 checked key presence only — so the checklist would have passed the broken file. |
+| 2 | 51.2 | `1fde3d5..3f6e706` — 2 commits, delta-only (§2 rule 8) | `ACCEPT WITH FINDINGS` | **0 / 1 / 0** | **51.2 closes, and so does 51.1** (§2 rule 5 — the single S2 is fixed, by `PENDING-SHA`). Brief carried round 1's own verdict so settled ground was not re-opened. No check came back `UNVERIFIED`. Both round-1 findings **genuinely fixed**: `structural_errors()` → `[]` and the real `specify bundle validate --offline` → exit 0, with `strategy: "replace"` confirmed a member of `PRESET_STRATEGIES` and `priority`, the extension ref and the workflow ref all undisturbed; §1.3 and §3.4 — **including §3.4's pasteable YAML block** — now state the requirement correctly. **Anti-vacuity control:** judge re-validated the round-1 blob from `1fde3d5` and reproduced the original error verbatim, proving the `[]` was a real pass and not a permissive harness. Gate re-run in full at **13 files / 213 tests**. No amend or rebase (`1fde3d5` still an ancestor of HEAD). **S2: 51.2's own Minimum checks were never updated** — check 3 still read "`priority` … is accepted", the exact understating verb round 1 named as root cause, omitting `strategy` and never asking for a validator run, so a round-3 reviewer following the checklist literally would not have caught the same class of defect. The gap was closed on the build side (AC 7a, spec M13) but not on the QA side. **Fixed by `PENDING-SHA`**, which rewrote check 3 to require both keys and a validator run, added an anti-vacuity control, and corrected check 4's stale `presets/__init__.py` path to the post-refactor `_catalog.py`. S2 disposed of, so 51.2 closes. |
 
 **Out-of-scope observations.** Logged here as they are found, never fixed inside #51
 (§2 rule 10).
