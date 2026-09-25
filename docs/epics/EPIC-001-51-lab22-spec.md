@@ -707,8 +707,8 @@ literals across every lab file, and #51 must keep it there.
    ```powershell
    Select-String -Path labs\lab22.md -Pattern '\b\d+\.\d+\.\d+\b'
    ```
-   As of this writing it returns six hits: three `version: "1.0.0"` in the §22.7
-   `bundle.yml` excerpt, and three `@1.0.0` inside the quoted `bundle validate` error output
+   As of this writing it returns five hits: three `version: "1.0.0"` in the §22.7
+   `bundle.yml` excerpt, and two `@1.0.0` inside the quoted `bundle validate` error output
    in the same section — all Contoso component versions (rule 3a). **Any hit that is not a
    Contoso artifact version or a `>=` floor is a violation.**
 
