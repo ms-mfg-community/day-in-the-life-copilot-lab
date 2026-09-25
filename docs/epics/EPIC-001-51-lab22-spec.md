@@ -142,10 +142,44 @@ lab.
 | # | Constraint as #51 states it | Verdict at `v1.0.12` | Evidence |
 |---|---|---|---|
 | 1 | `specify init <project> --integration copilot`; **`--ai` was removed** | ✅ **Confirmed** | `src/specify_cli/command_init.py` — the full option list is `--script`, `--ignore-agent-tools`, `--here`, `--force`, `--non-interactive`, `--preset`, `--integration`, `--integration-options`, `--extension`, `--trust-extension-urls`, plus four hidden no-op deprecations. **No `--ai`.** The docstring's own examples all use `--integration` |
-| 2 | Copilot gets **skills** by default at `.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-specify` (hyphen); `--integration-options="--commands"` opts into `.github/agents/` + `.github/prompts/` | ✅ **Confirmed** | `integrations/copilot/__init__.py`: `_skills_mode: bool = True`; skills dir `.github/skills`, commands dir `.github/agents`; `build_command_invocation` emits `"/speckit-" + stem.replace(".", "-")`; the `--skills` / `--commands` options are declared mutually exclusive and error if both are passed. Commands mode scaffolds `.github/agents/speckit.<cmd>.agent.md` **plus** a companion `.github/prompts/speckit.<cmd>.prompt.md` |
+| 2 | Copilot gets **skills** by default at `.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-specify` (hyphen); `--integration-options="--commands"` opts into `.github/agents/` + `.github/prompts/` | ⚠️ **Confirmed as to layout — but the invocation claim is VS Code only** — see below | `integrations/copilot/__init__.py`: `_skills_mode: bool = True`; skills dir `.github/skills`, commands dir `.github/agents`; `build_command_invocation` emits `"/speckit-" + stem.replace(".", "-")`; the `--skills` / `--commands` options are declared mutually exclusive and error if both are passed. Commands mode scaffolds `.github/agents/speckit.<cmd>.agent.md` **plus** a companion `.github/prompts/speckit.<cmd>.prompt.md` **plus** a `.vscode/settings.json` merge |
 | 3 | Constitution is at **`.specify/memory/constitution.md`** | ✅ **Confirmed** | `command_init.py:224` — `project_path / ".specify" / "memory" / "constitution.md"`. Same path in `presets/__init__.py` at three call sites |
 | 4 | **`specify init --preset` does not accept a URL** — ID, bundled name, or local dir only; use `specify preset add --from <url>` after init | ⚠️ **Confirmed, but the failure is worse than "does not accept"** — see below | `command_init.py`, the `if preset:` block. Three branches only: local dir containing `preset.yml` → bundled preset name → catalog preset ID |
 | 5 | Forking Spec Kit is an anti-pattern given release cadence — teach the resolution stack | ✅ **Confirmed, and strengthened** | Twelve releases in 34 days (§1). The resolution stack exists precisely so an org customizes *above* core without editing core — `docs/reference/presets.md` §"File Resolution" |
+
+**Sharpening constraint 2 — `/speckit-specify` is a _VS Code_ invocation, not a Copilot CLI
+one.** *(Raised by John, 2026-09-25, after 51.5 closed.)* The layout half of constraint 2 is
+correct at `v1.0.12`. The **invocation** half is scoped to the IDE, and this arc's learners
+are in Copilot CLI:
+
+- `integrations/copilot/__init__.py`'s module docstring is *"Copilot integration — GitHub
+  Copilot in VS Code."* Commands mode additionally *"Installs `.vscode/settings.json` with
+  prompt file recommendations."*
+- **Both** Copilot layouts register **`requires_cli: False`** (lines 109 and 135), which
+  `integrations/command_list.py:103` renders as **`no (IDE)`**. The `copilot` executable is
+  used only for *workflow dispatch*, per the class docstring.
+- **In Copilot CLI there is no `/speckit-specify` slash command.** Skills are model-invoked
+  capabilities (`/skills` manages them); the CLI's user-facing slash command for selecting
+  an agent is `/agent`.
+- **Conversely, `--commands` output _is_ the Copilot CLI custom-agent format.** GitHub's
+  own documentation — *Creating and using custom agents for GitHub Copilot CLI* — states
+  that each custom agent is "a Markdown file with an `.agent.md` extension" in
+  **`.github/agents/`** (project) or `~/.copilot/agents/` (user), used via `/agent`, by
+  naming it in a prompt, by inference, or as `copilot --agent <name> --prompt "…"`, and that
+  the CLI must be **restarted** to load a new agent.
+- **Verified first-hand in this repository.** `.github/agents/` holds
+  `code-reviewer.agent.md` and `planner.agent.md`, and both are live custom agents in a
+  Copilot CLI session here — as are the six `.github/skills/*/SKILL.md` directories. Copilot
+  CLI loads both trees; only the *invocation* differs from VS Code.
+
+**Consequence for the lab.** §3.2 step 5 must present the choice by surface rather than
+asserting one invocation, and must steer a Copilot CLI cohort — which is what Labs 01–20
+assume — to `--integration-options="--commands"`. (§6, departure **D10**.)
+
+> ⚠️ **Not verified, and deliberately not asserted:** whether the *dotted* agent name
+> `speckit.specify` is fully ergonomic for `copilot --agent`. GitHub's docs recommend names
+> of "lowercase letters and hyphens" for programmatic use. The lab therefore tells the
+> learner to run `/agent` and look, rather than claiming a specific `--agent` string works.
 
 **Sharpening constraint 4 — this is a silent failure, not a rejection.** `specify init
 --preset <url>` does **not** error. The URL is not a local directory and not a bundled
@@ -433,16 +467,24 @@ registry changes.
 4. **Prerequisites** — a link to Lab 18 written lab-relative as `[Lab 18](lab18.md)`, and
    the Spec Kit CLI at the registry-pinned version, installed via the command shape in
    `docs/_meta/registry.yaml`. **No version literal** (§4).
-5. **Step 1 — initialize with the Copilot integration.**
+5. **Step 1 — initialize, and choose the layout that matches your surface.**
    `specify init contoso-sdd-demo --integration copilot`. States plainly that **`--ai` was
-   removed** and shows what Copilot actually gets: `.github/skills/speckit-<command>/SKILL.md`,
-   invoked **`/speckit-specify`** with a hyphen. Shows
-   `--integration-options="--commands"` as the *opt-in* path to
-   `.github/agents/speckit.<cmd>.agent.md` plus companion
-   `.github/prompts/speckit.<cmd>.prompt.md`, and notes the two modes are mutually
-   exclusive. Names the constitution at **`.specify/memory/constitution.md`**.
-   > Callout: *a lab that sends you to `.github/prompts/` by default shows you an empty
-   > folder.*
+   removed**. Then presents the layout choice **by surface** (§1.2, §6/D10), because
+   `--integration copilot` is Spec Kit's **VS Code** integration and this arc's learners are
+   in Copilot CLI:
+   - **Default, skills** — `.github/skills/speckit-<command>/SKILL.md`. In VS Code these are
+     chat slash commands, `/speckit-specify` with a **hyphen**. In **Copilot CLI** they load
+     as model-invoked skills and there is **no `/speckit-specify` to type**.
+   - **`--integration-options="--commands"`** — `.github/agents/speckit.<cmd>.agent.md`, a
+     companion `.github/prompts/speckit.<cmd>.prompt.md`, and a `.vscode/settings.json`
+     merge. `.github/agents/*.agent.md` **is** Copilot CLI's custom-agent format, so each
+     command becomes a CLI agent reachable via `/agent` **after a CLI restart**.
+   - **Recommends `--commands` for this lab series**, and notes the two modes are mutually
+     exclusive.
+
+   Names the constitution at **`.specify/memory/constitution.md`**.
+   > Callout: the verification is *run `/agent` and look* — not an asserted `--agent` string
+   > (§1.2's unverified-dotted-name caveat).
 6. **Step 2 — the resolution stack.** The four-layer table from §1.3, each file resolving
    independently, priority semantics (default `10`, lower wins, ties alphabetical). Ends
    with `specify preset resolve spec-template` as the debugging move — **a template name,
@@ -753,7 +795,7 @@ and still teaches a dead end.
 |---|---|---|
 | M1 | Every `specify` command in the lab exists at the pinned release | Cross-read against §1.2/§1.3. Anything not in that evidence set is removed |
 | M2 | `--ai` appears nowhere except as an explicit "this was removed" warning | `Select-String -Path labs\lab22.md -Pattern '\-\-ai\b'` |
-| M3 | The skills path and hyphenated invocation are exact | Lab says `.github/skills/speckit-<command>/SKILL.md` and `/speckit-specify`; **not** `/speckit.specify` in skills mode |
+| M3 | The skills path and hyphenated invocation are exact, **and scoped to VS Code** | Lab says `.github/skills/speckit-<command>/SKILL.md` and `/speckit-specify`; **and states that no such slash command exists in Copilot CLI**, where the `--commands` agents layout is the one that gives a CLI user something to invoke (§1.2, §6/D10) |
 | M4 | `preset resolve` examples use a **template** name | No `specify preset resolve contoso-sdd` anywhere |
 | M5 | `install_allowed` — not `install_policy` — in the preset catalog | `preset-catalogs.yml` and the lab prose both |
 | M6 | The catalog **replacement** rule is stated, not implied | §1.3's first-match-wins warning appears in step 5 |
@@ -780,6 +822,7 @@ and still teaches a dead end.
 | D7 | — | Artifacts live in `labs/fixtures/lab22/`, referenced as code paths | §2.3. The only precedent in the repo (Lab 12) does exactly this, and it keeps the gate count stable |
 | D8 | — | The lab names **no individual community preset** | §1.1. The community catalog changed in **both** releases since #48's pin — four entries added in `v1.0.11`, three more plus four version bumps in `v1.0.12` |
 | D9 | — | §4's no-literal rule is scoped to **Spec Kit release** literals, and explicitly exempts a labelled fixture excerpt quoted in the lab | §4 rules 3a and 4. §22.7 quotes `bundle.yml`'s `provides:` block, which carries Contoso component versions (`1.0.0`). Stripping them would contradict the section's own point. The original rule's blunt `1\.0\.\d+` sweep would have flagged them, so the rule now states the intent and keeps the sweep as a triage aid |
+| D10 | Constraint 2, and **epic U2 criterion 3**: skills by default *"invoked `/speckit-specify` with a hyphen"*, with `--commands` as merely "the opt-in path" | The lab presents the choice **by surface**, and steers a Copilot CLI cohort to `--commands` | §1.2. Both Copilot layouts are `requires_cli: False` — Spec Kit's own docstring says *"GitHub Copilot in VS Code"*. **`/speckit-specify` does not exist in Copilot CLI**, where skills are model-invoked and `/agent` selects agents; meanwhile `.github/agents/*.agent.md` **is** Copilot CLI's documented custom-agent format. A lab for this arc's CLI learners that asserted the IDE invocation would teach a slash command that does nothing. **Raised by John, 2026-09-25, after 51.5 closed.** ⚠️ **The epic's U2 criterion 3 and #51's constraint 2 both carry the IDE-only framing and should be amended — a remote write, so left for John (§9, O4)** |
 
 ---
 

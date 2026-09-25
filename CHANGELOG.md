@@ -15,10 +15,13 @@ demo app).
   Spec Kit.
   - `labs/lab22.md` — the resolution stack (overrides → presets →
     extensions → core, each file resolving independently), the Copilot
-    **skills** layout (`.github/skills/speckit-<command>/SKILL.md`,
-    invoked `/speckit-<command>`) with `--integration-options="--commands"`
-    as the opt-in alternative, and the org catalog framed as a
-    supply-chain control.
+    integration layout choice presented **by surface** (skills at
+    `.github/skills/speckit-<command>/SKILL.md` are VS Code chat slash
+    commands, but in **Copilot CLI** they are model-invoked and there is no
+    `/speckit-specify`; `--integration-options="--commands"` writes
+    `.github/agents/speckit.<command>.agent.md`, which **is** Copilot CLI's
+    custom-agent format), and the org catalog framed as a supply-chain
+    control.
   - `labs/fixtures/lab22/` — an installable org preset demonstrating
     three composition strategies (`replace`, `wrap` with
     `{CORE_TEMPLATE}`, `append`), a `bundle.yml` pinning preset +

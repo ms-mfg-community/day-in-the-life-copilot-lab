@@ -360,3 +360,15 @@ own (`docs: log <story> round <n>`), so the log never mixes with a dev story's d
   The Copilot Code Review check on a #51 PR will **fail without reviewing anything**, and
   pushing a new `feature/*` branch auto-files a duplicate `[aw]` issue. **Neither is a
   signal about this work.** → **John / repo admin.**
+- **O4 — the epic's U2 criterion 3 and #51's constraint 2 carry an IDE-only framing**, both
+  asserting Copilot skills are *"invoked `/speckit-specify` with a hyphen"* and casting
+  `--commands` as merely "the opt-in path". **In Copilot CLI — which is what Labs 01–20
+  assume — `/speckit-specify` does not exist**; skills are model-invoked, `/agent` selects
+  agents, and `.github/agents/*.agent.md` is Copilot CLI's own custom-agent format. The lab
+  is corrected (spec §1.2, §3.2 step 5, §6/D10), but **the two source documents still say
+  the IDE-only thing**. Editing an issue body or the epic is a remote write, so it needs
+  John. *(Raised by John, 2026-09-25, after 51.5 closed.)* → **John.**
+- **O5 — the same framing will propagate to Labs 23–26** unless corrected at the epic. U3/U4
+  build the extension and workflow this arc's `bundle.yml` already pins, and a learner who
+  took the default skills layout in Lab 22 will have nothing to invoke in the CLI when those
+  labs ask them to run a Spec Kit command. → **Fold into #52's spec.**
