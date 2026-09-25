@@ -336,8 +336,22 @@ specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offli
 
 > 💡 **Prove the `wrap` really depends on the placeholder.** Delete `{CORE_TEMPLATE}` from
 > `labs/fixtures/lab22/contoso-sdd/templates/plan-template.md`, reinstall the preset, and
-> re-run `specify preset resolve plan-template`. The chain still *renders* — the chain is
-> built from strategies, not from the placeholder — but Spec Kit now warns:
+> re-run the resolve:
+>
+> ```bash
+> specify preset remove contoso-sdd
+> specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
+> specify preset resolve plan-template
+> ```
+>
+> **`preset add` will not overwrite an installed preset** — it exits 1 with
+> `Preset 'contoso-sdd' is already installed. Use 'specify preset remove contoso-sdd'
+> first.` and there is no `--force`. Remove, then add. (Don't reach for `preset update`
+> here: it is deliberately destructive, and for a `--dev` install it removes the preset and
+> then fails to find it in any catalog.)
+>
+> The chain still *renders* — the chain is built from strategies, not from the placeholder —
+> but Spec Kit now warns:
 >
 > ```text
 > Warning: composition error: Wrap strategy in 'contoso-sdd v1.0.0' is missing the
