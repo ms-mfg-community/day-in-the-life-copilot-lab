@@ -230,7 +230,7 @@ a flag that was removed or a path that is empty.
    changes. `title`, `lab_number`, and both `pace` values are untouched, and still match
    `labs.lab22` in the registry character-for-character (§2.4).
 2. The body follows §3.2's thirteen-section order.
-3. All nine of the epic's U2 acceptance criteria are satisfied in the prose —
+3. All **ten** of the epic's U2 acceptance criteria are satisfied in the prose —
    registry pin, `--integration copilot` with `--ai` named as removed, skills-by-default
    with the hyphenated invocation and the `--commands` opt-in, the org preset with a
    non-`replace` strategy, `bundle.yml`, the org catalog with community as discovery-only,
@@ -314,8 +314,9 @@ spec that was written to satisfy them.
 1. **Every checkbox in #51's body** — the five verified constraints and the five tasks — is
    satisfied or accounted for by a §6 departure row that judge **verifies independently**
    rather than accepts.
-2. **Every one of the epic's nine U2 acceptance criteria** is satisfied, reading U2 directly
-   from the epic (lines 230–249), not from the spec's restatement.
+2. **Every one of the epic's ten U2 acceptance criteria** is satisfied, reading U2 directly
+   from the epic (lines 231–249), not from the spec's restatement. **Count them; do not
+   trust a stated total** — this checklist said "nine" through three rounds and U2 has ten.
 3. **The full diff reconciles.** Every file in the branch range maps to a spec section, a
    story AC, or a §6 row. Zero strays.
 4. **Full-suite delta sweep** at both ends of the range, in throwaway worktrees: the failing
