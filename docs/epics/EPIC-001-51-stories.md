@@ -131,7 +131,13 @@ a lab file.
 6. `templates/plan-template.md` contains the literal **`{CORE_TEMPLATE}`** placeholder.
    `spec-template.md` and `tasks-governance.md` contain **no** placeholder.
 7. `bundle.yml` matches §3.4 and declares `provides.presets`, `provides.extensions` and
-   `provides.workflows`.
+   `provides.workflows`. **The preset ref declares both `priority` and `strategy`** — both
+   are required (§1.3).
+7a. **Every fixture manifest is validated with Spec Kit's own validator at the pinned tag**,
+   not merely eyeballed for key presence. `BundleManifest.structural_errors()` returns `[]`
+   for `bundle.yml`; the `PresetManifest` validator accepts `preset.yml`. **Key presence is
+   not validity** — a manifest can carry every key this story names and still be rejected by
+   Spec Kit, which is exactly what happened in round 1.
 8. `preset-catalogs.yml` matches §3.5: org catalog `install_allowed: true`, community
    **re-declared** with `install_allowed: false`, and the first-match-wins warning comment.
    The key name is `install_allowed`, **never** `install_policy` (§1.3).

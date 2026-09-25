@@ -250,10 +250,24 @@ keys per entry: `name`, `url`, `priority`, `install_allowed`, `description`.
 COMPONENT_KINDS = ("extensions", "presets", "steps", "workflows")
 ```
 
-Preset refs additionally accept `priority` and `strategy`. **`provides.presets` is
+**⚠️ A preset ref *requires* both `priority` and `strategy`** — they are not optional.
+`ComponentRef` declares them `| None = None`, which reads as optional, but
+`BundleManifest.structural_errors()` rejects a preset ref missing either:
+
+```python
+for ref in self.presets:
+    if ref.priority is None:
+        errors.append(f"preset '{ref.id}' must declare an integer 'priority'.")
+    if ref.strategy is None or ref.strategy not in PRESET_STRATEGIES:
+        errors.append(...)
+```
+
+`PRESET_STRATEGIES = {"replace", "prepend", "append", "wrap"}`. **`provides.presets` is
 supported**, so #51's "pinning preset + extension + workflow as one versioned install" is
-valid — even though neither shipped example (`bundles/bugfix`, `bundles/assess`) happens to
-declare a preset. The lab's bundle is a legitimate superset of the shipped examples.
+valid — but because neither shipped example (`bundles/bugfix`, `bundles/assess`) declares a
+preset, there is no in-repo template to copy and both required keys are easy to miss. A
+bundle missing either **fails `specify bundle validate`**, and nothing in this repo's gate
+would catch it.
 
 **`specify preset add` sources** — `presets/command_add.py`: positional `preset_id` (via
 catalog), `--from <url>` (`.zip`, `.tar.gz` or `.tgz`), `--dev <path>` (local dir),
@@ -553,6 +567,7 @@ provides:
     - id: "contoso-sdd"
       version: "1.0.0"
       priority: 5
+      strategy: "replace"
   extensions:
     - id: "contoso-review"
       version: "1.0.0"
@@ -562,6 +577,10 @@ provides:
 
 tags: ["contoso", "standards", "governance", "sdlc"]
 ```
+
+> ⚠️ **Both `priority` and `strategy` are required on a preset ref** (§1.3). Omitting either
+> makes the bundle fail `specify bundle validate` — and neither shipped example declares a
+> preset, so there is nothing in the Spec Kit repo to copy the shape from.
 
 > The `contoso-review` extension and `contoso-sdlc` workflow are **referenced, not shipped**
 > — Labs 23 and 24 build them (epic units U3 and U4). The lab says so explicitly, so a
@@ -713,6 +732,7 @@ and still teaches a dead end.
 | M10 | Frontmatter and registry still agree | §2.4 table, all four rows |
 | M11 | Fixture artifacts are referenced as code paths, not markdown links | §2.3 |
 | M12 | The bundle's unshipped components are called out as Labs 23/24 work | §3.4 |
+| M13 | **Every fixture manifest passes Spec Kit's own validator** at the pinned tag — `BundleManifest.structural_errors()` returns `[]`, the `PresetManifest` validator accepts `preset.yml` | Nothing in this repo's gate validates a fixture against Spec Kit. Key presence is not validity: round 1 of 51.2 found a `bundle.yml` carrying every key the story asked for that `specify bundle validate` still rejects |
 
 ---
 
