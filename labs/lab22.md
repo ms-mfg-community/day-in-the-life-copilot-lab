@@ -9,26 +9,313 @@ registry: docs/_meta/registry.yaml
 
 # 22 — Centralized Spec Kit Templates & the Org Catalog
 
-> 🚧 **Stub.** This lab is scaffolding for the enterprise agentic SDLC harness
-> arc (EPIC-001). The content is specified but not yet written — see
-> [EPIC-001](../docs/epics/EPIC-001-enterprise-agentic-sdlc-harness.md),
-> unit **U2**, for the user stories and acceptance criteria this lab must
-> satisfy.
+Every team in your org writes specs a little differently. You fix that once —
+in an **org preset** — and distribute it the way Spec Kit actually supports:
+a preset, a `bundle.yml`, and a catalog that controls what may be installed.
+No forks, no copy-paste, no drift.
 
 > ⏱️ Presenter pace: 7 minutes | Self-paced: 35 minutes
 
 **Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on Lab 21.
 
-## What this lab will cover
+> ⚠️ **Spec Kit moves fast.** It shipped thirteen releases in the five weeks to
+> 2026-09-25, twice within a single day. Nothing in this lab hardcodes a version:
+> every command reads the pin from
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). If a flag below
+> doesn't exist in your build, check the pin before you check your typing.
 
-- An org preset customizing the spec, plan and tasks templates.
-- `bundle.yml` as one versioned install.
-- The org catalog, with discovery-only versus install-allowed sources.
-- The resolution stack.
+References:
+- [Lab 18 — Spec-Driven Development with Spec Kit](lab18.md) — the prerequisite
+- [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — `spec_kit_version`
+- `labs/fixtures/lab22/` — the preset, bundle and catalog you'll install in this lab
 
-## Prerequisites
+## 22.0 Prerequisites and currency
 
-[Lab 18](lab18.md), and the Spec Kit CLI at the registry-pinned version.
+> 💡 Versions and pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). This lab names no
+> version inline — read `spec_kit_version` and substitute it.
+
+You need [Lab 18](lab18.md) done, and the Spec Kit CLI at the pinned release:
+
+```bash
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>
+specify check
+```
+
+Replace `<version>` with `spec_kit_version` from the registry.
+
+## 22.1 The problem, and the fix that isn't
+
+Your platform team writes a good spec template. Teams copy it into their repos.
+Six months later there are fourteen versions of it and nobody knows which is
+current.
+
+The tempting fix is to **fork Spec Kit** and bake your templates into core.
+Don't. Spec Kit released thirteen times in five weeks — a fork turns every one
+of those into a merge conflict you own forever, and you will stop merging, and
+then you are running a stale SDLC toolchain on purpose.
+
+Spec Kit's answer is a **resolution stack**: your customizations sit *above*
+core and compose with it. You never edit core, so upgrading core costs nothing.
+
+## 22.2 Initialize with the Copilot integration
+
+```bash
+specify init contoso-sdd-demo --integration copilot
+cd contoso-sdd-demo
+```
+
+> ⚠️ **There is no `--ai` flag.** It was removed. `--integration` replaces it.
+> If you're following an older blog post, this is the first thing that will
+> fail you.
+
+**What Copilot actually gets: skills.** By default the Copilot integration
+installs skills, one directory per command:
+
+```text
+.github/skills/speckit-specify/SKILL.md
+.github/skills/speckit-plan/SKILL.md
+.github/skills/speckit-tasks/SKILL.md
+```
+
+You invoke them with a **hyphen** — `/speckit-specify`, not `/speckit.specify`.
+
+> 💡 **What you should see:** `.github/skills/` populated, and
+> `.github/prompts/` **absent**. That's correct. A guide that sends you to
+> `.github/prompts/` by default is describing the opt-in layout, and you'll
+> open an empty folder.
+
+The commands layout is still supported, as an explicit opt-in:
+
+```bash
+specify init contoso-commands-demo --integration copilot --integration-options="--commands"
+```
+
+That scaffolds `.github/agents/speckit.<command>.agent.md` **plus** a companion
+`.github/prompts/speckit.<command>.prompt.md` for each command — dotted names,
+not hyphenated. The two modes are mutually exclusive; passing both `--skills`
+and `--commands` is an error.
+
+Your project constitution lives at **`.specify/memory/constitution.md`**.
+
+## 22.3 The resolution stack
+
+Every file resolves **independently** through four layers, highest precedence
+first:
+
+| # | Layer | Location |
+|---|---|---|
+| 1 | Project-local overrides | `.specify/templates/overrides/` |
+| 2 | Installed presets — by priority | `.specify/presets/<id>/` |
+| 3 | Installed extensions — by priority | `.specify/extensions/<id>/` |
+| 4 | Spec Kit core | `.specify/templates/` |
+
+Priority defaults to `10`; **lower numbers win**; ties break alphabetically by
+preset id. Because each file resolves on its own, your `spec-template` can come
+from your preset while `plan-template` still comes from core.
+
+When you can't work out which layer won, ask:
+
+```bash
+specify preset resolve spec-template
+```
+
+> ⚠️ **`preset resolve` takes a _template_ name, not a preset id.**
+> `specify preset resolve spec-template` works. `specify preset resolve
+> contoso-sdd` does not — that's a preset, and the command will not find it.
+> A dotted argument is treated as a *command* name, so
+> `specify preset resolve speckit.specify` resolves that command.
+
+## 22.4 Build the org preset
+
+Open `labs/fixtures/lab22/contoso-sdd/preset.yml`. It overrides three core
+templates, and deliberately uses a **different composition strategy for each**:
+
+| Template | Strategy | What happens |
+|---|---|---|
+| `spec-template` | `replace` *(default)* | Contoso's template supersedes core's entirely |
+| `plan-template` | `wrap` | Core's plan is kept, wrapped in Contoso review gates |
+| `tasks-template` | `append` | Contoso governance tasks are added after core's list |
+
+The full set is `replace`, `prepend`, `append`, `wrap`. Two details that cost
+people time:
+
+- A `wrap` file must contain the literal **`{CORE_TEMPLATE}`** placeholder —
+  that's where the lower layer gets substituted. Look at
+  `labs/fixtures/lab22/contoso-sdd/templates/plan-template.md`. Delete the
+  placeholder and you silently lose core's plan template.
+- **Scripts are different.** They support only `replace` and `wrap`, and a
+  script wrapper uses **`$CORE_SCRIPT`**, not `{CORE_TEMPLATE}`.
+
+Note also that `name:` and `file:` do different jobs. `name:` says *which*
+template to compose with; `file:` says where this content lives. That's why the
+`append` entry lives in `tasks-governance.md` while composing onto
+`tasks-template`.
+
+Install it from the local directory:
+
+```bash
+specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
+specify preset list
+specify preset resolve plan-template
+```
+
+> 💡 **What you should see:** `preset list` prints presets in precedence order,
+> highest first. `preset resolve plan-template` shows a **composition chain**
+> rather than a single file — the wrapper on top, core underneath.
+
+## 22.5 The trap: `--preset` does not take a URL
+
+`specify init --preset` accepts **an ID, a bundled preset name, or a local
+directory**. It does not accept a URL. What makes this dangerous is how it
+fails:
+
+```bash
+specify init demo --integration copilot --preset https://example.com/preset.zip
+```
+
+```text
+Warning: Preset 'https://example.com/preset.zip' not found in catalog. Skipping.
+```
+
+> ⚠️ **That is a warning, not an error.** `init` continues and **exits 0**. You
+> get a green run and a project with none of your templates. Nothing tells you
+> again. Check `specify preset list` after init if you passed `--preset`.
+
+To install from a URL, do it **after** init:
+
+```bash
+specify preset add --from https://example.com/preset.zip
+```
+
+`--from` takes a `.zip`, `.tar.gz` or `.tgz` archive URL. Use `--dev <path>`
+for a local directory, and `--priority <N>` to place it in the stack.
+
+## 22.6 The org catalog as a supply-chain control
+
+Your compliance owner wants developers to **discover** community presets freely
+but **install** only reviewed ones. That's a catalog.
+
+Copy `labs/fixtures/lab22/preset-catalogs.yml` to `.specify/preset-catalogs.yml`
+and read it. It declares two catalogs: your org's, with `install_allowed: true`,
+and the community one with `install_allowed: false`.
+
+```bash
+specify preset search governance
+specify preset add <a-community-preset-id>
+```
+
+> 💡 **What you should see:** search returns results from both catalogs —
+> discovery works. The install is **refused**, and the refusal names the
+> `--from <archive-url>` form to use instead. That's the point: discovery-only
+> is a **redirect into review**, not a wall.
+
+> ⚠️ **The big one — catalog config *replaces* the defaults, it does not merge.**
+> Spec Kit resolves catalogs in this order and returns the **first layer that
+> exists**:
+>
+> 1. `SPECKIT_PRESET_CATALOG_URL` — one catalog, replacing everything
+> 2. `.specify/preset-catalogs.yml` — your project
+> 3. `~/.specify/preset-catalogs.yml` — your user
+> 4. the built-in stack: `default` (installable) + `community` (discovery-only)
+>
+> The moment step 2 exists, **step 4 never runs**. Create a project catalog
+> config and the built-in catalogs are gone — which is why the fixture
+> re-declares `community` explicitly. If you add your org catalog and your
+> developers suddenly can't find *any* community preset, this is why.
+
+You can also add a catalog from the CLI instead of editing the file:
+
+```bash
+specify preset catalog add https://raw.githubusercontent.com/contoso/spec-kit-catalog/main/catalog.json \
+  --name contoso-approved --priority 1 --install-allowed
+specify preset catalog list
+```
+
+> 💡 As of the pinned release, `preset catalog add` is **idempotent** — adding
+> an identical entry twice is a no-op rather than an error, so re-running this
+> step is safe. A *different* entry reusing an existing name is still rejected.
+
+The catalog file itself is JSON — see `labs/fixtures/lab22/catalog.json` for the
+shape your org would publish.
+
+## 22.7 One versioned install: `bundle.yml`
+
+A preset is one piece. Real org standards are a preset **plus** an extension
+**plus** a workflow, and they have to move together. That's a bundle.
+
+Open `labs/fixtures/lab22/contoso-sdd-bundle/bundle.yml`:
+
+```yaml
+provides:
+  presets:
+    - id: "contoso-sdd"
+      version: "1.0.0"
+      priority: 5
+      strategy: "replace"
+  extensions:
+    - id: "contoso-review"
+      version: "1.0.0"
+  workflows:
+    - id: "contoso-sdlc"
+      version: "1.0.0"
+```
+
+One bundle version pins one version of each component. Install the bundle and
+you get all three; upgrade the bundle and all three move together — so a repo
+can never end up running this quarter's preset against last quarter's workflow.
+
+> ⚠️ **A preset reference requires both `priority` and `strategy`.** Omit either
+> and `specify bundle validate` rejects the bundle. Neither bundle shipped with
+> Spec Kit declares a preset, so there's no built-in example to copy — this is
+> the shape.
+
+> 💡 `contoso-review` and `contoso-sdlc` are **referenced here but built later**:
+> the extension in [Lab 23](lab23.md), the workflow in [Lab 24](lab24.md). This
+> lab teaches the packaging; the arc fills in the components.
+
+Validate before you publish:
+
+```bash
+specify bundle validate
+```
+
+## 22.8 Verify
+
+Run these and confirm each one:
+
+```bash
+specify preset list                      # your preset, in precedence order
+specify preset resolve spec-template     # resolves to the preset (replace)
+specify preset resolve plan-template     # shows a composition chain (wrap)
+specify preset catalog list              # org: install allowed; community: discovery only
+specify bundle validate                  # exits 0
+```
+
+> 💡 If `preset resolve plan-template` shows only one file instead of a chain,
+> your `{CORE_TEMPLATE}` placeholder is missing from the wrapper.
+
+## What you built
+
+- An **org preset** overriding three core templates, using three different
+  composition strategies, installed without forking anything.
+- An **org catalog** that lets developers discover widely and install narrowly.
+- A **bundle** that pins preset, extension and workflow as one versioned unit.
+
+## Key takeaways
+
+- **Never fork Spec Kit.** The release cadence makes it a permanent merge tax.
+  Compose above core instead.
+- **`--ai` is gone; use `--integration`.** Copilot gets **skills** by default at
+  `.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-<command>`.
+  `--integration-options="--commands"` is the opt-in to the agents/prompts layout.
+- **`init --preset` takes an ID, a bundled name, or a directory — never a URL**,
+  and it fails by *warning and continuing*. Use `preset add --from <url>` after init.
+- **A project catalog config replaces the built-in catalogs.** Re-declare
+  anything you still want.
+- **`preset resolve` takes a template name**, and it's the fastest way to answer
+  "which layer won?"
+- The constitution lives at **`.specify/memory/constitution.md`**.
 
 ## Versions and pins
 
@@ -36,7 +323,3 @@ This lab reads every version it depends on from the content registry at
 [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). No version string
 is hardcoded in this file. See the registry's re-verification obligations
 before running this lab with a cohort.
-
-## Status
-
-Not yet authored. Tracked by EPIC-001 decomposition item 4.
