@@ -81,8 +81,14 @@ begin with `../`.
 > If you're following an older blog post, this is the first thing that will
 > fail you.
 
-**What Copilot actually gets: skills.** By default the Copilot integration
-installs skills, one directory per command:
+### Which layout you want depends on where you work
+
+`--integration copilot` is, in Spec Kit's own words, *"GitHub Copilot in VS Code"* — its
+module docstring says so, and both of its layouts register `requires_cli: False`, which
+`specify integration list` renders as **`no (IDE)`**. That matters, because **the default
+layout and the opt-in layout land in different places for a Copilot CLI user.**
+
+**Default — skills.** One directory per command:
 
 ```text
 .github/skills/speckit-specify/SKILL.md
@@ -90,23 +96,39 @@ installs skills, one directory per command:
 .github/skills/speckit-tasks/SKILL.md
 ```
 
-You invoke them with a **hyphen** — `/speckit-specify`, not `/speckit.specify`.
+- **In VS Code:** these are chat slash commands. You invoke them with a **hyphen** —
+  `/speckit-specify`, not `/speckit.specify`.
+- **In Copilot CLI:** these load as **skills** — capabilities the model reaches for on its
+  own, listed under `/skills`. **There is no `/speckit-specify` to type.** If you expect a
+  slash command here, nothing will happen.
 
-> 💡 **What you should see:** `.github/skills/` populated, and
-> `.github/prompts/` **absent**. That's correct. A guide that sends you to
-> `.github/prompts/` by default is describing the opt-in layout, and you'll
-> open an empty folder.
-
-The commands layout is still supported, as an explicit opt-in:
+**Opt-in — agents and prompts:**
 
 ```bash
 specify init contoso-commands-demo --integration copilot --integration-options="--commands"
 ```
 
-That scaffolds `.github/agents/speckit.<command>.agent.md` **plus** a companion
-`.github/prompts/speckit.<command>.prompt.md` for each command — dotted names,
-not hyphenated. The two modes are mutually exclusive; passing both `--skills`
-and `--commands` is an error.
+That scaffolds `.github/agents/speckit.<command>.agent.md`, a companion
+`.github/prompts/speckit.<command>.prompt.md` for each command, and a `.vscode/settings.json`
+merge. Note the **dotted** names here, against the hyphenated skill directories above.
+
+- **In VS Code:** the `.prompt.md` files are the prompt-file layout.
+- **In Copilot CLI:** `.github/agents/*.agent.md` **is exactly Copilot CLI's own custom-agent
+  format** — the same shape this repo uses for its own agents. So each Spec Kit command
+  becomes a **CLI agent**: browse them with `/agent`, name one in a prompt, or run
+  `copilot --agent <name> --prompt "…"`. **Restart the CLI after init** — agents are loaded
+  at startup.
+
+> 🎯 **For this lab series, choose `--commands`.** Labs 01–20 work in Copilot CLI, and the
+> agents layout is the one that gives a CLI user something to invoke. Take the default
+> skills layout if your cohort is in VS Code. **The two modes are mutually exclusive** —
+> passing both `--skills` and `--commands` is an error.
+
+> 💡 **What you should see** after the plain `--integration copilot` run above:
+> `.github/skills/` populated, `.github/prompts/` **absent**, `.github/agents/` **absent**.
+> After the `--commands` run: `.github/agents/` and `.github/prompts/` populated instead.
+> Run `/agent` in the CLI to confirm the Spec Kit agents are loaded; if they aren't listed,
+> you haven't restarted.
 
 Your project constitution lives at **`.specify/memory/constitution.md`**.
 
@@ -389,9 +411,13 @@ specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle --offli
 
 - **Never fork Spec Kit.** The release cadence makes it a permanent merge tax.
   Compose above core instead.
-- **`--ai` is gone; use `--integration`.** Copilot gets **skills** by default at
-  `.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-<command>`.
-  `--integration-options="--commands"` is the opt-in to the agents/prompts layout.
+- **`--ai` is gone; use `--integration`.** `--integration copilot` is Spec Kit's **VS Code**
+  integration (`requires_cli: False`). It installs **skills** by default at
+  `.github/skills/speckit-<command>/SKILL.md` — chat slash commands `/speckit-<command>` in
+  VS Code, but in **Copilot CLI** they are model-invoked skills with **no slash command**.
+  `--integration-options="--commands"` writes `.github/agents/speckit.<command>.agent.md`,
+  which **is** Copilot CLI's custom-agent format — reachable via `/agent` after a restart.
+  **Working in the CLI? Take `--commands`.**
 - **`init --preset` takes an ID, a bundled name, or a directory — never a URL**,
   and it fails by *warning and continuing*. Use `preset add --from <url>` after init.
 - **A project catalog config replaces the built-in catalogs.** Re-declare
