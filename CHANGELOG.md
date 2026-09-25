@@ -8,6 +8,31 @@ demo app).
 
 ## [Unreleased]
 
+### Added
+- **Registry and scaffolding for the enterprise-harness arc** (EPIC-001,
+  #48 — merged via #60). Groundwork so Labs 21–26 satisfy every existing
+  CI gate from their first commit, before any lab content is written.
+  - `docs/_meta/registry.yaml` gains `spec_kit_version` (`1.0.10`,
+    verified 2026-09-23) with `spec_kit_version_last_verified` and a
+    standing re-verification obligation, plus an `azure_monitor` block
+    carrying the Data Collection Rule and Endpoint (`2024-03-11`),
+    workspace tables (`2026-03-01`, keeping `2025-07-01` as
+    `*_previous`) and Logs Ingestion data-plane (`2023-01-01`) API
+    versions. Labs read these keys instead of hardcoding a version.
+  - Six `labs:` entries and six `labs/lab21.md`–`labs/lab26.md` stubs,
+    each carrying frontmatter that matches the registry exactly and no
+    version literal in the body.
+  - `README.md` and `labs/setup.md` gain the enumeration rows
+    `enumeration-parity` requires, so the gate stays green from the
+    first commit rather than being allowlisted around.
+  - The weekly content audit grows from seven checks to **nine**:
+    report-only check 8 (Spec Kit release) and check 9 (Azure Monitor
+    API versions). Both flag drift as needs-review and never edit a pin.
+
+  The acceptance gate grows from 183 to **213** tests as the
+  `it.each`-parameterised suites pick up six more labs. No test was
+  weakened to accommodate a stub.
+
 ### Changed
 - Retired `tests/meta/phase-a-findings-schema.test.ts` — modernize-arc
   Phase A audit instrumentation. The one-time findings report has
