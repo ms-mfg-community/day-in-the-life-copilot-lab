@@ -781,7 +781,7 @@ dead end.
 | M5 | The overlay path is described as the **extended workflow's** id | Lab says `.specify/workflows/overlays/speckit/`, not `.../overlays/contoso-stages/` |
 | M6 | Overlay `id`/`extends` are shown as dot-free slugs | `Select-String` the fixture; no `contoso.stages` anywhere |
 | M7 | Shorthand vs explicit edit forms — the lab warns they cannot be mixed | Prose + fixture consistency |
-| M8 | Hook events: fixed list **and** unvalidated-name consequence both stated, with the list **derived from the command templates** | §3.2 caveat 2. The list is **twenty** events over ten commands, `converge` included. `extensions/EXTENSION-API-REFERENCE.md` names only nine and is **stale at this tag** — grep `templates/commands/*.md` for `hooks\.(before\|after)_` instead |
+| M8 | Hook events: fixed list **and** unvalidated-name consequence both stated, with the list **derived from the command bodies** | §3.2 caveat 2. The list is **twenty** events over ten commands, `converge` included. `extensions/EXTENSION-API-REFERENCE.md` names only nine and is **stale at this tag**. Derive it instead: in a Spec Kit *clone*, grep `templates/commands/*.md`; in a learner's *project* it is the installed command bodies — `.github/agents/speckit.*.agent.md` on the `--commands` layout, `.github/skills/speckit-*/SKILL.md` on the skills layout. ⚠️ **`.specify/templates/commands/` does not exist in a project** — all three project paths were confirmed by running `specify init` at the pinned tag |
 | M9 | No version literal in `labs/lab23.md` | §4, rule 4 — the general sweep, with each hit classified |
 | M10 | Frontmatter and registry still agree | §2.4 table, all four rows |
 | M11 | Fixture artifacts referenced as code paths, not markdown links | §2.3 |
