@@ -46,10 +46,12 @@ gh_aw_schema_version: "0.86.2"
 # on 2026-09-17 in EPIC-001 and in issue #48's body.
 #
 # Re-verified 2026-09-28 for EPIC-001 #52 via
-# `gh api repos/github/spec-kit/releases/latest`: still v1.0.12, nothing newer,
-# not a prerelease. The pin did not move. Three days without a release is NOT
-# evidence the cadence has slowed — re-check before the next cohort and at the
-# start of any work that consumes this key.
+# `gh api "repos/github/spec-kit/releases?per_page=10"`: still v1.0.12, nothing
+# newer, not a prerelease. (The ?per_page=10 form is used deliberately in
+# preference to releases/latest, which excludes prereleases and so cannot
+# establish "nothing newer" on its own.) The pin did not move. Three days
+# without a release is NOT evidence the cadence has slowed — re-check before
+# the next cohort and at the start of any work that consumes this key.
 spec_kit_version: "1.0.12"
 spec_kit_version_last_verified: "2026-09-28"
 
