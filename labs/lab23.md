@@ -425,9 +425,17 @@ cannot hook a phase core doesn't define. **And nothing tells you.** Put `before_
 just a hook that doesn't happen.
 
 > 💡 **Check the list yourself rather than trusting a doc.** The authoritative source is
-> the core command templates that actually emit the hooks — grep
-> `.specify/templates/commands/*.md` for `hooks.before_` and `hooks.after_`. Spec Kit's
-> own extension reference has lagged that list before.
+> the installed command bodies, which is what actually emits the hooks. With the
+> `--commands` layout this lab uses, they're in `.github/agents/`:
+>
+> ```powershell
+> Select-String -Path .github\agents\speckit.*.agent.md -Pattern 'hooks\.(before|after)_'
+> ```
+>
+> (On the default **skills** layout it's `.github/skills/speckit-*/SKILL.md` instead.)
+> Both return the same twenty events. Spec Kit's own extension API reference has lagged
+> that list before — at the pinned release it still names only nine commands and omits
+> `converge`. **Derive it, don't read it.**
 
 **3. Feature state is not the Git branch.** The active feature is whatever
 `.specify/feature.json` points at. **`git checkout` alone does not switch features** —
@@ -465,7 +473,7 @@ specify workflow status --json               # the paused run, machine-readable
 
 > 💡 **`overlay list` takes the workflow id.** Overlays are stored per workflow, so
 > `specify workflow overlay list` on its own exits 2 with *"Missing argument
-> 'workflow_id'"*. Name the workflow you overlaid: `speckit`.
+> 'WORKFLOW_ID'"*. Name the workflow you overlaid: `speckit`.
 
 > 💡 **Prove caveat 5 for yourself.** Copy the overlay, change `on_reject` to `rework`,
 > `overlay add` it and `resolve` it — both succeed. Then `run` it and watch it fail.
