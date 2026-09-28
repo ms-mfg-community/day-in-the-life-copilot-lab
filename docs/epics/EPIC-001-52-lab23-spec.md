@@ -10,7 +10,7 @@
 | Spec authored | 2026-09-28 |
 | Branch | `feature/epic-enterprise-harness` (base is **not** `main` — see #48 spec §7.3) |
 | Open decisions | **None.** Three resolved by John 2026-09-28 — see §7.5, §7.6, §7.7 |
-| Status | **Approved 2026-09-28.** Story 52.1 in progress |
+| Status | **Approved 2026-09-28.** 52.1 complete and closed by 52.2. Story 52.3 (`labs/lab23.md`) next |
 | Stories | [EPIC-001-52-stories.md](EPIC-001-52-stories.md) — the dev and QA breakdown of this plan |
 
 This document is written so that a cold-start session can execute it file-by-file without
@@ -310,9 +310,10 @@ a reader of U3 would assume.** See §1.3.
 | `fan-out` | `step/fan_out` | ⚠️ **hyphen** |
 | `fan-in` | `step/fan_in` | ⚠️ **hyphen** |
 
-> ⚠️ **Four module names differ from their YAML `type` keys.** A learner who writes
-> `type: do_while` or `type: if_then` gets an unregistered step type. This is worth one
-> line in the lab.
+> ⚠️ **Five module names differ from their YAML `type` keys** — `do_while`→`do-while`,
+> `fan_in`→`fan-in`, `fan_out`→`fan-out`, `if_then`→`if`, `while_loop`→`while`. A learner
+> who writes `type: do_while` or `type: if_then` gets an unregistered step type. This is
+> worth one line in the lab.
 
 **So what _is_ the rework loop?** Three mechanisms exist, and none of them is a backward
 jump:
@@ -511,7 +512,7 @@ replaced. Required section order, matching the house shape used by Labs 11–22:
 | 23.1 | The default SDLC, and why yours differs | The base `speckit` workflow's six steps (§1.2 table) and the absence of a gate after `implement` |
 | 23.2 | Declare the stages: the `contoso-review` extension | `provides.commands` / `templates` / `scripts`; the **namespace rule** (§6/D1); `strategy` rejected here though Lab 22 used it |
 | 23.3 | Install and verify the extension | `specify extension add --dev ../labs/fixtures/lab23/contoso-review`; the Lab 22 bundle cross-check (§3.5) |
-| 23.4 | Place the stages: the workflow overlay | `extends: speckit`; `insert_after` anchors; **shorthand vs explicit form, not both**; no dots in `id`/`extends` |
+| 23.4 | Place the stages: the workflow overlay | `extends: speckit`; `insert_after` anchors **must name base steps**; sibling edits apply in authoring order; **shorthand vs explicit form, not both**; no dots in `id`/`extends`; ⚠️ **`overlay add` returning ✓ does not mean the overlay is runnable** — see below |
 | 23.5 | Gates that actually stop the work | `type: gate`, `message`, `options`, `on_reject`; the three legal values; **the `rework`-option trap**; `show_file` |
 | 23.6 | The rework loop | All three mechanisms from §1.3, led by `on_reject: retry` + `resume`; the `do-while` condition trap; what happens to `tasks.md` (§8 step 2) |
 | 23.7 | Run it: `run`, `status --json`, `resume` | Run state at `.specify/workflows/runs/<run_id>/{state.json,inputs.json,log.jsonl}`; non-TTY pauses |
@@ -519,7 +520,7 @@ replaced. Required section order, matching the house shape used by Labs 11–22:
 | 23.9 | Verify | A short command list the learner runs and confirms |
 | — | What you built / Key takeaways / Versions and pins | Mirrors Lab 22's closing shape |
 
-**Honest-caveat requirements — all four must appear, and none may be softened:**
+**Honest-caveat requirements — all five must appear, and none may be softened:**
 
 1. Typing a command in chat is **not** blocked; ordering is convention unless driven
    through `specify workflow run`. `check-prerequisites --require-tasks` is the second belt.
@@ -528,6 +529,13 @@ replaced. Required section order, matching the house shape used by Labs 11–22:
 3. `.specify/feature.json` is gitignored by a **managed `.specify/.gitignore`**, and
    `git checkout` alone does not switch features.
 4. **There is no backward jump in a gate.** `on_reject` is `abort` | `skip` | `retry`.
+5. ⚠️ **Validation is staged, and `✓` from one stage does not mean the next will pass.**
+   Verified 2026-09-28 during 52.2: an invalid `on_reject` value passes
+   `validate_overlay_yaml`, `specify workflow overlay add` **and** `specify workflow
+   resolve` silently, and is only rejected at `specify workflow run`. The M15 anchor error
+   is the mirror image — it passes `overlay add` and surfaces at `resolve`. **The lab must
+   tell the learner to run all three, in order, and not to read a ✓ from `overlay add` as
+   "the overlay works."**
 
 ### 3.3 `labs/fixtures/lab23/contoso-review/extension.yml`
 
@@ -768,6 +776,8 @@ dead end.
 | M14 | **The Lab 22 bundle cross-check** | §3.5 — after `extension add --dev`, online `bundle validate` reports only `workflow:contoso-sdlc` as unresolved |
 | M15 | `insert_after` on a just-inserted step is proven, not assumed | §3.4 warning; §8 step 3 |
 | M16 | Lab 23 does not contradict Lab 22 | Read `labs/lab22.md` §22.7's "built later" note and the Key takeaways; the CLI-vs-VS-Code framing (D10) must be consistent |
+| M17 | **The staged-validation caveat is present** | §3.2 caveat 5. The lab tells the learner to run `overlay add` → `resolve` → `run` and says a ✓ from an earlier stage does not clear a later one. Verified in 52.2: a bad `on_reject` passes `validate_overlay_yaml`, `overlay add` **and** `resolve`, failing only at `run` |
+| M18 | **The M14 cross-check carries its precondition** | The Lab 22 preset must already be installed, or `preset:contoso-sdd@1.0.0` is reported unresolved too and the output has two lines. Lab 22 §22.7 states this; neither the fixture README nor the lab may drop it (52.2 finding F-1) |
 
 ---
 
@@ -785,6 +795,7 @@ dead end.
 | D8 | — | The registry's `spec_kit_version` is **unchanged**; only `last_verified` moves | §1, Record 5. The pin genuinely did not move; recording the check honestly is the point of the obligation block |
 | D9 | — | The lab quotes the base workflow's `steps:` only, not its `workflow:`/`requires:` blocks | §4. Those carry Spec Kit's own artifact versions, which decay independently of the release pin |
 | D10 | *(inherited)* the IDE-only Copilot framing in U2 criterion 3 and #51's body | Lab 23 carries **#51's corrected CLI-first framing** forward: this arc's learners are in Copilot CLI | Carried from #51/D10. ⚠️ **The epic's U2 criterion 3 and #51's body are still uncorrected** (O4) — both are remote writes, owner John. U3 itself does not repeat the error, but #52 must not re-introduce it |
+| D11 | **#52's body** sketches the flow as `constitution → epic → feature-spec → …` | The overlay inserts **no `constitution` stage** | The base `speckit` workflow has six steps and `constitution` is **not** one of them — it is a core *command* (`speckit.constitution`), not a base workflow step, so there is no anchor to insert around and nothing to gate. U3's eight acceptance criteria do not require a constitution stage. **Raised by 52.2, logged against 52.5** as an acceptance-scope question: if John wants the constitution in the run, it is a separate step insertion and a change to U3, not a silent addition here |
 
 ---
 
