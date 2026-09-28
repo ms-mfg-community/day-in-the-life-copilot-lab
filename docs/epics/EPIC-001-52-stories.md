@@ -11,7 +11,7 @@ close. Section references (§) point into the spec unless marked "this file".
 | Plan | [EPIC-001-52-lab23-spec.md](EPIC-001-52-lab23-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-28 |
-| Status | **Approved 2026-09-28.** 52.1 `Closed` by 52.2 (`ACCEPT WITH FINDINGS`, 0 S1 / 2 S2 / 3 S3 — all fixed, none deferred). **52.3 `Ready`.** |
+| Status | **Approved 2026-09-28.** 52.1 `Closed` by 52.2. 52.3 returned once by 52.4 round 1 (`BLOCK`, 1 S1) and re-passed at round 2 (`ACCEPT WITH FINDINGS`, 0 S1). **Every S1 and S2 raised in the sprint is fixed — none deferred.** Round-2's two findings are fixed and awaiting a delta re-review; **52.5 has not run.** |
 
 ---
 
@@ -410,8 +410,11 @@ commit range reviewed.
 | Round | Story | Verdict | S1 / S2 / S3 | Commit range | Notes |
 |---|---|---|---|---|---|
 | 1 | 52.2 | **ACCEPT WITH FINDINGS** | 0 / 2 / 3 | `b25bda6~1..71fe1ad` | Plus 1 S2 logged against 52.5. All 15 minimum checks `VERIFIED`, **none `UNVERIFIED`**. judge rebuilt its own `v1.0.12` venv, re-ran every F1–F10 observation, and additionally ran the composed workflow end-to-end — the `epic` command wrote `.specify/epics/test-feature/epic.md`, the gate fired with the fixture's message, and the run paused at `review-epic`. All four anti-vacuity mutations bit. Gate re-run green at 13/213. Read-only confirmed; HEAD unchanged |
+| 1 | 52.4 | **BLOCK** | 1 / 3 / 3 | `bc4c1b1..2d6ceb4` | Plus **2 `UNVERIFIED`**. judge rebuilt its own `v1.0.12` environment and walked the lab end to end as a learner. Gate green at 13/213 both times; mutation probe behaved (and correctly did **not** report the title mutation). Six anti-vacuity mutations bit. **Returned 52.3 to `In dev`.** |
+| 2 | 52.4 | **ACCEPT WITH FINDINGS** | 0 / 1 / 1 | `2d6ceb4..ea9e77c` | **All eight round-1 findings independently re-verified as `GENUINELY FIXED`** — judge rebuilt its environment and re-ran each, including observing `workflow run` end to end this time (the agent wrote `.specify/epics/widget-audit-trail/epic.md`, then the run paused at `review-epic`). Gate green at 13/213 twice. One new S2 and one S3 introduced by the round-1 delta |
+| 3 | 52.4 | *pending* | — | `ea9e77c..HEAD` | Round-2 fixes recorded below, awaiting re-review |
 
-**Disposition of round 1 — both S2s fixed, all three S3s fixed, none deferred.**
+**Disposition of 52.2 round 1 — both S2s fixed, all three S3s fixed, none deferred.**
 
 | ID | Sev | Finding | Disposition |
 |---|---|---|---|
@@ -422,9 +425,6 @@ commit range reviewed.
 | F-5 | S3 | `.gitattributes` guards `scripts/hooks/**/*.sh` and `packaging/core/**/*.sh` with `eol=lf` but not `labs/fixtures/**/*.sh`. The committed blob is clean (0 CRLF), so not a defect in the commit — but **this work ships the first `.sh` under `labs/fixtures/`**, and a Windows learner with `core.autocrlf=true` would hit `/usr/bin/env: 'bash\r'` | **Fixed.** `labs/fixtures/**/*.sh text eol=lf` added. Tightly coupled to this change, so in scope |
 | Obs A | — | `on_reject` is validated only at `specify workflow run` — a bad value passes `validate_overlay_yaml`, `overlay add` **and** `resolve` silently. The M15 anchor error is the mirror image, passing `overlay add` and failing at `resolve` | **Promoted to spec §3.2 honest-caveat 5 and manual check M17.** Validation is staged; a ✓ from one stage does not clear the next |
 | — | S2 | #52's body sketches `constitution → epic → feature-spec → …`, but the overlay inserts no `constitution` stage — `constitution` is a core *command*, not a base workflow step, so there is no anchor to insert around. U3 does not require it | **Logged against 52.5**, per §2 rule 10, and **documented as departure D11** so it is no longer an undocumented omission. Acceptance-scope call is John's/52.5's |
-
-| 1 | 52.4 | **BLOCK** | 1 / 3 / 3 | `bc4c1b1..2d6ceb4` | Plus **2 `UNVERIFIED`**. judge rebuilt its own `v1.0.12` environment and walked the lab end to end as a learner. Gate green at 13/213 both times; mutation probe behaved (and correctly did **not** report the title mutation). Six anti-vacuity mutations bit. **Returned 52.3 to `In dev`.** |
-| 2 | 52.4 | *pending* | — | `2d6ceb4..HEAD` | Round-1 fixes below, awaiting re-review |
 
 **Disposition of 52.4 round 1 — the S1, all three S2s and all three S3s fixed; both `UNVERIFIED` items addressed. None deferred.**
 
@@ -438,7 +438,15 @@ commit range reviewed.
 | S3-2 | S3 | §23.2's manifest excerpt showed one template; the fixture ships two | **Fixed** — `qa-review-template` added to the excerpt |
 | S3-3 | S3 | §23.2 said the `git` extension does "exactly this" while noting it declares no `provides.scripts` — internally loose | **Fixed.** Now distinguishes the shared per-runtime *layout* from the optional *declaration* |
 | U-1 | UNVERIFIED | §23.9's `workflow run speckit # the epic gate renders and waits` could not be observed end to end — the `epic` step dispatches to a Copilot CLI agent absent from the QA environment, so the run failed at step 0 | **Addressed.** The annotation was also misleading even with an agent present: the epic **command** runs before the gate. §23.7 now says the run dispatches `speckit.contoso-review.epic` to the agent first and stops at the gate afterwards, and §23.9's comment matches. Gate rendering, the non-TTY pause and `resume` were each verified independently by judge |
-| U-2 | UNVERIFIED | §23.0's `uv tool install … @v<version>` was traced, not executed | **Accepted as-is.** Character-for-character the form `labs/lab22.md:45` already ships and which passed #51's five QA rounds. Changing it here would make the two labs disagree |
+| U-2 | UNVERIFIED | §23.0's `uv tool install … @v<version>` was traced, not executed | **Addressed in round 2** — judge executed it there. See the round-2 table below |
+
+**Disposition of 52.4 round 2 — both findings fixed, none deferred.**
+
+| ID | Sev | Finding | Disposition |
+|---|---|---|---|
+| R2-1 | S2 | The round-1 fix for S2-3 added a *"check the list yourself"* tip pointing at `.specify/templates/commands/*.md` — **which does not exist in a learner's project.** That is the *source-repo* path with a `.specify/` prefix. A learner following the lab's own remedy for S2-3 gets a path error, or zero results they read as "no hooks" | **Fixed.** Re-verified by running `specify init … --integration-options="--commands"` at the pinned tag: `.specify/templates/` holds only the five bare templates and has **no `commands/` subdirectory**. The command bodies are at `.github/agents/speckit.*.agent.md` on the `--commands` layout this lab uses, and `.github/skills/speckit-*/SKILL.md` on the default skills layout. **Both were confirmed to return the same twenty events over ten commands, `converge` included.** The tip now names the `--commands` path first, the skills path second, and spec M8 distinguishes clone-path from project-path |
+| R2-2 | S3 | The lab quoted the error as *"Missing argument 'workflow_id'"*; the CLI prints `WORKFLOW_ID` | **Fixed** — case corrected |
+| U-2 | — | Round 1 left the `uv tool install` line `UNVERIFIED`, and my round-1 disposition accepted it on the grounds that it already ships in Lab 22 and *"passed #51's five QA rounds"*. judge rightly called that **an appeal to prior review, not evidence**, and then settled it by **execution**: the exact form resolved `v1.0.12`, built, and reached dependency resolution, failing only on a TLS-intercepted PyPI on that host | **Noted, no change to the lab.** The correction to my reasoning is accepted and recorded: the line stands because it was executed, not because #51 blessed it |
 
 ### Logged for 52.5 (not returned to 52.3)
 
