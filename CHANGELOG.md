@@ -9,6 +9,45 @@ demo app).
 ## [Unreleased]
 
 ### Added
+- **Lab 23 — Custom SDLC Stages, Gates & the Rework Loop** (EPIC-001, #52).
+  The second content lab of the enterprise-harness arc: how an org adds its
+  own stages to the Spec Kit SDLC, gates them, and handles rework — without
+  forking anything.
+  - `labs/lab23.md` — declaring stages in an extension, placing them with a
+    workflow overlay, gate semantics, the rework loop, and
+    `specify workflow run` / `status --json` / `resume` with the run state at
+    `.specify/workflows/runs/<run-id>/`.
+  - `labs/fixtures/lab23/contoso-review/` — the extension Lab 22's
+    `bundle.yml` already pinned, providing `speckit.contoso-review.epic` and
+    `speckit.contoso-review.qa-review` with their templates and a
+    Bash/PowerShell script pair. Installing it resolves the
+    `extension:contoso-review@1.0.0` reference Lab 22 left open; the
+    `workflow:contoso-sdlc@1.0.0` reference stays open until Lab 24.
+  - `labs/fixtures/lab23/overlays/contoso-stages.yml` — inserts
+    `epic → review-epic` before `specify` and `qa-review → review-qa` after
+    `implement`, composing above the base workflow rather than editing it.
+  - Traps the lab teaches explicitly, each verified by running the pinned
+    release rather than assumed: a command's middle segment **must** equal
+    `extension.id` (enforced at *install*, not at parse); `strategy` is
+    **preset-only** and is rejected on an extension's templates; overlay
+    anchors resolve against the **base** step list, so an overlay cannot
+    anchor on a step it inserted itself; sibling edits sharing an anchor
+    apply in **authoring order**; and an overlay lands under the **extended**
+    workflow's id, not its own.
+  - Five honest caveats, none softened: invoking a command directly is not
+    blocked (and the direct invocation is `--agent speckit.plan` on the
+    `--commands` layout, `/speckit-plan` on skills — the dotted slash form
+    exists on neither); hook events are a fixed list of twenty over ten core
+    commands and an **unknown event name installs clean and silently never
+    fires**; `.specify/feature.json` is gitignored and `git checkout` alone
+    does not switch features; **a gate cannot rewind** — `on_reject` is
+    `abort` | `skip` | `retry`, so rework is `retry` + `resume` rather than a
+    backward jump; and **validation is staged**, so a ✓ from `overlay add`
+    does not mean `resolve` or `run` will pass.
+  - `docs/_meta/registry.yaml` re-verified 2026-09-28: `spec_kit_version`
+    unchanged at `1.0.12`, `last_verified` advanced. No version literal
+    appears in the lab.
+
 - **Lab 22 — Centralized Spec Kit Templates & the Org Catalog** (EPIC-001,
   #51). The first content lab of the enterprise-harness arc: how an org
   distributes customized spec, plan and tasks templates without forking
