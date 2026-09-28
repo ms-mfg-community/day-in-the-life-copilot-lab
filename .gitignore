@@ -64,6 +64,11 @@ node/.a2a-transcript-*.md
 /contoso-commands-demo/
 /demo/
 
+# Lab 23 — Spec Kit demo project a learner scaffolds at the repo root with
+# `specify init` (§23.0). The lab's own fixtures under labs/fixtures/lab23/
+# are committed; this throwaway project is not.
+/contoso-sdlc-demo/
+
 # Orchestrator / dry-run artifacts (dev-only, never commit)
 .orchestrator/
 .orchestrator.bak-*/
