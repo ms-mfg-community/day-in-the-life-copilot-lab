@@ -11,7 +11,7 @@ close. Section references (§) point into the spec unless marked "this file".
 | Plan | [EPIC-001-52-lab23-spec.md](EPIC-001-52-lab23-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-28 |
-| Status | **Approved 2026-09-28.** 52.1 `Closed` by 52.2. 52.3 returned once by 52.4 round 1 (`BLOCK`, 1 S1) and re-passed at round 2 (`ACCEPT WITH FINDINGS`, 0 S1). **Every S1 and S2 raised in the sprint is fixed — none deferred.** Round-2's two findings are fixed and awaiting a delta re-review; **52.5 has not run.** |
+| Status | **Complete, pending John.** All five stories `Closed`. Three QA rounds across 52.2/52.4 plus 52.5's acceptance pass. 52.4 returned 52.3 once (`BLOCK`, 1 S1) and re-passed at round 2; 52.5 returned `ACCEPT WITH FINDINGS` (0 S1 / 3 S2 / 1 S3) on the whole branch. **Every S1 and S2 raised in the sprint is fixed — none deferred.** Content gate green at 13 files / 213 tests; full-suite delta provably zero. **#52 is ready for John's push and PR decision, and closes when that PR merges. Nothing has been pushed.** |
 
 ---
 
@@ -412,7 +412,17 @@ commit range reviewed.
 | 1 | 52.2 | **ACCEPT WITH FINDINGS** | 0 / 2 / 3 | `b25bda6~1..71fe1ad` | Plus 1 S2 logged against 52.5. All 15 minimum checks `VERIFIED`, **none `UNVERIFIED`**. judge rebuilt its own `v1.0.12` venv, re-ran every F1–F10 observation, and additionally ran the composed workflow end-to-end — the `epic` command wrote `.specify/epics/test-feature/epic.md`, the gate fired with the fixture's message, and the run paused at `review-epic`. All four anti-vacuity mutations bit. Gate re-run green at 13/213. Read-only confirmed; HEAD unchanged |
 | 1 | 52.4 | **BLOCK** | 1 / 3 / 3 | `bc4c1b1..2d6ceb4` | Plus **2 `UNVERIFIED`**. judge rebuilt its own `v1.0.12` environment and walked the lab end to end as a learner. Gate green at 13/213 both times; mutation probe behaved (and correctly did **not** report the title mutation). Six anti-vacuity mutations bit. **Returned 52.3 to `In dev`.** |
 | 2 | 52.4 | **ACCEPT WITH FINDINGS** | 0 / 1 / 1 | `2d6ceb4..ea9e77c` | **All eight round-1 findings independently re-verified as `GENUINELY FIXED`** — judge rebuilt its environment and re-ran each, including observing `workflow run` end to end this time (the agent wrote `.specify/epics/widget-audit-trail/epic.md`, then the run paused at `review-epic`). Gate green at 13/213 twice. One new S2 and one S3 introduced by the round-1 delta |
-| 3 | 52.4 | *pending* | — | `ea9e77c..HEAD` | Round-2 fixes recorded below, awaiting re-review |
+| 3 | 52.4 | *closed by 52.5* | — | `ea9e77c..HEAD` | Round 3 was never dispatched. Of its three commits only `e604945` touched the lab; **52.5 verified it independently** — the `.github/agents/speckit.*.agent.md` path is correct at source and the "same twenty events" claim is exact (20 events, 10 commands, `converge` included). Recorded as **S3-1**: the gap is closed, but by 52.5 rather than by the story that owned it |
+| 1 | 52.5 | **ACCEPT WITH FINDINGS** | 0 / 3 / 1 | `origin/feature/epic-enterprise-harness..HEAD` (42 commits) | Criteria re-derived from **#52's body and U3**, with the sprint's own checklists read only afterwards. Full-suite delta **provably zero** — the branch changes no `tests/` file and none of the 15 failing files appear in its diff; failing-test *identities* match baseline. Content gate 13/213. No remote write; real remote still at `8edbf46`; the four uncommitted files untouched by all 42 commits. **Six of U3's eight criteria satisfied, one departed-with-cause, two carried S2 defects — both now fixed.** Verdict: **ready for John's push-and-PR decision** |
+
+**Disposition of 52.5 round 1 — all three S2s fixed, the S3 recorded. None deferred.**
+
+| ID | Sev | Finding | Disposition |
+|---|---|---|---|
+| S2-1 | S2 | **U3 criterion 1 partly unmet and undocumented.** The criterion says the two commands **each** ship "its own template and script"; the fixture ships two templates but **one** script — `qa-review` has none. §6 recorded no departure. The fixture README said "one declared script", which describes the fixture rather than recording a departure | **Fixed as documentation, not code.** Inventing a script for `qa-review` would ship a wrapper that adds nothing — it legitimately uses core's `check-prerequisites`. Recorded as departure **D12** with that reasoning, and the lab now says so in §23.2. **This is the finding that justifies 52.5 existing:** the sprint satisfied its own spec while an epic criterion went quietly unmet, because 52.1's and 52.3's AC lists had no line for it |
+| S2-2 | S2 | **Issue #52 task 6 never reached the lab.** The task asks the lab to *"decide and document how one epic relates to the feature specs beneath it"*. The fixture answered it twice (`create-epic.sh`'s `.specify/epics/<slug>/`, and `epic-template.md`'s "Specs under this epic" table) but `labs/lab23.md` mentioned neither, so a learner finished the lab never knowing where an epic lives | **Fixed.** §23.2 gains a *"Where an epic lives, and how specs hang off it"* section covering the directory layout, the down-pointing link table, **why** it points down (Spec Kit regenerates `specs/`, so a parent field in a spec template is one you defend on every regeneration), and that nothing enforces it. Recorded as departure **D13** |
+| S2-3 | S2 | **`/speckit.plan` is valid on neither layout**, and the sprint log escalated the *wrong* correction to John | **Fixed, and the log corrected.** See the "Logged for 52.5" section — this was my error, caught by 52.5 and re-verified by me at `integrations/copilot/__init__.py`. The lab now names `--agent speckit.plan` for `--commands` and `/speckit-plan` for skills, and states plainly that the dotted slash form exists on neither |
+| S3-1 | S3 | 52.4 round 3 never ran; three commits reached 52.5 unreviewed by the story that owns lab verification | **Recorded, not papered over.** The log had labelled it `*pending*` rather than claiming completion, which 52.5 explicitly credited as honest. 52.5 closed the gap itself and the round table now says so |
 
 **Disposition of 52.2 round 1 — both S2s fixed, all three S3s fixed, none deferred.**
 
@@ -454,9 +464,26 @@ commit range reviewed.
   **fixture** (`epic-template.md`'s "Specs under this epic" table) but never mentioned in
   the lab prose, and §6 records no departure. §3.2's required section order does not ask
   for it. Acceptance-scope call.
-- **U3's honest-caveat text writes `/speckit-plan`** (hyphen). The `--commands` layout this
-  arc uses installs **dotted** agents, so the lab's `/speckit.plan` is correct and **the
-  epic carries the error** — the same class as O4, and another remote write for John.
+  → **52.5 ruled it a gap (S2-2) and it is now fixed**: §23.2 carries the decision, and
+  spec §6 records it as **D13**.
+- ⚠️ **This entry was wrong, and 52.5 corrected it.** It originally read: *"U3's
+  honest-caveat text writes `/speckit-plan` (hyphen). The `--commands` layout this arc uses
+  installs dotted agents, so the lab's `/speckit.plan` is correct and the epic carries the
+  error."* **That is backwards.** Verified at
+  `src/specify_cli/integrations/copilot/__init__.py` (v1.0.12):
+  - **Skills layout (default)** — `invocation = "/speckit-" + stem.replace(".", "-")`
+    (L342). `/speckit-plan` is a **real token**, and it is what the epic wrote.
+  - **`--commands` layout (this arc)** — *"Commands mode: agents are **not
+    slash-commands**"* (L335); dispatch is `--agent speckit.<stem>` (L360, L398). **There
+    is no slash form at all.**
+
+  So **`/speckit.plan` — the lab's own value — was valid on neither layout**, fusing the
+  dotted agent name with the slash skills dispatch. **The lab was the thing that needed
+  fixing, not the epic.** §23.8 caveat 1 now states the ordering point without a bogus
+  token and gives both real invocations in a table.
+  → **For John:** the epic's `/speckit-plan` is *correct for the skills layout*. It needs a
+  **layout-scope note**, not a hyphen-to-dot swap. Doing what this entry originally said
+  would have replaced a valid token with an invalid one.
 
 ### 52.1 — observed behaviour (rule 13)
 
