@@ -60,7 +60,7 @@ Copilot **CLI** layout — see Lab 22 §22.2 if you need the reasoning.
 Spec Kit ships one workflow. Look at what it actually does:
 
 ```bash
-specify workflow list
+specify workflow info speckit
 ```
 
 Its steps, in order:
@@ -117,6 +117,8 @@ provides:
   templates:
     - name: epic-template
       file: templates/epic-template.md
+    - name: qa-review-template
+      file: templates/qa-review-template.md
   scripts:
     - name: create-epic
       file: scripts/bash/create-epic.sh
@@ -153,8 +155,10 @@ Three rules here will bite you, and only one of them is obvious.
 and `runtimes` is **informational metadata only** — Spec Kit never uses it to select or
 invoke anything. So the bash script is declared and the PowerShell twin ships beside it at
 `labs/fixtures/lab23/contoso-review/scripts/powershell/create-epic.ps1`, with the command
-markdown choosing between them. Spec Kit's own `git` extension does exactly this, and
-declares no `provides.scripts` at all.
+markdown choosing between them. Spec Kit's own `git` extension ships the same
+per-runtime layout — `scripts/bash/`, `scripts/powershell/`, `scripts/python/` — and goes
+further still, declaring **no** `provides.scripts` at all. Declaring the entry is optional;
+what matters is that the declaration never dispatches.
 
 ## 23.3 Install and verify the extension
 
@@ -166,9 +170,21 @@ specify extension list
 You should see `contoso-review` with **Commands: 2**.
 
 > 💡 **Prove rule 1 to yourself.** Copy the fixture somewhere temporary, change
-> `speckit.contoso-review.epic` to `speckit.contoso.epic`, and install the copy. It fails
-> with the namespace error above and exits 1. That check is the reason the id and the
-> command prefix can never drift apart.
+> `speckit.contoso-review.epic` to `speckit.contoso.epic`, and install the copy **with
+> `--force`** — you already installed `contoso-review` above, and without `--force` you'll
+> just get *"Extension 'contoso-review' is already installed"*, which is a different
+> failure entirely:
+>
+> ```bash
+> specify extension add --dev /tmp/broken-copy --force
+> ```
+>
+> ```text
+> Validation Error: Command 'speckit.contoso.epic' must use extension namespace
+> 'contoso-review'
+> ```
+>
+> That check is the reason the id and the command prefix can never drift apart.
 
 **Now collect on Lab 22's promise.** Lab 22's `bundle.yml` pinned
 `extension: contoso-review@1.0.0` — this extension — and its validation reported two
@@ -358,7 +374,10 @@ progress in the QA review or your tracker, not in checkboxes you're about to ove
 specify workflow run speckit
 ```
 
-The gate renders in your terminal and waits. Then, from another shell or after it pauses:
+The run starts at your `epic` stage, which **dispatches `speckit.contoso-review.epic` to
+your coding agent** — so run this where the agent is available, the same way you'd invoke
+any Spec Kit command. When the command returns, the run reaches `review-epic`, the gate
+renders in your terminal and waits. Then, from another shell or after it pauses:
 
 ```bash
 specify workflow status                 # every run
@@ -373,10 +392,13 @@ specify workflow resume <run-id>
   state.json     # status, current_step_index, current_step_id, step_results, error
   inputs.json    # the inputs the run was started with
   log.jsonl      # append-only event log
+  workflow.yml   # the composed workflow this run was started from
 ```
 
 The run id is an eight-character string. `state.json` is written atomically, so a reader
-never sees a half-written file.
+never sees a half-written file. Note the fourth file: the run keeps **its own copy of the
+composed workflow**, so changing an overlay mid-run doesn't retarget a run already in
+flight.
 
 > 💡 **Gates don't fail in CI — they pause.** When stdin isn't a terminal, a gate returns
 > `PAUSED` instead of prompting. Your pipeline parks the run and a human resumes it later.
@@ -396,10 +418,16 @@ before `tasks.md` exists. Use both; neither alone is enforcement.
 
 **2. Hook events are a fixed list, and unknown names fail _silently_.** Core defines
 `before_`/`after_` pairs for its own commands only — `specify`, `plan`, `tasks`,
-`implement`, `analyze`, `checklist`, `clarify`, `constitution`, `taskstoissues`. There is
-no `before_epic`, because you cannot hook a phase core doesn't define. **And nothing
-tells you.** Put `before_epic:` in `extension.yml` and it validates, installs, and then
-never fires. No error, no warning — just a hook that doesn't happen.
+`implement`, `analyze`, `checklist`, `clarify`, `constitution`, `converge` and
+`taskstoissues`. Twenty events, and **`before_epic` is not one of them**, because you
+cannot hook a phase core doesn't define. **And nothing tells you.** Put `before_epic:` in
+`extension.yml` and it validates, installs, and then never fires. No error, no warning —
+just a hook that doesn't happen.
+
+> 💡 **Check the list yourself rather than trusting a doc.** The authoritative source is
+> the core command templates that actually emit the hooks — grep
+> `.specify/templates/commands/*.md` for `hooks.before_` and `hooks.after_`. Spec Kit's
+> own extension reference has lagged that list before.
 
 **3. Feature state is not the Git branch.** The active feature is whatever
 `.specify/feature.json` points at. **`git checkout` alone does not switch features** —
@@ -429,11 +457,15 @@ Run these and confirm each one:
 
 ```bash
 specify extension list                       # contoso-review, Commands: 2
-specify workflow overlay list                # contoso-stages, enabled
+specify workflow overlay list speckit        # contoso-stages, enabled
 specify workflow resolve speckit             # 10 steps, 4 attributed to the overlay
-specify workflow run speckit                 # the epic gate renders and waits
+specify workflow run speckit                 # runs the epic command, then stops at the gate
 specify workflow status --json               # the paused run, machine-readable
 ```
+
+> 💡 **`overlay list` takes the workflow id.** Overlays are stored per workflow, so
+> `specify workflow overlay list` on its own exits 2 with *"Missing argument
+> 'workflow_id'"*. Name the workflow you overlaid: `speckit`.
 
 > 💡 **Prove caveat 5 for yourself.** Copy the overlay, change `on_reject` to `rework`,
 > `overlay add` it and `resolve` it — both succeed. Then `run` it and watch it fail.
