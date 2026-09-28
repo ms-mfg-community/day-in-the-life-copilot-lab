@@ -33,8 +33,8 @@ this order:
 
 ## Steps
 
-1. **Create the directory and seed the file.** Run the helper script for your platform
-   from the repository root:
+1. **Create the directory and seed the file.** Run the helper script for **your platform**
+   from the repository root — both twins ship, so pick the one your shell runs:
 
    ```bash
    .specify/extensions/contoso-review/scripts/bash/create-epic.sh <slug>

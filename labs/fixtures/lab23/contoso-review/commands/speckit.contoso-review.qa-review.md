@@ -18,7 +18,8 @@ $ARGUMENTS
 
 ## Steps
 
-1. **Locate the feature.** Run the prerequisite check from the repository root:
+1. **Locate the feature.** Run the prerequisite check for **your platform** — `specify init`
+   installs the script set matching your shell, so only one of these two will exist:
 
    ```bash
    .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
