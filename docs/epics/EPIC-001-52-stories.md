@@ -423,6 +423,33 @@ commit range reviewed.
 | Obs A | — | `on_reject` is validated only at `specify workflow run` — a bad value passes `validate_overlay_yaml`, `overlay add` **and** `resolve` silently. The M15 anchor error is the mirror image, passing `overlay add` and failing at `resolve` | **Promoted to spec §3.2 honest-caveat 5 and manual check M17.** Validation is staged; a ✓ from one stage does not clear the next |
 | — | S2 | #52's body sketches `constitution → epic → feature-spec → …`, but the overlay inserts no `constitution` stage — `constitution` is a core *command*, not a base workflow step, so there is no anchor to insert around. U3 does not require it | **Logged against 52.5**, per §2 rule 10, and **documented as departure D11** so it is no longer an undocumented omission. Acceptance-scope call is John's/52.5's |
 
+| 1 | 52.4 | **BLOCK** | 1 / 3 / 3 | `bc4c1b1..2d6ceb4` | Plus **2 `UNVERIFIED`**. judge rebuilt its own `v1.0.12` environment and walked the lab end to end as a learner. Gate green at 13/213 both times; mutation probe behaved (and correctly did **not** report the title mutation). Six anti-vacuity mutations bit. **Returned 52.3 to `In dev`.** |
+| 2 | 52.4 | *pending* | — | `2d6ceb4..HEAD` | Round-1 fixes below, awaiting re-review |
+
+**Disposition of 52.4 round 1 — the S1, all three S2s and all three S3s fixed; both `UNVERIFIED` items addressed. None deferred.**
+
+| ID | Sev | Finding | Disposition |
+|---|---|---|---|
+| S1-1 | **S1** | §23.9's `specify workflow overlay list` exits 2 — *"Missing argument 'workflow_id'"*. The **Verify** section dead-ended | **Fixed.** Now `specify workflow overlay list speckit`, with a note explaining that overlays are stored per workflow. Confirmed at source: `overlay/command_list.py` declares `workflow_id: str = typer.Argument(...)` — required |
+| S2-1 | S2 | §23.1 attributed the six-step list to `specify workflow list`, which prints only the workflow's name and summary | **Fixed.** Now `specify workflow info speckit` — `command_info.py`'s docstring is *"Show workflow details and step graph"*. The YAML itself was already accurate |
+| S2-2 | S2 | §23.3's "prove the namespace rule" step produced *"already installed"*, not the namespace error, because the extension was installed two steps earlier. A learner would see the right exit code from the wrong check | **Fixed.** Step now uses `--force` and says why. Same class as round 1's F-1 — a proof that silently depended on prior state |
+| S2-3 | S2 | §23.8 caveat 2 listed **nine** hook-event commands; core defines **ten**. `converge` has a full `before_`/`after_` pair | **Fixed** in the lab **and** in spec §1.2 criterion 6, §3.2 caveat 2 and M8. ⚠️ **Root cause worth keeping:** the first draft trusted `extensions/EXTENSION-API-REFERENCE.md:616-638`, which is **stale at this tag**. I re-derived it independently: `Select-String -Path templates\commands\*.md -Pattern 'hooks\.(before\|after)_'` returns twenty events including `hooks.before_converge` (`converge.md:22`) and `hooks.after_converge` (`:246`). **The command templates are ground truth; the reference doc is not.** M8 now says so |
+| S3-1 | S3 | §23.7's run-state listing omitted `workflow.yml` | **Fixed**, with the reason it matters — the run keeps its own copy of the composed workflow, so editing an overlay mid-run does not retarget a run in flight |
+| S3-2 | S3 | §23.2's manifest excerpt showed one template; the fixture ships two | **Fixed** — `qa-review-template` added to the excerpt |
+| S3-3 | S3 | §23.2 said the `git` extension does "exactly this" while noting it declares no `provides.scripts` — internally loose | **Fixed.** Now distinguishes the shared per-runtime *layout* from the optional *declaration* |
+| U-1 | UNVERIFIED | §23.9's `workflow run speckit # the epic gate renders and waits` could not be observed end to end — the `epic` step dispatches to a Copilot CLI agent absent from the QA environment, so the run failed at step 0 | **Addressed.** The annotation was also misleading even with an agent present: the epic **command** runs before the gate. §23.7 now says the run dispatches `speckit.contoso-review.epic` to the agent first and stops at the gate afterwards, and §23.9's comment matches. Gate rendering, the non-TTY pause and `resume` were each verified independently by judge |
+| U-2 | UNVERIFIED | §23.0's `uv tool install … @v<version>` was traced, not executed | **Accepted as-is.** Character-for-character the form `labs/lab22.md:45` already ships and which passed #51's five QA rounds. Changing it here would make the two labs disagree |
+
+### Logged for 52.5 (not returned to 52.3)
+
+- **Issue #52 task 6** — how an epic relates to the specs beneath it — is satisfied in the
+  **fixture** (`epic-template.md`'s "Specs under this epic" table) but never mentioned in
+  the lab prose, and §6 records no departure. §3.2's required section order does not ask
+  for it. Acceptance-scope call.
+- **U3's honest-caveat text writes `/speckit-plan`** (hyphen). The `--commands` layout this
+  arc uses installs **dotted** agents, so the lab's `/speckit.plan` is correct and **the
+  epic carries the error** — the same class as O4, and another remote write for John.
+
 ### 52.1 — observed behaviour (rule 13)
 
 Recorded during implementation on **2026-09-28**, against `specify 1.0.12` installed from a
