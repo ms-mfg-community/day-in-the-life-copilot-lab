@@ -11,7 +11,7 @@ close. Section references (§) point into the spec unless marked "this file".
 | Plan | [EPIC-001-52-lab23-spec.md](EPIC-001-52-lab23-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-28 |
-| Status | **Draft — awaiting John's approval of the spec, this file, and the three open decisions (spec §7.5, §7.6, §7.7).** No story starts before then |
+| Status | **Approved 2026-09-28** — spec, this file, and the three open decisions (spec §7.5, §7.6, §7.7) all approved by John. **52.1 `In dev`.** |
 
 ---
 
@@ -403,9 +403,29 @@ not against the sprint's own checklists.
 
 ## 4. Sprint log
 
-*Empty — no story has started. Every QA round is recorded here: story, round, verdict,
-severity counts, findings, and the commit range reviewed.*
+Every QA round is recorded here: story, round, verdict, severity counts, findings, and the
+commit range reviewed.
 
 | Round | Story | Verdict | S1 / S2 / S3 | Commit range | Notes |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| — | 52.1 | *in dev* | — | — | Behavioural findings below |
+
+### 52.1 — observed behaviour (rule 13)
+
+Recorded during implementation on **2026-09-28**, against `specify 1.0.12` installed from a
+`v1.0.12` clone into a throwaway venv, driving a throwaway project outside the repo. These
+are **observations, not assertions** — 52.2 re-runs each independently, and 52.3 writes the
+lab from them.
+
+| # | Question | Observed | Consequence |
+|---|---|---|---|
+| F1 | Where does `workflow overlay add` put an overlay? | `.specify/workflows/overlays/**speckit**/contoso-stages.yml` — the directory is the **extended workflow's** id | Confirms spec §6/D2. Story AC 8 ✅ |
+| F2 | Can an edit anchor on a step the same overlay inserted? | **No.** `insert_after: epic` → *"Edit 1: anchor 'epic' does not match any base step id."* Edit indices are **0-based** | Fixture restructured to base-only anchors; spec §3.4 corrected. Story AC 9 ✅ (M15) |
+| F3 | How do sibling edits sharing one anchor order themselves? | **Authoring order**, not reversed. Two `insert_before: specify` → `epic`, then `review-epic` | This is what places each gate after its stage. Worth a line in the lab |
+| F4 | Does the composed workflow match U3's intent? | `epic → review-epic → specify → review-spec → plan → review-plan → tasks → implement → qa-review → review-qa` | An addition to the base workflow, not a replacement |
+| F5 | Does the extension install? | ✅ `specify extension add --dev` exits 0, both commands registered | Story AC 6 ✅ |
+| F6 | Does the namespace rule actually bite? | ✅ `speckit.contoso.epic` → *"Validation Error: Command 'speckit.contoso.epic' must use extension namespace 'contoso-review'"*, exit 1 | Proves spec §6/D1. Story AC 6a ✅ |
+| F7 | Is `strategy` rejected on an extension template? | ✅ *"Invalid template entry 'epic-template': 'strategy' is not authorable…"*, exit 1 | Anti-vacuity control |
+| F8 | Is a dotted template name rejected? | ✅ *"Invalid template name 'epic.template': must be lowercase…"*, exit 1 | Anti-vacuity control |
+| F9 | **M14** — does shipping the extension resolve Lab 22's bundle reference? | ✅ With `contoso-review` installed, online `bundle validate` reports **only** `workflow:contoso-sdlc@1.0.0` unresolved | Lab 22's committed promise honoured; the overlay correctly does **not** satisfy the workflow ref. Story AC 11 ✅ |
+| F10 | What happens to `tasks.md` when the spec changes? | `setup-tasks` **never writes** the file — it emits `TASKS_TEMPLATE_CONTENT` as JSON. `templates/commands/tasks.md` step 4 says *"Generate tasks.md: Use TASKS_TEMPLATE_CONTENT … as the structure"*, and every emitted task carries an unchecked `- [ ]`. **Nothing reads, preserves or merges an existing `tasks.md`** | Story AC 10 ✅. ⚠️ **Scope limit:** what is verified is the *instruction the agent is given*, not what every agent will do. Spec §1.3 states it at exactly that strength; 52.3 must not strengthen it |
