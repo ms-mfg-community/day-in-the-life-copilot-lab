@@ -248,9 +248,21 @@ before `tasks.md` exists. ⚠️ `--paths-only` deliberately does **not** write
 **Criterion 6 — hook events are a fixed lifecycle list; there is no `before_epic`.**
 ⚠️ **True, but the consequence is materially worse than "there is no such event."**
 
-The standard events (`extensions/EXTENSION-API-REFERENCE.md:616-638`) are `before_` and
-`after_` pairs over **nine** core commands: `specify`, `plan`, `tasks`, `implement`,
-`analyze`, `checklist`, `clarify`, `constitution`, `taskstoissues` — **eighteen events**.
+The standard events are `before_` and `after_` pairs over the **ten** core commands:
+`specify`, `plan`, `tasks`, `implement`, `analyze`, `checklist`, `clarify`,
+`constitution`, **`converge`** and `taskstoissues` — **twenty events**.
+
+> ⚠️ **Derive this list from the command templates, not from the extension reference.**
+> `extensions/EXTENSION-API-REFERENCE.md:616-638` lists only **nine** commands and omits
+> `converge` — **the doc is stale at this tag.** The authoritative source is the set of
+> core command templates that actually emit the events:
+> ```powershell
+> Select-String -Path templates\commands\*.md -Pattern 'hooks\.(before|after)_([a-z]+)'
+> ```
+> which returns twenty distinct events at `v1.0.12`, including `hooks.before_converge`
+> (`templates/commands/converge.md:22`) and `hooks.after_converge` (`ibid.:246`), wired
+> identically to `specify.md`'s pair. **Caught by 52.4; the first draft of this spec
+> trusted the reference doc and was wrong.**
 
 - ⚠️ **There is no whitelist.** Hook validation checks only that each event's value is a
   mapping (or non-empty list of mappings), that each entry has a `command`, and that any
@@ -261,9 +273,10 @@ The standard events (`extensions/EXTENSION-API-REFERENCE.md:616-638`) are `befor
 - Hook entry fields: `command` (required), `priority` (int ≥ 1, default
   `DEFAULT_HOOK_PRIORITY = 10`, lower runs first, ties keep authoring order via stable
   sort), `optional`, `prompt`, `description`, `condition`.
-- 🔹 Noted, not taught: `converge` is in `_FALLBACK_CORE_COMMAND_NAMES`
-  (`extensions/__init__.py:52-65`) but has **no** hook-event pair in the API reference. The
-  hook list covers nine of the ten core command names.
+- 🔹 **Corrected 2026-09-28 by 52.4.** An earlier draft recorded that `converge` was a core
+  command with *no* hook-event pair, on the strength of the API reference's nine-command
+  list. That was wrong: `converge` has a full `before_`/`after_` pair like every other core
+  command. The reference doc, not Spec Kit, is out of date.
 
 **Criterion 7 — feature state lives in `.specify/feature.json`, is gitignored, and
 `git checkout` alone does not switch features.** ✅ **Confirmed verbatim in Spec Kit's own
@@ -524,8 +537,9 @@ replaced. Required section order, matching the house shape used by Labs 11–22:
 
 1. Typing a command in chat is **not** blocked; ordering is convention unless driven
    through `specify workflow run`. `check-prerequisites --require-tasks` is the second belt.
-2. Hook events are a fixed list of eighteen, **and an unknown event name is not rejected**
-   — `before_epic:` installs clean and silently never fires (§6/D3).
+2. Hook events are a fixed list of **twenty** — `before_`/`after_` over the ten core
+   commands, `converge` included — **and an unknown event name is not rejected**:
+   `before_epic:` installs clean and silently never fires (§6/D3).
 3. `.specify/feature.json` is gitignored by a **managed `.specify/.gitignore`**, and
    `git checkout` alone does not switch features.
 4. **There is no backward jump in a gate.** `on_reject` is `abort` | `skip` | `retry`.
@@ -767,7 +781,7 @@ dead end.
 | M5 | The overlay path is described as the **extended workflow's** id | Lab says `.specify/workflows/overlays/speckit/`, not `.../overlays/contoso-stages/` |
 | M6 | Overlay `id`/`extends` are shown as dot-free slugs | `Select-String` the fixture; no `contoso.stages` anywhere |
 | M7 | Shorthand vs explicit edit forms — the lab warns they cannot be mixed | Prose + fixture consistency |
-| M8 | Hook events: fixed list **and** unvalidated-name consequence both stated | §3.2 caveat 2 |
+| M8 | Hook events: fixed list **and** unvalidated-name consequence both stated, with the list **derived from the command templates** | §3.2 caveat 2. The list is **twenty** events over ten commands, `converge` included. `extensions/EXTENSION-API-REFERENCE.md` names only nine and is **stale at this tag** — grep `templates/commands/*.md` for `hooks\.(before\|after)_` instead |
 | M9 | No version literal in `labs/lab23.md` | §4, rule 4 — the general sweep, with each hit classified |
 | M10 | Frontmatter and registry still agree | §2.4 table, all four rows |
 | M11 | Fixture artifacts referenced as code paths, not markdown links | §2.3 |
