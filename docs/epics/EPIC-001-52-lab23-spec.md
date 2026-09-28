@@ -9,8 +9,8 @@
 | Decomposition item | 5 of 9 — depends on item 4 (#51, **complete locally, unpushed**). The only unblocked issue on the critical path `#52 → #53 → #59` |
 | Spec authored | 2026-09-28 |
 | Branch | `feature/epic-enterprise-harness` (base is **not** `main` — see #48 spec §7.3) |
-| Open decisions | **Three for John** — see §7.5, §7.6, §7.7 |
-| Status | **Draft — awaiting John's approval.** No implementation until approved |
+| Open decisions | **None.** Three resolved by John 2026-09-28 — see §7.5, §7.6, §7.7 |
+| Status | **Approved 2026-09-28.** Story 52.1 in progress |
 | Stories | [EPIC-001-52-stories.md](EPIC-001-52-stories.md) — the dev and QA breakdown of this plan |
 
 This document is written so that a cold-start session can execute it file-by-file without
@@ -337,12 +337,25 @@ jump:
      `step/do_while/__init__.py`. The validator only fires on a validated load, so the lab
      should show the message rather than assert the rule.
 
-**What happens to `tasks.md` when the spec changes** (US-3.3, criterion 8) is a *content*
-question the lab must answer and this spec does **not** settle from source. It is listed as
-an implementation-time verification obligation in §8 step 2 and as story 52.1 AC 9 — the
-lab must either demonstrate the actual behaviour or state plainly that re-running
-`speckit.tasks` regenerates the file and that prior task state is not merged. **Do not
-assert either without running it.**
+**What happens to `tasks.md` when the spec changes** (US-3.3, criterion 8) — **answered
+2026-09-28, from source.** Two facts settle it:
+
+1. **`setup-tasks.sh` / `.ps1` never writes `tasks.md`.** It resolves `tasks-template`
+   through the override stack and emits JSON — `FEATURE_DIR`, `AVAILABLE_DOCS`,
+   `TASKS_TEMPLATE`, `TASKS_TEMPLATE_CONTENT`. The file is written by the **agent**, not
+   the script.
+2. **The command instructs the agent to _generate_ the file, not to merge it.**
+   `templates/commands/tasks.md` step 4 reads *"**Generate tasks.md**: Use
+   TASKS_TEMPLATE_CONTENT … as the structure. Fill with: …"*, and its format rules require
+   every emitted task to carry an **unchecked** `- [ ]` box. Nothing in the command or its
+   script reads, preserves, or merges an existing `tasks.md`.
+
+**So: re-running `speckit.tasks` after a spec change regenerates `tasks.md` from the
+template and the design artifacts, and prior task state — completed checkboxes, notes — is
+not carried over.** ⚠️ **State this at exactly that strength and no further.** What is
+verified is the *instruction the agent is given*; an agent could in principle read the old
+file, but nothing tells it to and nothing merges for it. The lab says what the command
+does, not what every agent will always do.
 
 ### 1.4 Evidence base consulted
 
@@ -573,21 +586,33 @@ tags: ["contoso", "sdlc", "governance", "qa"]
 ### 3.4 `labs/fixtures/lab23/overlays/contoso-stages.yml`
 
 `extends: speckit` places this at `.specify/workflows/overlays/speckit/contoso-stages.yml`
-once added (§1.2 criterion 3). The overlay id is **`contoso-stages`**, deliberately *not*
-`contoso-sdlc` — see §7.1.
+once added — **confirmed by running it** (§1.2 criterion 3, story 52.1 AC 8). The overlay id
+is **`contoso-stages`**, deliberately *not* `contoso-sdlc` — see §7.1.
+
+> ⚠️ **Anchors resolve against the _base_ step list only — verified 2026-09-28 (M15).**
+> An overlay **cannot** anchor on a step it inserted itself. The first draft of this
+> fixture used `insert_after: epic` and `insert_after: qa-review`, and
+> `specify workflow resolve speckit` rejected it:
+>
+> ```text
+> Error: Overlay 'contoso-stages' has invalid edits:
+>   - Edit 1: anchor 'epic' does not match any base step id.
+>   - Edit 3: anchor 'qa-review' does not match any base step id.
+> ```
+>
+> (Edit indices are **0-based**.) The fix is to anchor every edit on a base step and rely
+> on the second verified fact: **sibling edits that share an anchor are applied in
+> authoring order.** Two `insert_before: specify` edits therefore yield `epic` then
+> `review-epic`; two `insert_after: implement` edits yield `qa-review` then `review-qa` —
+> they are *not* reversed. Both facts are worth one line each in the lab.
 
 ```yaml
-# Added with:  specify workflow overlay add ../labs/fixtures/lab23/overlays/contoso-stages.yml
-# Lands at:    .specify/workflows/overlays/speckit/contoso-stages.yml
-#              (the directory is the EXTENDED workflow's id, not this overlay's id)
 id: contoso-stages
 extends: speckit
 priority: 10
 enabled: true
 
 edits:
-  # Shorthand form: the operation IS the key, and its value is the anchor.
-  # Never combine this with an explicit `operation:`/`anchor:` pair in one edit.
   - insert_before: specify
     step:
       id: epic
@@ -596,16 +621,12 @@ edits:
       input:
         args: "{{ inputs.spec }}"
 
-  - insert_after: epic
+  - insert_before: specify
     step:
       id: review-epic
       type: gate
       message: "Approve the epic before any spec is written."
-      # `options` MUST contain `reject` or `abort` when on_reject is abort/retry.
-      # A choice named `rework` would be read as APPROVAL — rejection matches
-      # only `reject`/`abort`, case-insensitively.
       options: [approve, reject]
-      # reject -> PAUSE on this gate. Fix the epic, then `specify workflow resume`.
       on_reject: retry
 
   - insert_after: implement
@@ -616,7 +637,7 @@ edits:
       input:
         args: "{{ inputs.spec }}"
 
-  - insert_after: qa-review
+  - insert_after: implement
     step:
       id: review-qa
       type: gate
@@ -625,17 +646,19 @@ edits:
       on_reject: retry
 ```
 
-**Constraints.** `id` and `extends` carry **no dots**. No step `id` contains `:`. Every
-edit uses the shorthand form consistently. `insert_after: implement` is valid because
-`implement` is the base workflow's last step (§1.2 criterion 2) — appending after it is how
-the QA stage is added.
+**Verified composed order** (`specify workflow resolve speckit`, 2026-09-28):
 
-> ⚠️ **`insert_after: epic` anchors on a step this same overlay just inserted.** That must
-> be **verified to work at implementation time** (§8 step 3) — if the engine resolves
-> anchors against the pre-edit step list, this edit fails and the gate must instead anchor
-> on `specify` with `insert_before`. **Do not ship this file until the anchor order is
-> proven by running it.** The `merge.py` / `operations.py` ordering semantics were not
-> traced for this spec.
+```text
+epic → review-epic → specify → review-spec → plan → review-plan → tasks → implement
+     → qa-review → review-qa
+```
+
+with `epic`, `review-epic`, `qa-review` and `review-qa` attributed to
+`project:contoso-stages` and the rest to `base`. **This is exactly the stage sequence U3
+asks for**, and it is an addition to the base workflow rather than a replacement of it.
+
+**Constraints.** `id` and `extends` carry **no dots**. No step `id` contains `:`. Every
+edit uses the shorthand form consistently. Every anchor names a **base** step.
 
 ### 3.5 The Lab 22 cross-check — a real, testable consequence
 
@@ -793,32 +816,36 @@ Unchanged from #48 and #51. `README.md`, `labs/lab11.md`, `labs/lab14.md` and
 `git add <path>`; `git add .` and `git add -A` are forbidden by `AGENTS.md` and would sweep
 John's work into #52's commits.
 
-### 7.5 ⚠️ **Open for John — does Lab 23 ship a PowerShell script twin?**
+### 7.5 Ship both script runtimes, declare the bash one — **resolved 2026-09-28 (John)**
 
 `AGENTS.md` says shell scripts ship in *"both Bash and PowerShell variants"*, and this
-cohort is on Windows. But `provides.scripts` takes **one `file` per entry** and `runtimes`
-is informational only (§1.2 criterion 1), so the PowerShell twin is shipped-but-undeclared
-— exactly how core's `git` extension does it. **Proposal: ship both, declare the bash one,
-and say in the lab why the twin is undeclared.** The alternative is a bash-only fixture,
-which is smaller but contradicts `AGENTS.md` and strands a Windows cohort.
+cohort is on Windows. `provides.scripts` takes **one `file` per entry** and `runtimes` is
+informational only (§1.2 criterion 1), so the PowerShell twin is **shipped but
+undeclared** — exactly how core's `git` extension does it. The lab states why the twin is
+undeclared, so a learner does not read the single `file:` as "bash only".
 
-### 7.6 ⚠️ **Open for John — how far does the lab go on the rework loop?**
+> 🔹 **Rejected:** a bash-only fixture. Smaller, but it contradicts `AGENTS.md` and strands
+> a Windows cohort on the one lab in the arc that asks them to run a script.
 
-§1.3 gives three mechanisms. `on_reject: retry` is one flag and demonstrably true. The
-`do-while` wrap is the only genuine stage re-run, but it is a materially bigger fixture, it
-drags in the expression language and its `condition` trap, and it risks making a 35-minute
-lab a 55-minute one. **Proposal: teach `retry` + `resume` as the working mechanism, show
-`skip` + `if` as the routing variant in prose, and describe the `do-while` wrap as a
-labelled "if you need a true re-run" note without shipping it in the overlay.** Say the
-word and I will ship the full loop instead.
+### 7.6 Rework loop: `retry` + `resume` is the mechanism — **resolved 2026-09-28 (John)**
 
-### 7.7 ⚠️ **Open for John — #51 is still unpushed, and #52 will sit on top of it**
+§1.3 gives three mechanisms. The lab **teaches `on_reject: retry` + `specify workflow
+resume`** as the working mechanism — one flag, demonstrably true, and the run state shows
+exactly where the run is parked. `skip` + a downstream `if` is shown as the routing variant
+**in prose**. The `do-while` wrap is described as a labelled *"if you need a true stage
+re-run"* note and is **not shipped in the overlay**.
 
-22 commits on `feature/epic-enterprise-harness`, gate green, nothing pushed. #52's commits
-land on the same branch. That is fine locally and needs no decision to *proceed* — but the
-longer the stack grows, the larger the eventual review. **No push, PR, issue edit, comment
-or label will happen without your explicit per-action approval** (§8 step 8). Flagging it
-so the decision is yours to time, not mine to force.
+> 🔹 **Rejected:** shipping the full `do-while` loop. It is the only construct that
+> genuinely re-runs an earlier stage, but it drags the expression language and its
+> `condition` trap into a 35-minute lab and risks making it a 55-minute one. The note
+> preserves the honest answer without the cost.
+
+### 7.7 The branch keeps stacking locally — **resolved 2026-09-28 (John)**
+
+#51's commits stay unpushed and #52 lands on top of them on
+`feature/epic-enterprise-harness`. The push decision is deferred, deliberately. **No push,
+PR, issue edit, comment or label happens without John's explicit per-action approval**
+(§8 step 14).
 
 ---
 
