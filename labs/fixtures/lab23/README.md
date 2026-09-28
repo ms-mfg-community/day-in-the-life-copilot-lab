@@ -60,6 +60,11 @@ Lab 22's `bundle.yml` pins `extension: contoso-review@1.0.0` — **this extensio
 Installing it resolves that reference, which you can prove:
 
 ```bash
+# Precondition: the Lab 22 preset must already be installed (Lab 22 §22.4),
+# or `preset:contoso-sdd@1.0.0` shows up unresolved too and the output below
+# has two lines instead of one.
+specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
+
 specify extension add --dev ../labs/fixtures/lab23/contoso-review
 specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle
 ```
