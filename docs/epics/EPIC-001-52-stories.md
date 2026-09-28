@@ -11,7 +11,7 @@ close. Section references (§) point into the spec unless marked "this file".
 | Plan | [EPIC-001-52-lab23-spec.md](EPIC-001-52-lab23-spec.md) |
 | Stories | Five — two dev, three QA |
 | Written | 2026-09-28 |
-| Status | **Approved 2026-09-28** — spec, this file, and the three open decisions (spec §7.5, §7.6, §7.7) all approved by John. **52.1 `In dev`.** |
+| Status | **Approved 2026-09-28.** 52.1 `Closed` by 52.2 (`ACCEPT WITH FINDINGS`, 0 S1 / 2 S2 / 3 S3 — all fixed, none deferred). **52.3 `Ready`.** |
 
 ---
 
@@ -283,9 +283,10 @@ which parts of it the tool does **not** enforce.
    on-disk location, `run`/`status --json`/`resume` with the run-state path, the
    chat-ordering caveat with `check-prerequisites` as the second belt, the hook-event
    caveat, the `feature.json` caveat, and the rework loop.
-4. **All four honest caveats from §3.2 appear, and none is softened.** In particular the
-   lab states that `on_reject` has **no** backward-jump form, and that an unknown hook event
-   **installs clean and silently never fires**.
+4. **All five honest caveats from §3.2 appear, and none is softened.** In particular the
+   lab states that `on_reject` has **no** backward-jump form, that an unknown hook event
+   **installs clean and silently never fires**, and that **validation is staged** — a `✓`
+   from `overlay add` does not mean the overlay will run.
 5. **The command namespace rule is explained, not just obeyed** (§6/D1) — the lab says why
    `speckit.contoso.epic` is rejected when the extension id is `contoso-review`.
 6. **The overlay location is stated as the _extended workflow's_ id** (§6/D2) —
@@ -408,7 +409,19 @@ commit range reviewed.
 
 | Round | Story | Verdict | S1 / S2 / S3 | Commit range | Notes |
 |---|---|---|---|---|---|
-| — | 52.1 | *in dev* | — | — | Behavioural findings below |
+| 1 | 52.2 | **ACCEPT WITH FINDINGS** | 0 / 2 / 3 | `b25bda6~1..71fe1ad` | Plus 1 S2 logged against 52.5. All 15 minimum checks `VERIFIED`, **none `UNVERIFIED`**. judge rebuilt its own `v1.0.12` venv, re-ran every F1–F10 observation, and additionally ran the composed workflow end-to-end — the `epic` command wrote `.specify/epics/test-feature/epic.md`, the gate fired with the fixture's message, and the run paused at `review-epic`. All four anti-vacuity mutations bit. Gate re-run green at 13/213. Read-only confirmed; HEAD unchanged |
+
+**Disposition of round 1 — both S2s fixed, all three S3s fixed, none deferred.**
+
+| ID | Sev | Finding | Disposition |
+|---|---|---|---|
+| F-1 | S2 | The fixture README's M14 proof is not reproducible from its own commands — it silently assumes the Lab 22 preset is installed, so a clean project reports **two** unresolved references, not one. F9 in this log omitted the precondition too, so 52.3 would have inherited it | **Fixed.** Precondition added to `labs/fixtures/lab23/README.md` and to F9 below; new manual check **M18** binds it for 52.3/52.4 |
+| F-2 | S2 | Spec §1.3 prose said "**Four** module names differ from their YAML `type` keys"; five do (`do_while`, `fan_in`, `fan_out`, `if_then`, `while_loop`). The adjacent table and 52.3 AC 8 were already correct | **Fixed.** Prose corrected to five and each one named inline |
+| F-3 | S3 | `registry.yaml` recorded the weaker `releases/latest` command; `releases/latest` excludes prereleases and cannot establish "nothing newer" alone. The *conclusion* was independently re-derived as correct | **Fixed.** Comment now records the `?per_page=10` form and says why it is preferred |
+| F-4 | S3 | The `qa-review` command offered bash and PowerShell blocks with no "pick your platform" line, and only one script set ships per init | **Fixed** in both command files |
+| F-5 | S3 | `.gitattributes` guards `scripts/hooks/**/*.sh` and `packaging/core/**/*.sh` with `eol=lf` but not `labs/fixtures/**/*.sh`. The committed blob is clean (0 CRLF), so not a defect in the commit — but **this work ships the first `.sh` under `labs/fixtures/`**, and a Windows learner with `core.autocrlf=true` would hit `/usr/bin/env: 'bash\r'` | **Fixed.** `labs/fixtures/**/*.sh text eol=lf` added. Tightly coupled to this change, so in scope |
+| Obs A | — | `on_reject` is validated only at `specify workflow run` — a bad value passes `validate_overlay_yaml`, `overlay add` **and** `resolve` silently. The M15 anchor error is the mirror image, passing `overlay add` and failing at `resolve` | **Promoted to spec §3.2 honest-caveat 5 and manual check M17.** Validation is staged; a ✓ from one stage does not clear the next |
+| — | S2 | #52's body sketches `constitution → epic → feature-spec → …`, but the overlay inserts no `constitution` stage — `constitution` is a core *command*, not a base workflow step, so there is no anchor to insert around. U3 does not require it | **Logged against 52.5**, per §2 rule 10, and **documented as departure D11** so it is no longer an undocumented omission. Acceptance-scope call is John's/52.5's |
 
 ### 52.1 — observed behaviour (rule 13)
 
@@ -427,5 +440,5 @@ lab from them.
 | F6 | Does the namespace rule actually bite? | ✅ `speckit.contoso.epic` → *"Validation Error: Command 'speckit.contoso.epic' must use extension namespace 'contoso-review'"*, exit 1 | Proves spec §6/D1. Story AC 6a ✅ |
 | F7 | Is `strategy` rejected on an extension template? | ✅ *"Invalid template entry 'epic-template': 'strategy' is not authorable…"*, exit 1 | Anti-vacuity control |
 | F8 | Is a dotted template name rejected? | ✅ *"Invalid template name 'epic.template': must be lowercase…"*, exit 1 | Anti-vacuity control |
-| F9 | **M14** — does shipping the extension resolve Lab 22's bundle reference? | ✅ With `contoso-review` installed, online `bundle validate` reports **only** `workflow:contoso-sdlc@1.0.0` unresolved | Lab 22's committed promise honoured; the overlay correctly does **not** satisfy the workflow ref. Story AC 11 ✅ |
+| F9 | **M14** — does shipping the extension resolve Lab 22's bundle reference? | ✅ With `contoso-review` installed, online `bundle validate` reports **only** `workflow:contoso-sdlc@1.0.0` unresolved. ⚠️ **Precondition:** the Lab 22 preset must also be installed (`specify preset add --dev ../labs/fixtures/lab22/contoso-sdd`, Lab 22 §22.4) — without it `preset:contoso-sdd@1.0.0` is reported unresolved too and the output has **two** lines, not one | Lab 22's committed promise honoured; the overlay correctly does **not** satisfy the workflow ref. Story AC 11 ✅. **52.3 must carry the precondition into the lab's prose** — Lab 22 §22.7 states it; this fixture must not drop it |
 | F10 | What happens to `tasks.md` when the spec changes? | `setup-tasks` **never writes** the file — it emits `TASKS_TEMPLATE_CONTENT` as JSON. `templates/commands/tasks.md` step 4 says *"Generate tasks.md: Use TASKS_TEMPLATE_CONTENT … as the structure"*, and every emitted task carries an unchecked `- [ ]`. **Nothing reads, preserves or merges an existing `tasks.md`** | Story AC 10 ✅. ⚠️ **Scope limit:** what is verified is the *instruction the agent is given*, not what every agent will do. Spec §1.3 states it at exactly that strength; 52.3 must not strengthen it |
