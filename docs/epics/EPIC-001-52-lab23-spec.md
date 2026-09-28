@@ -10,7 +10,7 @@
 | Spec authored | 2026-09-28 |
 | Branch | `feature/epic-enterprise-harness` (base is **not** `main` — see #48 spec §7.3) |
 | Open decisions | **None.** Three resolved by John 2026-09-28 — see §7.5, §7.6, §7.7 |
-| Status | **Approved 2026-09-28.** 52.1 complete and closed by 52.2. Story 52.3 (`labs/lab23.md`) next |
+| Status | **Complete, pending John.** All five stories closed; 52.5 accepted the branch. Ready for the push and PR decision |
 | Stories | [EPIC-001-52-stories.md](EPIC-001-52-stories.md) — the dev and QA breakdown of this plan |
 
 This document is written so that a cold-start session can execute it file-by-file without
@@ -810,6 +810,8 @@ dead end.
 | D9 | — | The lab quotes the base workflow's `steps:` only, not its `workflow:`/`requires:` blocks | §4. Those carry Spec Kit's own artifact versions, which decay independently of the release pin |
 | D10 | *(inherited)* the IDE-only Copilot framing in U2 criterion 3 and #51's body | Lab 23 carries **#51's corrected CLI-first framing** forward: this arc's learners are in Copilot CLI | Carried from #51/D10. ⚠️ **The epic's U2 criterion 3 and #51's body are still uncorrected** (O4) — both are remote writes, owner John. U3 itself does not repeat the error, but #52 must not re-introduce it |
 | D11 | **#52's body** sketches the flow as `constitution → epic → feature-spec → …` | The overlay inserts **no `constitution` stage** | The base `speckit` workflow has six steps and `constitution` is **not** one of them — it is a core *command* (`speckit.constitution`), not a base workflow step, so there is no anchor to insert around and nothing to gate. U3's eight acceptance criteria do not require a constitution stage. **Raised by 52.2, logged against 52.5** as an acceptance-scope question: if John wants the constitution in the run, it is a separate step insertion and a change to U3, not a silent addition here |
+| D12 | **U3 criterion 1** and #52 task 1: the two commands **each** ship "its own template **and** script" | Two commands, **two templates, one script** — `epic` ships `create-epic`; `qa-review` ships none | `qa-review` genuinely needs no bespoke script: it locates the feature with core's `check-prerequisites --require-tasks` (which is also the lab's second-belt example) and the verdict is written by the agent from `qa-review-template`. Inventing a script so the count matched would ship a wrapper that adds nothing and teaches a cargo-cult. **Raised by 52.5** — the fixture README always said "one declared script", but that described the fixture rather than recording a departure. The lab now states it too |
+| D13 | **#52 task 6**: *"decide and document how one epic relates to the feature specs beneath it"* | Decided **and now documented in the lab prose**, not only in the fixture | The decision — `.specify/epics/<slug>/epic.md` beside `specs/<nnn-slug>/`, linked by a *"Specs under this epic"* table that points **down** from the epic rather than up from each spec — was implemented in `create-epic.sh` and `epic-template.md` from the start, but §3.2's section order never asked for it and the lab never mentioned it. **Raised by 52.5:** "document" in a lab issue means *the lab*; a fixture is scaffolding learners copy, not prose they read. §23.2 now carries it, including why the link points down (Spec Kit regenerates `specs/`, so a parent field in a spec template is a field you defend on every regeneration) |
 
 ---
 
