@@ -160,6 +160,46 @@ per-runtime layout — `scripts/bash/`, `scripts/powershell/`, `scripts/python/`
 further still, declaring **no** `provides.scripts` at all. Declaring the entry is optional;
 what matters is that the declaration never dispatches.
 
+> 💡 **Only the `epic` command ships a script.** `qa-review` doesn't need one — it calls
+> core's `check-prerequisites` to locate the feature, and writing the verdict is the
+> agent's job. An extension declares what it actually provides; a script per command is
+> not a requirement.
+
+### Where an epic lives, and how specs hang off it
+
+Adding a stage raises a structural question the tool does not answer for you: **where does
+an epic's artifact live, and how does it relate to the specs underneath it?** Contoso's
+answer is in the fixture, and it's worth copying.
+
+**One directory per epic, beside — not inside — the features:**
+
+```text
+.specify/epics/<slug>/epic.md      # the epic
+specs/<nnn-slug>/spec.md           # the features that deliver it
+```
+
+`create-epic.sh` creates `.specify/epics/<slug>/` and refuses to overwrite an existing
+epic, so a slug collision fails loudly instead of silently replacing someone's framing.
+
+**The link is a table in the epic, not a field in the spec.** `epic-template.md` carries:
+
+```markdown
+## Specs under this epic
+
+| Spec | Feature directory | Status |
+|---|---|---|
+| [name] | `specs/[nnn-slug]/` | Not started |
+```
+
+The epic points **down** at its specs rather than each spec pointing **up** at an epic.
+That's deliberate: Spec Kit owns `specs/` and regenerates what's in it, so a parent
+reference added to a spec template is a field you'd have to defend on every regeneration.
+A table in the epic is yours, changes when the epic changes, and gives a reviewer the whole
+picture in the one file the epic gate puts in front of them.
+
+> ⚠️ **Nothing enforces this.** It is a convention your `epic` command writes down, not a
+> constraint Spec Kit checks — the same honesty that applies to stage ordering (§23.8).
+
 ## 23.3 Install and verify the extension
 
 ```bash
@@ -410,11 +450,24 @@ flight.
 This is the part of the lab that matters most. Four of these are limits, and the fifth
 is the one that wastes an afternoon.
 
-**1. Typing `/speckit.plan` in chat is not blocked.** The workflow engine dispatches
-commands; it does not intercept them. Ordering is a convention **unless** the work is
-driven through `specify workflow run`. The second belt is the prerequisite scripts —
-`check-prerequisites --require-tasks` makes an implement-phase command refuse to run
-before `tasks.md` exists. Use both; neither alone is enforcement.
+**1. Invoking a command directly is not blocked.** The workflow engine *dispatches*
+commands; it does not *intercept* them. Nothing stops anyone running `speckit.plan`
+straight from their agent and skipping your epic stage entirely — ordering is a convention
+**unless** the work is driven through `specify workflow run`.
+
+> 💡 **How you'd invoke it directly depends on the layout**, and it's worth knowing because
+> neither form is a dotted slash command:
+>
+> | Layout | Direct invocation |
+> |---|---|
+> | `--commands` (this lab) | `--agent speckit.plan` — agents are **not** slash commands |
+> | skills (the default) | `/speckit-plan` — hyphenated, in VS Code chat |
+>
+> `/speckit.plan` is valid on **neither**. The ordering point holds either way.
+
+The second belt is the prerequisite scripts — `check-prerequisites --require-tasks` makes
+an implement-phase command refuse to run before `tasks.md` exists. Use both; neither alone
+is enforcement.
 
 **2. Hook events are a fixed list, and unknown names fail _silently_.** Core defines
 `before_`/`after_` pairs for its own commands only — `specify`, `plan`, `tasks`,
