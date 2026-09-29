@@ -228,12 +228,23 @@ org-hosted source
 **So that** unreviewed template code cannot enter our SDLC.
 
 **Acceptance Criteria**
-- [ ] Lab pins **Spec Kit v1.0.8** via `docs/_meta/registry.yaml` (`spec_kit_version`), not a hardcoded string.
+- [ ] Lab pins the Spec Kit release via `docs/_meta/registry.yaml` (`spec_kit_version`), not a
+      hardcoded string — the registry is the single source of truth, and it currently reads
+      **`1.0.12`** (`spec_kit_version_last_verified: 2026-09-28`).
+      *— corrected by #51, re-verified by #52: this criterion hardcoded `v1.0.8`, four releases
+      behind, in the very line that forbids hardcoding. See `docs/_meta/registry.yaml`.*
 - [ ] Uses `specify init <project> --integration copilot` — **never** the removed `--ai` flag.
 - [ ] Correctly tells learners that Copilot gets **skills** by default
-      (`.github/skills/speckit-<command>/SKILL.md`, invoked `/speckit-specify` with a hyphen),
-      and shows `--integration-options="--commands"` as the opt-in path to
-      `.github/agents/` + `.github/prompts/`.
+      (`.github/skills/speckit-<command>/SKILL.md`), and presents the invocation **by surface**
+      rather than asserting one universal form: on the **skills** layout `/speckit-<command>`
+      (hyphen) is a **VS Code chat** command and does not exist in Copilot CLI, where skills are
+      model-invoked; on the **`--commands`** layout (`.github/agents/speckit.<command>.agent.md`
+      + `.github/prompts/speckit.<command>.prompt.md`) there is **no slash form at all** —
+      dispatch is `--agent speckit.<command>`. Both layouts register `requires_cli: False`.
+      Because this arc's learners are in Copilot CLI, the lab **steers them to `--commands`**
+      instead of casting it as a mere opt-in.
+      *— corrected by #51 and #52; see `EPIC-001-52-lab23-spec.md` §6/D10, verified at
+      `integrations/copilot/__init__.py` L335, L342, L360 @ `v1.0.12`.*
 - [ ] Ships an **org preset** customizing `spec-template.md`, `plan-template.md`, and
       `tasks-template.md`, demonstrating at least one non-`replace` composition strategy
       (`wrap` with `{CORE_TEMPLATE}`, `prepend`, or `append`).
@@ -269,16 +280,29 @@ implementation
 
 **US-3.3**
 **As any** stage owner
-**I want** rework to be a first-class path, not an exception
-**So that** a rejected artifact re-enters the SDLC cleanly instead of being patched around.
+**I want** a rejected artifact to stop the run at the gate and resume cleanly once it is fixed
+**So that** rework is an explicit, visible state rather than something patched around.
+
+> *— corrected by #52. The original wording — "rework to be a **first-class path**" —
+> overstates the tool. `on_reject` is `abort` | `skip` | `retry`, and **no backward jump
+> exists**: `retry` pauses **on the gate**, it does not re-run the upstream stage. The real
+> mechanism is pause-and-resume. See `EPIC-001-52-lab23-spec.md` §6/D4 and §1.3.*
 
 **Acceptance Criteria**
 - [ ] An `extension.yml` declares `speckit.<org>.epic` and `speckit.<org>.qa-review` under
-      `provides.commands`, each shipping its own template and script.
+      `provides.commands`, each shipping its own template, and a script **where the command
+      genuinely needs one** — `epic` ships `create-epic`; `qa-review` ships none, because it
+      locates the feature with core's `check-prerequisites`.
+      *— corrected by #52; see `EPIC-001-52-lab23-spec.md` §6/D12. Inventing a `qa-review`
+      script so the count matched would ship a wrapper that adds nothing.*
 - [ ] A **workflow overlay** (`extends:` the base `speckit` workflow) uses `insert_after`
       to place the custom stages and `type: gate` steps with `on_reject` to enforce approval.
-- [ ] The overlay lives under `.specify/workflows/overlays/<id>/` so it survives
-      `specify workflow add` and `bundle update`.
+- [ ] The overlay lives under `.specify/workflows/overlays/<workflow_id>/` — where
+      `<workflow_id>` is the **extended** workflow's id (`speckit`), **not the overlay's own** —
+      so it survives `specify workflow add` and `bundle update`.
+      *— corrected by #52; see `EPIC-001-52-lab23-spec.md` §6/D2. `ProjectOverlaySource` scans
+      `overlays/<workflow_id>/` and raises if `overlay.extends != workflow_id`; read the other
+      way, the overlay lands in a directory Spec Kit never scans and silently never loads.*
 - [ ] Lab demonstrates `specify workflow run` / `status --json` / `resume`, and shows where
       run state is persisted.
 - [ ] **Honest-caveat requirement:** the lab states plainly that typing `/speckit-plan` in
