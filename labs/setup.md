@@ -34,6 +34,8 @@
 > spec-driven design with stacked PRs and per-layer Code Review,
 > [Lab 19](lab19.md) a self-improving-agents gh-aw template, and
 > [Lab 20](lab20.md) enterprise-scale token optimization and reporting.
+> [Lab 21](lab21.md) starts the enterprise agentic SDLC harness arc with
+> role-based agents and marketplace lockdown.
 
 ---
 

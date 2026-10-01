@@ -1,0 +1,14 @@
+# Portable source allowlist example. This is not a substitute for managed settings.
+# See labs/lab21.md for the centrally enforced marketplace policy.
+
+default_action: deny
+
+allowlist:
+  - source: "contoso-internal/enterprise-copilot-harness"
+    notes: "Approved internal enterprise harness. Signed releases only."
+  - source: "github/awesome-copilot"
+    notes: "GitHub-maintained public marketplace, explicitly approved."
+
+require:
+  signed_releases: true
+  sbom: true

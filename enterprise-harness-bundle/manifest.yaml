@@ -1,0 +1,23 @@
+# Tech-lead harness plugin — role agents for governed agentic SDLC work.
+# minimum_cli_version MUST match docs/_meta/registry.yaml `copilot_cli_version_floor`.
+
+name: enterprise-harness
+version: 0.1.0
+description: >-
+  Enterprise agentic SDLC role agents for specification, implementation, and
+  QA review, with marketplace governance guidance.
+minimum_cli_version: "1.0.82"
+homepage: "https://github.com/contoso-internal/enterprise-copilot-harness"
+license: MIT
+codeowners:
+  - "@contoso-internal/copilot-platform"
+
+entrypoints:
+  agents:
+    - agents/spec-author.md
+    - agents/task-executor.md
+    - agents/qa-reviewer.md
+  skills:
+    - skills/spec-authoring/SKILL.md
+    - skills/task-execution/SKILL.md
+    - skills/qa-review/SKILL.md
