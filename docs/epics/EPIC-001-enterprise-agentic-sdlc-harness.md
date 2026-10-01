@@ -6,6 +6,14 @@
 **Target:** Labs 21–26 + executive blueprint
 **Capability baseline verified:** 2026-09-17; independently **re-verified against primary
 sources 2026-09-17** (see [Appendix A](#appendix-a--verified-capability-baseline))
+**Revised:** 2026-10-01 against *The Agentic SDLC Handbook* v0.11.0 (#66); the product facts
+verified that day are in [A.4](#a4-additions-verified-2026-10-01)
+
+> **Citing the book.** A *Book:* note cites Daniel Meppiel,
+> [*The Agentic SDLC Handbook*](https://danielmeppiel.github.io/agentic-sdlc-handbook/)
+> v0.11.0, by chapter title and section, because chapter numbers drift between versions.
+> The epic adopts the book's ideas, not its figures: most are the author's single-run
+> heuristics, so no book figure appears in an acceptance criterion.
 
 ---
 
@@ -36,7 +44,7 @@ operating it through practical Copilot App canvas surfaces.
 | **Individual contributor** | Tasks that arrive as executable prompts with the agent and model already chosen |
 | **QA** | A real review stage with a rework loop, not a rubber stamp at the end |
 | **Security / compliance** | Deny-by-default plugin sourcing, enforced managed settings, and an audit trail |
-| **Engineering management** | Telemetry that turns prompts, successes, and failures into measurable improvement of specs, agents, prompts, skills, and training |
+| **Engineering management** | Telemetry, read against a pre-rollout baseline, that turns prompts, successes, and failures into owned, re-measured improvements to specs, agents, prompts, skills, instruction files, the constitution, memory, gates and deterministic controls, model-tier bindings, and training |
 
 **Why this matters now:** the capability baseline verified for this epic (Appendix A) shows
 that as of September 2026 the large majority of this harness is **supported product**, not
@@ -83,8 +91,9 @@ architecture and build glue it no longer needs.
   ┌────────────────────────────────────────────────────────────────────────┐
   │  U5  OpenTelemetry → collector → Azure Log Analytics                   │
   │      prompts (opt-in), tokens, tools, errors, stage transitions        │
-  │      → Workbooks + KQL → AI-assisted review → improve specs, agents,   │
-  │        prompts, skills, and training                                   │
+  │      → Workbooks + KQL → AI-assisted review → owned, re-measured       │
+  │        fixes to specs, agents, prompts, skills, instructions, the      │
+  │        constitution, memory, gates, model-tier bindings, and training  │
   └───────────────────────┬────────────────────────────────────────────────┘
                           │
                           ├──────────► feeds back into U1–U4
@@ -107,8 +116,30 @@ architecture and build glue it no longer needs.
 | `plan` | Tech lead / senior | IDE or CLI | `specs/NNN-*/plan.md` |
 | `story-tasks` | Tech lead + PM / scrum master | IDE or CLI | `specs/NNN-*/tasks.md` |
 | `implement` | Individual contributor | IDE or CLI, agent-driven | Code + PR |
-| `qa-review` | QA | PR + Copilot Code Review | Review verdict *(custom stage)* |
+| `qa-review` | QA | PR; Copilot Code Review optional | Review verdict *(custom stage)* |
 | *rework* | Any prior owner | — | Updated artifact, re-entering the loop |
+
+Copilot Code Review is optional at `qa-review`: the shipped stage doesn't call it, and it
+isn't a managed-settings client (A.4).
+
+### Provenance — one key, durable approvals
+
+Every unit carries one **correlation key** naming the feature, stage, task and run. It travels
+in the task-as-prompt and the gh-aw stage events (U4), the OTel resource attributes (U5) and
+the U6 audit comment, riding on the stage signal U4 already plans. This epic states the
+requirement, not the mechanism; feature-spec and plan choose the mechanism.
+
+- Each gate's **approval of record** is a durable GitHub artifact, such as a `CODEOWNERS` PR
+  review or a comment carrying the run ID, verdict, approver and artifact SHA. Spec Kit's gate
+  is a local pause that records no approver (A.4).
+- The `epic` and `feature-spec` stages run in the GitHub Copilot app, which emits no client
+  OTel, so their history comes from durable artifacts, not spans.
+- The test is a success criterion: one feature's stage history, approvals and versions can be
+  reconstructed from durable artifacts without re-running anything.
+
+*Book: Architectural Patterns: A Rosetta Stone (Recovery and observability layer: the Lockfile,
+Agent Stack Trace and Audit Trail "travel together"); Primitives as Code; The Reference
+Architecture, Earned.*
 
 ---
 
@@ -162,11 +193,55 @@ product versus custom build
       verification date.
 - [ ] States the licensing and tenancy prerequisites explicitly, including the two
       capabilities that require **Enterprise Managed Users or GHEC with data residency**.
-- [ ] Contains a phased rollout sequence mapped to U1–U6, with the dependency order.
-- [ ] Contains a cost-driver section covering Copilot premium requests/AI credits, Log
-      Analytics ingestion and retention, and the table-plan decision.
+- [ ] **Rollout on two axes.** *Unit order* maps U1–U6 with the dependency order. *Adoption
+      cohorts* run phase 0 (inventory, a repo instrumentation audit, the baseline), then a
+      pilot with one or two *representative* teams, then expand, then scale. Each phase names
+      its exit evidence (measured against the baseline), its rollback triggers and who calls
+      the gate, and the programme has a kill criterion. States plainly that lab order is not
+      rollout order, and names a minimum viable harness.
+      *Book: Planning the Transition; The Business Case; The Agentic SDLC Reference
+      Architecture; What Comes Next.*
+- [ ] **Pilots the lockdown per enterprise team.** With a server-managed deployment,
+      `strictKnownMarketplaces`, `extraKnownMarketplaces`, `model`, `autoTier`, the
+      `permissions.*` keys, the MCP allow/deny lists and `sandbox` can be marked `overridable`
+      and set in `copilot/teams/*.json`, and `enabledPlugins` is additive per team. States the
+      limits: a user in several teams gets the least restrictive value, `telemetry` can't vary
+      per team, and other deployment methods have no team overrides (A.4).
+- [ ] **Measuring value.** Commits to success criteria before the pilot and takes two
+      baselines. PR history and the metrics reports API baseline delivery before agents;
+      switching on client OTel first (U5 depends only on the registry scaffolding) baselines
+      agent use before the rest of the harness lands. No headcount framing: telemetry is aimed
+      at artifacts, not people, and because spans carry `enduser.pseudo.id` (A.4), the
+      blueprint says how reports avoid per-person views.
+      *Book: The Business Case; Planning the Transition.*
+- [ ] **Cost.** A cost-driver section covering Copilot premium requests/AI credits, Log
+      Analytics ingestion and retention, and the table-plan decision, plus people time and
+      upkeep, described qualitatively. Maps the levers (model tier, token use, harness choice),
+      names a budget owner, an alert and a review cadence, and gives each workflow a cost card.
+      States that the blueprint does not establish ROI.
+      *Book: The Agentic SDLC Bill; The Business Case; What Comes Next.*
 - [ ] Names the two requirements that are **not** natively supported (per-task agent/model
-      binding; hard stage-order enforcement in chat) and shows the DIY shape for each.
+      binding; hard stage-order enforcement in chat) and shows the DIY shape for each. The
+      stage-order shape is a merge-time ruleset — a required check plus QA code-owner
+      approval — and the blueprint says plainly that it enforces completeness at merge, not
+      order in chat. A **gate matrix** gives, for each gate, the failure mode it catches and
+      the one it misses.
+      *Book: The Deterministic/Probabilistic Boundary; Governance for AI-Assisted Delivery.*
+- [ ] **Workload triage.** Defines a full path, a sanctioned light lane and a no-agent path,
+      and evaluates Spec Kit's `bugfix` workflow as the light lane. That workflow runs assess →
+      review gate → fix → test, for defects only, with no QA gate, and `qa-review` won't run
+      on it unmodified because it needs a feature's `tasks.md` (A.4). Whether it fits is a
+      design call. *Book: What Comes Next (When NOT to Use Agentic Workflows); Anti-Patterns
+      and Failure Modes (Team-Level Anti-Patterns: cargo-culting complexity).*
+- [ ] **Boundaries.** Lifecycle coverage is Intent → Review plus a dry-run Release; Deploy
+      and Operate are out of scope. The governance perimeter is stated per surface (A.4):
+      plugin and marketplace keys apply on Copilot CLI, VS Code, the Copilot app, cloud agent
+      and JetBrains, `telemetry` on CLI and VS Code, and Copilot Code Review isn't a
+      managed-settings client. Portability: `SKILL.md` files and Spec Kit artifacts are
+      portable; the marketplace and managed settings are GitHub-specific.
+- [ ] **Owners.** An asset → owner table, a short-lived enablement role, a skill-atrophy risk,
+      and a fallback for when an agent or model is unavailable.
+      *Book: Team Structures for AI-Augmented Delivery; Governance for AI-Assisted Delivery.*
 - [ ] Every external claim carries a source link; no undated vendor-attributed numbers.
 
 ---
@@ -183,7 +258,11 @@ can be installed.
 **US-1.1**
 **As a** tech lead
 **I want** to publish the agents and skills my developers must use as a single plugin
-**So that** a new developer is productive on our golden path with one install, not a wiki page.
+**So that** a new developer gets our mandated agents and skills with one install, not a wiki page.
+
+> *— corrected by #66. The original "productive on our golden path with one install"
+> over-promised: repo-specific knowledge (repo instructions, AGENTS.md) stays repo-owned and
+> doesn't travel in the plugin.*
 
 **US-1.2**
 **As a** security lead
@@ -207,6 +286,45 @@ can be installed.
 - [ ] Lab states that no first-party-marketplace exemption is documented, so GitHub's own
       marketplace must be listed explicitly if it is wanted.
 - [ ] A test asserts the bundle manifest schema and the install dry-run.
+- [ ] **Least privilege.** Every bundled agent declares a `tools:` list with no wildcards
+      (omitting `tools:` grants every tool; A.4), and a test asserts it. The QA agent keeps the
+      shell it needs for behavioural evidence; its only write is its verdict file, enforced
+      mechanically rather than by prose.
+      *Book: The PROSE Constraints (S — Safety Boundaries); Anti-Patterns and Failure Modes
+      (The Unbounded Agent).*
+- [ ] **Lockdown vs Spec Kit dispatch.** Spec Kit's `--commands` dispatch runs every workflow
+      step with `--yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` (A.4). The lab mandates
+      `permissions.disableBypassPermissionsMode` only after a test shows that dispatch
+      survives it (A.3 item 7).
+- [ ] **Pilot path.** Teaches per-team overrides as the way to pilot the lockdown, including
+      the least-restrictive merge (U0; A.4).
+- [ ] **Supply chain.** Bundled MCP servers are pinned (`plugin-template/manifest.yaml` ships
+      `pin: latest`), `release.yml` scans for invisible and bidirectional Unicode, and the lab
+      explains the lockdown in the book's terms: installing a primitive is executing it.
+      *Book: Anti-Patterns and Failure Modes (File Presence Is Execution).*
+- [ ] **Load modes.** A table gives each bundled primitive's load mode: eager preload, lazy
+      on-demand (skills) or dispatcher-mediated (agents). Rules that must always apply don't go
+      in auto-activated skills. A binding check runs, and the bundle stays small enough to read
+      in an afternoon. *Book: The Load Lifecycle; What Comes Next (The Starter Shape).*
+- [ ] **Channel ownership.** Spec Kit owns the stage commands and templates (U2, U3). The
+      bundle's agents reference them rather than restating the QA rubric.
+- [ ] **Behavioural eval** for at least the QA agent, reusing the repo's `eval-harness`
+      conventions; manifest and dry-run tests only prove shape.
+      *Book: The Reference Architecture, Earned (What makes the recursion governable).*
+- [ ] **Per-surface table** for Copilot CLI, VS Code, the Copilot app, cloud agent and
+      JetBrains: which governed primitives load and which managed-settings keys apply (A.4).
+      Lab 11's "VS Code and Copilot CLI today" line and its five-key list are corrected to
+      match Lab 16 and the registry.
+- [ ] **What the plugin can't carry.** Repo-specific knowledge stays repo-owned; the lab links
+      Labs 2 and 10, after checking whether a plugin can carry instructions at all (the CLI
+      command reference mentions "plugin-contributed instructions"). What's in use is
+      inventoried before the lockdown, and new requests arrive as a PR to the marketplace
+      repo, reviewed through `CODEOWNERS`.
+- [ ] **Overrides, versioning, rollback.** States that same-name repo agents and skills can
+      shadow mandated ones, once the documented precedence is checked. Rewording an agent's or
+      skill's description is a major version, a bad mandated release has a rollback path, and
+      the bundle version is stamped where U5 and U6 can read it.
+      *Book: Primitives as Code (Versioning: the description is the API).*
 
 ---
 
@@ -254,6 +372,8 @@ org-hosted source
       **discovery-only** — framed as a deliberate supply-chain control, not an obstacle.
 - [ ] Documents the resolution stack (overrides → presets → extensions → core, each file
       resolving independently) and shows `specify preset resolve <name>` for debugging.
+      States that a preset is a default, not enforcement: a project-local override wins, so CI
+      detects overrides with `specify preset resolve`. *— added by #66.*
 - [ ] Explicitly warns that **`specify init --preset` does not accept a URL** — ID, bundled
       name, or local directory only; use `specify preset add --from <url>` after init.
 - [ ] States that the constitution lives at **`.specify/memory/constitution.md`**.
@@ -277,6 +397,11 @@ implementation
 **As a** scrum master
 **I want** work to stop at a gate until the right person approves
 **So that** a feature cannot silently skip review.
+
+> *— qualified by #66. Spec Kit's gate is a **local pause** that records no approver identity:
+> its output records the gate's `message`, `options`, `on_reject` and `show_file` and the
+> `choice` made, but nothing about who made it (A.4). "The right person" is established by
+> U4's durable approval of record.*
 
 **US-3.3**
 **As any** stage owner
@@ -314,12 +439,25 @@ implementation
       **gitignored**, and that `git checkout` alone does not switch features.
 - [ ] The rework loop is modelled explicitly, including what happens to the existing
       `tasks.md` when a spec changes.
+- [ ] Lab states that the gate is a local pause with no approver identity and points to
+      Lab 24's durable approval of record. *— added by #66.*
+- [ ] Lab §23.6 cautions that spec edits made out of band after a QA reject don't re-pass
+      `review-spec` or `review-plan`. *— added by #66.*
+- [ ] `qa-review` accepts a file and line only for *structural* criteria. A *behavioural*
+      criterion needs a command that ran plus its observed output, or a test that asserts the
+      behaviour; otherwise it is `unverified`. *— added by #66. Book: case study "The APM
+      Auth + Logging Overhaul".*
+- [ ] The epic template and the `epic` command say each Acceptance signal flows into the
+      acceptance criteria of the spec that delivers it. `qa-review` reads the spec, never the
+      epic: it rejects on any unmet or unverified criterion, so epic-level signals would reject
+      every partial feature. *— added by #66.*
 
 ---
 
 ### U4 — The funnel and executable tasks (Lab 24)
 
-**Artifacts:** `labs/lab24.md`, gh-aw notification workflows, a task-prompt preset
+**Artifacts:** `labs/lab24.md`, gh-aw notification workflows, a task-prompt preset, and the
+`contoso-sdlc` workflow that Labs 22 and 23 say Lab 24 ships
 
 **US-4.1**
 **As a** stakeholder
@@ -329,7 +467,11 @@ implementation
 **US-4.2**
 **As an** individual contributor
 **I want** my task to arrive as an executable prompt with the agent and model already chosen
-**So that** my job is keeping the work on the rails, not deciding how to prompt.
+**So that** my job is reviewing the result and handling escalations, not deciding how to prompt.
+
+> *— corrected by #66. "Keeping the work on the rails" implied steering mid-session, which the
+> book treats as a sign the task was mis-scoped. Book: The PROSE Constraints (R — Reduced
+> Scope).*
 
 **US-4.3**
 **As a** business user
@@ -339,18 +481,49 @@ implementation
 **Acceptance Criteria**
 - [ ] Uses Spec Kit's `taskstoissues` to project tasks into GitHub Issues, and documents its
       prerequisites (an `origin` remote and the GitHub MCP server).
+- [ ] Chooses a durable, cross-machine **stage signal** for the funnel to trigger on (Spec Kit
+      state is machine-local and gitignored, so it can't be the trigger), and carries the
+      correlation key on it (Provenance). *— caught up with #53 by #66.*
 - [ ] gh-aw workflow(s) route notification on stage transition — assignment, `CODEOWNERS`
       review request, and Project status — following the existing `generate-prd.md` and
-      `weekly-content-audit.md` safe-outputs patterns in this repo.
-- [ ] Defines the **task-as-prompt** format: objective, context links, the exact agent, the
-      exact model, acceptance check, and escalation path.
+      `weekly-content-audit.md` safe-outputs patterns in this repo. Routing is computed from
+      the role table plus `CODEOWNERS`, not chosen by the agent; every write is a safe-output
+      with `allowed:`/`max:`, and the workshop path runs with `staged: true` (A.4; confirm
+      against the pinned gh-aw, A.3 item 8). *Book: The Deterministic/Probabilistic Boundary.*
+- [ ] Defines the **task-as-prompt** format: an objective with a single deliverable that passes
+      a sizing test; context passed as files or links, run in a fresh session; constraints and
+      a do-not-modify list; owned files; the agent, which must exist in the U1 manifest; a
+      registry model tier (`models:`) plus a fallback, never a model string; a **runnable**
+      acceptance check (command plus expected result); `execution: agent | split | human`;
+      an escalation ladder with a retry budget and a stop rule; and the correlation key
+      (Provenance).
+      *Book: The PROSE Constraints (R — Reduced Scope; S — Safety Boundaries); Multi-Agent
+      Orchestration (Concrete Dispatch; The Escalation Protocol); The Execution Meta-Process
+      (The Self-Sufficiency Test).*
+- [ ] A deterministic **validator** runs in CI on the PR that changes `tasks.md`, before
+      `taskstoissues`: fields present, agent exists, tier valid, links resolve. On failure it
+      rejects; it doesn't re-prompt.
 - [ ] **Honest-caveat requirement:** the lab states that **per-task agent/model metadata is
       not native to Spec Kit** — there is no such field in the task template or format spec.
       The lab ships this as an org preset extending the task template, and labels it DIY.
 - [ ] Preserves the native task format (`[ID] [P] [Story]`, phase grouping, checkpoints) so
       the org extension composes with core rather than replacing it.
 - [ ] Documents the rework routing: which stage owner is notified when QA rejects, and how
-      the task is rewritten rather than silently re-run.
+      the task is rewritten rather than silently re-run. Each rejection is classified:
+      implementation-only issues resume at QA, and spec or scope changes go back through
+      `review-spec`/`review-plan`, with a cap on rounds. A rewritten task gets a new task ID
+      and supersedes the old issue, because `taskstoissues` skips any ID already in an open
+      **or closed** issue title (A.4).
+- [ ] Records a durable **approval of record** for each gate and counts rejects from it,
+      because Spec Kit's run state can't (A.4). Ships a seeded fixture in which QA **rejects**.
+- [ ] **QA independence.** Teaches that workflow steps already run as fresh
+      `copilot -p --agent` processes, and that invoking QA directly in chat loses this. QA's
+      inputs are spec + diff + tasks, never the implementer's summary. Adds a `tools:` list to
+      `qa-review` once U1's lockdown test (A.3 item 7) shows how it interacts with `--yolo`.
+      *Book: case study "The APM Auth + Logging Overhaul"; Anti-Patterns and Failure Modes
+      (The Trust Fall; Hallucinated Edits).*
+- [ ] Ships the `contoso-sdlc` workflow that Labs 22 and 23 reference, with an optional
+      `review-tasks` gate before implement. *Book: The Execution Meta-Process.*
 - [ ] Maps each stage to the surface its owner actually uses (Copilot app, IDE, CLI, PR).
 
 ---
@@ -370,7 +543,9 @@ stale sources.
 **US-5.2**
 **As an** engineering manager
 **I want** a regular report over that data
-**So that** we can decide what to improve — a spec template, an agent, a prompt, a skill, or training.
+**So that** we can decide what to improve — a spec template, an agent, a prompt, a skill, an
+instruction file, the constitution, memory, a gate, a model-tier binding, or training — and
+confirm that it improved.
 
 **US-5.3**
 **As a** developer without an Azure subscription
@@ -396,6 +571,21 @@ stale sources.
       span only** — it is also stamped on child `chat` spans, so summing it across every span
       double-counts. A cost report built on either mistake is wrong in the direction that
       embarrasses you in front of finance.
+- [ ] **Correlation key and versions.** The correlation key (Provenance) and the bundle or
+      preset version travel as resource attributes. Managed OTel settings can't be
+      overridden, and no page says whether a per-session `OTEL_RESOURCE_ATTRIBUTES` survives
+      the managed `resourceAttributes`, so the lab tests that with the file exporter before
+      encoding a per-session key (A.3 item 6). Spans already carry `gen_ai.agent.name` and
+      `gen_ai.agent.version`, a native stage proxy for steps dispatched with `--agent` (A.4).
+- [ ] **Stage and rework events** — what delivers the diagram's "stage transitions". Stage
+      dwell time comes from Spec Kit's `log.jsonl`, whose `step_started`/`step_completed`
+      entries are timestamped. Rejects are counted from U4's approval of record (or a
+      committed `qa-review.md` per round), not from Spec Kit run state (A.4). These are
+      org-emitted events, labelled *You build this*. *— caught up with #54 by #66.*
+- [ ] **Outcome queries.** The KQL pack includes QA reject/rework rate, stage dwell time and
+      escalations per task, with a baseline window and a before/after view. Activity metrics
+      are labelled as activity, not outcome. *Book: The Business Case; Planning the Transition.*
+- [ ] **Cost per task** at p50 and p95, with a `ScheduledQueryRules` alert.
 - [ ] **Offline path:** uses the CLI file exporter to land spans on local disk and runs the
       KQL pack against a fixture, so the lab completes with **no Azure subscription**.
 - [ ] **Azure path:** Bicep provisions the workspace, the DCR, and the custom tables, using
@@ -441,8 +631,19 @@ stale sources.
       shown as the agent's access path. Chains explicitly into
       [Lab 19](../../labs/lab19.md)'s self-improving-agents pattern and
       [Lab 20](../../labs/lab20.md)'s enterprise reporting.
-- [ ] Recommendations must name a target: a spec template, an agent, a prompt, a skill, or a
-      training topic — closing back to U1–U4.
+- [ ] Recommendations must name a target — a spec template, an agent, a prompt, a skill, an
+      instruction file or AGENTS.md, the constitution, memory, a gate or deterministic control
+      (hook, required check, safe-output allowlist, managed setting), a model-tier binding, or
+      a training topic — closing back to U1–U4. Each names an owner and closes only when it is
+      re-measured.
+      *Book: The Deterministic/Probabilistic Boundary; Anti-Patterns and Failure Modes
+      (Team-Level Anti-Patterns: missing policy encoding); The Instrumented Codebase (The
+      Feedback Loop).*
+- [ ] The interpreting agent receives KQL aggregates. If it must read captured prompt text,
+      that text is treated as untrusted input.
+      *Book: Anti-Patterns and Failure Modes (Prompt Injection via Dependencies).*
+- [ ] A **recurring review mechanism** (a scheduled gh-aw workflow) makes the "regular report"
+      in US-5.2 a mechanism, not an aspiration. *— caught up with #54 by #66.*
 
 ---
 
@@ -491,9 +692,9 @@ issues and merged PRs
       workflow runs. It must support fixture or dry-run mode so workshop learners do not
       spam shared repo issues.
 - [ ] Assignment/dispatch is **dry-run by default**. When enabled against a real issue, it
-      writes an idempotent audit comment with a correlation ID, selected repo-local or
-      enterprise agent preset, execution location, and timestamp; it does **not** create the
-      project session itself.
+      writes an idempotent audit comment with the shared correlation key (Provenance), the
+      selected repo-local or enterprise agent preset and its preset or bundle version,
+      execution location, and timestamp; it does **not** create the project session itself.
 - [ ] Code-aware view is based on this repository's actual .NET solution structure
       (`dotnet/ContosoUniversity.sln`, projects, tests, and recent validation output), not a
       copied NestJS/React sample. Missing local prerequisites (`dotnet`, Docker, `gh`, auth)
@@ -509,7 +710,9 @@ issues and merged PRs
       `extensions_manage inspect` / reload troubleshooting guidance. Existing tests must be
       extended so the canvas extension does not silently rot.
 - [ ] Lab 26 cross-links to Lab 23 for stage/gate semantics, Lab 24 for task-as-prompt and
-      issue projection, and Lab 25 for telemetry/audit correlation IDs.
+      issue projection, and Lab 25 for telemetry and the shared correlation key.
+- [ ] The lab ends with a "back at work" checklist mapped to U0's adoption phases.
+      *— added by #66.*
 
 ---
 
@@ -541,8 +744,9 @@ Additional wiring required:
 - `README.md` Lab Modules table needs six new rows; the **"Total: ~7 hours (20 labs…)"**
   line and the learning-path note both need updating.
 - `labs/setup.md` needs the new arc described alongside the existing 15–20 modernization track.
-- New registry keys: **`spec_kit_version: "1.0.8"`** and an Azure Monitor block carrying
-  resource API versions, so no lab hardcodes a version.
+- New registry keys: **`spec_kit_version`** (read the value from `docs/_meta/registry.yaml`;
+  this line pinned `"1.0.8"` until #66) and an Azure Monitor block carrying resource API
+  versions, so no lab hardcodes a version.
 - New canvas registry key: a Copilot App / Copilot CLI canvas-support version floor, so Lab 26
   does not hardcode an extension API expectation.
 - Pacing: six labs at roughly 25–40 self-paced minutes each adds about 3 hours. Verified
@@ -552,7 +756,7 @@ Additional wiring required:
   not a number to let drift.
 - **Workshop ceiling (not yet addressed by this epic — needs a decision).**
   `tests/workshop/time-budget.test.ts` asserts `total_minutes = 240` across modules **M1–M6**,
-  checked against `workshop/curriculum.md`. Five new labs cannot enter the 4-hour workshop
+  checked against `workshop/curriculum.md`. Six new labs cannot enter the 4-hour workshop
   without displacing existing modules. The arc therefore has to be declared **self-paced only**
   and kept out of the workshop enumeration — **note this does not exempt them from the pace
   fields**: `tests/workshop/time-budget.test.ts` iterates every `registry.labs` entry and
@@ -566,7 +770,7 @@ Additional wiring required:
 
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
-| R1 | **Spec Kit release velocity** — 9 releases in the 4 weeks to 2026-09-17; v1.0.8 shipped the day this epic was researched | Lab drifts mid-cohort | Pin `spec_kit_version` in the registry; add a re-verification obligation; consider adding spec-kit to the weekly content-audit checks |
+| R1 | **Spec Kit release velocity** — 9 releases in the 4 weeks to 2026-09-17; v1.0.8 shipped the day this epic was researched | Lab drifts mid-cohort | Pin `spec_kit_version` in the registry; add a re-verification obligation; the weekly content audit's check 8 already compares the pin with the latest release (report-only) |
 | R2 | **Preview gating is narrower than "GHEC"** — prompt-carrying usage records require EMU or data residency | A standard GHEC tenant cannot complete that path | Lead with OTel `captureContent`, which has no such gate; present usage records as the alternative with its gating stated up front |
 | R3 | **`captureContent` sends prompts and responses to your sink** | Source code and prompts leave the client; data-residency and privacy exposure | Treat as a governance decision with a named approver; pair with `lockCaptureContent`; make the default-off behavior explicit |
 | R4 | **Log Analytics cost and table-plan traps** | A cheap plan silently breaks the reporting module | Mandate the Analytics plan for the query pack; document that sub-31-day retention saves nothing and that deleting a table does not stop retention charges |
@@ -597,6 +801,13 @@ and the project-scoped canvas extension surface.
 - [ ] Every honest caveat in U0–U6 appears in the shipped content — a reviewer can find each
       one by searching the lab text.
 - [ ] No lab hardcodes a version that belongs in `docs/_meta/registry.yaml`.
+- [ ] One feature's full stage history — its stages, approvals of record, and agent, skill and
+      bundle versions — can be reconstructed from durable artifacts without re-running
+      anything. *— added by #66.*
+- [ ] Lab 25's offline fixture shows at least one outcome metric (for example QA reject rate or
+      stage dwell time) before and after a change. *— added by #66.*
+- [ ] Every bundled agent declares a least-privilege `tools:` list, and the QA agent has a
+      behavioural eval. *— added by #66.*
 
 ---
 
@@ -640,6 +851,9 @@ key is `_document_id`, not `event_id`; the HTTP Data Collector API's 2026-09-14 
 
 ### A.1 Spec Kit — verified against `github/spec-kit` v1.0.8
 
+Kept as the 2026-09-17 record. The registry now pins a later release; facts read from the
+v1.0.12 source on 2026-10-01 are in [A.4](#a4-additions-verified-2026-10-01).
+
 | Capability | Status | Note |
 |---|---|---|
 | Extension / preset / bundle / workflow system | **Supported product** | First-class since ~v1.0 |
@@ -664,8 +878,8 @@ gitignored; Git itself is an opt-in extension.
 
 | Capability | Status | Note |
 |---|---|---|
-| Copilot client OpenTelemetry export | **Supported product (GA)** | The real answer; CLI + VS Code |
-| Client OTel for the **GitHub Copilot app** | **Not covered by managed settings** | The `telemetry` key is documented as supported for **Copilot CLI and VS Code** only. The `epic` and `feature-spec` stages run in the Copilot app, so those two stages emit **no client OTel**. State the gap; do not imply full coverage |
+| Copilot client OpenTelemetry export | **Supported product (GA)** | The real answer; CLI + VS Code. *2026-10-01: the docs' support table also ticks JetBrains for `telemetry`, while the key's own text names CLI and VS Code (A.4)* |
+| Client OTel for the **GitHub Copilot app** | **Not covered by managed settings** | The `telemetry` key is documented as supported for **Copilot CLI and VS Code** only. The `epic` and `feature-spec` stages run in the Copilot app, so those two stages emit **no client OTel**. State the gap; do not imply full coverage. *2026-10-01: the app is a managed-settings client for the plugin and marketplace keys, but not for `telemetry`, so this gap stands (A.4)* |
 | Copilot SDK OpenTelemetry instrumentation | **Documented separately** | A third surface, with its own guidance page — not governed by the managed-settings `telemetry` key |
 | Managed-settings `telemetry` key | **Supported product** | Enterprise-enforced, cannot be overridden |
 | `captureContent` (prompts + responses) | **Supported product, off by default** | Governance decision |
@@ -715,6 +929,38 @@ Before this epic's labs ship, and periodically after:
 5. **Copilot App canvas extension surface** — before implementing Lab 26, re-check the
    current project-scoped extension manifest shape, canvas open/action schemas, reload and
    inspect workflow, and any documented local extension-host trust-boundary requirements.
+6. **Per-session resource attributes under managed OTel — open (#66 Q1).** Managed OTel
+   settings "cannot be overridden", and the CLI command reference lists
+   `OTEL_RESOURCE_ATTRIBUTES` as "Extra resource attributes"; neither page says how the two
+   merge. Test it with file-based managed settings, the file exporter and the env var, then
+   inspect the JSON-lines, before U5 encodes a per-session key. Tracked in #54.
+7. **`permissions.disableBypassPermissionsMode` vs Spec Kit's `--yolo` dispatch — open
+   (#66 Q8).** Test whether the managed key breaks `specify workflow run` before U1 mandates
+   it. Tracked in #50; U4's `tools:` change to `qa-review` waits on the result.
+8. **gh-aw safe-outputs at the pinned version.** `staged: true` and `allowed:`/`max:` on
+   `assign-to-user` were read in the current gh-aw docs on 2026-10-01, not checked against
+   the registry's pinned `gh_aw_schema_version`. Confirm them before U4 relies on them;
+   tracked in #53.
+
+### A.4 Additions verified 2026-10-01
+
+Verified for #66. Spec Kit rows come from reading the v1.0.12 source by tag, not from running
+it; the docs pages were read on 2026-10-01. A.1–A.3 stay as the 2026-09-17 record.
+
+| Capability | Status | Source and note |
+|---|---|---|
+| Approver identity at a Spec Kit gate | **Does not exist** | The gate's output records its `message`, `options`, `on_reject` and `show_file`, the `choice` made, and an `aborted` flag when an `abort` rejection fails the run — nothing about who chose (`src/specify_cli/workflows/step/gate/__init__.py`). A verdict can also be bound from a workflow input, still without identity. The gate is a local pause; the approval of record is a durable GitHub artifact (see Provenance) |
+| Stage timing from Spec Kit run state | **Supported product** | Every `log.jsonl` entry is timestamped, with `step_started` and `step_completed` per step (`src/specify_cli/workflows/engine.py`) |
+| Counting QA rejects from Spec Kit run state | **Not possible** | A reject-and-retry and a pause both log `paused`, and the gate's `choice` lives only in `state.json`, overwritten on each run (`src/specify_cli/workflows/engine.py`) |
+| Permissions in `--commands` dispatch | **Supported product, permissive by default** | Each step runs `copilot -p … --agent speckit.<stem> --yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` (`src/specify_cli/integrations/copilot/__init__.py`). Interaction with `disableBypassPermissionsMode`: A.3 item 7 |
+| `tools:` in generated `--commands` agents | **Supported product** | Frontmatter `tools:` survives into the generated agent, and core `templates/commands/taskstoissues.md` already ships one. Its interaction with `--yolo` is untested |
+| `taskstoissues` duplicate check | **Supported product, weak-form** | Skips a task whose ID matches `\bT\d{3,}\b` in an open **or closed** issue title; the agent applies the check by following the prompt (`templates/commands/taskstoissues.md`) |
+| `bugfix` workflow | **Supported product** | assess → review gate → fix → test; defects only; no QA gate (`workflows/bugfix/workflow.yml`) |
+| Custom agent `tools:` | **Supported product** | Omitting `tools:` grants every tool; `tools: []` disables all ([Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)) |
+| Managed-settings clients | **Supported product, per key** | Plugin and marketplace keys: Copilot CLI, VS Code, the Copilot app, cloud agent, JetBrains. `telemetry`: CLI and VS Code per the key's own text; the support table also ticks JetBrains. Copilot Code Review isn't a managed-settings client ([Enterprise managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings)) |
+| Per-team overrides of managed settings | **Supported product, server-managed only** | Keys marked `overridable` — `model`, `autoTier`, the `permissions.*` keys, `allowedMcpServers`, `deniedMcpServers`, `extraKnownMarketplaces`, `strictKnownMarketplaces`, `sandbox` — can be set per enterprise team in `copilot/teams/*.json`, mapped by `copilot/team-mappings.json`; `enabledPlugins` is additive. A user in several teams gets the least restrictive value; `telemetry` isn't overridable; other deployment methods have no team overrides ([Overriding enterprise-managed settings for teams](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/override-settings-for-teams)) |
+| Agent and user identity on spans | **Supported product** | `gen_ai.agent.name` ("when available"), `gen_ai.agent.version` ("when known") and `enduser.pseudo.id`, a pseudonymous user ID ("when available") ([CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)) |
+| gh-aw staged safe-outputs and assignment limits | **Documented; unchecked at the pinned version** | `staged: true` globally or per output type; `assign-to-user` takes `allowed:` and `max:` ([Safe Outputs](https://github.github.com/gh-aw/reference/safe-outputs/)). See A.3 item 8 |
 
 ---
 
@@ -732,3 +978,8 @@ changing any claim in it.
 > `event_id` belongs to the *separate* Copilot Usage Records Streaming schema. Do not walk
 > that correction backwards. Likewise, the research's `invoke_agent → chat → execute_tool`
 > span tree is correct and there is **no `execute_hook` span**.
+
+> **2026-10-01 revision (#66).** Criteria added or corrected against *The Agentic SDLC
+> Handbook* v0.11.0 carry a *Book:* note or a "#66" marker. The product facts verified that
+> day are in A.4, and the questions still open are A.3 items 6–8. #66 records the review
+> behind them.
