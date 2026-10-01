@@ -5,6 +5,12 @@ import { describe, expect, it } from "vitest";
 const LAB = readFileSync(join(process.cwd(), "labs", "lab21.md"), "utf8");
 
 describe("Lab 21 governance guidance", () => {
+  it("links the EPIC-001 Handbook alignment issue", () => {
+    expect(LAB).toContain(
+      "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/66",
+    );
+  });
+
   it("keeps Spec Kit out of bypass mode pending controlled validation", () => {
     expect(LAB).toContain(
       "Do **not** add `permissions.disableBypassPermissionsMode` to this baseline yet.",
