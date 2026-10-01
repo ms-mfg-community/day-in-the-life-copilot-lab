@@ -19,6 +19,7 @@ centrally managed controls to the plugin marketplaces they may use. It extends
 References:
 
 - [How Spec Kit Develops Spec Kit: An Agentic SDLC](https://github.github.com/spec-kit/guides/agentic-sdlc.html)
+- [EPIC-001 Handbook alignment and acceptance criteria](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/66)
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Overriding enterprise-managed settings for teams](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/override-settings-for-teams)
 - [Lab 11 — Building & Distributing a Copilot Plugin](lab11.md)
@@ -48,6 +49,11 @@ design, development, testing, deployment, and maintenance as a map, not a
 required sequence. A small change can stay in its issue and PR; work can begin
 at an existing specification, test, or bug report. Use the roles where they add
 value, and keep human decisions visible at handoffs.
+
+The additional governance requirements in this lab are tracked by
+[EPIC-001 cleanup issue #66](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/66):
+least-privilege tools, behavioral evaluation, load-mode ownership, team pilots,
+surface-specific settings, supply-chain scanning, and versioned rollback.
 
 Agent analysis does not replace deterministic checks. Tests, linters, release
 workflows, and maintainers' merge decisions remain separate evidence and
