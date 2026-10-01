@@ -18,7 +18,10 @@ shipped.]
 
 ## Acceptance signals
 
-Observable outcomes, not activities. These become the QA-review checklist.
+Observable outcomes, not activities. Each signal flows into the acceptance criteria of the
+spec that delivers it, and that is where `qa-review` checks it: QA reads a feature's spec,
+never this epic. A signal that no spec carries is checked by no one, so check the whole
+table once more before you close the epic.
 
 | # | Signal | How we observe it |
 |---|---|---|

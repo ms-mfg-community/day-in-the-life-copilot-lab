@@ -160,6 +160,12 @@ specify preset resolve spec-template
 > A dotted argument is treated as a *command* name, so
 > `specify preset resolve speckit.specify` resolves that command.
 
+> ⚠️ **A preset is a default, not enforcement.** Layer 1 outranks your org preset, so any
+> repo can drop a file into `.specify/templates/overrides/` and that version wins, with no
+> approval step. If a template mustn't drift, detect overrides in CI: run
+> `specify preset resolve <template>` for each template your preset ships, and fail the
+> build when the output says `top layer from: project override`.
+
 ## 22.4 Build the org preset
 
 Open `labs/fixtures/lab22/contoso-sdd/preset.yml`. It overrides three core

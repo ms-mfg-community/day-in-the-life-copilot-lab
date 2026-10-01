@@ -25,10 +25,13 @@ softer "met" — it means nobody has evidence either way.
 
 ## Acceptance criteria
 
+Structural criteria cite a file and line. Behavioural criteria cite a command that was
+actually run and its observed output, or a test that asserts the behaviour.
+
 | # | Criterion (from `spec.md`) | Result | Evidence |
 |---|---|---|---|
-| 1 | [criterion] | met / partial / unmet / unverified | `path/to/file.ts:42` |
-| 2 | [criterion] | [...] | [...] |
+| 1 | [structural criterion] | met / partial / unmet / unverified | `path/to/file.ts:42` |
+| 2 | [behavioural criterion] | [...] | `[command]` → [observed output], or `path/to/file.test.ts:17` |
 
 ## Task list check
 

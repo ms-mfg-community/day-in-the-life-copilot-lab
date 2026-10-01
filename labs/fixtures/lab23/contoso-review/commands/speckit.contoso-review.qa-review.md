@@ -40,8 +40,17 @@ $ARGUMENTS
    specified, not whether what was specified is plausible.
 
 3. **Check each acceptance criterion in the spec** and mark it `met`, `partial` or
-   `unmet`, with the file and line that settles it. A criterion you cannot trace to
-   evidence is `unverified`, which is **not** the same as `met`.
+   `unmet`, with the evidence that settles it. The kind of evidence depends on the
+   criterion:
+
+   - A **structural** criterion (a file, field, route or setting exists) is settled by
+     the file and line.
+   - A **behavioural** criterion (something happens when the code runs) is settled only
+     by a command you actually ran plus the output you observed, or by a test that
+     asserts that behaviour. A file and line proves the code exists, not that it works.
+
+   A criterion you cannot trace to evidence of the right kind is `unverified`, which is
+   **not** the same as `met`.
 
 4. **Check the task list** — every task marked complete should have a corresponding
    change. A completed task with no evidence is a finding.

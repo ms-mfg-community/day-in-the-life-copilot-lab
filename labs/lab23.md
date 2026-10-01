@@ -371,6 +371,13 @@ A gate is a step type, and it is small:
 > prompt with `show_file: specs/001-checkout/spec.md` — up to 200 lines. A reviewer who
 > has to go and find the artifact usually doesn't.
 
+> ⚠️ **A gate records a choice, not an approver.** The gate is a local pause. Its output
+> keeps its own `message`, `options`, `on_reject` and `show_file`, plus the `choice` that
+> was made — nothing about who made it — and it lives in the run's `state.json`, which is
+> overwritten when the gate runs again. So "someone approves it" means whoever answered
+> the prompt. When you need an approval of record, make it a durable GitHub artifact, such
+> as a `CODEOWNERS` review on the PR; [Lab 24](lab24.md) builds one.
+
 ## 23.6 The rework loop
 
 US-3.3 of this arc asks for rework to be a first-class path. Here is the honest answer:
@@ -388,6 +395,13 @@ So the loop is built from what does exist. **`retry` is the mechanism:**
 
 The run state on disk is what makes this safe — the run is parked, not lost, and
 `status --json` tells you exactly which step it's parked on.
+
+> ⚠️ **An out-of-band fix skips the earlier gates.** Step 2 happens outside the run, so a
+> spec or plan you edit there never goes back through `review-spec` or `review-plan` (or
+> `review-epic`, if the epic changed); `resume` re-asks `review-qa` and nothing else.
+> That's fine for an implementation-only fix. When the rejection changes the spec or the
+> scope, send it back through its gate: start a new run, or use the `do-while` variant
+> below. [Lab 24](lab24.md) classifies rejections this way.
 
 **Two variants worth knowing.** Use `on_reject: skip` and the gate completes with the
 verdict recorded in its output, so a downstream `if` or `switch` step can route the
