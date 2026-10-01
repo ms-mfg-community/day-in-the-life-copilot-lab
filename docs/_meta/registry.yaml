@@ -211,9 +211,8 @@ model_default_availability_policy: "default-on-unless-disabled"
 # (fetched directly). The supported path is copilot/managed-settings.json in
 # the enterprise's chosen source organization's .github-private repo, with
 # backward compatibility for the older .github/copilot/settings.json path.
-# Configured via the AI Controls tab in enterprise settings. Supported keys
-# today: extraKnownMarketplaces, enabledPlugins, strictKnownMarketplaces,
-# disableBypassPermissionsMode, model. Labs 11, 16, and 17 reference this.
+# Configured via the AI Controls tab in enterprise settings. The supported-key
+# list below is authoritative for the labs; retain dotted paths for nested keys.
 enterprise_managed_settings:
   canonical_path: "copilot/managed-settings.json"
   legacy_path: ".github/copilot/settings.json"
@@ -228,6 +227,7 @@ enterprise_managed_settings:
     - enabledPlugins
     - strictKnownMarketplaces
     - model
+    - autoTier
     - permissions.disableBypassPermissionsMode
     - permissions.deny
     - permissions.ask
@@ -245,6 +245,15 @@ enterprise_managed_settings:
     - server-managed
     - file-based
     - user-level
+  team_overrides:
+    deployment: server-managed-only
+    mappings_path: "copilot/team-mappings.json"
+    settings_directory: "copilot/teams"
+    merge_rule: least-restrictive
+    additive_keys:
+      - enabledPlugins
+    non_overridable_keys:
+      - telemetry
   strict_known_marketplaces_ga_date: "2026-07-01"   # public preview: 2026-06-25
   last_verified: "2026-09-04"
 
