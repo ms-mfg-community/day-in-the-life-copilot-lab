@@ -8,6 +8,105 @@ demo app).
 
 ## [Unreleased]
 
+### Added
+- **Lab 23 — Custom SDLC Stages, Gates & the Rework Loop** (EPIC-001, #52).
+  The second content lab of the enterprise-harness arc: how an org adds its
+  own stages to the Spec Kit SDLC, gates them, and handles rework — without
+  forking anything.
+  - `labs/lab23.md` — declaring stages in an extension, placing them with a
+    workflow overlay, gate semantics, the rework loop, and
+    `specify workflow run` / `status --json` / `resume` with the run state at
+    `.specify/workflows/runs/<run-id>/`.
+  - `labs/fixtures/lab23/contoso-review/` — the extension Lab 22's
+    `bundle.yml` already pinned, providing `speckit.contoso-review.epic` and
+    `speckit.contoso-review.qa-review` with their templates and a
+    Bash/PowerShell script pair. Installing it resolves the
+    `extension:contoso-review@1.0.0` reference Lab 22 left open; the
+    `workflow:contoso-sdlc@1.0.0` reference stays open until Lab 24.
+  - `labs/fixtures/lab23/overlays/contoso-stages.yml` — inserts
+    `epic → review-epic` before `specify` and `qa-review → review-qa` after
+    `implement`, composing above the base workflow rather than editing it.
+  - Traps the lab teaches explicitly, each verified by running the pinned
+    release rather than assumed: a command's middle segment **must** equal
+    `extension.id` (enforced at *install*, not at parse); `strategy` is
+    **preset-only** and is rejected on an extension's templates; overlay
+    anchors resolve against the **base** step list, so an overlay cannot
+    anchor on a step it inserted itself; sibling edits sharing an anchor
+    apply in **authoring order**; and an overlay lands under the **extended**
+    workflow's id, not its own.
+  - Five honest caveats, none softened: invoking a command directly is not
+    blocked (and the direct invocation is `--agent speckit.plan` on the
+    `--commands` layout, `/speckit-plan` on skills — the dotted slash form
+    exists on neither); hook events are a fixed list of twenty over ten core
+    commands and an **unknown event name installs clean and silently never
+    fires**; `.specify/feature.json` is gitignored and `git checkout` alone
+    does not switch features; **a gate cannot rewind** — `on_reject` is
+    `abort` | `skip` | `retry`, so rework is `retry` + `resume` rather than a
+    backward jump; and **validation is staged**, so a ✓ from `overlay add`
+    does not mean `resolve` or `run` will pass.
+  - `docs/_meta/registry.yaml` re-verified 2026-09-28: `spec_kit_version`
+    unchanged at `1.0.12`, `last_verified` advanced. No version literal
+    appears in the lab.
+
+- **Lab 22 — Centralized Spec Kit Templates & the Org Catalog** (EPIC-001,
+  #51). The first content lab of the enterprise-harness arc: how an org
+  distributes customized spec, plan and tasks templates without forking
+  Spec Kit.
+  - `labs/lab22.md` — the resolution stack (overrides → presets →
+    extensions → core, each file resolving independently), the Copilot
+    integration layout choice presented **by surface** (skills at
+    `.github/skills/speckit-<command>/SKILL.md` are VS Code chat slash
+    commands, but in **Copilot CLI** they are model-invoked and there is no
+    `/speckit-specify`; `--integration-options="--commands"` writes
+    `.github/agents/speckit.<command>.agent.md`, which **is** Copilot CLI's
+    custom-agent format), and the org catalog framed as a supply-chain
+    control.
+  - `labs/fixtures/lab22/` — an installable org preset demonstrating
+    three composition strategies (`replace`, `wrap` with
+    `{CORE_TEMPLATE}`, `append`), a `bundle.yml` pinning preset +
+    extension + workflow as one versioned install, and a
+    `preset-catalogs.yml` + `catalog.json` pair showing `install_allowed`
+    against a discovery-only community catalog.
+  - Three traps the lab teaches explicitly, each verified against the
+    pinned release rather than assumed: `specify init --preset` **warns
+    and exits 0** on a URL instead of rejecting it, leaving the project
+    silently unconfigured; a project `preset-catalogs.yml` **replaces**
+    the built-in catalog stack rather than merging with it; and
+    `specify preset resolve` takes a *template* name, not a preset id.
+  - `docs/_meta/registry.yaml` re-pins `spec_kit_version` to `1.0.12`
+    (verified 2026-09-25). Spec Kit shipped thirteen releases in the five
+    weeks to that date — two of them while this lab was being written —
+    so the pin moved twice during the work. No version literal appears in
+    the lab body.
+
+  The acceptance gate stays at **13 files / 213 tests**: the lab's
+  artifacts live under `labs/fixtures/lab22/`, which the suites do not
+  enumerate, so no count moved and no test was weakened.
+
+- **Registry and scaffolding for the enterprise-harness arc** (EPIC-001,
+  #48 — merged via #60). Groundwork so Labs 21–26 satisfy every existing
+  CI gate from their first commit, before any lab content is written.
+  - `docs/_meta/registry.yaml` gains `spec_kit_version` (`1.0.10`,
+    verified 2026-09-23) with `spec_kit_version_last_verified` and a
+    standing re-verification obligation, plus an `azure_monitor` block
+    carrying the Data Collection Rule and Endpoint (`2024-03-11`),
+    workspace tables (`2026-03-01`, keeping `2025-07-01` as
+    `*_previous`) and Logs Ingestion data-plane (`2023-01-01`) API
+    versions. Labs read these keys instead of hardcoding a version.
+  - Six `labs:` entries and six `labs/lab21.md`–`labs/lab26.md` stubs,
+    each carrying frontmatter that matches the registry exactly and no
+    version literal in the body.
+  - `README.md` and `labs/setup.md` gain the enumeration rows
+    `enumeration-parity` requires, so the gate stays green from the
+    first commit rather than being allowlisted around.
+  - The weekly content audit grows from seven checks to **nine**:
+    report-only check 8 (Spec Kit release) and check 9 (Azure Monitor
+    API versions). Both flag drift as needs-review and never edit a pin.
+
+  The acceptance gate grows from 183 to **213** tests as the
+  `it.each`-parameterised suites pick up six more labs. No test was
+  weakened to accommodate a stub.
+
 ### Changed
 - Retired `tests/meta/phase-a-findings-schema.test.ts` — modernize-arc
   Phase A audit instrumentation. The one-time findings report has

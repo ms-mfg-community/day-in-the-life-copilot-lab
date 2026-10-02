@@ -41,11 +41,19 @@ References:
 ## 18.1 Write a Spec, Not Just an Issue
 
 **GitHub Spec Kit** is the official toolkit for spec-driven development: it
-gives you a repeatable structure (`/constitution`, `/specify`, `/plan`,
-`/tasks`, `/implement` slash commands in supported agent CLIs) for turning
-an idea into an unambiguous, testable specification *before* any code gets
-written — the opposite of "open an issue and hope the agent infers the
-details."
+gives you a repeatable set of phases — **constitution → specify → plan →
+tasks → implement** — for turning an idea into an unambiguous, testable
+specification *before* any code gets written, the opposite of "open an
+issue and hope the agent infers the details."
+
+> ⚠️ **Those are phases, not one universal slash command.** How you invoke
+> them depends on the install layout: the default **skills** layout gives
+> VS Code chat `/speckit-specify` (hyphen), which does **not** exist in
+> Copilot CLI; the `--commands` layout gives CLI agents dispatched as
+> `--agent speckit.specify`, with no slash form at all. Spec Kit's command
+> surface is also wider than these five phases. [Lab 22](lab22.md) covers
+> both layouts and the invocation differences — this lab stays on the spec
+> itself.
 
 A good spec for this exercise, added to ContosoUniversity:
 

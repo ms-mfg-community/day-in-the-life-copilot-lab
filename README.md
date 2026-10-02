@@ -562,6 +562,12 @@ erDiagram
 | [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
+| [Lab 21](labs/lab21.md) | The Tech Lead's Plugin & Marketplace Lockdown | Org-mandated agents and skills as one installable plugin, deny-by-default marketplace lockdown |
+| [Lab 22](labs/lab22.md) | Centralized Spec Kit Templates & the Org Catalog | Org preset for spec/plan/tasks templates, `bundle.yml`, discovery-vs-install catalog control |
+| [Lab 23](labs/lab23.md) | Custom SDLC Stages, Gates & the Rework Loop | Custom epic and QA-review phases, workflow overlays with approval gates, first-class rework |
+| [Lab 24](labs/lab24.md) | The Notification Funnel & Executable Tasks | Stage-transition notification routing, tasks projected to issues, task-as-prompt format |
+| [Lab 25](labs/lab25.md) | Telemetry, Log Analytics & the Improvement Loop | Copilot OpenTelemetry export, offline file-exporter path, Logs Ingestion API, KQL pack and Workbook |
+| [Lab 26](labs/lab26.md) | Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension, SDLC board, code-aware workbench, dry-run release composer |
 
 **Total: ~7 hours** (20 labs — self-paced or presenter-led)
 
@@ -679,7 +685,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 |----------|---------|-------------|
 | **PRD Generation** | Feature branch created | PM agent generates a Product Requirements Document |
 | **Code Review** | Pull request opened | Code review agent provides automated feedback |
-| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the seven freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
+| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the nine freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing, Spec Kit release, Azure Monitor API versions) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
 
 ---
 

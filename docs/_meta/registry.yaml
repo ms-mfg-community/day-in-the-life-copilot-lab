@@ -27,6 +27,34 @@ copilot_cli_version_floor: "1.0.82"
 # not been recompiled; upstream latest was v0.88.2 as of 2026-09-04.
 gh_aw_schema_version: "0.86.2"
 
+# GitHub Spec Kit (`github/spec-kit`) release the enterprise-harness arc
+# (Labs 21-26) is authored and tested against. Labs MUST reference this key
+# rather than hardcoding a version — the install command is
+# `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>`.
+#
+# RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 1):
+# Spec Kit releases every few days — 13 releases between 2026-08-21 and
+# 2026-09-25, two of them within 26 hours of each other. Re-check the pinned
+# version, the command list, and the Copilot integration layout before any
+# cohort, and at the start of any work that consumes this key — do not trust
+# last_verified without re-checking. Verified 2026-09-25 via
+# `gh api repos/github/spec-kit/releases/latest`: v1.0.12, published
+# 2026-09-25T17:48:57Z, not a prerelease. This SUPERSEDES v1.0.11 (published
+# 2026-09-24, recorded earlier the same day while the EPIC-001 #51 spec was
+# written), v1.0.10 (recorded 2026-09-23 by EPIC-001 #48), v1.0.9 (found
+# 2026-09-22 while the #48 spec was written) and the v1.0.8 value recorded
+# on 2026-09-17 in EPIC-001 and in issue #48's body.
+#
+# Re-verified 2026-09-28 for EPIC-001 #52 via
+# `gh api "repos/github/spec-kit/releases?per_page=10"`: still v1.0.12, nothing
+# newer, not a prerelease. (The ?per_page=10 form is used deliberately in
+# preference to releases/latest, which excludes prereleases and so cannot
+# establish "nothing newer" on its own.) The pin did not move. Three days
+# without a release is NOT evidence the cadence has slowed — re-check before
+# the next cohort and at the start of any work that consumes this key.
+spec_kit_version: "1.0.12"
+spec_kit_version_last_verified: "2026-09-28"
+
 # MCP protocol revision this registry assumes labs teach against. The
 # 2026-07-28 spec is a breaking revision (stateless handshake, no
 # Mcp-Session-Id, server/discover RPC, subscriptions/listen replacing
@@ -91,6 +119,39 @@ mcp_servers:
     npm_package: "@modelcontextprotocol/server-filesystem"
     last_verified: "2026-09-08"
     note: "Prepared core only; restricted to this checkout's synthetic fixture directory."
+
+# Azure Monitor / Log Analytics resource API versions for Lab 25 (EPIC-001 U5).
+# Labs and Bicep MUST read these rather than hardcoding an apiVersion.
+#
+# RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 3): re-confirm
+# against the ARM/Bicep template reference before any cohort. Verified
+# 2026-09-23 against learn.microsoft.com/azure/templates/* and the Logs
+# Ingestion API overview; all four values unchanged since 2026-09-22.
+azure_monitor:
+  # Microsoft.Insights/dataCollectionRules — newest dated version in the
+  # reference version list. Unchanged since 2026-09-17.
+  data_collection_rules_api_version: "2024-03-11"
+
+  # Microsoft.Insights/dataCollectionEndpoints — "Latest" resource format
+  # emits apiVersion '2024-03-11'. Unchanged since 2026-09-17.
+  data_collection_endpoints_api_version: "2024-03-11"
+
+  # Microsoft.OperationalInsights/workspaces/tables.
+  # CHANGED 2026-09-22: a newer STABLE version (2026-03-01) has shipped and is
+  # now what the "Latest" reference page emits. The previously-recorded
+  # 2025-07-01 (EPIC-001, 2026-09-17) is superseded but NOT retired — it still
+  # deploys. If 2026-03-01 introduces a property change that breaks Lab 25's
+  # Bicep, fall back to 2025-07-01 and record why here.
+  workspaces_tables_api_version: "2026-03-01"
+  workspaces_tables_api_version_previous: "2025-07-01"
+
+  # Logs Ingestion API data-plane POST:
+  #   {Endpoint}/dataCollectionRules/{DCR-Immutable-ID}/streams/{Stream-Name}?api-version=...
+  # This is a DATA-PLANE version and is NOT the same as the ARM versions above.
+  # Unchanged since 2026-09-17.
+  logs_ingestion_data_plane_api_version: "2023-01-01"
+
+  last_verified: "2026-09-23"
 
 # Phase 1 local packaging inputs, not an approved attendee image.
 # Base digests were resolved for linux/amd64 on 2026-09-08. The tool
@@ -297,6 +358,42 @@ labs:
     pace_presenter_minutes: 6
     pace_workshop_minutes: 10
     pace_self_minutes: 25
+  # Labs 21-26 — EPIC-001 enterprise-harness arc. SELF-PACED ONLY: these labs
+  # are deliberately NOT in workshop/curriculum.md (the 4-hour / 240-minute
+  # budget has no room without displacing M1-M6). pace_workshop_minutes is
+  # still REQUIRED and must be >= pace_presenter_minutes — the registry
+  # workshop-pace audit in tests/workshop/time-budget.test.ts iterates EVERY
+  # registry lab with no workshop-participation filter.
+  lab21:
+    title: "The Tech Lead's Plugin & Marketplace Lockdown"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 30
+  lab22:
+    title: "Centralized Spec Kit Templates & the Org Catalog"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
+  lab23:
+    title: "Custom SDLC Stages, Gates & the Rework Loop"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
+  lab24:
+    title: "The Notification Funnel & Executable Tasks"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 30
+  lab25:
+    title: "Telemetry, Log Analytics & the Improvement Loop"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 14
+    pace_self_minutes: 45
+  lab26:
+    title: "Copilot App Canvases for Applied SDLC Operations"
+    pace_presenter_minutes: 7
+    pace_workshop_minutes: 12
+    pace_self_minutes: 35
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.
