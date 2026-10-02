@@ -8,6 +8,10 @@ import {
     loadRunDetails,
 } from "./github-data.mjs";
 import { renderDashboardHtml } from "./dashboard-html.mjs";
+import {
+    canvasUrl,
+    parseAuthorizedRequestUrl,
+} from "./request-security.mjs";
 
 const servers = new Map();
 const MAX_REQUEST_BYTES = 16_384;
@@ -37,12 +41,6 @@ async function readJsonBody(req) {
     }
 
     return chunks.length === 0 ? {} : JSON.parse(Buffer.concat(chunks).toString("utf8"));
-}
-
-function requireCanvasToken(req, context) {
-    if (req.headers["x-canvas-token"] !== context.token) {
-        throw new Error("The canvas security token is missing or invalid.");
-    }
 }
 
 function assistantResponseText(response) {
@@ -129,14 +127,15 @@ async function startIssueWork(issueNumber, input) {
 }
 
 async function handleRequest(req, res, context) {
-    const requestUrl = new URL(req.url ?? "/", "http://127.0.0.1");
-
     try {
+        const requestUrl = parseAuthorizedRequestUrl(req, context.token);
+
         if (req.method === "GET" && requestUrl.pathname === "/") {
             res.writeHead(200, {
                 "Content-Type": "text/html; charset=utf-8",
                 "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
                 "Cache-Control": "no-store",
+                "Referrer-Policy": "no-referrer",
             });
             res.end(renderDashboardHtml(context.token));
             return;
@@ -155,14 +154,12 @@ async function handleRequest(req, res, context) {
 
         const recommendationMatch = requestUrl.pathname.match(/^\/api\/runs\/(\d+)\/recommend$/);
         if (req.method === "POST" && recommendationMatch) {
-            requireCanvasToken(req, context);
             sendJson(res, 200, await recommendRunFix(Number(recommendationMatch[1])));
             return;
         }
 
         const startWorkMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/start$/);
         if (req.method === "POST" && startWorkMatch) {
-            requireCanvasToken(req, context);
             const body = await readJsonBody(req);
             sendJson(res, 200, await startIssueWork(Number(startWorkMatch[1]), body));
             return;
@@ -170,7 +167,6 @@ async function handleRequest(req, res, context) {
 
         const assignmentMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/assign$/);
         if (req.method === "POST" && assignmentMatch) {
-            requireCanvasToken(req, context);
             const body = await readJsonBody(req);
             const result = await assignIssue(Number(assignmentMatch[1]), body.assignee);
             sendJson(res, 200, result);
@@ -180,7 +176,8 @@ async function handleRequest(req, res, context) {
         sendJson(res, 404, { error: "Route not found." });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unexpected dashboard error.";
-        sendJson(res, 500, { error: message });
+        const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(res, statusCode, { error: message });
     }
 }
 
@@ -193,7 +190,7 @@ async function startServer(instanceId) {
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
     const port = typeof address === "object" && address ? address.port : 0;
-    return { server, url: `http://127.0.0.1:${port}/` };
+    return { server, url: canvasUrl(port, context.token) };
 }
 
 async function loadDashboardSummary() {

@@ -1,12 +1,14 @@
 export const DASHBOARD_SCRIPT = String.raw`
 const app = document.querySelector("#app");
 const config = globalThis.__REPOSITORY_DASHBOARD__;
+const FILTER_DEBOUNCE_DELAY_MS = 200;
 const state = {
   dashboard: null,
   activeTab: "overview",
   filter: "",
   loading: false,
 };
+let filterRenderTimeout;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -273,7 +275,8 @@ function render() {
     '<nav class="tabs" aria-label="Dashboard views">' +
       tabs.map(([id, label]) =>
         '<button class="tab ' + (state.activeTab === id ? "active" : "") +
-        '" data-tab="' + id + '" type="button">' + label + '</button>'
+        '"' + (state.activeTab === id ? ' aria-current="page"' : "") +
+        ' data-tab="' + id + '" type="button">' + label + '</button>'
       ).join("") + '</nav>' +
     '<div class="content">' + renderErrors() + renderContent() + '</div>' +
   '</main>';
@@ -291,20 +294,24 @@ function showToast(message) {
 }
 
 async function fetchDashboard() {
-  const response = await fetch("/api/dashboard", { cache: "no-store" });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "Unable to load dashboard.");
-  return payload;
+  return requestJson("/api/dashboard", { cache: "no-store" });
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      "X-Canvas-Token": config.token,
+    },
+  });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "The request failed.");
   return payload;
 }
 
 async function refresh() {
+  cancelFilterRender();
   state.loading = true;
   if (state.dashboard) render();
   try {
@@ -336,7 +343,6 @@ async function submitAssignment(form) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Canvas-Token": config.token,
       },
       body: JSON.stringify({
         agent: formData.get("agent"),
@@ -388,7 +394,6 @@ async function recommendRunFix(button) {
   try {
     const payload = await requestJson("/api/runs/" + runId + "/recommend", {
       method: "POST",
-      headers: { "X-Canvas-Token": config.token },
     });
     target.innerHTML = '<h4>Copilot recommendation</h4><pre class="recommendation-text">' +
       escapeHtml(payload.recommendation) + '</pre>';
@@ -399,21 +404,42 @@ async function recommendRunFix(button) {
   }
 }
 
+function cancelFilterRender() {
+  if (filterRenderTimeout === undefined) return;
+  clearTimeout(filterRenderTimeout);
+  filterRenderTimeout = undefined;
+}
+
+function scheduleFilterRender(input) {
+  const filter = input.value;
+  const selectionStart = input.selectionStart;
+  const selectionEnd = input.selectionEnd;
+  const selectionDirection = input.selectionDirection;
+  cancelFilterRender();
+  filterRenderTimeout = setTimeout(() => {
+    state.filter = filter;
+    render();
+    const renderedInput = document.querySelector("#filter");
+    renderedInput?.focus();
+    if (selectionStart !== null && selectionEnd !== null) {
+      renderedInput?.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
+    }
+    filterRenderTimeout = undefined;
+  }, FILTER_DEBOUNCE_DELAY_MS);
+}
+
 function bindEvents() {
   document.querySelector("#refresh")?.addEventListener("click", refresh);
   document.querySelectorAll("[data-tab]").forEach((tab) => {
     tab.addEventListener("click", () => {
+      cancelFilterRender();
       state.activeTab = tab.dataset.tab;
       state.filter = "";
       render();
     });
   });
   document.querySelector("#filter")?.addEventListener("input", (event) => {
-    state.filter = event.target.value;
-    render();
-    const input = document.querySelector("#filter");
-    input?.focus();
-    input?.setSelectionRange(state.filter.length, state.filter.length);
+    scheduleFilterRender(event.target);
   });
   document.querySelectorAll(".assignment").forEach((form) => {
     form.addEventListener("submit", (event) => {

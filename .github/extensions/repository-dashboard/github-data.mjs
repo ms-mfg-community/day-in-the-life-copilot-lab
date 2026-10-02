@@ -9,6 +9,46 @@ const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const MAX_LOG_CHARACTERS = 60_000;
 const GITHUB_LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
 const AGENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const FULL_ISSUE_URL_PATTERN = /https?:\/\/([^/\s<>()]+)\/([^/\s<>()]+)\/([^/\s<>()]+)\/issues\/(\d+)\b/gi;
+const ISSUES_QUERY = `
+query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    issues(first: 100, states: OPEN, after: $endCursor, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        number title url body createdAt updatedAt
+        author { login avatarUrl }
+        labels(first: 100) { nodes { name color description } }
+        assignees(first: 100) { nodes { login name avatarUrl } }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}`;
+const PULL_REQUESTS_QUERY = `
+query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(first: 100, states: OPEN, after: $endCursor, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        number title url body isDraft reviewDecision createdAt updatedAt headRefName baseRefName
+        author { login avatarUrl }
+        labels(first: 100) { nodes { name color description } }
+        assignees(first: 100) { nodes { login name avatarUrl } }
+        closingIssuesReferences(first: 100) {
+          nodes { number repository { nameWithOwner } }
+        }
+        statusCheckRollup {
+          contexts(first: 100) {
+            nodes {
+              ... on CheckRun { status conclusion }
+              ... on StatusContext { state }
+            }
+          }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}`;
 
 async function runGh(args) {
     try {
@@ -40,6 +80,31 @@ async function runGhJson(args) {
     }
 }
 
+export function flattenGraphqlPages(pages, connectionName) {
+    return (pages ?? []).flatMap(
+        (page) => page?.data?.repository?.[connectionName]?.nodes ?? [],
+    );
+}
+
+function splitRepositoryName(repo) {
+    const separatorIndex = repo.indexOf("/");
+    return {
+        owner: repo.slice(0, separatorIndex),
+        name: repo.slice(separatorIndex + 1),
+    };
+}
+
+async function loadPaginatedConnection(repo, connectionName, query) {
+    const { owner, name } = splitRepositoryName(repo);
+    const pages = await runGhJson([
+        "api", "graphql", "--paginate", "--slurp",
+        "-f", `owner=${owner}`,
+        "-f", `name=${name}`,
+        "-f", `query=${query}`,
+    ]);
+    return flattenGraphqlPages(pages, connectionName);
+}
+
 async function loadRepositoryAgents() {
     const agentsDirectory = join(process.cwd(), ".github", "agents");
 
@@ -69,10 +134,18 @@ async function loadRepositoryAgents() {
     }
 }
 
-function extractReferencedIssues(body, closingIssuesReferences) {
-    const explicit = (closingIssuesReferences ?? []).map((issue) => issue.number);
-    const issueUrls = [...(body ?? "").matchAll(/\/issues\/(\d+)\b/g)]
-        .map((match) => Number(match[1]))
+export function extractReferencedIssues(body, closingIssuesReferences, repo, repositoryUrl) {
+    const normalizedRepo = repo.toLowerCase();
+    const repositoryHost = new URL(repositoryUrl).host.toLowerCase();
+    const explicit = (closingIssuesReferences ?? [])
+        .filter((issue) =>
+            issue.repository?.nameWithOwner?.toLowerCase() === normalizedRepo)
+        .map((issue) => issue.number);
+    const issueUrls = [...(body ?? "").matchAll(FULL_ISSUE_URL_PATTERN)]
+        .filter((match) =>
+            match[1].toLowerCase() === repositoryHost
+            && `${match[2]}/${match[3]}`.toLowerCase() === normalizedRepo)
+        .map((match) => Number(match[4]))
         .filter(Number.isInteger);
     return [...new Set([...explicit, ...issueUrls])].sort((left, right) => left - right);
 }
@@ -97,25 +170,39 @@ function summarizeChecks(statusCheckRollup) {
     );
 }
 
-function normalizePullRequests(pullRequests) {
+function normalizePullRequests(pullRequests, repo, repositoryUrl) {
     return pullRequests.map((pullRequest) => ({
         ...pullRequest,
+        labels: pullRequest.labels?.nodes ?? [],
+        assignees: pullRequest.assignees?.nodes ?? [],
+        closingIssuesReferences: pullRequest.closingIssuesReferences?.nodes ?? [],
+        statusCheckRollup: pullRequest.statusCheckRollup?.contexts?.nodes ?? [],
         relatedIssueNumbers: extractReferencedIssues(
             pullRequest.body,
-            pullRequest.closingIssuesReferences,
+            pullRequest.closingIssuesReferences?.nodes,
+            repo,
+            repositoryUrl,
         ),
-        checks: summarizeChecks(pullRequest.statusCheckRollup),
+        checks: summarizeChecks(pullRequest.statusCheckRollup?.contexts?.nodes),
     }));
 }
 
 function normalizeIssues(issues, pullRequests) {
     return issues.map((issue) => {
+        const normalizedIssue = {
+            ...issue,
+            labels: issue.labels?.nodes ?? [],
+            assignees: issue.assignees?.nodes ?? [],
+        };
         const linkedPullRequests = pullRequests
-            .filter((pullRequest) => pullRequest.relatedIssueNumbers.includes(issue.number))
+            .filter((pullRequest) => pullRequest.relatedIssueNumbers.includes(normalizedIssue.number))
             .map(({ number, title, url, isDraft }) => ({ number, title, url, isDraft }));
-        const isBlocked = issue.labels.some((label) => /blocked|waiting|on hold/i.test(label.name));
-        const lane = isBlocked ? "blocked" : issue.assignees.length > 0 ? "assigned" : "unassigned";
-        return { ...issue, lane, linkedPullRequests };
+        const isBlocked = normalizedIssue.labels
+            .some((label) => /blocked|waiting|on hold/i.test(label.name));
+        const lane = isBlocked
+            ? "blocked"
+            : normalizedIssue.assignees.length > 0 ? "assigned" : "unassigned";
+        return { ...normalizedIssue, lane, linkedPullRequests };
     });
 }
 
@@ -140,16 +227,10 @@ export async function loadDashboard() {
 
     const sections = await Promise.all([
         loadSection("issues", () =>
-            runGhJson([
-                "issue", "list", "--repo", repo, "--state", "open", "--limit", "100",
-                "--json", "number,title,url,body,labels,assignees,author,createdAt,updatedAt",
-            ]),
+            loadPaginatedConnection(repo, "issues", ISSUES_QUERY),
         ),
         loadSection("pullRequests", () =>
-            runGhJson([
-                "pr", "list", "--repo", repo, "--state", "open", "--limit", "100",
-                "--json", "number,title,url,body,isDraft,author,assignees,labels,reviewDecision,statusCheckRollup,createdAt,updatedAt,closingIssuesReferences,headRefName,baseRefName",
-            ]),
+            loadPaginatedConnection(repo, "pullRequests", PULL_REQUESTS_QUERY),
         ),
         loadSection("runs", () =>
             runGhJson([
@@ -164,7 +245,11 @@ export async function loadDashboard() {
     ]);
 
     const sectionMap = Object.fromEntries(sections.map((section) => [section.name, section]));
-    const pullRequests = normalizePullRequests(sectionMap.pullRequests.data ?? []);
+    const pullRequests = normalizePullRequests(
+        sectionMap.pullRequests.data ?? [],
+        repo,
+        repository.url,
+    );
     const issues = normalizeIssues(sectionMap.issues.data ?? [], pullRequests);
     const errors = Object.fromEntries(
         sections.filter((section) => section.error).map((section) => [section.name, section.error]),
