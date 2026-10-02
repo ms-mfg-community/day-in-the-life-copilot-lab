@@ -1,10 +1,14 @@
 import { execFile } from "node:child_process";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const COMMAND_TIMEOUT_MS = 30_000;
 const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
+const MAX_LOG_CHARACTERS = 60_000;
 const GITHUB_LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+const AGENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 async function runGh(args) {
     try {
@@ -33,6 +37,35 @@ async function runGhJson(args) {
         return JSON.parse(output);
     } catch (error) {
         throw new Error(`GitHub returned invalid JSON: ${error.message}`);
+    }
+}
+
+async function loadRepositoryAgents() {
+    const agentsDirectory = join(process.cwd(), ".github", "agents");
+
+    try {
+        const entries = await readdir(agentsDirectory, { withFileTypes: true });
+        const agentFiles = entries
+            .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md"))
+            .map((entry) => entry.name);
+        const agents = await Promise.all(agentFiles.map(async (fileName) => {
+            const content = await readFile(join(agentsDirectory, fileName), "utf8");
+            const frontmatter = content.match(/^---\s*([\s\S]*?)\s*---/);
+            const nameMatch = frontmatter?.[1].match(/^name:\s*["']?([^"'\r\n]+)["']?\s*$/m);
+            const fallbackName = fileName.replace(/\.agent\.md$/, "");
+            return {
+                name: nameMatch?.[1]?.trim() || fallbackName,
+                source: "project",
+            };
+        }));
+        return agents
+            .filter((agent) => AGENT_NAME_PATTERN.test(agent.name))
+            .sort((left, right) => left.name.localeCompare(right.name));
+    } catch (error) {
+        if (error?.code === "ENOENT") {
+            return [];
+        }
+        throw new Error(`Unable to discover repository agents: ${error.message}`);
     }
 }
 
@@ -127,6 +160,7 @@ export async function loadDashboard() {
         loadSection("assignableUsers", () =>
             runGhJson(["api", `repos/${repo}/assignees?per_page=100`]),
         ),
+        loadSection("agents", () => loadRepositoryAgents()),
     ]);
 
     const sectionMap = Object.fromEntries(sections.map((section) => [section.name, section]));
@@ -150,8 +184,58 @@ export async function loadDashboard() {
             login,
             avatarUrl,
         })),
+        agents: sectionMap.agents.data ?? [],
         errors,
         refreshedAt: new Date().toISOString(),
+    };
+}
+
+function validateRunId(runId) {
+    if (!Number.isSafeInteger(runId) || runId < 1) {
+        throw new Error("Run ID must be a positive integer.");
+    }
+}
+
+function stripAnsi(value) {
+    return value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
+}
+
+export async function loadRunDetails(runId) {
+    validateRunId(runId);
+    const repository = await runGhJson(["repo", "view", "--json", "nameWithOwner"]);
+    const repo = repository.nameWithOwner;
+    const run = await runGhJson([
+        "run", "view", String(runId), "--repo", repo,
+        "--json", "databaseId,displayTitle,event,headBranch,headSha,status,conclusion,workflowName,createdAt,updatedAt,url,jobs",
+    ]);
+
+    let failedLogs = "";
+    let logError = null;
+    try {
+        failedLogs = stripAnsi(await runGh([
+            "run", "view", String(runId), "--repo", repo, "--log-failed",
+        ]));
+    } catch (error) {
+        logError = error instanceof Error ? error.message : "Failed logs are unavailable.";
+    }
+
+    const logsWereTruncated = failedLogs.length > MAX_LOG_CHARACTERS;
+    if (logsWereTruncated) {
+        failedLogs = failedLogs.slice(-MAX_LOG_CHARACTERS);
+    }
+
+    const { jobs = [], ...runSummary } = run;
+    return {
+        run: runSummary,
+        failedJobs: jobs
+            .filter((job) => job.conclusion === "failure")
+            .map((job) => ({
+                ...job,
+                failedSteps: (job.steps ?? []).filter((step) => step.conclusion === "failure"),
+            })),
+        failedLogs,
+        logsWereTruncated,
+        logError,
     };
 }
 

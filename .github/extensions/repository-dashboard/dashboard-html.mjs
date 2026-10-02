@@ -1,4 +1,5 @@
-import { DASHBOARD_SCRIPT, DASHBOARD_STYLES } from "./dashboard-assets.mjs";
+import { DASHBOARD_SCRIPT } from "./dashboard-script.mjs";
+import { DASHBOARD_STYLES } from "./dashboard-styles.mjs";
 
 function serialize(value) {
     return JSON.stringify(value).replaceAll("<", "\\u003c");
