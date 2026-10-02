@@ -103,7 +103,7 @@ mcp_servers:
     last_verified: "2026-08-31"
   - name: fabric
     transport: stdio
-    pin: "1.1.0"           # @microsoft/fabric-mcp (local/OSS variant) — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
+    pin: "1.1.0" # @microsoft/fabric-mcp (local/OSS variant) — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
     npm_package: "@microsoft/fabric-mcp"
     last_verified: "2026-06-15"
     note: >-
@@ -227,7 +227,7 @@ enterprise_managed_settings:
     - enabledPlugins
     - strictKnownMarketplaces
     - model
-    - autoTier
+    - autoTier # requires CLI >=1.0.87-0, VS Code >=1.140.0
     - permissions.disableBypassPermissionsMode
     - permissions.deny
     - permissions.ask
@@ -254,8 +254,8 @@ enterprise_managed_settings:
       - enabledPlugins
     non_overridable_keys:
       - telemetry
-  strict_known_marketplaces_ga_date: "2026-07-01"   # public preview: 2026-06-25
-  last_verified: "2026-09-04"
+  strict_known_marketplaces_ga_date: "2026-07-01" # public preview: 2026-06-25
+  last_verified: "2026-10-01"
 
 # Pace-field semantics (Phase 1 audit):
 #   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline

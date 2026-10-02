@@ -20,6 +20,40 @@ describe("enterprise-harness-bundle: installer dry-run", () => {
     expect(result.resolved.skills).toHaveLength(3);
   });
 
+  it("rejects absolute entrypoint paths", async () => {
+    const mod = await import(pathToFileURL(INSTALL_SCRIPT).href);
+    const result = await mod.dryRun(BUNDLE_DIR, {
+      manifestOverride: {
+        name: "test",
+        version: "1.0.0",
+        minimum_cli_version: "1.0.0",
+        entrypoints: { agents: [join(BUNDLE_DIR, "agents", "qa-reviewer.md")] },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.stringMatching(/must be relative/),
+    );
+  });
+
+  it("rejects entrypoints that escape the bundle root", async () => {
+    const mod = await import(pathToFileURL(INSTALL_SCRIPT).href);
+    const result = await mod.dryRun(BUNDLE_DIR, {
+      manifestOverride: {
+        name: "test",
+        version: "1.0.0",
+        minimum_cli_version: "1.0.0",
+        entrypoints: { agents: ["../README.md"] },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.stringMatching(/escapes bundle root/),
+    );
+  });
+
   it("prints ok=true when run as a CLI", () => {
     const result = spawnSync("node", [INSTALL_SCRIPT], {
       cwd: ROOT,

@@ -1,78 +1,102 @@
-// Pre-/post-execution guard for the QA reviewer agent.
-//
-// Wraps a shell command and enforces the verdict-only write boundary:
-// only `qa-review.md` may be created or modified. Any other working-tree
-// change causes the guard to revert the unauthorized modifications and
-// exit non-zero, preventing the QA agent from altering source files
-// through shell redirection, scripts, or formatters.
-//
-// Usage:
-//   node enterprise-harness-bundle/scripts/guard-qa-shell.mjs -- <command...>
+// Verdict-only command guard used by the QA agent's scoped MCP server.
 
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const ALLOWED_FILES = new Set(["qa-review.md"]);
 
-function gitStatus(cwd) {
-  const result = spawnSync("git", ["status", "--porcelain"], {
-    cwd,
-    encoding: "utf8",
-  });
+function listWorkspaceFiles(cwd) {
+  const result = spawnSync(
+    "git",
+    ["ls-files", "-co", "--exclude-standard", "-z"],
+    { cwd, encoding: "utf8" },
+  );
   if (result.status !== 0) {
-    throw new Error(`git status failed: ${result.stderr}`);
+    throw new Error(`git ls-files failed: ${result.stderr}`);
   }
-  return result.stdout
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => ({ flag: line.slice(0, 2), file: line.slice(3) }));
+  return result.stdout.split("\0").filter(Boolean);
 }
 
-function revertUnauthorized(cwd, entries) {
-  for (const entry of entries) {
-    if (ALLOWED_FILES.has(entry.file)) continue;
+function snapshotWorkspace(cwd) {
+  return new Map(
+    listWorkspaceFiles(cwd).map((file) => {
+      const path = resolve(cwd, file);
+      const stat = lstatSync(path);
+      return [file, { content: readFileSync(path), mode: stat.mode }];
+    }),
+  );
+}
 
-    if (entry.flag.trim().startsWith("?")) {
-      // Untracked file that was not there before — remove it.
-      spawnSync("git", ["clean", "-f", "--", entry.file], { cwd });
-    } else {
-      // Modified or staged tracked file — restore it.
-      spawnSync("git", ["checkout", "--", entry.file], { cwd });
+function changedFiles(before, after) {
+  const paths = new Set([...before.keys(), ...after.keys()]);
+  return [...paths].filter((file) => {
+    const previous = before.get(file);
+    const current = after.get(file);
+    if (!previous || !current) return true;
+    return (
+      !previous.content.equals(current.content) ||
+      previous.mode !== current.mode
+    );
+  });
+}
+
+function restoreFiles(cwd, before, files) {
+  for (const file of files) {
+    const path = resolve(cwd, file);
+    const previous = before.get(file);
+    if (!previous) {
+      rmSync(path, { recursive: true, force: true });
+      continue;
     }
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, previous.content);
+    chmodSync(path, previous.mode);
   }
 }
 
 export function guardExec(command, cwd = process.cwd()) {
-  const before = new Set(gitStatus(cwd).map((e) => `${e.flag}|${e.file}`));
-
-  const shell = process.platform === "win32" ? true : "/bin/sh";
-  const args = process.platform === "win32" ? [] : ["-c", command];
-  const cmd = process.platform === "win32" ? command : "/bin/sh";
-
-  const result = spawnSync(cmd, args, {
-    cwd,
-    shell: process.platform === "win32",
-    encoding: "utf8",
-    stdio: ["inherit", "inherit", "inherit"],
-  });
-
-  const after = gitStatus(cwd);
-  const newChanges = after.filter(
-    (e) => !before.has(`${e.flag}|${e.file}`),
-  );
-  const unauthorized = newChanges.filter((e) => !ALLOWED_FILES.has(e.file));
-
-  if (unauthorized.length > 0) {
-    const names = unauthorized.map((e) => e.file).join(", ");
-    process.stderr.write(
-      `guard-qa-shell: BLOCKED — unauthorized file changes: ${names}\n`,
-    );
-    revertUnauthorized(cwd, unauthorized);
-    return { exitCode: 1, blocked: true, unauthorizedFiles: names };
+  if (typeof command !== "string" || command.trim().length === 0) {
+    throw new Error("command must be a non-empty string");
   }
 
-  return { exitCode: result.status ?? 1, blocked: false };
+  const before = snapshotWorkspace(cwd);
+  const result = spawnSync(command, {
+    cwd,
+    shell: true,
+    encoding: "utf8",
+  });
+  const after = snapshotWorkspace(cwd);
+  const unauthorized = changedFiles(before, after).filter(
+    (file) => !ALLOWED_FILES.has(file),
+  );
+
+  if (unauthorized.length > 0) {
+    restoreFiles(cwd, before, unauthorized);
+    return {
+      exitCode: 1,
+      blocked: true,
+      unauthorizedFiles: unauthorized,
+      stdout: result.stdout ?? "",
+      stderr: result.stderr ?? "",
+    };
+  }
+
+  return {
+    exitCode: result.status ?? 1,
+    blocked: false,
+    unauthorizedFiles: [],
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+  };
 }
 
 const invokedDirectly = (() => {
@@ -86,12 +110,16 @@ const invokedDirectly = (() => {
 if (invokedDirectly) {
   const dashDash = process.argv.indexOf("--");
   if (dashDash < 0 || dashDash + 1 >= process.argv.length) {
-    process.stderr.write(
-      "usage: guard-qa-shell.mjs -- <command...>\n",
-    );
+    process.stderr.write("usage: guard-qa-shell.mjs -- <command...>\n");
     process.exit(1);
   }
-  const command = process.argv.slice(dashDash + 1).join(" ");
-  const { exitCode } = guardExec(command);
-  process.exit(exitCode);
+  const result = guardExec(process.argv.slice(dashDash + 1).join(" "));
+  process.stdout.write(result.stdout);
+  process.stderr.write(result.stderr);
+  if (result.blocked) {
+    process.stderr.write(
+      `guard-qa-shell: BLOCKED unauthorized file changes: ${result.unauthorizedFiles.join(", ")}\n`,
+    );
+  }
+  process.exit(result.exitCode);
 }

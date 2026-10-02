@@ -1,23 +1,23 @@
 ---
 name: qa-review
-description: Review changes against acceptance criteria and deterministic evidence.
+description: Review approved work against its specification, tasks, diff, and executed evidence, then emit a pass or reject verdict.
 ---
 
 # QA Review
 
-Use this skill as the bundle binding for the organization-owned `qa-review`
-stage introduced in Labs 22 and 23. The centrally managed stage template owns
-the detailed rubric; this skill supplies the stable invocation and evidence
-contract without copying that rubric.
+Use this skill from the independent QA reviewer role. It binds to the
+organization-owned `speckit.contoso-review.qa-review` stage planned for Labs 22
+and 23 without copying that stage's rubric.
 
-## Evidence contract
+## Contract
 
 - Inputs: approved specification, task list, current diff, and commands with
   their actual output.
 - Output: a `pass` or `reject` verdict plus evidence-backed findings.
-- Write the verdict only through
-  `scripts/write-qa-verdict.mjs`; do not edit source files.
+- Run evidence only through the agent-scoped `qa-boundary/run_evidence` tool.
+- Write the verdict only through `qa-boundary/write_verdict`; do not edit source
+  files.
 
 Keep a clean distinction between agent analysis, deterministic test results,
 and the human decision to accept or merge the change. Do not modify the
-implementation during a review-only pass.
+implementation under review.

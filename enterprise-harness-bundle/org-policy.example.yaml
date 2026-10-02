@@ -9,6 +9,8 @@ allowlist:
   - source: "github/awesome-copilot"
     notes: "GitHub-maintained public marketplace, explicitly approved."
 
+# Documentation-only release expectations. scripts/policy.mjs evaluates only
+# default_action and allowlist; enforce these requirements in release CI.
 require:
   signed_releases: true
   sbom: true

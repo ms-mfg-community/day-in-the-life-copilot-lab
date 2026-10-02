@@ -25,15 +25,36 @@ describe("enterprise-harness-bundle: Unicode supply-chain scan", () => {
     expect(scan(join(ROOT, "enterprise-harness-bundle"))).toEqual([]);
   });
 
-  it("detects bidirectional and zero-width controls", async () => {
+  it.each([
+    ["soft hyphen", "\u00AD", "U+00AD"],
+    ["Arabic letter mark", "\u061C", "U+061C"],
+    ["Mongolian vowel separator", "\u180E", "U+180E"],
+    ["zero-width space", "\u200B", "U+200B"],
+    ["bidi override", "\u202E", "U+202E"],
+    ["variation selector", "\uFE0F", "U+FE0F"],
+    ["tag character", "\u{E0049}", "U+E0049"],
+    ["supplementary variation selector", "\u{E0100}", "U+E0100"],
+  ])("detects %s", async (_name, character, codePoint) => {
     const fixture = mkdtempSync(join(tmpdir(), "unicode-scan-"));
     tempDirs.push(fixture);
-    writeFileSync(join(fixture, "unsafe.md"), "safe\u202Ehidden\u200Btext");
+    writeFileSync(join(fixture, "unsafe.sh"), `safe${character}hidden`);
+    const { scan } = await import(pathToFileURL(SCANNER).href);
+
+    expect(scan(fixture)).toEqual([{ file: "unsafe.sh", line: 1, codePoint }]);
+  });
+
+  it("scans PowerShell files and skips binary files", async () => {
+    const fixture = mkdtempSync(join(tmpdir(), "unicode-scan-"));
+    tempDirs.push(fixture);
+    writeFileSync(join(fixture, "unsafe.ps1"), 'Write-Host "safe\u202Ehidden"');
+    writeFileSync(
+      join(fixture, "image.bin"),
+      Buffer.from([0, 0xe2, 0x80, 0xae]),
+    );
     const { scan } = await import(pathToFileURL(SCANNER).href);
 
     expect(scan(fixture)).toEqual([
-      { file: "unsafe.md", line: 1, codePoint: "U+202E" },
-      { file: "unsafe.md", line: 1, codePoint: "U+200B" },
+      { file: "unsafe.ps1", line: 1, codePoint: "U+202E" },
     ]);
   });
 });

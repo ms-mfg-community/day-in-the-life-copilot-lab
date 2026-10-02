@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import Ajv from "ajv";
 import yaml from "js-yaml";
@@ -25,6 +25,30 @@ describe("enterprise-harness-bundle: manifest.yaml", () => {
     expect(
       validate(manifest),
       `manifest.yaml invalid: ${JSON.stringify(validate.errors, null, 2)}`,
+    ).toBe(true);
+  });
+
+  it("keeps the CLI plugin manifest aligned with the lab manifest", () => {
+    const manifest = yaml.load(readFileSync(MANIFEST_PATH, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const plugin = JSON.parse(
+      readFileSync(join(BUNDLE_DIR, "plugin.json"), "utf8"),
+    );
+
+    expect(plugin.name).toBe(manifest.name);
+    expect(plugin.version).toBe(manifest.version);
+    expect(plugin.agents).toBe("agents");
+    expect(plugin.skills).toBe("skills");
+  });
+
+  it("ships the scoped QA boundary scripts", () => {
+    expect(existsSync(join(BUNDLE_DIR, "scripts", "qa-boundary-mcp.mjs"))).toBe(
+      true,
+    );
+    expect(
+      existsSync(join(BUNDLE_DIR, "scripts", "run-qa-live-eval.mjs")),
     ).toBe(true);
   });
 
