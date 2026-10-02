@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { resolve, join, dirname } from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 const OUTPUT_FILE = "qa-review.md";
 const VALID_STATUSES = new Set(["pass", "reject"]);
@@ -12,6 +12,23 @@ function requireString(value, field) {
   return value.trim();
 }
 
+function loadManifest() {
+  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const manifestPath = join(scriptDir, "..", "manifest.yaml");
+  try {
+    const raw = readFileSync(manifestPath, "utf8");
+    // Simple YAML parse for name/version without external dependency.
+    const nameMatch = raw.match(/^name:\s*(.+)$/m);
+    const versionMatch = raw.match(/^version:\s*(.+)$/m);
+    return {
+      version: versionMatch ? versionMatch[1].trim() : "unknown",
+      name: nameMatch ? nameMatch[1].trim() : "unknown",
+    };
+  } catch {
+    return { version: "unknown", name: "unknown" };
+  }
+}
+
 export function renderVerdict(input) {
   const status = requireString(input?.status, "status").toLowerCase();
   if (!VALID_STATUSES.has(status)) {
@@ -20,10 +37,14 @@ export function renderVerdict(input) {
 
   const summary = requireString(input?.summary, "summary");
   const findings = Array.isArray(input?.findings) ? input.findings : [];
+  const manifest = loadManifest();
   const lines = [
     "# QA Review",
     "",
     `**Verdict:** ${status.toUpperCase()}`,
+    "",
+    `**Bundle:** ${manifest.name} v${manifest.version}`,
+    `**Agent:** qa-reviewer`,
     "",
     "## Summary",
     "",
@@ -44,11 +65,15 @@ export function renderVerdict(input) {
   return `${lines.join("\n")}\n`;
 }
 
-export function writeVerdict(inputPath, cwd = process.cwd()) {
-  const input = JSON.parse(readFileSync(resolve(cwd, inputPath), "utf8"));
+export function writeVerdictData(input, cwd = process.cwd()) {
   const outputPath = resolve(cwd, OUTPUT_FILE);
   writeFileSync(outputPath, renderVerdict(input), "utf8");
   return outputPath;
+}
+
+export function writeVerdict(inputPath, cwd = process.cwd()) {
+  const input = JSON.parse(readFileSync(resolve(cwd, inputPath), "utf8"));
+  return writeVerdictData(input, cwd);
 }
 
 function main(argv) {

@@ -9,7 +9,7 @@
 //     Exits 0 on ok=true, 1 on ok=false, 2 on unexpected errors.
 
 import { readFileSync, existsSync } from "node:fs";
-import { join, isAbsolute, dirname, resolve } from "node:path";
+import { join, isAbsolute, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import yaml from "js-yaml";
 
@@ -28,11 +28,22 @@ export async function dryRun(bundleDir, { manifestOverride } = {}) {
   const errors = [];
   const resolved = { agents: [], skills: [], hooks: [], prompts: [] };
 
+  const bundleRoot = resolve(bundleDir);
   const entrypoints = manifest?.entrypoints ?? {};
   for (const kind of ENTRYPOINT_KINDS) {
     const declared = Array.isArray(entrypoints[kind]) ? entrypoints[kind] : [];
     for (const rel of declared) {
-      const abs = isAbsolute(rel) ? rel : join(bundleDir, rel);
+      if (typeof rel !== "string" || isAbsolute(rel)) {
+        errors.push(`${kind} entrypoint must be relative: ${rel}`);
+        continue;
+      }
+
+      const abs = resolve(bundleRoot, rel);
+      const fromRoot = relative(bundleRoot, abs);
+      if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`)) {
+        errors.push(`${kind} entrypoint escapes bundle root: ${rel}`);
+        continue;
+      }
       if (!existsSync(abs)) {
         errors.push(`missing ${kind} entrypoint: ${rel}`);
         continue;

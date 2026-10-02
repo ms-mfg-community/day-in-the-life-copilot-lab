@@ -22,17 +22,16 @@ whose activation depends on probabilistic description matching.
 ## Security boundaries
 
 Every agent declares an explicit, non-wildcard `tools:` list. The QA agent has
-`read`, `search`, and `execute`, but no general edit tool. It needs shell access
-to gather behavioral evidence and writes its only artifact through
-`scripts/write-qa-verdict.mjs`, which always targets `qa-review.md`.
+only `read` and `search` built-ins. Its agent-scoped `qa-boundary` MCP server
+exposes `run_evidence` and `write_verdict`, so it can execute behavioral checks
+and write `qa-review.md` without receiving a general shell or edit tool.
 
-All QA shell commands must be run through `scripts/guard-qa-shell.mjs`, which
-snapshots the working tree before execution and reverts any unauthorized file
-modifications afterward. Only `qa-review.md` is permitted; the guard exits
-non-zero and reports blocked files for any other change.
-
-The bundle intentionally ships no MCP server. If one is added later, pin it to
-a reviewed version; the binding test rejects `pin: latest`.
+`run_evidence` snapshots Git-visible tracked and untracked non-ignored files,
+restores unauthorized modifications, and fails if anything except
+`qa-review.md` changes. Git metadata and ignored files are outside this
+file-write boundary. `write_verdict` validates the verdict and always targets
+that fixed file. The server is bundled locally and resolved through
+`${PLUGIN_ROOT}`; it does not fetch or execute a mutable external MCP package.
 
 Installing a plugin activates code and instructions. Treat file presence as
 execution: review the manifest, agents, skills, hooks, scripts, MCP

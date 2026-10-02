@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const ROOT = process.cwd();
@@ -16,6 +17,12 @@ const GUARD = join(
   "enterprise-harness-bundle",
   "scripts",
   "guard-qa-shell.mjs",
+);
+const MCP_SERVER = join(
+  ROOT,
+  "enterprise-harness-bundle",
+  "scripts",
+  "qa-boundary-mcp.mjs",
 );
 
 let fixtureDir: string;
@@ -85,9 +92,13 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     expect(readFileSync(join(fixtureDir, "implementation.txt"), "utf8")).toBe(
       "unchanged\n",
     );
-    expect(readFileSync(join(fixtureDir, "qa-review.md"), "utf8")).toContain(
-      "**Verdict:** REJECT",
+    const verdictContent = readFileSync(
+      join(fixtureDir, "qa-review.md"),
+      "utf8",
     );
+    expect(verdictContent).toContain("**Verdict:** REJECT");
+    expect(verdictContent).toContain("**Bundle:** enterprise-harness v0.1.0");
+    expect(verdictContent).toContain("**Agent:** qa-reviewer");
   });
 
   it("rejects an invalid verdict without writing output", () => {
@@ -128,6 +139,70 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       "utf8",
     );
     expect(restored.replace(/\r\n/g, "\n")).toBe("unchanged\n");
+  });
+
+  it("guard preserves pre-existing dirty source changes", () => {
+    writeFileSync(join(fixtureDir, "implementation.txt"), "review candidate\n");
+
+    const result = spawnSync(
+      "node",
+      [GUARD, "--", "echo tampered > implementation.txt"],
+      { cwd: fixtureDir, encoding: "utf8", shell: false },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(join(fixtureDir, "implementation.txt"), "utf8")).toBe(
+      "review candidate\n",
+    );
+  });
+
+  it("MCP server exposes only evidence and verdict tools", async () => {
+    const { handleRequest } = await import(pathToFileURL(MCP_SERVER).href);
+    const response = handleRequest({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/list",
+    });
+
+    expect(
+      response.result.tools.map((tool: { name: string }) => tool.name),
+    ).toEqual(["run_evidence", "write_verdict"]);
+  });
+
+  it("MCP verdict tool writes the fixed artifact without input files", async () => {
+    const { callTool } = await import(pathToFileURL(MCP_SERVER).href);
+    const result = callTool(
+      "write_verdict",
+      { status: "pass", summary: "Checks passed.", findings: [] },
+      fixtureDir,
+    );
+
+    expect(result.isError).toBe(false);
+    expect(readFileSync(join(fixtureDir, "qa-review.md"), "utf8")).toContain(
+      "**Verdict:** PASS",
+    );
+  });
+
+  it("MCP tool failures preserve the request id and return a tool error", async () => {
+    const { handleRequest } = await import(pathToFileURL(MCP_SERVER).href);
+    const response = handleRequest(
+      {
+        jsonrpc: "2.0",
+        id: 42,
+        method: "tools/call",
+        params: {
+          name: "write_verdict",
+          arguments: { status: "maybe", summary: "Invalid.", findings: [] },
+        },
+      },
+      fixtureDir,
+    );
+
+    expect(response.id).toBe(42);
+    expect(response.result.isError).toBe(true);
+    expect(response.result.content[0].text).toContain(
+      'status must be "pass" or "reject"',
+    );
   });
 
   it("guard permits the verdict file through shell", () => {

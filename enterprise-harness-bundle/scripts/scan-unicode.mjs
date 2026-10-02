@@ -1,10 +1,10 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { extname, join, relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const TEXT_EXTENSIONS = new Set(["", ".json", ".md", ".mjs", ".yaml", ".yml"]);
 const SKIP_DIRECTORIES = new Set([".git", "node_modules"]);
-const SUSPICIOUS_UNICODE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/gu;
+const SUSPICIOUS_UNICODE =
+  /[\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFE00-\uFE0F\uFEFF\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}]/gu;
 
 function listFiles(root, current = root) {
   const files = [];
@@ -15,17 +15,21 @@ function listFiles(root, current = root) {
       files.push(...listFiles(root, path));
       continue;
     }
-    if (TEXT_EXTENSIONS.has(extname(entry)) || entry === "CODEOWNERS") {
-      files.push(path);
-    }
+    files.push(path);
   }
   return files;
+}
+
+export function isBinary(file) {
+  const sample = readFileSync(file).subarray(0, 8192);
+  return sample.includes(0);
 }
 
 export function scan(root) {
   const resolvedRoot = resolve(root);
   const findings = [];
   for (const file of listFiles(resolvedRoot)) {
+    if (isBinary(file)) continue;
     const text = readFileSync(file, "utf8");
     for (const match of text.matchAll(SUSPICIOUS_UNICODE)) {
       const prefix = text.slice(0, match.index);
