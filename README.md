@@ -562,8 +562,9 @@ erDiagram
 | [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
+| [Lab 21](labs/lab21.md) | The Tech Lead's Plugin & Marketplace Lockdown | Role-based SDLC agents and centrally enforced marketplace controls |
 
-**Total: ~7 hours** (20 labs — self-paced or presenter-led)
+**Total: ~8 hours** (21 labs — self-paced or presenter-led)
 
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
@@ -575,6 +576,7 @@ erDiagram
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
 > enterprise scale and should be read after Lab 17.
+> [Lab 21](labs/lab21.md) begins the [Enterprise Agentic SDLC Harness arc](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/47).
 
 ---
 
@@ -653,7 +655,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 20 hands-on lab modules + per-track appendices
+├── labs/                          # 21 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
@@ -688,7 +690,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 14 hands-on labs — start here |
+| [Lab Modules](labs/) | 21 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |

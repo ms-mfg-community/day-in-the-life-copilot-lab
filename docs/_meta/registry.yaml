@@ -18,6 +18,10 @@ schema_version: 1
 # every learner is held to this floor by scripts/preflight.{sh,ps1}.
 copilot_cli_version_floor: "1.0.82"
 
+# Spec Kit version used for the Copilot integration behavior documented in
+# Lab 21. Keep the lab version-neutral and update this pin after verification.
+spec_kit_version: "1.0.12"
+
 # The gh-aw compiler version the committed .lock.yml files were built with
 # (see the `compiler_version` field in any .github/workflows/*.lock.yml).
 # Recompiling with a different version rewrites the locks, so pin the
@@ -75,7 +79,7 @@ mcp_servers:
     last_verified: "2026-08-31"
   - name: fabric
     transport: stdio
-    pin: "1.1.0"           # @microsoft/fabric-mcp (local/OSS variant) — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
+    pin: "1.1.0" # @microsoft/fabric-mcp (local/OSS variant) — GA 1.0.0 2026-04-14; 1.1.0 verified live 2026-06-15 (28 tools, server start --mode all)
     npm_package: "@microsoft/fabric-mcp"
     last_verified: "2026-06-15"
     note: >-
@@ -150,9 +154,8 @@ model_default_availability_policy: "default-on-unless-disabled"
 # (fetched directly). The supported path is copilot/managed-settings.json in
 # the enterprise's chosen source organization's .github-private repo, with
 # backward compatibility for the older .github/copilot/settings.json path.
-# Configured via the AI Controls tab in enterprise settings. Supported keys
-# today: extraKnownMarketplaces, enabledPlugins, strictKnownMarketplaces,
-# disableBypassPermissionsMode, model. Labs 11, 16, and 17 reference this.
+# Configured via the AI Controls tab in enterprise settings. The supported-key
+# list below is authoritative for the labs; retain dotted paths for nested keys.
 enterprise_managed_settings:
   canonical_path: "copilot/managed-settings.json"
   legacy_path: ".github/copilot/settings.json"
@@ -167,6 +170,7 @@ enterprise_managed_settings:
     - enabledPlugins
     - strictKnownMarketplaces
     - model
+    - autoTier # requires CLI >=1.0.87-0, VS Code >=1.140.0
     - permissions.disableBypassPermissionsMode
     - permissions.deny
     - permissions.ask
@@ -184,8 +188,17 @@ enterprise_managed_settings:
     - server-managed
     - file-based
     - user-level
-  strict_known_marketplaces_ga_date: "2026-07-01"   # public preview: 2026-06-25
-  last_verified: "2026-09-04"
+  team_overrides:
+    deployment: server-managed-only
+    mappings_path: "copilot/team-mappings.json"
+    settings_directory: "copilot/teams"
+    merge_rule: least-restrictive
+    additive_keys:
+      - enabledPlugins
+    non_overridable_keys:
+      - telemetry
+  strict_known_marketplaces_ga_date: "2026-07-01" # public preview: 2026-06-25
+  last_verified: "2026-10-01"
 
 # Pace-field semantics (Phase 1 audit):
 #   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline
@@ -297,6 +310,11 @@ labs:
     pace_presenter_minutes: 6
     pace_workshop_minutes: 10
     pace_self_minutes: 25
+  lab21:
+    title: "The Tech Lead's Plugin & Marketplace Lockdown"
+    pace_presenter_minutes: 6
+    pace_workshop_minutes: 10
+    pace_self_minutes: 30
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.
