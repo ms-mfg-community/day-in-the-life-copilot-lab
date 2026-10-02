@@ -297,6 +297,11 @@ labs:
     pace_presenter_minutes: 6
     pace_workshop_minutes: 10
     pace_self_minutes: 25
+  lab26:
+    title: "GitHub Copilot App Canvases for Applied SDLC Operations"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 12
+    pace_self_minutes: 30
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.

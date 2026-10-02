@@ -34,6 +34,8 @@
 > spec-driven design with stacked PRs and per-layer Code Review,
 > [Lab 19](lab19.md) a self-improving-agents gh-aw template, and
 > [Lab 20](lab20.md) enterprise-scale token optimization and reporting.
+> [Lab 26](lab26.md) is a standalone, later addition — a project-scoped
+> GitHub Copilot App canvas extension for applied SDLC operations.
 
 ---
 
