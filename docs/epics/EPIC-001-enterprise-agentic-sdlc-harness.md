@@ -124,10 +124,11 @@ isn't a managed-settings client (A.4).
 
 ### Provenance — one key, durable approvals
 
-Every unit carries one **correlation key** naming the feature, stage, task and run. It travels
-in the task-as-prompt and the gh-aw stage events (U4), the OTel resource attributes (U5) and
-the U6 audit comment, riding on the stage signal U4 already plans. This epic states the
-requirement, not the mechanism; feature-spec and plan choose the mechanism.
+One **correlation key** names the feature, stage, task and run. It travels in the
+task-as-prompt and the gh-aw stage events (U4), the OTel resource attributes (U5, once A.3
+item 6 shows a per-session value survives managed settings) and the U6 audit comment, riding
+on the stage signal U4 already plans. This epic states the requirement, not the mechanism;
+feature-spec and plan choose the mechanism.
 
 - Each gate's **approval of record** is a durable GitHub artifact, such as a `CODEOWNERS` PR
   review or a comment carrying the run ID, verdict, approver and artifact SHA. Spec Kit's gate
@@ -195,7 +196,7 @@ product versus custom build
       capabilities that require **Enterprise Managed Users or GHEC with data residency**.
 - [ ] **Rollout on two axes.** *Unit order* maps U1–U6 with the dependency order. *Adoption
       cohorts* run phase 0 (inventory, a repo instrumentation audit, the baseline), then a
-      pilot with one or two *representative* teams, then expand, then scale. Each phase names
+      pilot with a few *representative* teams, then expand, then scale. Each phase names
       its exit evidence (measured against the baseline), its rollback triggers and who calls
       the gate, and the programme has a kill criterion. States plainly that lab order is not
       rollout order, and names a minimum viable harness.
@@ -236,9 +237,9 @@ product versus custom build
 - [ ] **Boundaries.** Lifecycle coverage is Intent → Review plus a dry-run Release; Deploy
       and Operate are out of scope. The governance perimeter is stated per surface (A.4):
       plugin and marketplace keys apply on Copilot CLI, VS Code, the Copilot app, cloud agent
-      and JetBrains, `telemetry` on CLI and VS Code, and Copilot Code Review isn't a
-      managed-settings client. Portability: `SKILL.md` files and Spec Kit artifacts are
-      portable; the marketplace and managed settings are GitHub-specific.
+      and JetBrains, `telemetry` on CLI and VS Code (per the key's own text), and Copilot Code
+      Review isn't a managed-settings client. Portability: `SKILL.md` files and Spec Kit
+      artifacts are portable; the marketplace and managed settings are GitHub-specific.
 - [ ] **Owners.** An asset → owner table, a short-lived enablement role, a skill-atrophy risk,
       and a fallback for when an agent or model is unavailable.
       *Book: Team Structures for AI-Augmented Delivery; Governance for AI-Assisted Delivery.*
@@ -293,9 +294,12 @@ can be installed.
       *Book: The PROSE Constraints (S — Safety Boundaries); Anti-Patterns and Failure Modes
       (The Unbounded Agent).*
 - [ ] **Lockdown vs Spec Kit dispatch.** Spec Kit's `--commands` dispatch runs every workflow
-      step with `--yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` (A.4). The lab mandates
-      `permissions.disableBypassPermissionsMode` only after a test shows that dispatch
-      survives it (A.3 item 7).
+      step as `copilot -p … --yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0`, and
+      `permissions.disableBypassPermissionsMode: "disable"` is documented to suppress `--yolo`
+      and every `--allow-all*` option at startup (A.4). `tools:` restricts tools rather than
+      approving them, so the lab mandates the key only after a test finds the pre-approval path
+      that keeps workflow steps running under it (A.3 item 7). Today's behaviour is no guide:
+      github/copilot-cli#4528 reports `-p --yolo` bypassing the key.
 - [ ] **Pilot path.** Teaches per-team overrides as the way to pilot the lockdown, including
       the least-restrictive merge (U0; A.4).
 - [ ] **Supply chain.** Bundled MCP servers are pinned (`plugin-template/manifest.yaml` ships
@@ -315,9 +319,10 @@ can be installed.
       JetBrains: which governed primitives load and which managed-settings keys apply (A.4).
       Lab 11's "VS Code and Copilot CLI today" line and its five-key list are corrected to
       match Lab 16 and the registry.
-- [ ] **What the plugin can't carry.** Repo-specific knowledge stays repo-owned; the lab links
-      Labs 2 and 10, after checking whether a plugin can carry instructions at all (the CLI
-      command reference mentions "plugin-contributed instructions"). What's in use is
+- [ ] **What the plugin can't carry.** Plugins can contribute instructions (the CLI command
+      reference describes "plugin-contributed instructions"), so org-wide rules can ship in the
+      bundle, but repo-specific knowledge stays repo-owned; the lab links Labs 2 and 10. What's
+      in use is
       inventoried before the lockdown, and new requests arrive as a PR to the marketplace
       repo, reviewed through `CODEOWNERS`.
 - [ ] **Overrides, versioning, rollback.** States that same-name repo agents and skills can
@@ -445,12 +450,13 @@ implementation
       `review-spec` or `review-plan`. *— added by #66.*
 - [ ] `qa-review` accepts a file and line only for *structural* criteria. A *behavioural*
       criterion needs a command that ran plus its observed output, or a test that asserts the
-      behaviour; otherwise it is `unverified`. *— added by #66. Book: case study "The APM
-      Auth + Logging Overhaul".*
-- [ ] The epic template and the `epic` command say each Acceptance signal flows into the
-      acceptance criteria of the spec that delivers it. `qa-review` reads the spec, never the
-      epic: it rejects on any unmet or unverified criterion, so epic-level signals would reject
-      every partial feature. *— added by #66.*
+      behaviour and was run, with its result; otherwise it is `unverified`. *— added by #66.
+      Book: case study "The APM Auth + Logging Overhaul".*
+- [ ] The epic template and the `epic` command say who carries each Acceptance signal: the
+      author of the spec that delivers it copies it into that spec's acceptance criteria, and
+      `review-spec` is where that's checked. `qa-review` reads the spec, never the epic: it
+      rejects on any unmet or unverified criterion, so epic-level signals would reject every
+      partial feature. *— added by #66.*
 
 ---
 
@@ -510,12 +516,14 @@ implementation
       the org extension composes with core rather than replacing it.
 - [ ] Documents the rework routing: which stage owner is notified when QA rejects, and how
       the task is rewritten rather than silently re-run. Each rejection is classified:
-      implementation-only issues resume at QA, and spec or scope changes go back through
-      `review-spec`/`review-plan`, with a cap on rounds. A rewritten task gets a new task ID
-      and supersedes the old issue, because `taskstoissues` skips any ID already in an open
-      **or closed** issue title (A.4).
+      implementation-only issues resume at QA; spec or scope changes are re-reviewed by the
+      `review-spec`/`review-plan` owner before QA resumes, because Spec Kit can't route an
+      edited spec back through those gates (a new run restarts at `epic`). Rounds are capped.
+      A rewritten task gets a new task ID and supersedes the old issue, because
+      `taskstoissues` skips any ID already in an open **or closed** issue title (A.4).
 - [ ] Records a durable **approval of record** for each gate and counts rejects from it,
-      because Spec Kit's run state can't (A.4). Ships a seeded fixture in which QA **rejects**.
+      because Spec Kit's run state can't do that reliably (A.4). Ships a seeded fixture in
+      which QA **rejects**.
 - [ ] **QA independence.** Teaches that workflow steps already run as fresh
       `copilot -p --agent` processes, and that invoking QA directly in chat loses this. QA's
       inputs are spec + diff + tasks, never the implementer's summary. Adds a `tools:` list to
@@ -575,8 +583,10 @@ confirm that it improved.
       preset version travel as resource attributes. Managed OTel settings can't be
       overridden, and no page says whether a per-session `OTEL_RESOURCE_ATTRIBUTES` survives
       the managed `resourceAttributes`, so the lab tests that with the file exporter before
-      encoding a per-session key (A.3 item 6). Spans already carry `gen_ai.agent.name` and
-      `gen_ai.agent.version`, a native stage proxy for steps dispatched with `--agent` (A.4).
+      encoding a per-session key (A.3 item 6). Spans already carry `gen_ai.agent.id` and
+      `gen_ai.agent.name`, a native stage proxy for steps dispatched with `--agent`.
+      `gen_ai.agent.version` falls back to the runtime version when the agent's own isn't
+      known, so on its own it can't attribute an outcome to a bundle release (A.4).
 - [ ] **Stage and rework events** — what delivers the diagram's "stage transitions". Stage
       dwell time comes from Spec Kit's `log.jsonl`, whose `step_started`/`step_completed`
       entries are timestamped. Rejects are counted from U4's approval of record (or a
@@ -934,9 +944,15 @@ Before this epic's labs ship, and periodically after:
    `OTEL_RESOURCE_ATTRIBUTES` as "Extra resource attributes"; neither page says how the two
    merge. Test it with file-based managed settings, the file exporter and the env var, then
    inspect the JSON-lines, before U5 encodes a per-session key. Tracked in #54.
-7. **`permissions.disableBypassPermissionsMode` vs Spec Kit's `--yolo` dispatch — open
-   (#66 Q8).** Test whether the managed key breaks `specify workflow run` before U1 mandates
-   it. Tracked in #50; U4's `tools:` change to `qa-review` waits on the result.
+7. **Pre-approval under `permissions.disableBypassPermissionsMode` — open (#66 Q8).** With
+   the key set to `"disable"`, the CLI is documented to suppress `--yolo` and every
+   `--allow-all*` option at startup, so Spec Kit's default dispatch loses its blanket
+   approval. Test which pre-approval path keeps `specify workflow run` steps working under
+   the key — managed `permissions.allow` rules, or `--allow-tool` passed through
+   `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS` — before U1 mandates it. Don't infer the answer
+   from today's behaviour: github/copilot-cli#4528 (open) reports that non-interactive
+   `-p --yolo` bypasses the key. Tracked in #50; U4's `tools:` change to `qa-review` waits
+   on the result.
 8. **gh-aw safe-outputs at the pinned version.** `staged: true` and `allowed:`/`max:` on
    `assign-to-user` were read in the current gh-aw docs on 2026-10-01, not checked against
    the registry's pinned `gh_aw_schema_version`. Confirm them before U4 relies on them;
@@ -951,15 +967,16 @@ it; the docs pages were read on 2026-10-01. A.1–A.3 stay as the 2026-09-17 rec
 |---|---|---|
 | Approver identity at a Spec Kit gate | **Does not exist** | The gate's output records its `message`, `options`, `on_reject` and `show_file`, the `choice` made, and an `aborted` flag when an `abort` rejection fails the run — nothing about who chose (`src/specify_cli/workflows/step/gate/__init__.py`). A verdict can also be bound from a workflow input, still without identity. The gate is a local pause; the approval of record is a durable GitHub artifact (see Provenance) |
 | Stage timing from Spec Kit run state | **Supported product** | Every `log.jsonl` entry is timestamped, with `step_started` and `step_completed` per step (`src/specify_cli/workflows/engine.py`) |
-| Counting QA rejects from Spec Kit run state | **Not possible** | A reject-and-retry and a pause both log `paused`, and the gate's `choice` lives only in `state.json`, overwritten on each run (`src/specify_cli/workflows/engine.py`) |
-| Permissions in `--commands` dispatch | **Supported product, permissive by default** | Each step runs `copilot -p … --agent speckit.<stem> --yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` (`src/specify_cli/integrations/copilot/__init__.py`). Interaction with `disableBypassPermissionsMode`: A.3 item 7 |
-| `tools:` in generated `--commands` agents | **Supported product** | Frontmatter `tools:` survives into the generated agent, and core `templates/commands/taskstoissues.md` already ships one. Its interaction with `--yolo` is untested |
+| Counting QA rejects from Spec Kit run state | **Not reliable** | With `on_reject: retry` (Lab 23's QA gate), a reject and a pause both log `paused`, and the gate's `choice` lives only in `state.json`, overwritten each time the gate executes. Only an `abort` rejection stands out, as a `workflow_aborted` event (`src/specify_cli/workflows/engine.py`) |
+| Permissions in `--commands` dispatch | **Supported product, permissive by default** | Each step runs `copilot -p … --agent speckit.<stem> --yolo` unless `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0`, and `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS` is appended to every step (`src/specify_cli/integrations/copilot/__init__.py`). With `permissions.disableBypassPermissionsMode: "disable"`, `--yolo` and every `--allow-all*` option are documented as suppressed at startup, and `--allow-all-tools` is what programmatic use requires ([CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)); github/copilot-cli#4528 (open) reports `-p --yolo` bypassing the key. Pre-approval path under the key: A.3 item 7 |
+| `tools:` in generated `--commands` agents | **Supported product** | Frontmatter `tools:` survives into the generated agent, and core `templates/commands/taskstoissues.md` already ships one. It limits which tools the agent can use; nothing documents it as pre-approving them, so it is no substitute for `--yolo` under the key |
 | `taskstoissues` duplicate check | **Supported product, weak-form** | Skips a task whose ID matches `\bT\d{3,}\b` in an open **or closed** issue title; the agent applies the check by following the prompt (`templates/commands/taskstoissues.md`) |
 | `bugfix` workflow | **Supported product** | assess → review gate → fix → test; defects only; no QA gate (`workflows/bugfix/workflow.yml`) |
 | Custom agent `tools:` | **Supported product** | Omitting `tools:` grants every tool; `tools: []` disables all ([Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)) |
+| Instructions in plugins | **Supported product (CLI)** | The CLI command reference describes "plugin-contributed instructions", so a plugin can carry org-wide rules ([CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)) |
 | Managed-settings clients | **Supported product, per key** | Plugin and marketplace keys: Copilot CLI, VS Code, the Copilot app, cloud agent, JetBrains. `telemetry`: CLI and VS Code per the key's own text; the support table also ticks JetBrains. Copilot Code Review isn't a managed-settings client ([Enterprise managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings)) |
 | Per-team overrides of managed settings | **Supported product, server-managed only** | Keys marked `overridable` — `model`, `autoTier`, the `permissions.*` keys, `allowedMcpServers`, `deniedMcpServers`, `extraKnownMarketplaces`, `strictKnownMarketplaces`, `sandbox` — can be set per enterprise team in `copilot/teams/*.json`, mapped by `copilot/team-mappings.json`; `enabledPlugins` is additive. A user in several teams gets the least restrictive value; `telemetry` isn't overridable; other deployment methods have no team overrides ([Overriding enterprise-managed settings for teams](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/override-settings-for-teams)) |
-| Agent and user identity on spans | **Supported product** | `gen_ai.agent.name` ("when available"), `gen_ai.agent.version` ("when known") and `enduser.pseudo.id`, a pseudonymous user ID ("when available") ([CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)) |
+| Agent and user identity on spans | **Supported product** | `gen_ai.agent.id` (a stable agent-definition identifier "when known"), `gen_ai.agent.name` ("when available"), `gen_ai.agent.version` (the agent definition's version "when known; otherwise runtime version") and `enduser.pseudo.id`, a pseudonymous user ID ("when available") ([CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)) |
 | gh-aw staged safe-outputs and assignment limits | **Documented; unchecked at the pinned version** | `staged: true` globally or per output type; `assign-to-user` takes `allowed:` and `max:` ([Safe Outputs](https://github.github.com/gh-aw/reference/safe-outputs/)). See A.3 item 8 |
 
 ---

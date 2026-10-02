@@ -26,12 +26,13 @@ softer "met" — it means nobody has evidence either way.
 ## Acceptance criteria
 
 Structural criteria cite a file and line. Behavioural criteria cite a command that was
-actually run and its observed output, or a test that asserts the behaviour.
+actually run and its observed output, or a test that asserts the behaviour, with the result
+of running it.
 
 | # | Criterion (from `spec.md`) | Result | Evidence |
 |---|---|---|---|
 | 1 | [structural criterion] | met / partial / unmet / unverified | `path/to/file.ts:42` |
-| 2 | [behavioural criterion] | [...] | `[command]` → [observed output], or `path/to/file.test.ts:17` |
+| 2 | [behavioural criterion] | [...] | `[command]` → [observed output], or `[test command]` → passed (`path/to/file.test.ts:17`) |
 
 ## Task list check
 
@@ -58,3 +59,6 @@ If the verdict is `reject`, name the stage the work returns to and what changes 
 > ⚠️ Rejecting the gate **pauses the run on the gate** — it does not rewind the
 > workflow to an earlier stage. Make the change named above, then
 > `specify workflow resume <run-id>` and answer the gate again.
+
+> ⚠️ If the work returns to `epic`, `specify` or `plan`, resuming skips that stage's
+> review gate. Get the changed artifact reviewed before you resume.

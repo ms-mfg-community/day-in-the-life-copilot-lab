@@ -400,8 +400,10 @@ The run state on disk is what makes this safe — the run is parked, not lost, a
 > spec or plan you edit there never goes back through `review-spec` or `review-plan` (or
 > `review-epic`, if the epic changed); `resume` re-asks `review-qa` and nothing else.
 > That's fine for an implementation-only fix. When the rejection changes the spec or the
-> scope, send it back through its gate: start a new run, or use the `do-while` variant
-> below. [Lab 24](lab24.md) classifies rejections this way.
+> scope, the workflow can't send your edit back through its gate: a new run starts again at
+> `epic`, and the `do-while` variant below re-runs commands rather than re-reviewing your
+> edit. Get the changed spec or plan reviewed outside the run, for example on the PR that
+> changes it, before you resume. [Lab 24](lab24.md) classifies rejections this way.
 
 **Two variants worth knowing.** Use `on_reject: skip` and the gate completes with the
 verdict recorded in its output, so a downstream `if` or `switch` step can route the

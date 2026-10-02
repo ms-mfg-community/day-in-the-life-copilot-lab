@@ -47,7 +47,8 @@ $ARGUMENTS
      the file and line.
    - A **behavioural** criterion (something happens when the code runs) is settled only
      by a command you actually ran plus the output you observed, or by a test that
-     asserts that behaviour. A file and line proves the code exists, not that it works.
+     asserts that behaviour and that you ran, with its result. A file and line proves the
+     code (or the test) exists, not that it works.
 
    A criterion you cannot trace to evidence of the right kind is `unverified`, which is
    **not** the same as `met`.

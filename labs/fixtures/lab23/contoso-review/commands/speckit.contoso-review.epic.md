@@ -57,8 +57,9 @@ this order:
 
 4. **Derive the acceptance signals** — how will we know this epic is done? Write them
    as observable outcomes, not activities. They are not a QA checklist: `qa-review`
-   reads a feature's spec, never the epic. Each signal flows into the acceptance
-   criteria of the spec that delivers it, and QA checks it there.
+   reads a feature's spec, never the epic. Whoever writes the spec that delivers a
+   signal copies it into that spec's acceptance criteria, `review-spec` is where that
+   gets checked, and QA then checks the signal as part of the spec.
 
 5. **Report** the epic path and a one-paragraph summary, then stop. Do **not** start
    writing a spec: the next step is a human review gate.
