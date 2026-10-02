@@ -11,6 +11,12 @@ const WRITER = join(
   "scripts",
   "write-qa-verdict.mjs",
 );
+const GUARD = join(
+  ROOT,
+  "enterprise-harness-bundle",
+  "scripts",
+  "guard-qa-shell.mjs",
+);
 
 let fixtureDir: string;
 
@@ -97,5 +103,68 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('status must be "pass" or "reject"');
+  });
+
+  it("guard blocks unauthorized source edits via shell redirection", () => {
+    // Attempt to modify a tracked source file through the guard
+    const result = spawnSync(
+      "node",
+      [GUARD, "--", "echo tampered > implementation.txt"],
+      {
+        cwd: fixtureDir,
+        encoding: "utf8",
+        shell: false,
+      },
+    );
+
+    // Guard must exit non-zero
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("BLOCKED");
+    expect(result.stderr).toContain("implementation.txt");
+
+    // Source file must be reverted to its original content
+    const restored = readFileSync(
+      join(fixtureDir, "implementation.txt"),
+      "utf8",
+    );
+    expect(restored.replace(/\r\n/g, "\n")).toBe("unchanged\n");
+  });
+
+  it("guard permits the verdict file through shell", () => {
+    writeFileSync(
+      join(fixtureDir, "verdict.json"),
+      JSON.stringify({
+        status: "pass",
+        summary: "All checks pass.",
+        findings: [],
+      }),
+    );
+    spawnSync("git", ["add", "verdict.json"], { cwd: fixtureDir });
+    spawnSync(
+      "git",
+      [
+        "-c",
+        "user.name=QA Eval",
+        "-c",
+        "user.email=qa-eval@example.invalid",
+        "commit",
+        "--quiet",
+        "-m",
+        "eval input",
+      ],
+      { cwd: fixtureDir },
+    );
+
+    const writerCmd = `node ${JSON.stringify(WRITER)} --input verdict.json`;
+    const result = spawnSync("node", [GUARD, "--", writerCmd], {
+      cwd: fixtureDir,
+      encoding: "utf8",
+      shell: false,
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(readFileSync(join(fixtureDir, "qa-review.md"), "utf8")).toContain(
+      "**Verdict:** PASS",
+    );
   });
 });
