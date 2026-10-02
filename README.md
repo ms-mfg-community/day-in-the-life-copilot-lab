@@ -562,8 +562,9 @@ erDiagram
 | [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
+| [Lab 26](labs/lab26.md) | GitHub Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension (`enterprise-sdlc-workbench`), EPIC-001 board/code-map/release-composer canvases, capability-token + dry-run trust boundary |
 
-**Total: ~7 hours** (20 labs — self-paced or presenter-led)
+**Total: ~7.5 hours** (21 labs — self-paced or presenter-led)
 
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
@@ -574,7 +575,10 @@ erDiagram
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
-> enterprise scale and should be read after Lab 17.
+> enterprise scale and should be read after Lab 17. Lab 26 is standalone
+> (GitHub Copilot App canvases) — Labs 21-25 don't exist yet in this repo,
+> so Lab 26 is self-contained and cross-links its EPIC-001 context as
+> GitHub issue links rather than assuming those labs shipped.
 
 ---
 
