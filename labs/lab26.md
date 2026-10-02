@@ -42,9 +42,12 @@ References:
 
 ## 26.0 Prerequisites
 
-- A GitHub Copilot App session with this repo as a connected project
-  (canvas extensions are project-scoped; `copilot` CLI alone cannot render
-  them).
+- The **GitHub Copilot App**, installed through the official
+  [GitHub Copilot App quickstart and download path](https://docs.github.com/en/copilot/get-started/quickstart-copilot-app).
+- A GitHub or GitHub Enterprise account with Copilot access and a Copilot
+  App/CLI version whose canvas picker is available.
+- A local clone of this repository and permission to load its
+  project-scoped `.github/extensions/` content.
 - Node.js 18+ (already required by the repo's preflight).
 - No `gh` authentication is required for this lab — every canvas defaults
   to **fixture mode**, reading a frozen, labeled JSON snapshot instead of
@@ -62,6 +65,21 @@ npx vitest run tests/extensions/enterprise-sdlc-workbench.test.ts
 ```
 
 ## 26.1 Install and Open the Extension
+
+Complete the official quickstart before inspecting the extension:
+
+1. Follow the
+   [GitHub Copilot App quickstart](https://docs.github.com/en/copilot/get-started/quickstart-copilot-app)
+   to download and install the app for your operating system.
+2. Open the app and sign in to GitHub.com or your GitHub Enterprise host.
+   Confirm the signed-in account has Copilot access.
+3. Connect/open your local clone of
+   `ms-mfg-community/day-in-the-life-copilot-lab` as the project.
+4. Start a project session and confirm its canvas picker is present. If
+   canvases are absent, use the non-UI fallback in §26.0.
+5. Confirm your organization/repository policy allows project-scoped
+   extensions. A policy denial must be resolved by an administrator; don't
+   copy the extension to a user-scoped directory to bypass it.
 
 The extension already lives in this repo at
 `.github/extensions/enterprise-sdlc-workbench/` — project-scoped extensions
@@ -171,7 +189,10 @@ duplicating it.
 
 Run `dispatch` against any fixture issue now. Confirm the result is the
 markdown comment text, not a live `gh` call — dry-run is the default and
-nothing in this step touches a real GitHub issue.
+nothing in this step touches a real GitHub issue. Supply an agent preset
+(for example `repo/dev`), its preset or bundle version, and execution
+location (`local`, `cloud`, or `remote`); the resulting audit comment also
+records an ISO timestamp.
 
 ## 26.6 Opt-In Live Mode
 
@@ -211,6 +232,18 @@ Your task: extend it.
 
 ✅ `/extensions` lists `enterprise-sdlc-workbench` as loaded.
 
+✅ Ask the agent to run these model-side extension tools (they are tool
+calls, **not** slash commands):
+
+```text
+extensions_manage({ operation: "inspect", name: "enterprise-sdlc-workbench" })
+```
+
+Expected: the extension is `running`, and its declaration lists
+`sdlc-board`, `code-map`, and `release-composer`. This is the runtime
+manifest/schema check: the SDK accepted each canvas/action declaration and
+its JSON Schema.
+
 ✅ All three canvases open and render without a stale/blank iframe.
 
 ✅ `dispatch` in fixture mode returns comment markdown without any live
@@ -223,6 +256,20 @@ npx vitest run tests/extensions/enterprise-sdlc-workbench.test.ts
 ```
 
 Expected: all tests pass, including the one you added.
+
+The test suite also validates the fixture against
+`fixtures/epic-001-board.schema.json`.
+
+**If discovery, schema registration, or opening a canvas fails:**
+
+1. Ask the agent to call `extensions_reload({})`.
+2. Re-run
+   `extensions_manage({ operation: "inspect", name: "enterprise-sdlc-workbench" })`.
+3. Read the log tail returned by `inspect`; fix the first syntax/schema
+   error, reload once, and inspect again.
+4. If the extension was added after the current session started and still
+   does not appear, end and reopen the project session so discovery runs
+   from a clean registry.
 
 ## 26.9 Back at Work
 

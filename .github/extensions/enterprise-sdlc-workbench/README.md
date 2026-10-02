@@ -20,7 +20,8 @@ repo's real GitHub issues/PRs** and the **ContosoUniversity .NET solution**.
   snapshot of this repo's real EPIC-001 issue graph (captured 2026-10-01).
   A visible **Fixture**/**Live** badge is always shown.
 - **Live mode** never hardcodes the EPIC-001 issue numbers -- it queries
-  whatever `repo`/`epicNumber` the canvas was opened against via `gh`.
+  the selected epic, parses its child/dependency list, loads each child
+  issue's linked PR/check data, and loads recent workflow runs via `gh`.
 - Every mutating action (`dispatch`, `save_draft`, `publish`) requires a
   **per-instance capability token** that is only ever exposed inside the
   canvas's own rendered HTML, never guessable from the agent side alone.
@@ -32,7 +33,14 @@ repo's real GitHub issues/PRs** and the **ContosoUniversity .NET solution**.
   an output cap.
 - "Save" and "publish" in the release composer are two distinct,
   separately-confirmed actions; saving never silently overwrites an
-  existing file, and both require the capability token.
+  existing file (exclusive atomic creation is used), and both require the
+  capability token.
+- Canvas actions that change visible state increment a revision and return
+  `refreshUrl`; the rendered page polls that revision and reloads itself,
+  so filters, prerequisite checks, and composed drafts become visible in
+  the already-open panel.
+- Dispatch audit comments include the correlation key, selected agent
+  preset, preset/bundle version, execution location, and timestamp.
 
 ## Known simplifications (`ghcp-was-here`)
 

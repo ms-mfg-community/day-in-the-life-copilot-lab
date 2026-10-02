@@ -47,7 +47,8 @@ export function buildReleaseComposerCanvas({ repoRoot }) {
                 handler: async (ctx) => {
                     const entry = requireInstance(ctx.instanceId);
                     entry.state.draft = composeHandoffMarkdown(ctx.input);
-                    return { draft: entry.state.draft };
+                    entry.state.revision += 1;
+                    return { draft: entry.state.draft, refreshUrl: entry.server.url };
                 },
             },
             {
@@ -105,9 +106,13 @@ export function buildReleaseComposerCanvas({ repoRoot }) {
         open: async (ctx) => {
             let entry = instances.get(ctx.instanceId);
             if (!entry) {
-                const state = { token: crypto.randomUUID(), draft: "" };
+                const state = { token: crypto.randomUUID(), draft: "", revision: 0 };
                 const server = await startInstanceServer(() =>
-                    renderReleaseComposer({ draft: state.draft, token: state.token }),
+                    renderReleaseComposer({
+                        draft: state.draft,
+                        token: state.token,
+                        revision: state.revision,
+                    }),
                 );
                 entry = { state, server };
                 instances.set(ctx.instanceId, entry);

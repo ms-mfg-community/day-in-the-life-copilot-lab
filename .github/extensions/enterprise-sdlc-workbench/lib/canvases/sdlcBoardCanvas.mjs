@@ -18,6 +18,8 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                 ? await loadLiveBoard({ repo: state.repo, epicNumber: state.epicNumber })
                 : await loadFixtureBoard(fixturePath);
         state.readiness = computeReadiness(state.board);
+        state.repo ??= state.board.sourceRepo;
+        state.revision += 1;
     }
 
     function requireInstance(instanceId) {
@@ -51,7 +53,11 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                 handler: async (ctx) => {
                     const entry = requireInstance(ctx.instanceId);
                     await refreshBoard(entry.state);
-                    return { mode: entry.state.board.mode, issueCount: entry.state.board.issues?.length ?? 0 };
+                    return {
+                        mode: entry.state.board.mode,
+                        issueCount: entry.state.board.issues?.length ?? 0,
+                        refreshUrl: entry.server.url,
+                    };
                 },
             },
             {
@@ -64,7 +70,12 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                 },
                 handler: async (ctx) => {
                     const entry = requireInstance(ctx.instanceId);
-                    return filterByLabel(entry.state.board, ctx.input.label);
+                    entry.state.activeLabel = ctx.input.label;
+                    entry.state.revision += 1;
+                    return {
+                        issues: filterByLabel(entry.state.board, entry.state.activeLabel),
+                        refreshUrl: entry.server.url,
+                    };
                 },
             },
             {
@@ -73,10 +84,20 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                     "Record a dry-run (default) or real assignment/audit comment on an issue, keyed by correlation key. Requires the per-instance capability token shown in the rendered board.",
                 inputSchema: {
                     type: "object",
-                    required: ["issueNumber", "correlationKey", "capabilityToken"],
+                    required: [
+                        "issueNumber",
+                        "correlationKey",
+                        "agentPreset",
+                        "presetVersion",
+                        "executionLocation",
+                        "capabilityToken",
+                    ],
                     properties: {
                         issueNumber: { type: "integer" },
                         correlationKey: { type: "string" },
+                        agentPreset: { type: "string" },
+                        presetVersion: { type: "string" },
+                        executionLocation: { type: "string", enum: ["local", "cloud", "remote"] },
                         assignee: { type: "string" },
                         note: { type: "string" },
                         dryRun: { type: "boolean" },
@@ -90,6 +111,9 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                         repo: entry.state.repo,
                         issueNumber: ctx.input.issueNumber,
                         correlationKey: ctx.input.correlationKey,
+                        agentPreset: ctx.input.agentPreset,
+                        presetVersion: ctx.input.presetVersion,
+                        executionLocation: ctx.input.executionLocation,
                         assignee: ctx.input.assignee,
                         note: ctx.input.note,
                         dryRun: ctx.input.dryRun ?? true,
@@ -105,10 +129,20 @@ export function buildSdlcBoardCanvas({ fixturePath }) {
                     repo: ctx.input?.repo,
                     epicNumber: ctx.input?.epicNumber,
                     token: crypto.randomUUID(),
+                    activeLabel: "",
+                    revision: 0,
                 };
                 await refreshBoard(state);
                 const server = await startInstanceServer(() =>
-                    renderBoard({ board: state.board, readiness: state.readiness, token: state.token }),
+                    renderBoard({
+                        board: {
+                            ...state.board,
+                            issues: filterByLabel(state.board, state.activeLabel),
+                        },
+                        readiness: state.readiness,
+                        token: state.token,
+                        revision: state.revision,
+                    }),
                 );
                 entry = { state, server };
                 instances.set(ctx.instanceId, entry);

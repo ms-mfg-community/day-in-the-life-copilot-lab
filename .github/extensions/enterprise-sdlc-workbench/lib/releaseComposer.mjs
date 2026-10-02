@@ -38,12 +38,13 @@ export function resolveReleasePath(repoRoot, filename) {
     if (!filename || typeof filename !== "string") {
         throw new Error("invalid release filename: must be a non-empty string");
     }
-    const safeName = path.basename(filename);
-    if (safeName !== filename) {
+    const posixName = path.posix.basename(filename);
+    const win32Name = path.win32.basename(filename);
+    if (posixName !== filename || win32Name !== filename) {
         throw new Error(`invalid release filename "${filename}": must be a plain filename, no path segments`);
     }
     const releasesDir = path.resolve(repoRoot, RELEASES_DIR);
-    const target = path.resolve(releasesDir, safeName);
+    const target = path.resolve(releasesDir, filename);
     if (!target.startsWith(releasesDir + path.sep) && target !== releasesDir) {
         throw new Error(`invalid release filename "${filename}": resolves outside ${RELEASES_DIR}`);
     }
@@ -56,11 +57,20 @@ export function resolveReleasePath(repoRoot, filename) {
  */
 export async function saveDraft({ repoRoot, filename, content, overwrite = false }) {
     const targetPath = resolveReleasePath(repoRoot, filename);
-    const exists = await fileExists(targetPath);
-    if (exists && !overwrite) {
-        throw new Error(`"${filename}" already exists in ${RELEASES_DIR}/ -- pass overwrite:true to replace it`);
-    }
     await mkdir(path.dirname(targetPath), { recursive: true });
+    if (!overwrite) {
+        try {
+            await writeFile(targetPath, content, { encoding: "utf8", flag: "wx" });
+            return { path: targetPath, overwritten: false };
+        } catch (error) {
+            if (error?.code === "EEXIST") {
+                throw new Error(`"${filename}" already exists in ${RELEASES_DIR}/ -- pass overwrite:true to replace it`);
+            }
+            throw error;
+        }
+    }
+
+    const exists = await fileExists(targetPath);
     await writeFile(targetPath, content, "utf8");
     return { path: targetPath, overwritten: exists };
 }

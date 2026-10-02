@@ -26,12 +26,28 @@ export function buildMarker(correlationKey) {
     return `<!-- enterprise-sdlc-workbench:dispatch:${MARKER_SCHEMA}:${hash} -->`;
 }
 
-function renderCommentBody({ correlationKey, assignee, note }) {
+function inlineCode(value) {
+    return String(value).replace(/`/g, "\\`");
+}
+
+function renderCommentBody({
+    correlationKey,
+    assignee,
+    note,
+    agentPreset,
+    presetVersion,
+    executionLocation,
+    timestamp,
+}) {
     const marker = buildMarker(correlationKey);
     const lines = [
         marker,
         `**Dispatch recorded** via the Lab 26 enterprise-sdlc-workbench canvas.`,
-        `- Correlation key: \`${correlationKey}\``,
+        `- Correlation key: \`${inlineCode(correlationKey)}\``,
+        `- Agent preset: \`${inlineCode(agentPreset)}\``,
+        `- Preset/bundle version: \`${inlineCode(presetVersion)}\``,
+        `- Execution location: \`${inlineCode(executionLocation)}\``,
+        `- Timestamp: \`${inlineCode(timestamp)}\``,
         assignee ? `- Assignee: ${assignee}` : null,
         note ? `- Note: ${note}` : null,
     ].filter(Boolean);
@@ -39,17 +55,44 @@ function renderCommentBody({ correlationKey, assignee, note }) {
 }
 
 /**
- * @param {{ repo: string, issueNumber: number, correlationKey: string, assignee?: string, note?: string, dryRun?: boolean }} params
+ * @param {{ repo: string, issueNumber: number, correlationKey: string, agentPreset: string, presetVersion: string, executionLocation: string, timestamp?: string, assignee?: string, note?: string, dryRun?: boolean }} params
  */
-export async function dispatch({ repo, issueNumber, correlationKey, assignee, note, dryRun = true }) {
+export async function dispatch({
+    repo,
+    issueNumber,
+    correlationKey,
+    agentPreset,
+    presetVersion,
+    executionLocation,
+    timestamp = new Date().toISOString(),
+    assignee,
+    note,
+    dryRun = true,
+}) {
     if (!isValidCorrelationKey(correlationKey)) {
         throw new Error(`dispatch() requires a valid correlation key, got "${correlationKey}"`);
     }
     if (!repo || !issueNumber) {
         throw new Error("dispatch() requires repo and issueNumber");
     }
+    for (const [name, value] of Object.entries({ agentPreset, presetVersion, executionLocation })) {
+        if (!value || typeof value !== "string") {
+            throw new Error(`dispatch() requires ${name}`);
+        }
+    }
+    if (Number.isNaN(Date.parse(timestamp))) {
+        throw new Error(`dispatch() requires an ISO timestamp, got "${timestamp}"`);
+    }
 
-    const body = renderCommentBody({ correlationKey, assignee, note });
+    const body = renderCommentBody({
+        correlationKey,
+        assignee,
+        note,
+        agentPreset,
+        presetVersion,
+        executionLocation,
+        timestamp,
+    });
     const marker = buildMarker(correlationKey);
 
     if (dryRun) {

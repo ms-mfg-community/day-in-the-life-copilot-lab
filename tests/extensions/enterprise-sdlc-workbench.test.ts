@@ -9,6 +9,7 @@ import { formatCorrelationKey, parseCorrelationKey, isValidCorrelationKey } from
 import { run } from "../../.github/extensions/enterprise-sdlc-workbench/lib/exec.mjs";
 import {
     loadFixtureBoard,
+    loadLiveBoard,
     computeReadiness,
     filterByLabel,
 } from "../../.github/extensions/enterprise-sdlc-workbench/lib/board.mjs";
@@ -19,7 +20,11 @@ import {
     resolveReleasePath,
     saveDraft,
 } from "../../.github/extensions/enterprise-sdlc-workbench/lib/releaseComposer.mjs";
-import { escapeHtml, renderBoard } from "../../.github/extensions/enterprise-sdlc-workbench/lib/render.mjs";
+import {
+    escapeHtml,
+    renderBoard,
+    renderCodeMap,
+} from "../../.github/extensions/enterprise-sdlc-workbench/lib/render.mjs";
 import { buildCanvasDefs } from "../../.github/extensions/enterprise-sdlc-workbench/lib/canvasDefs.mjs";
 
 const ROOT = process.cwd();
@@ -133,11 +138,107 @@ describe("extensions: enterprise-sdlc-workbench", () => {
             expect(issue59.blockedBy).toContain(53);
         });
 
+        it("computeReadiness treats an unavailable dependency as blocked, not ready", () => {
+            const readiness = computeReadiness({
+                issues: [{ number: 2, state: "open", dependsOn: [1] }],
+            });
+            expect(readiness[0]).toEqual({ number: 2, ready: false, blockedBy: [1] });
+        });
+
         it("filterByLabel returns only issues carrying that label (hands-on exercise contract)", async () => {
             const board = await loadFixtureBoard(FIXTURE_PATH);
             const filtered = filterByLabel(board, "agentic-workflows");
             expect(filtered.map((i) => i.number)).toEqual([53]);
             expect(filterByLabel(board, "")).toEqual(board.issues);
+        });
+
+        it("loads only the live epic children with dependencies, PR checks, and workflow runs", async () => {
+            const calls = [];
+            const runJsonImpl = async (_command, args) => {
+                calls.push(args);
+                const joined = args.join(" ");
+                if (joined.includes("issue view 47")) {
+                    return {
+                        ok: true,
+                        data: {
+                            number: 47,
+                            title: "Epic",
+                            state: "OPEN",
+                            labels: [{ name: "epic" }],
+                            url: "https://example.test/issues/47",
+                            body: "- [ ] #48 — First\n- [ ] #59 — Second *(depends on #48)*",
+                            subIssues: { nodes: [] },
+                        },
+                    };
+                }
+                if (joined.includes("issue view 48")) {
+                    return {
+                        ok: true,
+                        data: {
+                            number: 48,
+                            title: "First",
+                            state: "CLOSED",
+                            labels: [{ name: "docs" }],
+                            url: "https://example.test/issues/48",
+                            body: "No dependencies.",
+                            closedByPullRequestsReferences: [],
+                        },
+                    };
+                }
+                if (joined.includes("issue view 59")) {
+                    return {
+                        ok: true,
+                        data: {
+                            number: 59,
+                            title: "Second",
+                            state: "OPEN",
+                            labels: [{ name: "docs" }],
+                            url: "https://example.test/issues/59",
+                            body: "Part of #47.",
+                            closedByPullRequestsReferences: [{ number: 69 }],
+                        },
+                    };
+                }
+                if (joined.includes("pr view 69")) {
+                    return {
+                        ok: true,
+                        data: {
+                            number: 69,
+                            title: "Implement second",
+                            state: "OPEN",
+                            url: "https://example.test/pulls/69",
+                            statusCheckRollup: [{ name: "ci", conclusion: "SUCCESS", status: "COMPLETED" }],
+                        },
+                    };
+                }
+                if (joined.includes("run list")) {
+                    return {
+                        ok: true,
+                        data: [{
+                            workflowName: "CI",
+                            status: "completed",
+                            conclusion: "success",
+                            createdAt: "2026-10-02T00:00:00Z",
+                            url: "https://example.test/runs/1",
+                        }],
+                    };
+                }
+                return { ok: false, error: `unexpected args: ${joined}` };
+            };
+
+            const board = await loadLiveBoard({
+                repo: "owner/repo",
+                epicNumber: 47,
+                runJsonImpl,
+            });
+
+            expect(board.epic.number).toBe(47);
+            expect(board.issues.map((issue) => issue.number)).toEqual([48, 59]);
+            expect(board.issues[1].dependsOn).toEqual([48]);
+            expect(board.issues[1].linkedPRs[0]).toMatchObject({ number: 69, title: "Implement second" });
+            expect(board.issues[1].checks[0]).toMatchObject({ name: "ci", conclusion: "success" });
+            expect(board.recentRuns[0]).toMatchObject({ workflow: "CI", conclusion: "success" });
+            expect(calls.some((args) => args.includes("list"))).toBe(true);
         });
     });
 
@@ -174,14 +275,41 @@ describe("extensions: enterprise-sdlc-workbench", () => {
     describe("lib/dispatch.mjs", () => {
         it("defaults to dry-run and never calls gh", async () => {
             const key = formatCorrelationKey({ feature: "lab26", stage: "test", task: "dispatch", run: "run-001" });
-            const result = await dispatch({ repo: "o/r", issueNumber: 1, correlationKey: key });
+            const result = await dispatch({
+                repo: "o/r",
+                issueNumber: 1,
+                correlationKey: key,
+                agentPreset: "repo/dev",
+                presetVersion: "v2.1.0",
+                executionLocation: "local",
+                timestamp: "2026-10-02T00:00:00Z",
+            });
             expect(result.dryRun).toBe(true);
             expect(result.applied).toBe(false);
             expect(result.marker).toBe(buildMarker(key));
+            expect(result.body).toContain("- Agent preset: `repo/dev`");
+            expect(result.body).toContain("- Preset/bundle version: `v2.1.0`");
+            expect(result.body).toContain("- Execution location: `local`");
+            expect(result.body).toContain("- Timestamp: `2026-10-02T00:00:00Z`");
         });
 
         it("rejects an invalid correlation key", async () => {
-            await expect(dispatch({ repo: "o/r", issueNumber: 1, correlationKey: "not-a-key" })).rejects.toThrow();
+            await expect(dispatch({
+                repo: "o/r",
+                issueNumber: 1,
+                correlationKey: "not-a-key",
+                agentPreset: "repo/dev",
+                presetVersion: "v1",
+                executionLocation: "local",
+            })).rejects.toThrow();
+        });
+
+        it("requires structured dispatch provenance", async () => {
+            await expect(dispatch({
+                repo: "o/r",
+                issueNumber: 1,
+                correlationKey: "lab26/test/dispatch/run-001",
+            })).rejects.toThrow(/agentPreset/);
         });
 
         it("buildMarker is a deterministic, versioned, sha256-derived marker", () => {
@@ -216,6 +344,7 @@ describe("extensions: enterprise-sdlc-workbench", () => {
         it("rejects a path-traversal filename", () => {
             expect(() => resolveReleasePath(tmpRoot, "../../etc/passwd")).toThrow();
             expect(() => resolveReleasePath(tmpRoot, "..\\..\\escape.md")).toThrow();
+            expect(() => resolveReleasePath(tmpRoot, "nested\\draft.md")).toThrow();
         });
 
         it("saves a draft, then refuses to silently overwrite it", async () => {
@@ -229,6 +358,15 @@ describe("extensions: enterprise-sdlc-workbench", () => {
                 overwrite: true,
             });
             expect(readFileSync(overwritten.path, "utf8")).toBe("again");
+        });
+
+        it("allows only one winner when two non-overwriting saves race", async () => {
+            const results = await Promise.allSettled([
+                saveDraft({ repoRoot: tmpRoot, filename: "raced.md", content: "first" }),
+                saveDraft({ repoRoot: tmpRoot, filename: "raced.md", content: "second" }),
+            ]);
+            expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+            expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
         });
     });
 
@@ -245,6 +383,53 @@ describe("extensions: enterprise-sdlc-workbench", () => {
             const html = renderBoard({ board: { ...data, mode: "fixture" }, readiness, token: "tok" });
             expect(html).not.toContain("<script>alert");
             expect(html).toContain("&lt;script&gt;");
+        });
+
+        it("renders and escapes epic, PR, check, and workflow details", () => {
+            const hostile = `<img src=x onerror=alert("x")>`;
+            const board = {
+                mode: "fixture",
+                sourceRepo: hostile,
+                capturedAt: "now",
+                epic: { number: 47, title: hostile, state: "open", labels: [hostile], url: "https://example.test" },
+                issues: [{
+                    number: 59,
+                    title: "Issue",
+                    state: "open",
+                    labels: [],
+                    dependsOn: [],
+                    linkedPRs: [{ number: 69, title: hostile, state: "open", url: "javascript:alert(1)" }],
+                    checks: [{ name: hostile, conclusion: hostile }],
+                }],
+                recentRuns: [{ workflow: hostile, status: "completed", conclusion: hostile, createdAt: "now" }],
+            };
+            const html = renderBoard({ board, readiness: computeReadiness(board), token: "tok" });
+            expect(html).not.toContain(hostile);
+            expect(html).not.toContain("javascript:");
+            expect(html).toContain("&lt;img src=x onerror=alert(&quot;x&quot;)&gt;");
+            expect(html).toContain("Linked PRs");
+            expect(html).toContain("Recent workflow runs");
+            expect(html).toContain("Epic #47");
+        });
+
+        it("renders clear prerequisite availability and degraded-state tiles", () => {
+            const html = renderCodeMap({
+                codeMap: { projects: [], malformedCount: 0 },
+                prerequisites: {
+                    liveModeAvailable: false,
+                    checks: [
+                        { label: "dotnet", available: true, detail: "8.0.100" },
+                        { label: "docker", available: false, detail: "command not found" },
+                    ],
+                },
+                token: "tok",
+            });
+            expect(html).toContain("Prerequisites");
+            expect(html).toContain("dotnet");
+            expect(html).toContain("available");
+            expect(html).toContain("docker");
+            expect(html).toContain("unavailable");
+            expect(html).toContain("Live actions unavailable");
         });
 
         it("shows a visible Fixture badge for fixture-mode boards", async () => {
@@ -280,7 +465,11 @@ describe("extensions: enterprise-sdlc-workbench", () => {
 
             const filterAction = board.actions.find((a) => a.name === "filter_by_label");
             const filtered = await filterAction.handler({ instanceId: "test-1", input: { label: "agentic-workflows" } });
-            expect(filtered.map((i) => i.number)).toEqual([53]);
+            expect(filtered.issues.map((i) => i.number)).toEqual([53]);
+            expect(filtered.refreshUrl).toBe(openResult.url);
+            const refreshedHtml = await fetch(openResult.url).then((response) => response.text());
+            expect(refreshedHtml).toContain("<td>#53</td>");
+            expect(refreshedHtml).not.toContain("<td>#59</td>");
 
             await board.onClose({ instanceId: "test-1" });
         });
@@ -295,6 +484,9 @@ describe("extensions: enterprise-sdlc-workbench", () => {
                     input: {
                         issueNumber: 59,
                         correlationKey: "lab26/implement/sdlc-board/run-001",
+                        agentPreset: "repo/dev",
+                        presetVersion: "v1",
+                        executionLocation: "local",
                         capabilityToken: "wrong-token",
                     },
                 }),
@@ -310,12 +502,15 @@ describe("extensions: enterprise-sdlc-workbench", () => {
 
         it("release-composer: compose -> save_draft requires the capability token", async () => {
             const releaseComposer = defs.find((d) => d.id === "release-composer");
-            await releaseComposer.open({ instanceId: "test-3", input: {} });
+            const openResult = await releaseComposer.open({ instanceId: "test-3", input: {} });
             const composeAction = releaseComposer.actions.find((a) => a.name === "compose");
-            await composeAction.handler({
+            const composed = await composeAction.handler({
                 instanceId: "test-3",
                 input: { title: "t", correlationKey: "lab26/release/handoff/run-001" },
             });
+            expect(composed.refreshUrl).toBe(openResult.url);
+            const refreshedHtml = await fetch(openResult.url).then((response) => response.text());
+            expect(refreshedHtml).toContain("# t");
             const saveAction = releaseComposer.actions.find((a) => a.name === "save_draft");
             await expect(
                 saveAction.handler({ instanceId: "test-3", input: { filename: "x.md", capabilityToken: "wrong" } }),
@@ -330,6 +525,14 @@ describe("extensions: enterprise-sdlc-workbench", () => {
             const refreshAction = codeMap.actions.find((a) => a.name === "refresh");
             const refreshed = await refreshAction.handler({ instanceId: "test-4", input: {} });
             expect(refreshed.projectCount).toBe(5);
+            expect(refreshed.refreshUrl).toBe(openResult.url);
+            const prerequisiteAction = codeMap.actions.find((a) => a.name === "check_prerequisites");
+            expect(prerequisiteAction).toBeDefined();
+            const prerequisites = await prerequisiteAction.handler({ instanceId: "test-4", input: {} });
+            expect(prerequisites.checks).toHaveLength(4);
+            expect(prerequisites.refreshUrl).toBe(openResult.url);
+            const refreshedHtml = await fetch(openResult.url).then((response) => response.text());
+            expect(refreshedHtml).toContain("Prerequisites");
             await codeMap.onClose({ instanceId: "test-4" });
         });
     });
