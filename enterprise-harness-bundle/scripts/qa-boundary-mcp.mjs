@@ -1,25 +1,14 @@
 import readline from "node:readline";
 import { pathToFileURL } from "node:url";
-import { guardExec } from "./guard-qa-shell.mjs";
 import { writeVerdictData } from "./write-qa-verdict.mjs";
 
 const SERVER_INFO = { name: "qa-boundary", version: "0.1.0" };
 
 const TOOLS = [
   {
-    name: "run_evidence",
-    description:
-      "Run a behavioral evidence command and restore any workspace changes except qa-review.md.",
-    inputSchema: {
-      type: "object",
-      properties: { command: { type: "string", minLength: 1 } },
-      required: ["command"],
-      additionalProperties: false,
-    },
-  },
-  {
     name: "write_verdict",
-    description: "Write the validated QA verdict to qa-review.md.",
+    description:
+      "Write the validated QA verdict to qa-review.md. This is the QA reviewer's only sanctioned file write.",
     inputSchema: {
       type: "object",
       properties: {
@@ -39,21 +28,6 @@ function textResult(text, isError = false) {
 
 export function callTool(name, args, cwd = process.cwd()) {
   try {
-    if (name === "run_evidence") {
-      const result = guardExec(args?.command, cwd);
-      const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
-      if (result.blocked) {
-        return textResult(
-          `Blocked unauthorized changes: ${result.unauthorizedFiles.join(", ")}\n${output}`.trim(),
-          true,
-        );
-      }
-      return textResult(
-        `exitCode=${result.exitCode}\n${output}`.trim(),
-        result.exitCode !== 0,
-      );
-    }
-
     if (name === "write_verdict") {
       const outputPath = writeVerdictData(args, cwd);
       return textResult(`wrote ${outputPath}`);

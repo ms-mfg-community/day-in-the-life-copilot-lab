@@ -34,22 +34,22 @@ describe("enterprise-harness-bundle: agent bindings", () => {
     },
   );
 
-  it("scopes QA evidence and verdict writes to its MCP server", () => {
+  it("runs QA evidence through execute and writes only through its MCP server", () => {
     const qa = matter(
       readFileSync(join(BUNDLE_DIR, "agents", "qa-reviewer.md"), "utf8"),
     );
 
-    expect(qa.data.tools).not.toContain("execute");
+    expect(qa.data.tools).toContain("execute");
     expect(qa.data.tools).not.toContain("edit");
-    expect(qa.data.tools).toContain("qa-boundary/run_evidence");
+    expect(qa.data.tools).not.toContain("qa-boundary/run_evidence");
     expect(qa.data.tools).toContain("qa-boundary/write_verdict");
     expect(qa.data["mcp-servers"]["qa-boundary"]).toEqual({
       command: "node",
       args: ["${PLUGIN_ROOT}/scripts/qa-boundary-mcp.mjs"],
-      tools: ["run_evidence", "write_verdict"],
+      tools: ["write_verdict"],
     });
-    expect(qa.content).toContain("qa-boundary/run_evidence");
     expect(qa.content).toContain("qa-boundary/write_verdict");
+    expect(qa.content).not.toContain("run_evidence");
   });
 
   it("binds stage agents to centrally owned commands and skills", () => {
@@ -57,13 +57,14 @@ describe("enterprise-harness-bundle: agent bindings", () => {
       join(BUNDLE_DIR, "agents", "spec-author.md"),
       "utf8",
     );
-    const qa = readFileSync(
-      join(BUNDLE_DIR, "agents", "qa-reviewer.md"),
-      "utf8",
+    const qa = matter(
+      readFileSync(join(BUNDLE_DIR, "agents", "qa-reviewer.md"), "utf8"),
     );
 
     expect(spec).toContain("speckit.specify");
-    expect(qa).toContain("qa-review");
+    // Asserts the skill-invocation sentence itself: the output filename
+    // `qa-review.md` alone must not satisfy this binding check.
+    expect(qa.content).toContain("Run the bundled `qa-review` skill");
   });
 
   it("references the exact centrally owned stage commands", () => {

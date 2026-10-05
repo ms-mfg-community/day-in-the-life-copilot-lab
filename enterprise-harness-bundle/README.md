@@ -22,16 +22,20 @@ whose activation depends on probabilistic description matching.
 ## Security boundaries
 
 Every agent declares an explicit, non-wildcard `tools:` list. The QA agent has
-only `read` and `search` built-ins. Its agent-scoped `qa-boundary` MCP server
-exposes `run_evidence` and `write_verdict`, so it can execute behavioral checks
-and write `qa-review.md` without receiving a general shell or edit tool.
+`read`, `search`, and `execute` for evidence, and no `edit` tool. Its
+agent-scoped `qa-boundary` MCP server exposes one tool, `write_verdict`, which
+validates the verdict and always writes `qa-review.md`. The server is bundled
+locally and resolved through `${PLUGIN_ROOT}`; it does not fetch or execute a
+mutable external MCP package. VS Code and other IDE custom agents don't use an
+agent's `mcp-servers`, so the verdict writer is only available in Copilot CLI.
 
-`run_evidence` snapshots Git-visible tracked and untracked non-ignored files,
-restores unauthorized modifications, and fails if anything except
-`qa-review.md` changes. Git metadata and ignored files are outside this
-file-write boundary. `write_verdict` validates the verdict and always targets
-that fixed file. The server is bundled locally and resolved through
-`${PLUGIN_ROOT}`; it does not fetch or execute a mutable external MCP package.
+`execute` can still write files at run time. The boundary rests on the missing
+`edit` tool, the fixed-path verdict writer, and the live eval in
+`evals/qa-review.md`, which fails a release if a QA run changes anything except
+`qa-review.md`. That eval checks behavior before release; it is not runtime
+prevention. For runtime prevention, add managed `permissions.deny` rules such
+as `Edit(...)` and `Shell(...)` patterns. They apply to every agent in a
+session, not just the QA reviewer, so use them where that scope fits.
 
 Installing a plugin activates code and instructions. Treat file presence as
 execution: review the manifest, agents, skills, hooks, scripts, MCP
@@ -51,12 +55,15 @@ collisions during rollout rather than treating installation as enforcement.
   requires a major version.
 - A body-only clarification that preserves activation and outputs is a patch.
 - Additive compatible components are a minor version.
-- Publish immutable tags and record the manifest version in downstream
-  evidence. Do not assume `gen_ai.agent.version` is populated until the target
-  client has been verified.
-- To roll back a bad mandated release, point the marketplace entry to the last
-  approved immutable tag, update the mandated plugin version, and retain the
-  bad release for audit rather than deleting it.
+- Publish immutable tags. `qa-review.md` records the bundle version from
+  `manifest.yaml`; use it in downstream evidence. `gen_ai.agent.version`
+  carries the agent definition's version when known and the runtime version
+  otherwise, so check which one the target client emits before attributing a
+  release to it.
+- To roll back a bad mandated release, repoint the marketplace entry to the
+  last approved immutable tag or commit. `enabledPlugins` needs no change: it
+  maps each plugin to `true` or `false` and carries no version. Retain the bad
+  release for audit rather than deleting it.
 
 Requests for new primitives arrive as pull requests to the marketplace
 repository. `CODEOWNERS` supplies platform and security review before a release
@@ -69,3 +76,7 @@ node enterprise-harness-bundle/scripts/install.mjs
 node enterprise-harness-bundle/scripts/scan-unicode.mjs enterprise-harness-bundle
 npm test -- tests/enterprise-harness-bundle
 ```
+
+Before a release, also run the live QA eval described in
+[`evals/qa-review.md`](evals/qa-review.md). It runs the agent through Copilot
+CLI, so it uses AI credits and isn't part of `npm test`.

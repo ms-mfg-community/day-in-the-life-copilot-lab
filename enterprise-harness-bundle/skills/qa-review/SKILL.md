@@ -14,9 +14,10 @@ and 23 without copying that stage's rubric.
 - Inputs: approved specification, task list, current diff, and commands with
   their actual output.
 - Output: a `pass` or `reject` verdict plus evidence-backed findings.
-- Run evidence only through the agent-scoped `qa-boundary/run_evidence` tool.
-- Write the verdict only through `qa-boundary/write_verdict`; do not edit source
-  files.
+- Run evidence commands, such as the project's tests, with `execute`. Never use
+  it to create, change, or delete a file.
+- Write the verdict only through `qa-boundary/write_verdict`, which writes
+  `qa-review.md`; do not edit source files.
 
 Keep a clean distinction between agent analysis, deterministic test results,
 and the human decision to accept or merge the change. Do not modify the

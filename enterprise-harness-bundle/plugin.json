@@ -1,6 +1,6 @@
 {
   "name": "enterprise-harness",
-  "description": "Enterprise agentic SDLC role agents with governed QA evidence tools.",
+  "description": "Enterprise agentic SDLC role agents with a fixed-path QA verdict writer.",
   "version": "0.1.0",
   "agents": "agents",
   "skills": "skills"
