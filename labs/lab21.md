@@ -38,12 +38,17 @@ The bundle contains three agents and their supporting skills:
 | **QA Reviewer**   | Compare the change and test evidence with the approved intent.            | Findings go to the implementer or human reviewer; the reviewer does not silently fix the diff. |
 
 Each agent declares an explicit, non-wildcard `tools:` list. Omitting `tools:`
-would grant every available tool, while `tools: []` would disable tools
-entirely. The QA agent has no general built-in `execute` or `edit` tool. Its
-scoped `qa-boundary` MCP server exposes only arbitrary evidence commands behind
-a Git-visible file-change guard and a validated `qa-review.md` verdict writer,
-so source-write enforcement is mechanical rather than a prompt instruction. Deterministic tests exercise allowed and blocked writes;
-the live agent eval and pass@k record remain a release gate.
+enables all available tools, while `tools: []` disables tools entirely. A
+list restricts which tools an agent can use; it doesn't approve them. The QA
+agent has `read`, `search`, and `execute` for evidence, and no `edit` tool.
+Its only sanctioned write is `qa-boundary/write_verdict`, a tool from an
+agent-scoped MCP server that validates the verdict and always writes
+`qa-review.md`. Because `execute` can still write files, the boundary is
+checked by behavior: the bundle's live eval runs the agent against a fixture
+repository and fails if anything except `qa-review.md` changes (see
+[`evals/qa-review.md`](../enterprise-harness-bundle/evals/qa-review.md)). That
+eval is a release check, not runtime prevention. Managed `permissions.deny`
+rules can add runtime prevention, but they apply to every agent in a session.
 
 Spec Kit's published agentic SDLC guide treats planning, requirements,
 design, development, testing, deployment, and maintenance as a map, not a
@@ -329,17 +334,23 @@ these team files.
 
 ## 21.5 Know the Governed Surfaces
 
-| Surface                                                                        | Bundle primitives                                        | Marketplace/plugin | `telemetry` | deny/ask/allow | disable bypass | `model` | `autoTier` | MCP allow/deny | `sandbox` | remote control |
-| ------------------------------------------------------------------------------ | -------------------------------------------------------- | -----------------: | ----------: | -------------: | -------------: | ------: | ---------: | -------------: | --------: | -------------: |
-| Copilot CLI                                                                    | Agents and skills                                        |                Yes |         Yes |            Yes |            Yes |     Yes |        Yes |            Yes |       Yes |            Yes |
-| VS Code                                                                        | Custom agents and skills                                 |                Yes |         Yes |            Yes |            Yes |     Yes |        Yes |            Yes |        No |            Yes |
-| GitHub Copilot app                                                             | Plugin-provided agents/skills supported by the app       |                Yes |          No |            Yes |            Yes |     Yes |         No |            Yes |       Yes |            Yes |
-| Copilot cloud agent                                                            | Repository/plugin capabilities supported by cloud agent  |                Yes |          No |             No |             No |     Yes |         No |             No |        No |             No |
-| JetBrains IDEs                                                                 | Custom agents are preview; verify each bundled primitive |                Yes |   Ambiguous |             No |            Yes |      No |         No |            Yes |        No |             No |
-| Copilot Code Review is not a managed-settings client. The Copilot app supports |
-| all four `permissions.*` keys in the published matrix. Telemetry remains       |
-| ambiguous for JetBrains because the key text names CLI and VS Code while the   |
-| matrix also marks JetBrains; verify that surface before relying on it.         |
+| Surface             | Bundle primitives                                        | Marketplace/plugin | `telemetry` | deny/ask/allow | disable bypass | `model` | `autoTier` | MCP allow/deny | `sandbox` | remote control |
+| ------------------- | -------------------------------------------------------- | -----------------: | ----------: | -------------: | -------------: | ------: | ---------: | -------------: | --------: | -------------: |
+| Copilot CLI         | Agents and skills                                        |                Yes |         Yes |            Yes |            Yes |     Yes |        Yes |            Yes |       Yes |            Yes |
+| VS Code             | Custom agents and skills                                 |                Yes |         Yes |            Yes |            Yes |     Yes |        Yes |            Yes |        No |            Yes |
+| GitHub Copilot app  | Plugin-provided agents/skills supported by the app       |                Yes |          No |            Yes |            Yes |     Yes |         No |            Yes |       Yes |            Yes |
+| Copilot cloud agent | Repository/plugin capabilities supported by cloud agent  |                Yes |          No |             No |             No |     Yes |         No |             No |        No |             No |
+| JetBrains IDEs      | Custom agents are preview; verify each bundled primitive |                Yes |   Ambiguous |             No |            Yes |      No |         No |            Yes |        No |             No |
+
+Copilot code review isn't a client in the published matrix. The Copilot app
+supports all four `permissions.*` keys. In VS Code, the `deny`, `ask`, and
+`allow` rules apply to sessions that use Agent Host. Telemetry stays ambiguous
+for JetBrains: the key's description names Copilot CLI and VS Code, while the
+matrix also marks JetBrains, so verify that surface before relying on it.
+
+The QA reviewer's verdict writer comes from its agent-scoped `mcp-servers`
+block. VS Code and other IDE custom agents don't use that block, so run the QA
+reviewer from Copilot CLI.
 
 Plugins can carry reusable instructions/rules, but they should not pretend to
 contain repository-specific architecture or domain context. Keep repo-owned
@@ -358,11 +369,15 @@ description requires a major version; a body-only clarification is a patch.
 Publish immutable releases. Roll back a bad mandated release by repointing the
 `extraKnownMarketplaces` GitHub source's optional `ref` to the last approved
 tag and the marketplace plugin source's 40-character `sha` to its reviewed
-commit, then update the enabled plugin version. Retain the bad release for
-audit rather than deleting it. Use the bundle version stamped in
-`qa-review.md` for U5/U6 attribution. `gen_ai.agent.version` can represent the
-agent definition version when known or the runtime version otherwise, so check
-which value the target client emits before attributing a bundle release.
+commit. `enabledPlugins` needs no change: it maps each plugin to `true` or
+`false` and carries no version. With `autoUpdate: false`, as in the example
+above, clients don't refresh that marketplace on their own, so tell users to
+update the plugin. Retain the bad release for audit rather than deleting it.
+Use the bundle version stamped in `qa-review.md` to attribute results to a
+release in Lab 25's telemetry and Lab 26's canvases. `gen_ai.agent.version`
+can represent the agent definition version when known or the runtime version
+otherwise, so check which value the target client emits before attributing a
+bundle release.
 
 ## 21.6 Configure and Review the Policy
 
@@ -372,11 +387,10 @@ which value the target client emits before attributing a bundle release.
 3. Review the combined file, replace the sample endpoint, and approve any
    telemetry content-capture decision before publishing it to the source
    repository's default branch.
-4. Validate the bundle dry-run, agent binding tests, QA writer/guard unit
-   tests, and marketplace names against the
-   `strictKnownMarketplaces` array before rolling the policy out. Record live
-   agent eval pass@k results separately before release (see
-   `evals/qa-review.md`).
+4. Validate the bundle dry-run, agent binding tests, QA verdict-writer tests,
+   and marketplace names against the `strictKnownMarketplaces` array before
+   rolling the policy out. Before a release, run the live QA eval and confirm
+   it meets its bar (see `evals/qa-review.md`).
 5. Pilot through enterprise team mappings and verify each supported client.
 6. Confirm the configuration is active in AI Controls before expanding it.
 
@@ -394,17 +408,16 @@ matches the registry.
 review, while allowing stages to be skipped or revisited when the work already
 has adequate evidence.
 
-✅ Every agent has explicit tools, the QA agent keeps executable evidence
-gathering without a general edit tool, and the deterministic writer/guard
-unit tests verify the Git-visible file boundary. The reproducible live eval was
-attempted, but the current managed environment did not expose the initialized
-scoped MCP tools to the model; the safe refusal left the fixture clean. This is
-not a pass@k success, so record a successful pass@k before release.
+✅ Every agent has explicit tools. The QA agent gathers evidence with
+`execute`, has no `edit` tool, and writes only `qa-review.md` through
+`qa-boundary/write_verdict`; its live eval leaves `qa-review.md` as the only
+change (see `evals/qa-review.md`).
 
 ✅ `extraKnownMarketplaces`, `enabledPlugins`, and
 `strictKnownMarketplaces` use their documented map/map/array shapes.
 
-✅ GitHub's maintained marketplace is explicitly listed when it is allowed;
+✅ Both GitHub-maintained marketplaces, `github/copilot-plugins` and
+`github/awesome-copilot`, are listed explicitly when they are allowed;
 `strictKnownMarketplaces: []` is identified as total lockdown.
 
 ✅ Telemetry content capture is disabled and locked in the example, and any
@@ -414,5 +427,8 @@ decision to enable it has a named approver.
 multi-team merging and additive plugins are understood, and telemetry remains
 enterprise-wide.
 
-✅ Spec Kit runs with `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` until the unresolved
+✅ Spec Kit runs with `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0`, and its steps get
+the operations they need from an explicit grant: managed `permissions.allow`
+rules, or `--allow-tool` passed through
+`SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS`. This holds until the unresolved
 `--yolo`/managed-policy interaction is verified in a controlled environment.
