@@ -574,7 +574,7 @@ erDiagram
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
 > Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux. Labs 15-20 are the **2026
+> Lab 14 operationalizes them with tmux. Labs 15-20 are the **2026
 > modernization track**: Lab 15 (LSP) and Lab 17 (admin controls) are
 > standalone; Lab 16 → Lab 11 are companions (marketplace governance);
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);

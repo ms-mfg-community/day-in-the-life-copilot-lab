@@ -65,7 +65,7 @@ without losing the plot.
 
 References:
 
-- [Lab 13 §B.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalises
+- [Lab 13 §B.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalizes
 - [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki that preserves decisions across the `/clear` boundary (Lab 10)
 - [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md) — the judging rubric the orchestrator pane uses
 - [`scripts/orchestrator/`](../scripts/orchestrator/) — `tmux-start.sh`, `handoff.sh`, `clear-context.sh`
