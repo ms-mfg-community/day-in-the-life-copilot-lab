@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -180,6 +180,14 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     expect(existsSync(join(subdir, "qa-review.md"))).toBe(false);
   });
 
+  it("verdict writer stays in the working directory outside a repository", async () => {
+    const { verdictDirectory } = await import(pathToFileURL(WRITER).href);
+    const outside = resolve("/", "no-such-dir-qa-eval", "sub");
+
+    expect(verdictDirectory(outside)).toBe(outside);
+    expect(verdictDirectory(join(fixtureDir, "src"))).toBe(fixtureDir);
+  });
+
   it("MCP tool failures preserve the request id and return a tool error", async () => {
     const { handleRequest } = await import(pathToFileURL(MCP_SERVER).href);
     const response = handleRequest(
@@ -216,12 +224,12 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     ];
     const lines = (
       evidence: string,
-      { evidenceOk = true, verdictOk = true } = {},
+      { evidenceOk = true, verdictOk = true, evidenceTool = "powershell" } = {},
     ) =>
       [
         event("session.auto_mode_resolved", { chosenModel: "model-a" }),
         ...call("1", "skill", { skill: "qa-review" }),
-        ...call("2", "powershell", { command: evidence }, evidenceOk),
+        ...call("2", evidenceTool, { command: evidence }, evidenceOk),
         ...call("3", "qa-boundary-write_verdict", {}, verdictOk),
         "not json",
       ].join("\n");
@@ -232,11 +240,21 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       skillInvoked: true,
       model: "model-a",
     });
-    expect(parseEvents(lines("git status; node test.mjs")).evidenceRan).toBe(
-      true,
-    );
+    for (const command of [
+      "git status; node test.mjs",
+      "  node test.mjs",
+      "try { node test.mjs } catch { exit 1 }",
+      "$out = node test.mjs",
+      "(node test.mjs)",
+      "cmd /c node test.mjs",
+    ]) {
+      expect(parseEvents(lines(command)).evidenceRan, command).toBe(true);
+    }
     expect(
       parseEvents(lines('echo "skipping node test.mjs"')).evidenceRan,
+    ).toBe(false);
+    expect(
+      parseEvents(lines("node test.mjs", { evidenceTool: "view" })).evidenceRan,
     ).toBe(false);
     expect(
       parseEvents(lines("node test.mjs", { evidenceOk: false })).evidenceRan,
@@ -287,6 +305,17 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       grade(["A qa-review.md"], { facts: { ...facts, evidenceRan: false } })
         .verdictValid,
     ).toBe(false);
+    for (const [label, text] of [
+      ["no verdict line", verdictText.replace("**Verdict:** PASS", "PASS")],
+      ["no bundle stamp", verdictText.replace("**Bundle:**", "Bundle:")],
+      ["wrong version", verdictText.replace("v0.1.0", "v9.9.9")],
+      ["no agent stamp", verdictText.replace("**Agent:**", "Agent:")],
+    ]) {
+      expect(
+        grade(["A qa-review.md"], { verdictText: text }).verdictValid,
+        label,
+      ).toBe(false);
+    }
   });
 
   it("live-eval fixture check sees commits and git-ignored files", async () => {
@@ -305,6 +334,8 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       writeFileSync(join(fixture, ".git", "info", "exclude"), "evidence.log\n");
       writeFileSync(join(fixture, "evidence.log"), "PASS\n");
       writeFileSync(join(fixture, "implementation.mjs"), "patched\n");
+      mkdirSync(join(fixture, "sub"));
+      writeFileSync(join(fixture, "sub", "notes.txt"), "nested\n");
       spawnSync(
         "git",
         [
@@ -325,6 +356,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
         "A evidence.log",
         "M implementation.mjs",
         "A qa-review.md",
+        "A sub/notes.txt",
         "HEAD moved",
       ]);
     } finally {

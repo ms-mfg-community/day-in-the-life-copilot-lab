@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
@@ -67,14 +66,17 @@ export function renderVerdict(input) {
 }
 
 // The verdict belongs at the repository root even when the session started in
-// a subdirectory. Outside a Git repository it stays in the working directory.
+// a subdirectory. Walk up to the nearest `.git` entry (a directory, or a file
+// in worktrees) rather than run `git`, which could resolve to an executable in
+// the tree under review. Outside a repository, stay in the working directory.
 export function verdictDirectory(cwd) {
-  const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
-    cwd,
-    encoding: "utf8",
-  });
-  const root = result.status === 0 ? result.stdout.trim() : "";
-  return root || cwd;
+  const start = resolve(cwd);
+  const findRoot = (dir) => {
+    if (existsSync(join(dir, ".git"))) return dir;
+    const parent = dirname(dir);
+    return parent === dir ? start : findRoot(parent);
+  };
+  return findRoot(start);
 }
 
 export function writeVerdictData(input, cwd = process.cwd()) {
