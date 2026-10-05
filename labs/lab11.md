@@ -250,7 +250,7 @@ execution patterns.
 - [Lab 13](lab13.md) — A2A concepts with Copilot CLI ACP (implementer +
   critic, trust boundaries, hand-off schema).
 - [Lab 14](lab14.md) — Orchestrator + tmux deep-dive (the pattern that
-  built this repo; operationalises Lab 13's hand-off schema).
+  built this repo; operationalizes Lab 13's hand-off schema).
 - [Lab 16](lab16.md) — Enterprise marketplace & plugin governance: the
   full `managed-settings.json` schema, `strictKnownMarketplaces`
   allowlisting, and the AI Controls admin surface.

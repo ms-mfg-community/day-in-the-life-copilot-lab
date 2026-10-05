@@ -22,7 +22,7 @@
 > introduces **A2A / ACP** orchestration with a two-agent
 > implementer + critic walkthrough on the Node app, including the three
 > classic failure modes (looping, context drift, hand-off ambiguity)
-> and their mitigations; [Lab 14](lab14.md) operationalises that schema
+> and their mitigations; [Lab 14](lab14.md) operationalizes that schema
 > as the **orchestrator + tmux deep-dive** — a long-lived orchestrator
 > pane plus short-lived worker panes driven by `scripts/orchestrator/`
 > through a strict `plan → implement → handoff → clear → qa → clear`

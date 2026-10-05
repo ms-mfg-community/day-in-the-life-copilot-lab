@@ -569,12 +569,12 @@ erDiagram
 | [Lab 25](labs/lab25.md) | Telemetry, Log Analytics & the Improvement Loop | Copilot OpenTelemetry export, offline file-exporter path, Logs Ingestion API, KQL pack and Workbook |
 | [Lab 26](labs/lab26.md) | Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension, SDLC board, code-aware workbench, dry-run release composer |
 
-**Total: ~7 hours** (20 labs — self-paced or presenter-led)
+**Total: ~10.8 hours** (26 labs — self-paced or presenter-led)
 
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
 > Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux. Labs 15-20 are the **2026
+> Lab 14 operationalizes them with tmux. Labs 15-20 are the **2026
 > modernization track**: Lab 15 (LSP) and Lab 17 (admin controls) are
 > standalone; Lab 16 → Lab 11 are companions (marketplace governance);
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
@@ -659,7 +659,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 20 hands-on lab modules + per-track appendices
+├── labs/                          # 26 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
@@ -694,7 +694,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 14 hands-on labs — start here |
+| [Lab Modules](labs/) | 26 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |
