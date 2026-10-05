@@ -659,7 +659,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 20 hands-on lab modules + per-track appendices
+├── labs/                          # 26 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
