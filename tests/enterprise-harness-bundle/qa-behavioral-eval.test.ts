@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   existsSync,
+  linkSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -188,6 +190,60 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     expect(verdictDirectory(join(fixtureDir, "src"))).toBe(fixtureDir);
   });
 
+  it("verdict root needs a real .git entry, as a directory or a worktree file", async () => {
+    const { verdictDirectory } = await import(pathToFileURL(WRITER).href);
+    const worktree = join(fixtureDir, "worktree");
+    mkdirSync(join(worktree, "src"), { recursive: true });
+    writeFileSync(join(worktree, ".git"), "gitdir: ../.git/worktrees/x\n");
+    const decoy = join(fixtureDir, "decoy");
+    mkdirSync(join(decoy, ".git"), { recursive: true });
+    mkdirSync(join(decoy, "src"));
+
+    expect(verdictDirectory(join(worktree, "src"))).toBe(worktree);
+    expect(verdictDirectory(join(decoy, "src"))).toBe(fixtureDir);
+  });
+
+  it("verdict writer and MCP server start no process", () => {
+    for (const path of [WRITER, MCP_SERVER]) {
+      expect(readFileSync(path, "utf8"), path).not.toMatch(/child_process/);
+    }
+  });
+
+  it("verdict writer refuses a qa-review.md linked to another file", async () => {
+    const { writeVerdictData } = await import(pathToFileURL(WRITER).href);
+    const victim = join(fixtureDir, "victim.txt");
+    writeFileSync(victim, "original\n");
+    linkSync(victim, join(fixtureDir, "qa-review.md"));
+
+    expect(() =>
+      writeVerdictData(
+        { status: "pass", summary: "Checks passed.", findings: [] },
+        fixtureDir,
+      ),
+    ).toThrow(/refusing to write through it/);
+    expect(readFileSync(victim, "utf8")).toBe("original\n");
+  });
+
+  it("verdict writer refuses to write through a symlinked qa-review.md", async (context) => {
+    const { writeVerdictData } = await import(pathToFileURL(WRITER).href);
+    const victim = join(fixtureDir, "victim.txt");
+    writeFileSync(victim, "original\n");
+    try {
+      symlinkSync(victim, join(fixtureDir, "qa-review.md"), "file");
+    } catch {
+      // Creating symlinks needs Developer Mode or an elevated shell on Windows.
+      context.skip();
+    }
+
+    expect(() =>
+      writeVerdictData(
+        { status: "pass", summary: "Checks passed.", findings: [] },
+        fixtureDir,
+      ),
+    ).toThrow(/refusing to write through it/);
+    expect(readFileSync(victim, "utf8")).toBe("original\n");
+  });
+
   it("MCP tool failures preserve the request id and return a tool error", async () => {
     const { handleRequest } = await import(pathToFileURL(MCP_SERVER).href);
     const response = handleRequest(
@@ -228,6 +284,12 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     ) =>
       [
         event("session.auto_mode_resolved", { chosenModel: "model-a" }),
+        event("session.mcp_servers_loaded", {
+          servers: [
+            { name: "qa-boundary", status: "connected" },
+            { name: "broken", status: "failed" },
+          ],
+        }),
         ...call("1", "skill", { skill: "qa-review" }),
         ...call("2", evidenceTool, { command: evidence }, evidenceOk),
         ...call("3", "qa-boundary-write_verdict", {}, verdictOk),
@@ -239,6 +301,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       verdictTool: true,
       skillInvoked: true,
       model: "model-a",
+      mcpServers: ["qa-boundary"],
     });
     for (const command of [
       "git status; node test.mjs",

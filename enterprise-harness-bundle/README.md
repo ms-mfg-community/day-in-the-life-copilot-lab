@@ -25,12 +25,14 @@ Every agent declares an explicit, non-wildcard `tools:` list. The QA agent has
 `read`, `search`, and `execute` for evidence, and no `edit` tool. Its
 agent-scoped `qa-boundary` MCP server exposes one tool, `write_verdict`, which
 validates the verdict and always writes `qa-review.md` at the repository root.
-The server is bundled locally and resolved through `${PLUGIN_ROOT}`; it does
-not fetch or execute a mutable external MCP package. Copilot CLI expands
-`${PLUGIN_ROOT}` in a plugin agent's `mcp-servers` from version 1.0.85, which
-is above the registry's general CLI floor, so the verdict writer needs 1.0.85
-or later. VS Code and other IDE custom agents don't use an agent's
-`mcp-servers`, so the verdict writer is only available in Copilot CLI.
+It refuses to write through a symlinked or hard-linked `qa-review.md`, so it
+can't be pointed at another file. The server is bundled locally and resolved
+through `${PLUGIN_ROOT}`; it does not fetch or execute a mutable external MCP
+package. Copilot CLI expands `${PLUGIN_ROOT}` in a plugin agent's
+`mcp-servers` from version 1.0.85, which is above the registry's general CLI
+floor, so the verdict writer needs 1.0.85 or later. VS Code and other IDE
+custom agents don't use an agent's `mcp-servers`, so the verdict writer is
+only available in Copilot CLI.
 
 `execute` can still write files at run time. The boundary rests on the missing
 `edit` tool, the fixed-path verdict writer, and the live eval in

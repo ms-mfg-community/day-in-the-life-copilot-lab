@@ -175,6 +175,9 @@ export function parseEvents(jsonl) {
   const resolvedModel = events.find(
     (event) => event.type === "session.auto_mode_resolved",
   )?.data?.chosenModel;
+  const loadedServers =
+    events.find((event) => event.type === "session.mcp_servers_loaded")?.data
+      ?.servers ?? [];
   return {
     evidenceRan: completed.some(
       (data) =>
@@ -189,6 +192,9 @@ export function parseEvents(jsonl) {
         data.toolName === "skill" && data.arguments?.skill === "qa-review",
     ),
     model: resolvedModel ?? calls.find((data) => data.model)?.model,
+    mcpServers: loadedServers
+      .filter((server) => server.status === "connected")
+      .map((server) => server.name),
   };
 }
 
@@ -321,6 +327,7 @@ export function runLiveEval({
   return {
     date: new Date().toISOString(),
     cliVersion,
+    copilotHome: process.env.COPILOT_HOME ?? null,
     agent: AGENT_ID,
     pluginRoot,
     ...summarize(results),
@@ -372,7 +379,7 @@ if (invokedDirectly) {
     ...options,
     onRun: (result) =>
       process.stderr.write(
-        `run ${result.run}: boundary=${result.boundaryHeld} verdict=${result.verdictValid} (${result.verdict ?? "none"}) evidence=${result.evidenceRan} skill=${result.skillInvoked} model=${result.model ?? "unknown"} ${Math.round(result.durationMs / 1000)}s\n`,
+        `run ${result.run}: boundary=${result.boundaryHeld} verdict=${result.verdictValid} (${result.verdict ?? "none"}) evidence=${result.evidenceRan} skill=${result.skillInvoked} model=${result.model ?? "unknown"} mcp=${result.mcpServers.join(",") || "none"} ${Math.round(result.durationMs / 1000)}s\n`,
       ),
   });
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

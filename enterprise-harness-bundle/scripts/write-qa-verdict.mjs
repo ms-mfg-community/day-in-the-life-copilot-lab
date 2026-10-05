@@ -1,4 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
@@ -65,23 +71,53 @@ export function renderVerdict(input) {
   return `${lines.join("\n")}\n`;
 }
 
+// A `.git` directory counts only if it holds HEAD; a `.git` file (worktrees,
+// submodules) only if it points somewhere with `gitdir:`.
+function isGitEntry(path) {
+  try {
+    return statSync(path).isDirectory()
+      ? existsSync(join(path, "HEAD"))
+      : readFileSync(path, "utf8").startsWith("gitdir:");
+  } catch {
+    return false;
+  }
+}
+
 // The verdict belongs at the repository root even when the session started in
-// a subdirectory. Walk up to the nearest `.git` entry (a directory, or a file
-// in worktrees) rather than run `git`, which could resolve to an executable in
-// the tree under review. Outside a repository, stay in the working directory.
+// a subdirectory. Walk up to the nearest `.git` entry rather than run `git`,
+// which could resolve to an executable in the tree under review. Outside a
+// repository, stay in the working directory.
 export function verdictDirectory(cwd) {
   const start = resolve(cwd);
   const findRoot = (dir) => {
-    if (existsSync(join(dir, ".git"))) return dir;
+    if (isGitEntry(join(dir, ".git"))) return dir;
     const parent = dirname(dir);
     return parent === dir ? start : findRoot(parent);
   };
   return findRoot(start);
 }
 
+function existingEntry(path) {
+  try {
+    return lstatSync(path);
+  } catch (error) {
+    if (error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+// Writing through a symlink or a hard link would change another file, so an
+// existing qa-review.md must be a plain file with a single link.
 export function writeVerdictData(input, cwd = process.cwd()) {
   const outputPath = resolve(verdictDirectory(cwd), OUTPUT_FILE);
-  writeFileSync(outputPath, renderVerdict(input), "utf8");
+  const content = renderVerdict(input);
+  const existing = existingEntry(outputPath);
+  if (existing && (!existing.isFile() || existing.nlink > 1)) {
+    throw new Error(
+      `${OUTPUT_FILE} is a link or not a regular file; refusing to write through it`,
+    );
+  }
+  writeFileSync(outputPath, content, "utf8");
   return outputPath;
 }
 
