@@ -25,9 +25,11 @@ describe("Lab 21 governance guidance", () => {
     const registry = yaml.load(
       readFileSync(join(ROOT, "docs", "_meta", "registry.yaml"), "utf8"),
     ) as Record<string, unknown>;
+    const pinned = String(registry.spec_kit_version);
 
-    expect(registry.spec_kit_version).toBe("1.0.12");
-    expect(LAB).not.toContain("Spec Kit v1.0.12");
+    expect(pinned).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(LAB).not.toMatch(/Spec Kit v?\d+\.\d+\.\d+/);
+    expect(LAB).not.toContain(pinned);
   });
 
   it("labels JetBrains managed-setting support as ambiguous", () => {
