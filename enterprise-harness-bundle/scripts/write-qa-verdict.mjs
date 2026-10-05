@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { resolve, join, dirname } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
@@ -65,8 +66,19 @@ export function renderVerdict(input) {
   return `${lines.join("\n")}\n`;
 }
 
+// The verdict belongs at the repository root even when the session started in
+// a subdirectory. Outside a Git repository it stays in the working directory.
+export function verdictDirectory(cwd) {
+  const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+    cwd,
+    encoding: "utf8",
+  });
+  const root = result.status === 0 ? result.stdout.trim() : "";
+  return root || cwd;
+}
+
 export function writeVerdictData(input, cwd = process.cwd()) {
-  const outputPath = resolve(cwd, OUTPUT_FILE);
+  const outputPath = resolve(verdictDirectory(cwd), OUTPUT_FILE);
   writeFileSync(outputPath, renderVerdict(input), "utf8");
   return outputPath;
 }
