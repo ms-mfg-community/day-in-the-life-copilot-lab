@@ -1,5 +1,6 @@
 # Tech-lead harness plugin — role agents for governed agentic SDLC work.
 # minimum_cli_version MUST match docs/_meta/registry.yaml `copilot_cli_version_floor`.
+# The qa-reviewer's verdict writer needs Copilot CLI 1.0.85 or later; see README.md.
 
 name: enterprise-harness
 version: 0.1.0

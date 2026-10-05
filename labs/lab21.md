@@ -97,7 +97,9 @@ plugin entry at this directory; see the
 
 The `minimum_cli_version` must match
 `docs/_meta/registry.yaml` → `copilot_cli_version_floor`. The repository's
-tests validate the bundle manifest and the installer's entrypoints.
+tests validate the bundle manifest and the installer's entrypoints. The QA
+reviewer's verdict writer needs a newer Copilot CLI than that floor; the
+registry notes the version beside `copilot_cli_version_floor`.
 
 Run the dry-run from the repository root:
 

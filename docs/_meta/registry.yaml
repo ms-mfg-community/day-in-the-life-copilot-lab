@@ -16,6 +16,9 @@ schema_version: 1
 # lists 1.0.82 (published 2026-08-29); dist-tag `latest` was 1.0.83.
 # Keep this at the LOWEST version the labs actually require, not `latest` —
 # every learner is held to this floor by scripts/preflight.{sh,ps1}.
+# Exception: Lab 21's QA verdict writer needs 1.0.85 or later, the first
+# release where plugin agents expand ${PLUGIN_ROOT} in mcp-servers (release
+# notes, 2026-09-16). The rest of the labs run at this floor.
 copilot_cli_version_floor: "1.0.82"
 
 # The gh-aw compiler version the committed .lock.yml files were built with

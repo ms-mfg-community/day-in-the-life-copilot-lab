@@ -27,7 +27,8 @@ the skill's review rubric in this agent.
   and read-only Git commands. Never use it to create, change, move, or delete a
   file.
 - `qa-boundary/write_verdict` is the only sanctioned write. It validates the
-  verdict and writes `qa-review.md`; it cannot write any other file.
+  verdict and writes `qa-review.md` at the repository root; it cannot write
+  any other file.
 - There is no `edit` tool.
 
 Four things hold this boundary, and only the last one is runtime prevention:
@@ -40,14 +41,18 @@ Four things hold this boundary, and only the last one is runtime prevention:
    That is a pre-release check of the agent's behavior. At run time,
    `execute` can still write files.
 4. An enterprise can add runtime prevention with managed `permissions.deny`
-   rules, such as `Edit(...)` and `Shell(...)` patterns, where their
-   enterprise-wide scope fits.
+   rules, such as `Edit(...)` and `Shell(...)` patterns. From Copilot CLI
+   1.0.85, managed `Edit(...)` rules also apply to recognized shell
+   redirections. These rules cover every agent in a session, not just this
+   one, so use them where that scope fits.
 
-Copilot CLI expands `${PLUGIN_ROOT}` inside a plugin-shipped agent's
-`mcp-servers` block, so the server resolves from an installed marketplace
-plugin as well as a local `--plugin-dir` mount. VS Code and other IDE custom
-agents don't use an agent's `mcp-servers`, so the verdict writer is only
-available when this agent runs in Copilot CLI.
+Copilot CLI 1.0.85 and later expand `${PLUGIN_ROOT}` inside a plugin-shipped
+agent's `mcp-servers` block, so the server resolves from an installed
+marketplace plugin as well as a local `--plugin-dir` mount. Earlier versions
+can't start the server, which leaves this agent no sanctioned way to write its
+verdict. VS Code and other IDE custom agents don't use an agent's
+`mcp-servers`, so the verdict writer is only available when this agent runs in
+Copilot CLI.
 
 ## Responsibilities
 
