@@ -40,7 +40,12 @@ export async function dryRun(bundleDir, { manifestOverride } = {}) {
 
       const abs = resolve(bundleRoot, rel);
       const fromRoot = relative(bundleRoot, abs);
-      if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`)) {
+      // On Windows, relative() across drives returns an absolute path.
+      if (
+        isAbsolute(fromRoot) ||
+        fromRoot === ".." ||
+        fromRoot.startsWith(`..${sep}`)
+      ) {
         errors.push(`${kind} entrypoint escapes bundle root: ${rel}`);
         continue;
       }

@@ -54,6 +54,27 @@ describe("enterprise-harness-bundle: installer dry-run", () => {
     );
   });
 
+  it.runIf(process.platform === "win32")(
+    "rejects a drive-relative entrypoint that resolves to another drive",
+    async () => {
+      const mod = await import(pathToFileURL(INSTALL_SCRIPT).href);
+      const otherDrive = BUNDLE_DIR[0].toUpperCase() === "Z" ? "Y" : "Z";
+      const result = await mod.dryRun(BUNDLE_DIR, {
+        manifestOverride: {
+          name: "test",
+          version: "1.0.0",
+          minimum_cli_version: "1.0.0",
+          entrypoints: { agents: [`${otherDrive}:agents/qa-reviewer.md`] },
+        },
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.stringMatching(/escapes bundle root/),
+      );
+    },
+  );
+
   it("prints ok=true when run as a CLI", () => {
     const result = spawnSync("node", [INSTALL_SCRIPT], {
       cwd: ROOT,
