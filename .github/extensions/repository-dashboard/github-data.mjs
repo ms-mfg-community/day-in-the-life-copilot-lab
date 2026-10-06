@@ -325,7 +325,7 @@ export async function loadRunDetails(runId) {
 }
 
 export async function assignIssue(issueNumber, assignee) {
-    if (!Number.isInteger(issueNumber) || issueNumber < 1) {
+    if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
         throw new Error("Issue number must be a positive integer.");
     }
     if (typeof assignee !== "string" || !GITHUB_LOGIN_PATTERN.test(assignee)) {
