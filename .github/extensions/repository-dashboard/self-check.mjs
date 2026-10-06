@@ -8,6 +8,8 @@ import {
 } from "./request-security.mjs";
 import {
     assignIssue,
+    buildDashboardPayload,
+    collectConnectionPages,
     extractReferencedIssues,
     flattenGraphqlPages,
     loadRunDetails,
@@ -557,3 +559,139 @@ await assert.rejects(
         && error.message === "The request body is not valid JSON.",
     "A malformed body did not return a fixed 400 message.",
 );
+
+// Pagination is bounded, and a bounded fetch says so instead of returning nothing.
+function issuePage(numbers, nextCursor) {
+    return {
+        data: {
+            repository: {
+                issues: {
+                    nodes: numbers.map((number) => ({ number })),
+                    pageInfo: {
+                        hasNextPage: Boolean(nextCursor),
+                        endCursor: nextCursor ?? null,
+                    },
+                },
+            },
+        },
+    };
+}
+
+const requestedCursors = [];
+const finitePages = await collectConnectionPages(
+    (cursor) => {
+        requestedCursors.push(cursor);
+        if (cursor === null) return Promise.resolve(issuePage([1, 2], "cursor-1"));
+        if (cursor === "cursor-1") return Promise.resolve(issuePage([3], "cursor-2"));
+        return Promise.resolve(issuePage([4], null));
+    },
+    "issues",
+    { maxPages: 20, deadlineAt: Date.now() + 60_000 },
+);
+assert.deepEqual(finitePages.data.map((node) => node.number), [1, 2, 3, 4]);
+assert.equal(finitePages.truncated, false);
+assert.deepEqual(requestedCursors, [null, "cursor-1", "cursor-2"]);
+
+let endlessCalls = 0;
+const cappedPages = await collectConnectionPages(
+    () => {
+        endlessCalls += 1;
+        return Promise.resolve(issuePage([endlessCalls], `cursor-${endlessCalls}`));
+    },
+    "issues",
+    { maxPages: 5, deadlineAt: Date.now() + 60_000 },
+);
+assert.equal(endlessCalls, 5, "The page cap did not stop an endless connection.");
+assert.equal(cappedPages.data.length, 5);
+assert.equal(cappedPages.truncated, true, "A capped fetch did not report truncation.");
+
+let elapsed = 0;
+let deadlineCalls = 0;
+const expiredPages = await collectConnectionPages(
+    () => {
+        deadlineCalls += 1;
+        elapsed += 400;
+        return Promise.resolve(issuePage([deadlineCalls], `cursor-${deadlineCalls}`));
+    },
+    "issues",
+    { maxPages: 100, deadlineAt: 1_000, clock: () => elapsed },
+);
+assert.equal(deadlineCalls, 3, "The overall deadline did not stop pagination.");
+assert.equal(expiredPages.truncated, true, "A deadline-stopped fetch did not report truncation.");
+
+const truncatedDashboard = { ...dashboard, truncated: { issues: true } };
+const truncatedRender = await instantiateDashboard(truncatedDashboard);
+assert.ok(
+    truncatedRender.app.innerHTML.includes("Some lists are incomplete"),
+    "A truncated issue list was presented as complete.",
+);
+assert.equal(
+    app.innerHTML.includes("Some lists are incomplete"),
+    false,
+    "A complete issue list was labelled incomplete.",
+);
+
+// The payload the browser receives must carry both failure and truncation.
+const payload = buildDashboardPayload({
+    repository: {
+        nameWithOwner: "example/dashboard",
+        url: "https://github.com/example/dashboard",
+        defaultBranch: "main",
+    },
+    viewer: { login: "octocat", avatarUrl: "https://avatars.test/octocat" },
+    refreshedAt: "2026-01-01T00:00:00Z",
+    sections: [
+        {
+            name: "issues",
+            truncated: true,
+            error: null,
+            data: [
+                { number: 1, title: "Blocked", labels: { nodes: [{ name: "blocked" }] }, assignees: { nodes: [] } },
+                { number: 2, title: "Assigned", labels: { nodes: [] }, assignees: { nodes: [{ login: "octocat" }] } },
+                { number: 3, title: "Ready", labels: { nodes: [] }, assignees: { nodes: [] } },
+            ],
+        },
+        {
+            name: "pullRequests",
+            truncated: false,
+            error: null,
+            data: [{
+                number: 9,
+                title: "Fix",
+                url: "https://github.com/example/dashboard/pull/9",
+                isDraft: true,
+                body: "Closes https://github.com/example/dashboard/issues/3",
+                labels: { nodes: [] },
+                assignees: { nodes: [] },
+                closingIssuesReferences: { nodes: [] },
+                statusCheckRollup: { contexts: { nodes: [{ conclusion: "FAILURE" }, { state: "SUCCESS" }] } },
+            }],
+        },
+        { name: "runs", truncated: true, error: null, data: [{ databaseId: 42 }] },
+        {
+            name: "assignableUsers",
+            truncated: false,
+            error: null,
+            data: [{ login: "octocat", avatar_url: "https://avatars.test/octocat" }],
+        },
+        { name: "agents", truncated: false, error: "Unable to discover repository agents.", data: [] },
+    ],
+});
+
+assert.deepEqual(payload.truncated, { issues: true, runs: true });
+assert.deepEqual(payload.errors, { agents: "Unable to discover repository agents." });
+assert.deepEqual(
+    payload.issues.map((issue) => issue.lane),
+    ["blocked", "assigned", "unassigned"],
+);
+assert.deepEqual(
+    payload.issues.find((issue) => issue.number === 3).linkedPullRequests,
+    [{ number: 9, title: "Fix", url: "https://github.com/example/dashboard/pull/9", isDraft: true }],
+);
+assert.deepEqual(
+    payload.pullRequests[0].checks,
+    { total: 2, passed: 1, failed: 1, pending: 0 },
+);
+assert.deepEqual(payload.assignableUsers, [
+    { login: "octocat", avatarUrl: "https://avatars.test/octocat" },
+]);

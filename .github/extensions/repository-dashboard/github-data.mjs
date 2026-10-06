@@ -7,6 +7,12 @@ import { DashboardRequestError } from "./request-security.mjs";
 
 const execFileAsync = promisify(execFile);
 const COMMAND_TIMEOUT_MS = 30_000;
+const PAGE_TIMEOUT_MS = 20_000;
+const PAGINATION_DEADLINE_MS = 45_000;
+const MAX_GRAPHQL_PAGES = 20;
+const MAX_REST_PAGES = 10;
+const REST_PAGE_SIZE = 100;
+const RUN_LIST_LIMIT = 30;
 const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const MAX_LOG_CHARACTERS = 60_000;
 const MAX_ERROR_DETAIL_LINES = 3;
@@ -73,13 +79,13 @@ function describeExecFailure(error) {
     return "the GitHub CLI exited unexpectedly.";
 }
 
-async function runGh(args) {
+async function runGh(args, timeoutMs = COMMAND_TIMEOUT_MS) {
     try {
         const { stdout } = await execFileAsync("gh", args, {
             cwd: process.cwd(),
             encoding: "utf8",
             maxBuffer: MAX_BUFFER_BYTES,
-            timeout: COMMAND_TIMEOUT_MS,
+            timeout: timeoutMs,
             windowsHide: true,
         });
         return stdout.trim();
@@ -92,8 +98,8 @@ async function runGh(args) {
     }
 }
 
-async function runGhJson(args) {
-    const output = await runGh(args);
+async function runGhJson(args, timeoutMs) {
+    const output = await runGh(args, timeoutMs);
     if (!output) {
         return null;
     }
@@ -119,15 +125,61 @@ function splitRepositoryName(repo) {
     };
 }
 
+export async function collectConnectionPages(fetchPage, connectionName, limits) {
+    const { maxPages, deadlineAt, clock = Date.now } = limits;
+    const pages = [];
+    let cursor = null;
+
+    for (let page = 0; page < maxPages; page += 1) {
+        const remainingMs = deadlineAt - clock();
+        if (remainingMs <= 0) {
+            break;
+        }
+        const payload = await fetchPage(cursor, remainingMs);
+        pages.push(payload);
+        const pageInfo = payload?.data?.repository?.[connectionName]?.pageInfo;
+        if (!pageInfo?.hasNextPage || !pageInfo.endCursor) {
+            return { data: flattenGraphqlPages(pages, connectionName), truncated: false };
+        }
+        cursor = pageInfo.endCursor;
+    }
+
+    return { data: flattenGraphqlPages(pages, connectionName), truncated: true };
+}
+
 async function loadPaginatedConnection(repo, connectionName, query) {
     const { owner, name } = splitRepositoryName(repo);
-    const pages = await runGhJson([
-        "api", "graphql", "--paginate", "--slurp",
-        "-f", `owner=${owner}`,
-        "-f", `name=${name}`,
-        "-f", `query=${query}`,
-    ]);
-    return flattenGraphqlPages(pages, connectionName);
+    const fetchPage = (cursor, remainingMs) => {
+        const args = [
+            "api", "graphql",
+            "-f", `owner=${owner}`,
+            "-f", `name=${name}`,
+            "-f", `query=${query}`,
+        ];
+        if (cursor) {
+            args.push("-f", `endCursor=${cursor}`);
+        }
+        return runGhJson(args, Math.min(remainingMs, PAGE_TIMEOUT_MS));
+    };
+    return collectConnectionPages(fetchPage, connectionName, {
+        maxPages: MAX_GRAPHQL_PAGES,
+        deadlineAt: Date.now() + PAGINATION_DEADLINE_MS,
+    });
+}
+
+async function loadAssignableUsers(repo) {
+    const users = [];
+    for (let page = 1; page <= MAX_REST_PAGES; page += 1) {
+        const batch = await runGhJson([
+            "api", `repos/${repo}/assignees?per_page=${REST_PAGE_SIZE}&page=${page}`,
+        ]);
+        const items = Array.isArray(batch) ? batch : [];
+        users.push(...items);
+        if (items.length < REST_PAGE_SIZE) {
+            return { data: users, truncated: false };
+        }
+    }
+    return { data: users, truncated: true };
 }
 
 async function loadRepositoryAgents() {
@@ -231,24 +283,60 @@ function normalizeIssues(issues, pullRequests) {
     });
 }
 
+function completeSection(data) {
+    return { data: data ?? [], truncated: false };
+}
+
 async function loadSection(name, operation) {
     try {
-        return { name, data: await operation(), error: null };
+        const { data, truncated } = await operation();
+        return { name, data: data ?? [], truncated, error: null };
     } catch (error) {
         return {
             name,
             data: [],
+            truncated: false,
             error: error instanceof Error ? error.message : `Unable to load ${name}.`,
         };
     }
 }
 
+export function buildDashboardPayload({ repository, viewer, sections, refreshedAt }) {
+    const sectionMap = Object.fromEntries(sections.map((section) => [section.name, section]));
+    const pullRequests = normalizePullRequests(
+        sectionMap.pullRequests?.data ?? [],
+        repository.nameWithOwner,
+        repository.url,
+    );
+
+    return {
+        repository,
+        viewer,
+        issues: normalizeIssues(sectionMap.issues?.data ?? [], pullRequests),
+        pullRequests,
+        runs: sectionMap.runs?.data ?? [],
+        assignableUsers: (sectionMap.assignableUsers?.data ?? []).map(
+            ({ login, avatar_url: avatarUrl }) => ({ login, avatarUrl }),
+        ),
+        agents: sectionMap.agents?.data ?? [],
+        errors: Object.fromEntries(
+            sections.filter((section) => section.error)
+                .map((section) => [section.name, section.error]),
+        ),
+        truncated: Object.fromEntries(
+            sections.filter((section) => section.truncated)
+                .map((section) => [section.name, true]),
+        ),
+        refreshedAt,
+    };
+}
+
 export async function loadDashboard() {
-    const [repository, viewer] = await Promise.all([
+    const [repositoryView, viewer] = await Promise.all([
         runGhJson(["repo", "view", "--json", "nameWithOwner,url,defaultBranchRef"]),
         runGhJson(["api", "user"]),
     ]);
-    const repo = repository.nameWithOwner;
+    const repo = repositoryView.nameWithOwner;
 
     const sections = await Promise.all([
         loadSection("issues", () =>
@@ -257,47 +345,27 @@ export async function loadDashboard() {
         loadSection("pullRequests", () =>
             loadPaginatedConnection(repo, "pullRequests", PULL_REQUESTS_QUERY),
         ),
-        loadSection("runs", () =>
-            runGhJson([
-                "run", "list", "--repo", repo, "--limit", "30",
+        loadSection("runs", async () => {
+            const runs = await runGhJson([
+                "run", "list", "--repo", repo, "--limit", String(RUN_LIST_LIMIT),
                 "--json", "databaseId,displayTitle,event,headBranch,status,conclusion,workflowName,createdAt,updatedAt,url,number",
-            ]),
-        ),
-        loadSection("assignableUsers", () =>
-            runGhJson(["api", `repos/${repo}/assignees?per_page=100`]),
-        ),
-        loadSection("agents", () => loadRepositoryAgents()),
+            ]) ?? [];
+            return { data: runs, truncated: runs.length >= RUN_LIST_LIMIT };
+        }),
+        loadSection("assignableUsers", () => loadAssignableUsers(repo)),
+        loadSection("agents", async () => completeSection(await loadRepositoryAgents())),
     ]);
 
-    const sectionMap = Object.fromEntries(sections.map((section) => [section.name, section]));
-    const pullRequests = normalizePullRequests(
-        sectionMap.pullRequests.data ?? [],
-        repo,
-        repository.url,
-    );
-    const issues = normalizeIssues(sectionMap.issues.data ?? [], pullRequests);
-    const errors = Object.fromEntries(
-        sections.filter((section) => section.error).map((section) => [section.name, section.error]),
-    );
-
-    return {
+    return buildDashboardPayload({
         repository: {
             nameWithOwner: repo,
-            url: repository.url,
-            defaultBranch: repository.defaultBranchRef?.name ?? "",
+            url: repositoryView.url,
+            defaultBranch: repositoryView.defaultBranchRef?.name ?? "",
         },
         viewer: { login: viewer.login, avatarUrl: viewer.avatar_url },
-        issues,
-        pullRequests,
-        runs: sectionMap.runs.data ?? [],
-        assignableUsers: (sectionMap.assignableUsers.data ?? []).map(({ login, avatar_url: avatarUrl }) => ({
-            login,
-            avatarUrl,
-        })),
-        agents: sectionMap.agents.data ?? [],
-        errors,
+        sections,
         refreshedAt: new Date().toISOString(),
-    };
+    });
 }
 
 function validateRunId(runId) {

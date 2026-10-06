@@ -196,6 +196,15 @@ function renderErrors() {
     ).join("<br />") + '</div>';
 }
 
+function renderTruncations() {
+  const entries = Object.entries(state.dashboard.truncated || {});
+  if (!entries.length) return "";
+  return '<div class="notice"><strong>Some lists are incomplete.</strong><br />' +
+    'Only the first results were loaded for: ' +
+    entries.map(([section]) => escapeHtml(section)).join(", ") +
+    '. Counts below describe what was loaded, not the repository total.</div>';
+}
+
 function renderOverview() {
   const issues = state.dashboard.issues;
   const lanes = [
@@ -279,7 +288,7 @@ function render() {
         '"' + (state.activeTab === id ? ' aria-current="page"' : "") +
         ' data-tab="' + id + '" type="button">' + label + '</button>'
       ).join("") + '</nav>' +
-    '<div class="content">' + renderErrors() + renderContent() + '</div>' +
+    '<div class="content">' + renderErrors() + renderTruncations() + renderContent() + '</div>' +
   '</main>';
   bindEvents();
 }
