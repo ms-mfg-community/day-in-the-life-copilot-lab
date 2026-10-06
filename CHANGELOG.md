@@ -8,6 +8,15 @@ demo app).
 
 ## [Unreleased]
 
+### Added
+- **Repository dashboard canvas** (`.github/extensions/repository-dashboard/`) —
+  a project-scoped Copilot CLI extension showing issues, pull requests and
+  GitHub Actions runs in one view, with failure breakouts, Copilot fix
+  recommendations, and one-click handoff of an issue to a new Copilot session.
+  Issue and CI text is fenced as untrusted data and shown verbatim for approval
+  before it is sent; see the extension README for the limits and request
+  security model.
+
 ### Changed
 - Retired `tests/meta/phase-a-findings-schema.test.ts` — modernize-arc
   Phase A audit instrumentation. The one-time findings report has
