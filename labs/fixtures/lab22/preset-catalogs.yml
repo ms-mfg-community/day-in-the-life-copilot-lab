@@ -1,0 +1,29 @@
+# Copied to .specify/preset-catalogs.yml in a learner's project.
+#
+# ⚠️ FIRST MATCH WINS, AND THE LAYERS DO NOT MERGE.
+# Spec Kit resolves catalogs in this order:
+#   1. SPECKIT_PRESET_CATALOG_URL   (a single catalog, replacing everything)
+#   2. .specify/preset-catalogs.yml (this file)
+#   3. ~/.specify/preset-catalogs.yml
+#   4. the built-in stack: `default` (installable) + `community` (discovery-only)
+#
+# It returns the FIRST layer that exists. So the moment this file exists, step 4
+# never runs and the built-in catalogs are gone. Anything you still want must be
+# declared here — which is why `community` is re-declared below rather than
+# inherited. Delete that second entry and your developers stop being able to
+# discover community presets at all.
+catalogs:
+  - name: "contoso-approved"
+    url: "https://raw.githubusercontent.com/contoso/spec-kit-catalog/main/catalog.json"
+    priority: 1
+    install_allowed: true
+    description: "Contoso-reviewed presets. Installable."
+
+  # Discovery-only: developers can search and read, but `specify preset add <id>`
+  # is refused. The refusal names the `--from <archive-url>` form, so this is a
+  # redirect into review — not a dead end.
+  - name: "community"
+    url: "https://raw.githubusercontent.com/github/spec-kit/main/presets/catalog.community.json"
+    priority: 2
+    install_allowed: false
+    description: "Community-contributed presets. Discovery only — install via review."

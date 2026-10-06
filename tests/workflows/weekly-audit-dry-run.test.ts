@@ -81,7 +81,7 @@ describe('workflows: weekly-content-audit dry-run plan shape', () => {
     expect(body).toContain('docs/_meta/audit-report.md');
     // Branch convention from the plan.
     expect(body).toMatch(/automation\/weekly-audit-YYYY-MM-DD/);
-    // The seven required checks.
+    // The nine required checks.
     for (const check of [
       'Copilot CLI version',
       'gh-aw',
@@ -90,6 +90,8 @@ describe('workflows: weekly-content-audit dry-run plan shape', () => {
       'Package versions',
       'Model names',
       'Lab pacing',
+      'Spec Kit release',
+      'Azure Monitor API versions',
     ]) {
       expect(body.toLowerCase(), `workflow must instruct check: ${check}`).toContain(check.toLowerCase());
     }
