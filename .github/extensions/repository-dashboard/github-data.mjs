@@ -63,7 +63,10 @@ query($owner: String!, $name: String!, $endCursor: String) {
 const ISSUE_QUERY = `
 query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
-    issue(number: $number) { number title url body state }
+    issueOrPullRequest(number: $number) {
+      __typename
+      ... on Issue { number title url body state }
+    }
   }
 }`;
 
@@ -95,7 +98,9 @@ async function runGh(args, timeoutMs = COMMAND_TIMEOUT_MS) {
         const detail = stderr
             ? stderr.split("\n").slice(0, MAX_ERROR_DETAIL_LINES).join(" ").slice(0, MAX_ERROR_DETAIL_CHARACTERS)
             : describeExecFailure(error);
-        throw new DashboardRequestError(502, `GitHub request failed: ${detail}`);
+        const failure = new DashboardRequestError(502, `GitHub request failed: ${detail}`);
+        failure.stdout = typeof error?.stdout === "string" ? error.stdout : "";
+        throw failure;
     }
 }
 
@@ -391,19 +396,51 @@ export async function loadAgentNames() {
     return new Set(agents.map((agent) => agent.name));
 }
 
+export function isNotFoundOnly(body) {
+    return Boolean(body)
+        && Array.isArray(body.errors)
+        && body.errors.length > 0
+        && body.errors.every((entry) => entry?.type === "NOT_FOUND");
+}
+
+export function selectOpenIssue(payload) {
+    const node = payload?.data?.repository?.issueOrPullRequest;
+    if (!node || node.__typename !== "Issue" || node.state !== "OPEN") {
+        return null;
+    }
+    return node;
+}
+
+async function runGraphqlAllowingNotFound(args) {
+    try {
+        return JSON.parse(await runGh(args));
+    } catch (error) {
+        let body = null;
+        try {
+            body = JSON.parse(error?.stdout ?? "");
+        } catch {
+            body = null;
+        }
+        if (isNotFoundOnly(body)) {
+            return body;
+        }
+        throw error;
+    }
+}
+
 export async function loadOpenIssue(issueNumber) {
     validateIssueNumber(issueNumber);
     const repo = await loadRepositoryName();
     const { owner, name } = splitRepositoryName(repo);
-    const payload = await runGhJson([
+    const payload = await runGraphqlAllowingNotFound([
         "api", "graphql",
         "-f", `owner=${owner}`,
         "-f", `name=${name}`,
         "-F", `number=${issueNumber}`,
         "-f", `query=${ISSUE_QUERY}`,
     ]);
-    const issue = payload?.data?.repository?.issue;
-    if (!issue || issue.state !== "OPEN") {
+    const issue = selectOpenIssue(payload);
+    if (!issue) {
         throw new DashboardRequestError(404, `Open issue #${issueNumber} was not found.`);
     }
     return { repo, issue };

@@ -13,7 +13,9 @@ import {
     collectConnectionPages,
     extractReferencedIssues,
     flattenGraphqlPages,
+    isNotFoundOnly,
     loadRunDetails,
+    selectOpenIssue,
 } from "./github-data.mjs";
 import {
     assertPreviewApproved,
@@ -877,3 +879,65 @@ assert.equal(
     false,
     "Clamping kept the head of the log instead of the failing tail.",
 );
+
+// Only an open issue may be handed to a session. Shapes below are real API responses.
+const OPEN_ISSUE_RESPONSE = {
+    data: {
+        repository: {
+            issueOrPullRequest: {
+                __typename: "Issue",
+                number: 72,
+                title: "A real issue",
+                url: "https://github.com/example/dashboard/issues/72",
+                body: "text",
+                state: "OPEN",
+            },
+        },
+    },
+};
+assert.equal(selectOpenIssue(OPEN_ISSUE_RESPONSE).number, 72);
+assert.equal(
+    selectOpenIssue({
+        data: { repository: { issueOrPullRequest: { __typename: "PullRequest" } } },
+    }),
+    null,
+    "A pull request number was accepted as an issue.",
+);
+assert.equal(
+    selectOpenIssue({
+        data: {
+            repository: {
+                issueOrPullRequest: { __typename: "Issue", number: 1, state: "CLOSED" },
+            },
+        },
+    }),
+    null,
+    "A closed issue was accepted.",
+);
+assert.equal(selectOpenIssue({ data: { repository: { issueOrPullRequest: null } } }), null);
+assert.equal(selectOpenIssue({}), null);
+assert.equal(selectOpenIssue(null), null);
+
+assert.equal(isNotFoundOnly({
+    data: { repository: { issueOrPullRequest: null } },
+    errors: [{
+        type: "NOT_FOUND",
+        path: ["repository", "issueOrPullRequest"],
+        message: "Could not resolve to an issue or pull request with the number of 999999.",
+    }],
+}), true);
+assert.equal(
+    isNotFoundOnly({ data: null, errors: [{ type: "RATE_LIMITED", message: "slow down" }] }),
+    false,
+    "A non-NOT_FOUND GraphQL failure was treated as a missing issue.",
+);
+assert.equal(
+    isNotFoundOnly({
+        errors: [{ type: "NOT_FOUND" }, { type: "FORBIDDEN" }],
+    }),
+    false,
+    "A mixed error list was treated as a missing issue.",
+);
+assert.equal(isNotFoundOnly({ errors: [] }), false);
+assert.equal(isNotFoundOnly(OPEN_ISSUE_RESPONSE), false);
+assert.equal(isNotFoundOnly(null), false);
