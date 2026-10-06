@@ -12,6 +12,7 @@ import {
 } from "./github-data.mjs";
 import { renderDashboardHtml } from "./dashboard-html.mjs";
 import {
+    assertPreviewApproved,
     buildIssueKickoffPreview,
     buildIssueKickoffPrompt,
     buildRunFailurePreview,
@@ -23,11 +24,18 @@ import {
     DashboardRequestError,
     parseAuthorizedRequestUrl,
 } from "./request-security.mjs";
+import {
+    ASSIGN_ISSUE_ACTION_SCHEMA,
+    ASSIGN_ISSUE_BODY_SCHEMA,
+    EXECUTION_LOCATIONS,
+    readValidatedBody,
+    RUN_DETAILS_ACTION_SCHEMA,
+    START_WORK_BODY_SCHEMA,
+    validateInput,
+} from "./request-validation.mjs";
 
 const servers = new Map();
-const MAX_REQUEST_BYTES = 16_384;
 const COPILOT_RESPONSE_TIMEOUT_MS = 180_000;
-const EXECUTION_LOCATIONS = new Set(["local", "cloud"]);
 let copilotSession;
 
 function sendJson(res, statusCode, payload) {
@@ -36,21 +44,6 @@ function sendJson(res, statusCode, payload) {
         "Cache-Control": "no-store",
     });
     res.end(JSON.stringify(payload));
-}
-
-async function readJsonBody(req) {
-    const chunks = [];
-    let size = 0;
-
-    for await (const chunk of req) {
-        size += chunk.length;
-        if (size > MAX_REQUEST_BYTES) {
-            throw new Error("Request body exceeds the supported size.");
-        }
-        chunks.push(chunk);
-    }
-
-    return chunks.length === 0 ? {} : JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
 function assistantResponseText(response) {
@@ -97,12 +90,7 @@ async function resolveApprovedKickoff(issueNumber, input) {
     }
 
     const kickoff = await loadKickoffPreview(issueNumber);
-    if (kickoff.digest !== input.kickoffDigest) {
-        throw new DashboardRequestError(
-            409,
-            "This issue changed after its kickoff text was shown. Refresh the dashboard and review it again before starting work.",
-        );
-    }
+    assertPreviewApproved(kickoff.preview, input.kickoffDigest);
 
     const agent = input.agent || "default";
     if (agent !== "default" && !(await loadAgentNames()).has(agent)) {
@@ -173,7 +161,7 @@ async function handleRequest(req, res, context) {
 
         const startWorkMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/start$/);
         if (req.method === "POST" && startWorkMatch) {
-            const body = await readJsonBody(req);
+            const body = await readValidatedBody(req, START_WORK_BODY_SCHEMA);
             sendJson(res, 200, await startIssueWork(Number(startWorkMatch[1]), body));
             return;
         }
@@ -189,7 +177,7 @@ async function handleRequest(req, res, context) {
 
         const assignmentMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/assign$/);
         if (req.method === "POST" && assignmentMatch) {
-            const body = await readJsonBody(req);
+            const body = await readValidatedBody(req, ASSIGN_ISSUE_BODY_SCHEMA);
             const result = await assignIssue(Number(assignmentMatch[1]), body.assignee);
             sendJson(res, 200, result);
             return;
@@ -197,9 +185,11 @@ async function handleRequest(req, res, context) {
 
         sendJson(res, 404, { error: "Route not found." });
     } catch (error) {
-        const message = error instanceof Error ? error.message : "Unexpected dashboard error.";
-        const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
-        sendJson(res, statusCode, { error: message });
+        if (error instanceof DashboardRequestError) {
+            sendJson(res, error.statusCode, { error: error.message });
+            return;
+        }
+        sendJson(res, 500, { error: "The dashboard hit an unexpected error." });
     }
 }
 
@@ -251,29 +241,20 @@ copilotSession = await joinSession({
                 {
                     name: "assign_issue",
                     description: "Add a GitHub assignee to an open repository issue.",
-                    inputSchema: {
-                        type: "object",
-                        additionalProperties: false,
-                        required: ["issueNumber", "assignee"],
-                        properties: {
-                            issueNumber: { type: "integer", minimum: 1 },
-                            assignee: { type: "string", minLength: 1, maxLength: 39 },
-                        },
+                    inputSchema: ASSIGN_ISSUE_ACTION_SCHEMA,
+                    handler: async (ctx) => {
+                        const input = validateInput(ASSIGN_ISSUE_ACTION_SCHEMA, ctx.input);
+                        return assignIssue(input.issueNumber, input.assignee);
                     },
-                    handler: async (ctx) => assignIssue(ctx.input.issueNumber, ctx.input.assignee),
                 },
                 {
                     name: "get_run_details",
                     description: "Return failed jobs, failed steps, and failed log output for a GitHub Actions run.",
-                    inputSchema: {
-                        type: "object",
-                        additionalProperties: false,
-                        required: ["runId"],
-                        properties: {
-                            runId: { type: "integer", minimum: 1 },
-                        },
+                    inputSchema: RUN_DETAILS_ACTION_SCHEMA,
+                    handler: async (ctx) => {
+                        const input = validateInput(RUN_DETAILS_ACTION_SCHEMA, ctx.input);
+                        return loadRunDetails(input.runId);
                     },
-                    handler: async (ctx) => loadRunDetails(ctx.input.runId),
                 },
             ],
             open: async (ctx) => {

@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { DashboardRequestError } from "./request-security.mjs";
+
 const UNTRUSTED_DATA_OPEN = "----- BEGIN UNTRUSTED DATA -----";
 const UNTRUSTED_DATA_CLOSE = "----- END UNTRUSTED DATA -----";
 const BOUNDARY_FORGERY_PATTERN = /-{3,}\s*(?:BEGIN|END)\s+UNTRUSTED\s+DATA\s*-{3,}/gi;
@@ -67,6 +69,15 @@ export function buildIssueKickoffPreview({ issueNumber, title, body }) {
 
 export function previewDigest(preview) {
     return createHash("sha256").update(preview, "utf8").digest("hex");
+}
+
+export function assertPreviewApproved(preview, approvedDigest) {
+    if (previewDigest(preview) !== approvedDigest) {
+        throw new DashboardRequestError(
+            409,
+            "This issue changed after its kickoff text was shown. Refresh the dashboard and review it again before starting work.",
+        );
+    }
 }
 
 function agentInstruction(agent) {

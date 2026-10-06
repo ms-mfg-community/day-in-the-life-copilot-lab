@@ -3,10 +3,14 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
+import { DashboardRequestError } from "./request-security.mjs";
+
 const execFileAsync = promisify(execFile);
 const COMMAND_TIMEOUT_MS = 30_000;
 const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const MAX_LOG_CHARACTERS = 60_000;
+const MAX_ERROR_DETAIL_LINES = 3;
+const MAX_ERROR_DETAIL_CHARACTERS = 300;
 const GITHUB_LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
 const AGENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const FULL_ISSUE_URL_PATTERN = /https?:\/\/([^/\s<>()]+)\/([^/\s<>()]+)\/([^/\s<>()]+)\/issues\/(\d+)\b/gi;
@@ -56,6 +60,19 @@ query($owner: String!, $name: String!, $number: Int!) {
   }
 }`;
 
+function describeExecFailure(error) {
+    if (error?.killed || error?.signal) {
+        return "the GitHub CLI timed out.";
+    }
+    if (error?.code === "ENOENT") {
+        return "the GitHub CLI (gh) is not installed or not on PATH.";
+    }
+    if (error?.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+        return "the response was larger than the dashboard can read.";
+    }
+    return "the GitHub CLI exited unexpectedly.";
+}
+
 async function runGh(args) {
     try {
         const { stdout } = await execFileAsync("gh", args, {
@@ -68,8 +85,10 @@ async function runGh(args) {
         return stdout.trim();
     } catch (error) {
         const stderr = typeof error?.stderr === "string" ? error.stderr.trim() : "";
-        const detail = stderr || error?.message || "Unknown GitHub CLI error.";
-        throw new Error(`GitHub request failed: ${detail}`);
+        const detail = stderr
+            ? stderr.split("\n").slice(0, MAX_ERROR_DETAIL_LINES).join(" ").slice(0, MAX_ERROR_DETAIL_CHARACTERS)
+            : describeExecFailure(error);
+        throw new DashboardRequestError(502, `GitHub request failed: ${detail}`);
     }
 }
 
@@ -81,8 +100,8 @@ async function runGhJson(args) {
 
     try {
         return JSON.parse(output);
-    } catch (error) {
-        throw new Error(`GitHub returned invalid JSON: ${error.message}`);
+    } catch {
+        throw new DashboardRequestError(502, "GitHub returned a response the dashboard could not parse.");
     }
 }
 
@@ -136,7 +155,7 @@ async function loadRepositoryAgents() {
         if (error?.code === "ENOENT") {
             return [];
         }
-        throw new Error(`Unable to discover repository agents: ${error.message}`);
+        throw new DashboardRequestError(500, "Unable to discover repository agents.");
     }
 }
 
@@ -283,13 +302,13 @@ export async function loadDashboard() {
 
 function validateRunId(runId) {
     if (!Number.isSafeInteger(runId) || runId < 1) {
-        throw new Error("Run ID must be a positive integer.");
+        throw new DashboardRequestError(400, "Run ID must be a positive integer.");
     }
 }
 
 function validateIssueNumber(issueNumber) {
     if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
-        throw new Error("Issue number must be a positive integer.");
+        throw new DashboardRequestError(400, "Issue number must be a positive integer.");
     }
 }
 
@@ -316,7 +335,7 @@ export async function loadOpenIssue(issueNumber) {
     ]);
     const issue = payload?.data?.repository?.issue;
     if (!issue || issue.state !== "OPEN") {
-        throw new Error(`Open issue #${issueNumber} was not found.`);
+        throw new DashboardRequestError(404, `Open issue #${issueNumber} was not found.`);
     }
     return { repo, issue };
 }
@@ -366,7 +385,7 @@ export async function loadRunDetails(runId) {
 export async function assignIssue(issueNumber, assignee) {
     validateIssueNumber(issueNumber);
     if (typeof assignee !== "string" || !GITHUB_LOGIN_PATTERN.test(assignee)) {
-        throw new Error("Assignee must be a valid GitHub login.");
+        throw new DashboardRequestError(400, "Assignee must be a valid GitHub login.");
     }
 
     const repo = await loadRepositoryName();

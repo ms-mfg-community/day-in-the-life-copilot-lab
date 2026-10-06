@@ -13,6 +13,7 @@ import {
     loadRunDetails,
 } from "./github-data.mjs";
 import {
+    assertPreviewApproved,
     buildIssueKickoffPreview,
     buildIssueKickoffPrompt,
     buildRunFailurePreview,
@@ -21,6 +22,14 @@ import {
     MAX_PROMPT_LOG_CHARACTERS,
     previewDigest,
 } from "./prompt-builder.mjs";
+import {
+    ASSIGN_ISSUE_BODY_SCHEMA,
+    EXECUTION_LOCATIONS,
+    MAX_REQUEST_BYTES,
+    readValidatedBody,
+    START_WORK_BODY_SCHEMA,
+    validateInput,
+} from "./request-validation.mjs";
 
 const HOSTILE_HTML = '<img src=x onerror="alert(1)">';
 const HOSTILE_SCRIPT = "</script><script>alert(2)</script>";
@@ -420,6 +429,25 @@ assert.notEqual(
     "Edited issue content produced the same digest.",
 );
 
+// Approval is bound to the exact bytes that were shown.
+assert.doesNotThrow(
+    () => assertPreviewApproved(injectionPreview, previewDigest(injectionPreview)),
+    "Approving the text that was shown was rejected.",
+);
+for (const staleDigest of [
+    previewDigest(`${injectionPreview} `),
+    previewDigest(""),
+    "",
+    undefined,
+    previewDigest(injectionPreview).toUpperCase(),
+]) {
+    assert.throws(
+        () => assertPreviewApproved(injectionPreview, staleDigest),
+        (error) => error.statusCode === 409,
+        `Approval was accepted for digest ${String(staleDigest)}.`,
+    );
+}
+
 // Workflow logs carry text that anyone able to trigger a run can influence.
 const logPreview = buildRunFailurePreview({
     run: {
@@ -444,4 +472,88 @@ assert.ok(runPrompt.includes(logPreview), "The run prompt does not embed the pre
 assert.ok(
     runPrompt.indexOf("UNTRUSTED DATA written by third parties") < runPrompt.indexOf(logPreview),
     "The untrusted-data guard does not precede the failed-log block.",
+);
+
+// Both request boundaries validate against the same schema objects.
+const VALID_DIGEST = previewDigest("any");
+const VALID_START_BODY = {
+    agent: "dev",
+    executionLocation: "local",
+    assignee: "octocat",
+    kickoffDigest: VALID_DIGEST,
+};
+assert.deepEqual(validateInput(START_WORK_BODY_SCHEMA, VALID_START_BODY), VALID_START_BODY);
+assert.deepEqual(validateInput(START_WORK_BODY_SCHEMA, {
+    executionLocation: "cloud",
+    kickoffDigest: VALID_DIGEST,
+}).executionLocation, "cloud");
+
+assert.deepEqual([...EXECUTION_LOCATIONS].sort(), ["cloud", "local"]);
+
+const REJECTED_START_BODIES = [
+    [{ kickoffDigest: VALID_DIGEST }, "missing executionLocation"],
+    [{ executionLocation: "local" }, "missing kickoffDigest"],
+    [{ executionLocation: "remote", kickoffDigest: VALID_DIGEST }, "unlisted execution location"],
+    [{ executionLocation: "LOCAL", kickoffDigest: VALID_DIGEST }, "wrong-case execution location"],
+    [{ executionLocation: "local", kickoffDigest: "not-a-digest" }, "malformed digest"],
+    [{ executionLocation: "local", kickoffDigest: `${VALID_DIGEST}0` }, "overlong digest"],
+    [{ ...VALID_START_BODY, $ne: 1 }, "operator-shaped extra field"],
+    [{ ...VALID_START_BODY, extra: "x" }, "unknown field"],
+    [{ ...VALID_START_BODY, assignee: "a".repeat(40) }, "overlong assignee"],
+    [{ ...VALID_START_BODY, agent: "" }, "empty agent"],
+    [{ ...VALID_START_BODY, executionLocation: 1 }, "non-string execution location"],
+    [[], "array body"],
+    [null, "null body"],
+    ["local", "string body"],
+];
+for (const [body, label] of REJECTED_START_BODIES) {
+    assert.throws(
+        () => validateInput(START_WORK_BODY_SCHEMA, body),
+        (error) => error.statusCode === 400,
+        `A start-work body with ${label} was accepted.`,
+    );
+}
+
+for (const [body, label] of [
+    [{}, "no assignee"],
+    [{ assignee: "" }, "empty assignee"],
+    [{ assignee: 12_345 }, "numeric assignee"],
+    [{ assignee: "octocat", issueNumber: 1 }, "an issue number the path already carries"],
+]) {
+    assert.throws(
+        () => validateInput(ASSIGN_ISSUE_BODY_SCHEMA, body),
+        (error) => error.statusCode === 400,
+        `An assign body with ${label} was accepted.`,
+    );
+}
+
+function requestWithBody(...parts) {
+    return {
+        async *[Symbol.asyncIterator]() {
+            for (const part of parts) {
+                yield Buffer.from(part, "utf8");
+            }
+        },
+    };
+}
+
+assert.deepEqual(
+    await readValidatedBody(requestWithBody(JSON.stringify(VALID_START_BODY)), START_WORK_BODY_SCHEMA),
+    VALID_START_BODY,
+);
+
+await assert.rejects(
+    () => readValidatedBody(
+        requestWithBody("x".repeat(MAX_REQUEST_BYTES), "x".repeat(16)),
+        START_WORK_BODY_SCHEMA,
+    ),
+    (error) => error.statusCode === 413,
+    "An oversized request body was not rejected with 413.",
+);
+
+await assert.rejects(
+    () => readValidatedBody(requestWithBody("{not json"), START_WORK_BODY_SCHEMA),
+    (error) => error.statusCode === 400
+        && error.message === "The request body is not valid JSON.",
+    "A malformed body did not return a fixed 400 message.",
 );
