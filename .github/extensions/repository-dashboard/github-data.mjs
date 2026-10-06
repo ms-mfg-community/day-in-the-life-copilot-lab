@@ -49,6 +49,12 @@ query($owner: String!, $name: String!, $endCursor: String) {
     }
   }
 }`;
+const ISSUE_QUERY = `
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) { number title url body state }
+  }
+}`;
 
 async function runGh(args) {
     try {
@@ -281,14 +287,47 @@ function validateRunId(runId) {
     }
 }
 
+function validateIssueNumber(issueNumber) {
+    if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
+        throw new Error("Issue number must be a positive integer.");
+    }
+}
+
+export async function loadRepositoryName() {
+    const repository = await runGhJson(["repo", "view", "--json", "nameWithOwner"]);
+    return repository.nameWithOwner;
+}
+
+export async function loadAgentNames() {
+    const agents = await loadRepositoryAgents();
+    return new Set(agents.map((agent) => agent.name));
+}
+
+export async function loadOpenIssue(issueNumber) {
+    validateIssueNumber(issueNumber);
+    const repo = await loadRepositoryName();
+    const { owner, name } = splitRepositoryName(repo);
+    const payload = await runGhJson([
+        "api", "graphql",
+        "-f", `owner=${owner}`,
+        "-f", `name=${name}`,
+        "-F", `number=${issueNumber}`,
+        "-f", `query=${ISSUE_QUERY}`,
+    ]);
+    const issue = payload?.data?.repository?.issue;
+    if (!issue || issue.state !== "OPEN") {
+        throw new Error(`Open issue #${issueNumber} was not found.`);
+    }
+    return { repo, issue };
+}
+
 function stripAnsi(value) {
     return value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
 }
 
 export async function loadRunDetails(runId) {
     validateRunId(runId);
-    const repository = await runGhJson(["repo", "view", "--json", "nameWithOwner"]);
-    const repo = repository.nameWithOwner;
+    const repo = await loadRepositoryName();
     const run = await runGhJson([
         "run", "view", String(runId), "--repo", repo,
         "--json", "databaseId,displayTitle,event,headBranch,headSha,status,conclusion,workflowName,createdAt,updatedAt,url,jobs",
@@ -325,17 +364,15 @@ export async function loadRunDetails(runId) {
 }
 
 export async function assignIssue(issueNumber, assignee) {
-    if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
-        throw new Error("Issue number must be a positive integer.");
-    }
+    validateIssueNumber(issueNumber);
     if (typeof assignee !== "string" || !GITHUB_LOGIN_PATTERN.test(assignee)) {
         throw new Error("Assignee must be a valid GitHub login.");
     }
 
-    const repository = await runGhJson(["repo", "view", "--json", "nameWithOwner"]);
+    const repo = await loadRepositoryName();
     await runGh([
         "issue", "edit", String(issueNumber),
-        "--repo", repository.nameWithOwner,
+        "--repo", repo,
         "--add-assignee", assignee,
     ]);
 

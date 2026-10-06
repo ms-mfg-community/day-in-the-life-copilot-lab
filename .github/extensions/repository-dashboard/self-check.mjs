@@ -163,6 +163,16 @@ assertNoLiveMarkup("Overview tab", app.innerHTML);
 assert.ok(app.innerHTML.includes("&lt;img"), "Overview tab did not escape issue content.");
 assert.equal(countOccurrences(app.innerHTML, 'aria-current="page"'), 1);
 
+// Work cannot be approved until the exact kickoff text has been fetched and shown.
+assert.ok(
+    app.innerHTML.includes('class="kickoff-preview assignment-wide"'),
+    "The approval form has nowhere to show the kickoff text.",
+);
+assert.ok(
+    app.innerHTML.includes('class="button small primary assignment-submit" type="submit" disabled'),
+    "The approval button is enabled before the kickoff text has been shown.",
+);
+
 scope.state.activeTab = "issues";
 scope.render();
 assertNoLiveMarkup("Issues tab", app.innerHTML);

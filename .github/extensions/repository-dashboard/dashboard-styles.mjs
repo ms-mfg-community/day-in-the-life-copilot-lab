@@ -418,7 +418,8 @@ summary:focus-visible {
 }
 
 .failed-logs,
-.recommendation-text {
+.recommendation-text,
+.kickoff-text {
   max-height: 420px;
   overflow: auto;
   border: 1px solid var(--border-color-default, #30363d);
@@ -429,6 +430,15 @@ summary:focus-visible {
   font-family: var(--font-mono, Consolas, monospace);
   font-size: var(--text-code-inline, 12px);
   white-space: pre-wrap;
+}
+
+.kickoff-preview {
+  margin: 4px 0 8px;
+}
+
+.kickoff-text {
+  max-height: 220px;
+  margin: 4px 0 0;
 }
 
 .copilot-recommendation {

@@ -76,7 +76,8 @@ function assignmentControls(issue) {
         '<input name="assignee" list="assignees-' + issue.number + '" value="' +
         escapeHtml(viewer) + '" /></label>' +
       '<datalist id="assignees-' + issue.number + '">' + assigneeOptions + '</datalist>' +
-      '<button class="button small primary assignment-submit" type="submit">Start session</button>' +
+      '<div class="kickoff-preview assignment-wide"></div>' +
+      '<button class="button small primary assignment-submit" type="submit" disabled>Start session</button>' +
     '</form><div class="assignment-result" aria-live="polite"></div></details>';
 }
 
@@ -331,6 +332,26 @@ async function refresh() {
   }
 }
 
+async function showKickoffPreview(details) {
+  const form = details.querySelector(".assignment");
+  const preview = form.querySelector(".kickoff-preview");
+  const button = form.querySelector(".assignment-submit");
+  if (form.dataset.kickoffDigest) return;
+  preview.innerHTML = '<p class="muted">Loading the exact text Copilot will receive...</p>';
+  try {
+    const payload = await requestJson(
+      "/api/issues/" + form.dataset.issue + "/kickoff-preview",
+    );
+    preview.innerHTML = '<p class="muted">Review the issue text below. Copilot receives it ' +
+      'verbatim as untrusted data, and the session only starts if it still matches.</p>' +
+      '<pre class="kickoff-text">' + escapeHtml(payload.preview) + '</pre>';
+    form.dataset.kickoffDigest = payload.digest;
+    button.disabled = false;
+  } catch (error) {
+    preview.innerHTML = '<p class="request-error">' + escapeHtml(error.message) + '</p>';
+  }
+}
+
 async function submitAssignment(form) {
   const issueNumber = Number(form.dataset.issue);
   const formData = new FormData(form);
@@ -348,13 +369,15 @@ async function submitAssignment(form) {
         agent: formData.get("agent"),
         executionLocation: formData.get("executionLocation"),
         assignee: formData.get("assignee"),
+        kickoffDigest: form.dataset.kickoffDigest,
       }),
     });
     result.innerHTML = '<p class="session-result">' + escapeHtml(payload.message) + '</p>';
     showToast("Work session created.");
   } catch (error) {
     result.innerHTML = '<p class="request-error">' + escapeHtml(error.message) + '</p>';
-    button.disabled = false;
+    delete form.dataset.kickoffDigest;
+    void showKickoffPreview(form.parentElement);
   }
 }
 
@@ -445,6 +468,11 @@ function bindEvents() {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       void submitAssignment(form);
+    });
+  });
+  document.querySelectorAll(".work-assignment").forEach((details) => {
+    details.addEventListener("toggle", () => {
+      if (details.open) void showKickoffPreview(details);
     });
   });
   document.querySelectorAll(".run-details-button").forEach((button) => {

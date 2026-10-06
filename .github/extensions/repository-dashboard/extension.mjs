@@ -4,19 +4,29 @@ import { createCanvas, joinSession } from "@github/copilot-sdk/extension";
 
 import {
     assignIssue,
+    loadAgentNames,
     loadDashboard,
+    loadOpenIssue,
+    loadRepositoryName,
     loadRunDetails,
 } from "./github-data.mjs";
 import { renderDashboardHtml } from "./dashboard-html.mjs";
 import {
+    buildIssueKickoffPreview,
+    buildIssueKickoffPrompt,
+    buildRunFailurePreview,
+    buildRunFailurePrompt,
+    previewDigest,
+} from "./prompt-builder.mjs";
+import {
     canvasUrl,
+    DashboardRequestError,
     parseAuthorizedRequestUrl,
 } from "./request-security.mjs";
 
 const servers = new Map();
 const MAX_REQUEST_BYTES = 16_384;
 const COPILOT_RESPONSE_TIMEOUT_MS = 180_000;
-const MAX_PROMPT_LOG_CHARACTERS = 20_000;
 const EXECUTION_LOCATIONS = new Set(["local", "cloud"]);
 let copilotSession;
 
@@ -52,17 +62,15 @@ function assistantResponseText(response) {
 }
 
 async function recommendRunFix(runId) {
-    const details = await loadRunDetails(runId);
-    const failedLogs = details.failedLogs.slice(-MAX_PROMPT_LOG_CHARACTERS);
-    const prompt = [
-        "The user explicitly requested a GitHub Actions failure recommendation from the Repository dashboard.",
-        "Analyze the run details below. Do not edit files or start another session.",
-        "Return a concise diagnosis with: likely root cause, evidence, recommended fix, and verification steps.",
-        `Repository: ${(await loadDashboard()).repository.nameWithOwner}`,
-        `Run: ${details.run.workflowName} (${details.run.url})`,
-        `Failed jobs and steps:\n${JSON.stringify(details.failedJobs, null, 2)}`,
-        `Failed log excerpt:\n${failedLogs || details.logError || "No failed logs were available."}`,
-    ].join("\n\n");
+    const [details, repository] = await Promise.all([
+        loadRunDetails(runId),
+        loadRepositoryName(),
+    ]);
+    const prompt = buildRunFailurePrompt({
+        repository,
+        runId,
+        preview: buildRunFailurePreview(details),
+    });
     const response = await copilotSession.sendAndWait(
         { prompt },
         COPILOT_RESPONSE_TIMEOUT_MS,
@@ -73,54 +81,59 @@ async function recommendRunFix(runId) {
     };
 }
 
-async function startIssueWork(issueNumber, input) {
-    const executionLocation = input.executionLocation;
+async function loadKickoffPreview(issueNumber) {
+    const { repo, issue } = await loadOpenIssue(issueNumber);
+    const preview = buildIssueKickoffPreview({
+        issueNumber: issue.number,
+        title: issue.title,
+        body: issue.body,
+    });
+    return { repo, issue, preview, digest: previewDigest(preview) };
+}
+
+async function resolveApprovedKickoff(issueNumber, input) {
+    if (!EXECUTION_LOCATIONS.has(input.executionLocation)) {
+        throw new DashboardRequestError(400, "Execution location must be local or cloud.");
+    }
+
+    const kickoff = await loadKickoffPreview(issueNumber);
+    if (kickoff.digest !== input.kickoffDigest) {
+        throw new DashboardRequestError(
+            409,
+            "This issue changed after its kickoff text was shown. Refresh the dashboard and review it again before starting work.",
+        );
+    }
+
     const agent = input.agent || "default";
+    if (agent !== "default" && !(await loadAgentNames()).has(agent)) {
+        throw new DashboardRequestError(400, "That agent is not available in this repository.");
+    }
+    return { ...kickoff, agent };
+}
+
+async function startIssueWork(issueNumber, input) {
+    const { repo, issue, preview, agent } = await resolveApprovedKickoff(issueNumber, input);
     const assignee = input.assignee?.trim() || "";
-    if (!EXECUTION_LOCATIONS.has(executionLocation)) {
-        throw new Error("Execution location must be local or cloud.");
-    }
-
-    const dashboard = await loadDashboard();
-    const issue = dashboard.issues.find((candidate) => candidate.number === issueNumber);
-    if (!issue) {
-        throw new Error(`Open issue #${issueNumber} was not found.`);
-    }
-
-    const availableAgents = new Set(dashboard.agents.map((candidate) => candidate.name));
-    if (agent !== "default" && !availableAgents.has(agent)) {
-        throw new Error(`Agent "${agent}" is not available in this repository.`);
-    }
-
     if (assignee) {
         await assignIssue(issueNumber, assignee);
     }
 
-    const agentInstruction = agent === "default"
-        ? "Omit kickoff.agent so the project's default agent is used."
-        : `Set kickoff.agent to "${agent}".`;
-    const prompt = [
-        "The user explicitly clicked Assign work in the Repository dashboard.",
-        "Create a new project session now with the create_session tool; do not implement the issue in this current session.",
-        `Set execution_location to "${executionLocation}".`,
-        agentInstruction,
-        'Set kickoff.mode to "autopilot", coordinate_with_creator to true, and notify_on_idle to "once".',
-        "Leave base_branch unset so the new work starts from the project default branch.",
-        `Use session name "Issue ${issueNumber}: ${issue.title.slice(0, 50)}".`,
-        "Use this kickoff prompt:",
-        `Work on ${dashboard.repository.nameWithOwner}#${issueNumber}: ${issue.title}`,
-        issue.body?.slice(0, 4_000) || "Read the issue from GitHub for complete requirements.",
-        "Investigate the root cause, implement a complete fix, run focused validation, and create a pull request when ready.",
-        "After creating the session, reply with the session name and where it is running.",
-    ].join("\n\n");
+    const prompt = buildIssueKickoffPrompt({
+        repository: repo,
+        issueNumber: issue.number,
+        title: issue.title,
+        preview,
+        agent,
+        executionLocation: input.executionLocation,
+    });
     const response = await copilotSession.sendAndWait(
         { prompt },
         COPILOT_RESPONSE_TIMEOUT_MS,
     );
     return {
-        issueNumber,
+        issueNumber: issue.number,
         agent,
-        executionLocation,
+        executionLocation: input.executionLocation,
         assignee: assignee || null,
         message: assistantResponseText(response),
     };
@@ -162,6 +175,15 @@ async function handleRequest(req, res, context) {
         if (req.method === "POST" && startWorkMatch) {
             const body = await readJsonBody(req);
             sendJson(res, 200, await startIssueWork(Number(startWorkMatch[1]), body));
+            return;
+        }
+
+        const kickoffPreviewMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/kickoff-preview$/);
+        if (req.method === "GET" && kickoffPreviewMatch) {
+            const { issue, preview, digest } = await loadKickoffPreview(
+                Number(kickoffPreviewMatch[1]),
+            );
+            sendJson(res, 200, { issueNumber: issue.number, preview, digest });
             return;
         }
 
