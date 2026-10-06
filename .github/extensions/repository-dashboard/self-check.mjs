@@ -32,6 +32,11 @@ import {
     START_WORK_BODY_SCHEMA,
     validateInput,
 } from "./request-validation.mjs";
+import {
+    consumeToken,
+    createSingleFlightGuard,
+    createTokenBucket,
+} from "./rate-limit.mjs";
 
 const HOSTILE_HTML = '<img src=x onerror="alert(1)">';
 const HOSTILE_SCRIPT = "</script><script>alert(2)</script>";
@@ -695,3 +700,65 @@ assert.deepEqual(
 assert.deepEqual(payload.assignableUsers, [
     { login: "octocat", avatarUrl: "https://avatars.test/octocat" },
 ]);
+
+// Expensive routes are capped per window and cannot be started twice at once.
+let bucketNow = 0;
+const bucket = createTokenBucket({
+    capacity: 3,
+    refillIntervalMs: 60_000,
+    clock: () => bucketNow,
+});
+assert.deepEqual(
+    [bucket.tryTake(), bucket.tryTake(), bucket.tryTake(), bucket.tryTake()],
+    [true, true, true, false],
+    "The token bucket did not stop at its capacity.",
+);
+bucketNow += 20_000;
+assert.equal(bucket.tryTake(), true, "The bucket did not refill over time.");
+assert.equal(bucket.tryTake(), false, "The bucket refilled faster than its rate.");
+bucketNow += 600_000;
+assert.deepEqual(
+    [bucket.tryTake(), bucket.tryTake(), bucket.tryTake(), bucket.tryTake()],
+    [true, true, true, false],
+    "The bucket refilled beyond its capacity.",
+);
+
+assert.throws(
+    () => consumeToken({ tryTake: () => false }),
+    (error) => error.statusCode === 429,
+    "An exhausted budget did not return 429.",
+);
+assert.doesNotThrow(() => consumeToken({ tryTake: () => true }));
+
+const guard = createSingleFlightGuard();
+let release;
+const firstFlight = guard.run("start-work:1", () => new Promise((resolve) => {
+    release = resolve;
+}));
+await assert.rejects(
+    () => guard.run("start-work:1", () => Promise.resolve("second")),
+    (error) => error.statusCode === 409,
+    "A duplicate in-flight request was allowed to start.",
+);
+assert.equal(
+    await guard.run("start-work:2", () => Promise.resolve("other")),
+    "other",
+    "An unrelated issue was blocked by the in-flight guard.",
+);
+release("first");
+assert.equal(await firstFlight, "first");
+assert.equal(
+    await guard.run("start-work:1", () => Promise.resolve("again")),
+    "again",
+    "The in-flight guard never released its key.",
+);
+
+await assert.rejects(
+    () => guard.run("start-work:3", () => Promise.reject(new Error("boom"))),
+    /boom/,
+);
+assert.equal(
+    await guard.run("start-work:3", () => Promise.resolve("recovered")),
+    "recovered",
+    "The in-flight guard leaked its key after a failure.",
+);

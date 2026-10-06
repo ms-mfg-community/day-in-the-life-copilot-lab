@@ -34,8 +34,31 @@ import {
     validateInput,
 } from "./request-validation.mjs";
 
+import {
+    consumeToken,
+    createRequestBudgets,
+    createSingleFlightGuard,
+} from "./rate-limit.mjs";
+
 const servers = new Map();
 const COPILOT_RESPONSE_TIMEOUT_MS = 180_000;
+const REFILL_INTERVAL_MS = 60_000;
+const REQUEST_BUDGETS = {
+    read: { capacity: 60, refillIntervalMs: REFILL_INTERVAL_MS },
+    write: { capacity: 20, refillIntervalMs: REFILL_INTERVAL_MS },
+    copilot: { capacity: 6, refillIntervalMs: REFILL_INTERVAL_MS },
+};
+const DASHBOARD_CSP = [
+    "default-src 'self'",
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    "connect-src 'self'",
+    "img-src 'self' data:",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "object-src 'none'",
+].join("; ");
 let copilotSession;
 
 function sendJson(res, statusCode, payload) {
@@ -127,63 +150,105 @@ async function startIssueWork(issueNumber, input) {
     };
 }
 
+const API_ROUTES = [
+    {
+        name: "dashboard",
+        method: "GET",
+        pattern: /^\/api\/dashboard$/,
+        budget: "read",
+        run: () => loadDashboard(),
+    },
+    {
+        name: "run-details",
+        method: "GET",
+        pattern: /^\/api\/runs\/(\d+)$/,
+        budget: "read",
+        run: (id) => loadRunDetails(id),
+    },
+    {
+        name: "kickoff-preview",
+        method: "GET",
+        pattern: /^\/api\/issues\/(\d+)\/kickoff-preview$/,
+        budget: "read",
+        run: async (id) => {
+            const { issue, preview, digest } = await loadKickoffPreview(id);
+            return { issueNumber: issue.number, preview, digest };
+        },
+    },
+    {
+        name: "recommend",
+        method: "POST",
+        pattern: /^\/api\/runs\/(\d+)\/recommend$/,
+        budget: "copilot",
+        singleFlight: true,
+        run: (id) => recommendRunFix(id),
+    },
+    {
+        name: "start-work",
+        method: "POST",
+        pattern: /^\/api\/issues\/(\d+)\/start$/,
+        budget: "copilot",
+        singleFlight: true,
+        run: async (id, req) =>
+            startIssueWork(id, await readValidatedBody(req, START_WORK_BODY_SCHEMA)),
+    },
+    {
+        name: "assign",
+        method: "POST",
+        pattern: /^\/api\/issues\/(\d+)\/assign$/,
+        budget: "write",
+        run: async (id, req) =>
+            assignIssue(id, (await readValidatedBody(req, ASSIGN_ISSUE_BODY_SCHEMA)).assignee),
+    },
+];
+
+function matchApiRoute(method, pathname) {
+    for (const route of API_ROUTES) {
+        if (route.method !== method) {
+            continue;
+        }
+        const match = pathname.match(route.pattern);
+        if (match) {
+            return { route, id: Number(match[1]) };
+        }
+    }
+    return null;
+}
+
+function sendDashboardHtml(res, token) {
+    res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Security-Policy": DASHBOARD_CSP,
+        "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+    });
+    res.end(renderDashboardHtml(token));
+}
+
+function runRoute({ route, id }, req, context) {
+    consumeToken(context.budgets[route.budget]);
+    if (!route.singleFlight) {
+        return route.run(id, req);
+    }
+    return context.inFlight.run(`${route.name}:${id}`, () => route.run(id, req));
+}
+
 async function handleRequest(req, res, context) {
     try {
         const requestUrl = parseAuthorizedRequestUrl(req, context.token);
 
         if (req.method === "GET" && requestUrl.pathname === "/") {
-            res.writeHead(200, {
-                "Content-Type": "text/html; charset=utf-8",
-                "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
-                "Cache-Control": "no-store",
-                "Referrer-Policy": "no-referrer",
-            });
-            res.end(renderDashboardHtml(context.token));
+            sendDashboardHtml(res, context.token);
             return;
         }
 
-        if (req.method === "GET" && requestUrl.pathname === "/api/dashboard") {
-            sendJson(res, 200, await loadDashboard());
+        const matched = matchApiRoute(req.method, requestUrl.pathname);
+        if (!matched) {
+            sendJson(res, 404, { error: "Route not found." });
             return;
         }
 
-        const runDetailsMatch = requestUrl.pathname.match(/^\/api\/runs\/(\d+)$/);
-        if (req.method === "GET" && runDetailsMatch) {
-            sendJson(res, 200, await loadRunDetails(Number(runDetailsMatch[1])));
-            return;
-        }
-
-        const recommendationMatch = requestUrl.pathname.match(/^\/api\/runs\/(\d+)\/recommend$/);
-        if (req.method === "POST" && recommendationMatch) {
-            sendJson(res, 200, await recommendRunFix(Number(recommendationMatch[1])));
-            return;
-        }
-
-        const startWorkMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/start$/);
-        if (req.method === "POST" && startWorkMatch) {
-            const body = await readValidatedBody(req, START_WORK_BODY_SCHEMA);
-            sendJson(res, 200, await startIssueWork(Number(startWorkMatch[1]), body));
-            return;
-        }
-
-        const kickoffPreviewMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/kickoff-preview$/);
-        if (req.method === "GET" && kickoffPreviewMatch) {
-            const { issue, preview, digest } = await loadKickoffPreview(
-                Number(kickoffPreviewMatch[1]),
-            );
-            sendJson(res, 200, { issueNumber: issue.number, preview, digest });
-            return;
-        }
-
-        const assignmentMatch = requestUrl.pathname.match(/^\/api\/issues\/(\d+)\/assign$/);
-        if (req.method === "POST" && assignmentMatch) {
-            const body = await readValidatedBody(req, ASSIGN_ISSUE_BODY_SCHEMA);
-            const result = await assignIssue(Number(assignmentMatch[1]), body.assignee);
-            sendJson(res, 200, result);
-            return;
-        }
-
-        sendJson(res, 404, { error: "Route not found." });
+        sendJson(res, 200, await runRoute(matched, req, context));
     } catch (error) {
         if (error instanceof DashboardRequestError) {
             sendJson(res, error.statusCode, { error: error.message });
@@ -197,6 +262,8 @@ async function startServer(instanceId) {
     const context = {
         instanceId,
         token: randomBytes(24).toString("hex"),
+        budgets: createRequestBudgets(REQUEST_BUDGETS),
+        inFlight: createSingleFlightGuard(),
     };
     const server = createServer((req, res) => void handleRequest(req, res, context));
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
