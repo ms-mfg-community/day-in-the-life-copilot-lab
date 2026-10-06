@@ -139,11 +139,15 @@ export COPILOT_PLUGIN_REGISTRIES="contoso-internal/contoso-copilot-plugins"
 > **`copilot/managed-settings.json`** in the enterprise's chosen source
 > organization's `.github-private` repo (an older `.github/copilot/settings.json`
 > path is kept for backward compatibility, but `copilot/managed-settings.json`
-> is the current canonical path). It is fetched by Copilot clients (VS Code
-> and Copilot CLI today) on every authentication and refreshed hourly, and it
-> **takes precedence over** any local/file-based config for the keys it sets.
-> Supported keys today: `extraKnownMarketplaces`, `enabledPlugins`,
-> `strictKnownMarketplaces`, `disableBypassPermissionsMode`, `model`. This
+> is the current canonical path). The published support matrix covers Copilot
+> CLI, VS Code, the GitHub Copilot app, Copilot cloud agent, and JetBrains on a
+> per-key basis. It is fetched on every authentication and refreshed hourly,
+> and it **takes precedence over** local/file-based config for the keys it
+> sets. Use
+> [`enterprise_managed_settings.supported_keys`](../docs/_meta/registry.yaml)
+> as the version-controlled key list; nested keys such as
+> `permissions.disableBypassPermissionsMode` must retain their documented
+> shape. This
 > repo's `org-policy.example.yaml` + `policy.mjs` (below) models the same
 > deny-by-default allowlist *idea* in a portable, framework-agnostic way you
 > can adapt for CI gating regardless of which enterprise settings mechanism
