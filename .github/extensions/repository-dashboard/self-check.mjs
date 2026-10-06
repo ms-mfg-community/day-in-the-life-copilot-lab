@@ -907,6 +907,17 @@ assert.equal(
     selectOpenIssue({
         data: {
             repository: {
+                issueOrPullRequest: { __typename: "PullRequest", number: 68, state: "OPEN" },
+            },
+        },
+    }),
+    null,
+    "An open pull request was accepted as an issue.",
+);
+assert.equal(
+    selectOpenIssue({
+        data: {
+            repository: {
                 issueOrPullRequest: { __typename: "Issue", number: 1, state: "CLOSED" },
             },
         },
