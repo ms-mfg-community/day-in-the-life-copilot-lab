@@ -9,6 +9,7 @@ import {
 import {
     assignIssue,
     buildDashboardPayload,
+    clampFailedLogs,
     collectConnectionPages,
     extractReferencedIssues,
     flattenGraphqlPages,
@@ -45,6 +46,7 @@ const DEBOUNCE_SETTLE_DELAY_MS = 400;
 const DASHBOARD_SCOPE_EXPORTS = `
 return {
   escapeHtml, renderRunDetails, metric, render, state, scheduleFilterRender,
+  matchesFilter, indexDashboard,
 };`;
 
 function createElementStub() {
@@ -225,6 +227,22 @@ assertNoLiveMarkup("Run details log error", scope.renderRunDetails({
     logError: HOSTILE_HTML,
 }));
 
+// The truncation notice must track the server's limit rather than a hardcoded number.
+const truncationNotice = scope.renderRunDetails({
+    failedJobs: [],
+    failedLogs: "log",
+    logsWereTruncated: true,
+    logError: null,
+    logCharacterLimit: 1_234,
+});
+assert.ok(
+    truncationNotice.includes("final 1,234 characters"),
+    "The log truncation notice ignored the limit the server reported.",
+);
+
+// metric() is the only renderer sink that was interpolating unescaped.
+assertNoLiveMarkup("Metric", scope.metric(HOSTILE_HTML, HOSTILE_SCRIPT));
+
 // Every browser request must carry the canvas token.
 assert.equal(requests.length > 0, true, "The dashboard never requested its data.");
 for (const request of requests) {
@@ -232,9 +250,21 @@ for (const request of requests) {
 }
 assert.equal(requests[0].url, "/api/dashboard");
 
-// Filtering is debounced rather than re-rendering on every keystroke.
-scope.state.filter = "";
-scope.scheduleFilterRender({
+// Filtering is precomputed per fetch and debounced, not recomputed per item per render.
+assert.equal(scope.matchesFilter({ searchText: "alpha beta" }), true);
+scope.state.filter = "  BETA ";
+assert.equal(scope.matchesFilter({ searchText: "alpha beta" }), true);
+assert.equal(scope.matchesFilter({ searchText: "alpha gamma" }), false);
+assert.equal(
+    scope.matchesFilter({ title: "beta" }),
+    false,
+    "Filtering fell back to scanning an unindexed item.",
+);
+const indexed = scope.indexDashboard({ issues: [{ title: "Beta" }], pullRequests: [], runs: [] });
+assert.equal(indexed.issues[0].searchText, '{"title":"beta"}');
+assert.equal(indexed.issues[0].title, "Beta", "Indexing mutated the item it copied.");
+
+scope.state.filter = "";scope.scheduleFilterRender({
     value: "needle",
     selectionStart: 6,
     selectionEnd: 6,
@@ -255,46 +285,95 @@ assert.match(html, /Local session/);
 assert.match(html, /Cloud session/);
 assert.match(html, /test-token/);
 
-const authorizedUrl = parseAuthorizedRequestUrl({
+const CANVAS_AUTH = { token: "test-token", host: "127.0.0.1:1234" };
+
+function canvasRequest({ url = "/", method = "GET", headers = {} } = {}) {
+    return { method, url, headers: { host: CANVAS_AUTH.host, ...headers } };
+}
+
+const authorizedUrl = parseAuthorizedRequestUrl(canvasRequest({
     url: "/api/dashboard",
     headers: { "x-canvas-token": "test-token" },
-}, "test-token");
+}), CANVAS_AUTH);
 assert.equal(authorizedUrl.pathname, "/api/dashboard");
 
 const initialUrl = canvasUrl(1234, "test-token");
 assert.equal(initialUrl, "http://127.0.0.1:1234/?canvasToken=test-token");
-assert.equal(parseAuthorizedRequestUrl({
-    method: "GET",
-    url: initialUrl,
-    headers: {},
-}, "test-token").pathname, "/");
+assert.equal(parseAuthorizedRequestUrl(
+    canvasRequest({ url: initialUrl }),
+    CANVAS_AUTH,
+).pathname, "/");
 
 assert.throws(
-    () => parseAuthorizedRequestUrl({
-        method: "GET",
-        url: "/api/dashboard?canvasToken=test-token",
-        headers: {},
-    }, "test-token"),
+    () => parseAuthorizedRequestUrl(
+        canvasRequest({ url: "/api/dashboard?canvasToken=test-token" }),
+        CANVAS_AUTH,
+    ),
     (error) => error.statusCode === 403,
 );
 
-for (const headerToken of [undefined, "", "wrong-token", "test-token-longer", "test-toke"]) {
+for (const headerToken of [
+    undefined, "", "wrong-token", "test-token-longer", "test-toke",
+    "test-tokeX", "TEST-TOKEN", "xxxxxxxxxx", "test-toke\u0000",
+]) {
     assert.throws(
-        () => parseAuthorizedRequestUrl({
-            url: "/",
-            headers: headerToken === undefined ? {} : { "x-canvas-token": headerToken },
-        }, "test-token"),
+        () => parseAuthorizedRequestUrl(
+            canvasRequest({
+                headers: headerToken === undefined ? {} : { "x-canvas-token": headerToken },
+            }),
+            CANVAS_AUTH,
+        ),
         (error) => error.statusCode === 403
             && error.message === "The canvas security token is missing or invalid.",
         `Token "${headerToken}" was accepted.`,
     );
 }
 
+// A valid token must not be usable against a rebound host name.
+for (const host of ["evil.example.com", "127.0.0.1:1235", "localhost:1234", undefined, ""]) {
+    assert.throws(
+        () => parseAuthorizedRequestUrl(
+            canvasRequest({ headers: { host, "x-canvas-token": "test-token" } }),
+            CANVAS_AUTH,
+        ),
+        (error) => error.statusCode === 403
+            && error.message === "The request was made for an unexpected host.",
+        `Host "${String(host)}" was accepted.`,
+    );
+}
+
+for (const origin of ["https://evil.example.com", "http://127.0.0.1:1235", "null"]) {
+    assert.throws(
+        () => parseAuthorizedRequestUrl(
+            canvasRequest({
+                method: "POST",
+                url: "/api/issues/1/start",
+                headers: { origin, "x-canvas-token": "test-token" },
+            }),
+            CANVAS_AUTH,
+        ),
+        (error) => error.statusCode === 403
+            && error.message === "The request came from an unexpected origin.",
+        `Origin "${origin}" was accepted.`,
+    );
+}
+assert.equal(
+    parseAuthorizedRequestUrl(
+        canvasRequest({
+            method: "POST",
+            url: "/api/issues/1/start",
+            headers: { origin: "http://127.0.0.1:1234", "x-canvas-token": "test-token" },
+        }),
+        CANVAS_AUTH,
+    ).pathname,
+    "/api/issues/1/start",
+);
+
 assert.throws(
-    () => parseAuthorizedRequestUrl({
-        url: "http://[::1",
-        headers: { "x-canvas-token": "test-token" },
-    }, "test-token"),
+    () => parseAuthorizedRequestUrl(
+        canvasRequest({ url: "http://[::1", headers: { "x-canvas-token": "test-token" } }),
+        CANVAS_AUTH,
+    ),
     (error) => error.statusCode === 400
         && error.message === "Request URL is malformed.",
 );
@@ -761,4 +840,40 @@ assert.equal(
     await guard.run("start-work:3", () => Promise.resolve("recovered")),
     "recovered",
     "The in-flight guard leaked its key after a failure.",
+);
+
+// Failed logs are cut to size before the ANSI scan, not after.
+const LOG_LIMIT = 60_000;
+const shortLogs = clampFailedLogs("\u001B[31mred\u001B[0m line");
+assert.equal(shortLogs.failedLogs, "red line");
+assert.equal(shortLogs.logsWereTruncated, false);
+
+const hugeLogs = clampFailedLogs(`${"\u001B[31ma\u001B[0m".repeat(400_000)}tail marker`);
+assert.equal(hugeLogs.logsWereTruncated, true);
+assert.ok(hugeLogs.failedLogs.length <= LOG_LIMIT, "The clamped log exceeded its limit.");
+assert.ok(
+    hugeLogs.failedLogs.endsWith("tail marker"),
+    "Clamping kept the head of the log instead of the failing tail.",
+);
+assert.equal(
+    /\u001B\[/.test(hugeLogs.failedLogs),
+    false,
+    "ANSI escapes survived into the clamped log.",
+);
+
+const exactLogs = clampFailedLogs("x".repeat(LOG_LIMIT));
+assert.equal(exactLogs.failedLogs.length, LOG_LIMIT);
+assert.equal(exactLogs.logsWereTruncated, false, "A log at exactly the limit was called truncated.");
+
+const overLimitLogs = clampFailedLogs(`head marker${"x".repeat(LOG_LIMIT + 20_000)}tail marker`);
+assert.equal(overLimitLogs.logsWereTruncated, true);
+assert.equal(overLimitLogs.failedLogs.length, LOG_LIMIT);
+assert.ok(
+    overLimitLogs.failedLogs.endsWith("tail marker"),
+    "Clamping dropped the end of the log, which is where the failure is.",
+);
+assert.equal(
+    overLimitLogs.failedLogs.startsWith("head marker"),
+    false,
+    "Clamping kept the head of the log instead of the failing tail.",
 );

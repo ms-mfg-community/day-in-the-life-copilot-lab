@@ -15,6 +15,7 @@ const REST_PAGE_SIZE = 100;
 const RUN_LIST_LIMIT = 30;
 const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const MAX_LOG_CHARACTERS = 60_000;
+const LOG_SCAN_CHARACTERS = MAX_LOG_CHARACTERS * 2;
 const MAX_ERROR_DETAIL_LINES = 3;
 const MAX_ERROR_DETAIL_CHARACTERS = 300;
 const GITHUB_LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
@@ -412,6 +413,30 @@ function stripAnsi(value) {
     return value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
 }
 
+export function clampFailedLogs(raw) {
+    const tail = raw.length > LOG_SCAN_CHARACTERS ? raw.slice(-LOG_SCAN_CHARACTERS) : raw;
+    const cleaned = stripAnsi(tail);
+    return {
+        failedLogs: cleaned.slice(-MAX_LOG_CHARACTERS),
+        logsWereTruncated: tail.length < raw.length || cleaned.length > MAX_LOG_CHARACTERS,
+    };
+}
+
+async function loadFailedLogs(runId, repo) {
+    try {
+        const raw = await runGh([
+            "run", "view", String(runId), "--repo", repo, "--log-failed",
+        ]);
+        return { ...clampFailedLogs(raw), logError: null };
+    } catch (error) {
+        return {
+            failedLogs: "",
+            logsWereTruncated: false,
+            logError: error instanceof Error ? error.message : "Failed logs are unavailable.",
+        };
+    }
+}
+
 export async function loadRunDetails(runId) {
     validateRunId(runId);
     const repo = await loadRepositoryName();
@@ -419,21 +444,7 @@ export async function loadRunDetails(runId) {
         "run", "view", String(runId), "--repo", repo,
         "--json", "databaseId,displayTitle,event,headBranch,headSha,status,conclusion,workflowName,createdAt,updatedAt,url,jobs",
     ]);
-
-    let failedLogs = "";
-    let logError = null;
-    try {
-        failedLogs = stripAnsi(await runGh([
-            "run", "view", String(runId), "--repo", repo, "--log-failed",
-        ]));
-    } catch (error) {
-        logError = error instanceof Error ? error.message : "Failed logs are unavailable.";
-    }
-
-    const logsWereTruncated = failedLogs.length > MAX_LOG_CHARACTERS;
-    if (logsWereTruncated) {
-        failedLogs = failedLogs.slice(-MAX_LOG_CHARACTERS);
-    }
+    const logs = await loadFailedLogs(runId, repo);
 
     const { jobs = [], ...runSummary } = run;
     return {
@@ -444,9 +455,8 @@ export async function loadRunDetails(runId) {
                 ...job,
                 failedSteps: (job.steps ?? []).filter((step) => step.conclusion === "failure"),
             })),
-        failedLogs,
-        logsWereTruncated,
-        logError,
+        ...logs,
+        logCharacterLimit: MAX_LOG_CHARACTERS,
     };
 }
 

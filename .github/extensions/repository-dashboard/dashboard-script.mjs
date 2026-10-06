@@ -2,6 +2,8 @@ export const DASHBOARD_SCRIPT = String.raw`
 const app = document.querySelector("#app");
 const config = globalThis.__REPOSITORY_DASHBOARD__;
 const FILTER_DEBOUNCE_DELAY_MS = 200;
+const TOAST_DURATION_MS = 3500;
+const BODY_PREVIEW_CHARACTERS = 700;
 const state = {
   dashboard: null,
   activeTab: "overview",
@@ -32,7 +34,27 @@ function formatDate(value) {
 function matchesFilter(item) {
   const needle = state.filter.trim().toLowerCase();
   if (!needle) return true;
-  return JSON.stringify(item).toLowerCase().includes(needle);
+  return (item.searchText || "").includes(needle);
+}
+
+function withSearchText(items) {
+  return (items || []).map((item) => ({
+    ...item,
+    searchText: JSON.stringify(item).toLowerCase(),
+  }));
+}
+
+function indexDashboard(dashboard) {
+  return {
+    ...dashboard,
+    issues: withSearchText(dashboard.issues),
+    pullRequests: withSearchText(dashboard.pullRequests),
+    runs: withSearchText(dashboard.runs),
+  };
+}
+
+function formatCount(value) {
+  return Number(value || 0).toLocaleString();
 }
 
 function renderLabels(labels) {
@@ -86,8 +108,8 @@ function issueCard(issue, includeBody = false) {
     ? issue.assignees.map((assignee) => "@" + assignee.login).join(", ")
     : "Unassigned";
   const body = includeBody && issue.body
-    ? '<p class="body-preview">' + escapeHtml(issue.body.slice(0, 700)) +
-      (issue.body.length > 700 ? "..." : "") + '</p>'
+    ? '<p class="body-preview">' + escapeHtml(issue.body.slice(0, BODY_PREVIEW_CHARACTERS)) +
+      (issue.body.length > BODY_PREVIEW_CHARACTERS ? "..." : "") + '</p>'
     : "";
   return '<article class="item-card">' +
     '<h3><a href="' + escapeHtml(issue.url) + '" target="_blank" rel="noreferrer">#' +
@@ -173,7 +195,8 @@ function renderRunDetails(details) {
       }).join("")
     : '<p class="muted">No failed jobs were reported for this run.</p>';
   const logNotice = details.logsWereTruncated
-    ? '<p class="muted">Showing the final 60,000 characters of failed logs.</p>'
+    ? '<p class="muted">Showing the final ' + escapeHtml(formatCount(details.logCharacterLimit)) +
+      ' characters of failed logs.</p>'
     : "";
   const logs = details.failedLogs
     ? '<pre class="failed-logs">' + escapeHtml(details.failedLogs) + '</pre>'
@@ -184,7 +207,7 @@ function renderRunDetails(details) {
 
 function metric(label, value) {
   return '<div class="metric"><span class="muted">' + escapeHtml(label) +
-    '</span><strong>' + value + '</strong></div>';
+    '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
 function renderErrors() {
@@ -300,7 +323,7 @@ function showToast(message) {
   toast.className = "toast";
   toast.textContent = message;
   document.body.append(toast);
-  setTimeout(() => toast.remove(), 3500);
+  setTimeout(() => toast.remove(), TOAST_DURATION_MS);
 }
 
 async function fetchDashboard() {
@@ -325,7 +348,7 @@ async function refresh() {
   state.loading = true;
   if (state.dashboard) render();
   try {
-    state.dashboard = await fetchDashboard();
+    state.dashboard = indexDashboard(await fetchDashboard());
     render();
   } catch (error) {
     if (state.dashboard) {

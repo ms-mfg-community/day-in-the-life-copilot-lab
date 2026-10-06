@@ -20,6 +20,7 @@ import {
     previewDigest,
 } from "./prompt-builder.mjs";
 import {
+    canvasHost,
     canvasUrl,
     DashboardRequestError,
     parseAuthorizedRequestUrl,
@@ -235,7 +236,7 @@ function runRoute({ route, id }, req, context) {
 
 async function handleRequest(req, res, context) {
     try {
-        const requestUrl = parseAuthorizedRequestUrl(req, context.token);
+        const requestUrl = parseAuthorizedRequestUrl(req, context);
 
         if (req.method === "GET" && requestUrl.pathname === "/") {
             sendDashboardHtml(res, context.token);
@@ -265,11 +266,12 @@ async function startServer(instanceId) {
         budgets: createRequestBudgets(REQUEST_BUDGETS),
         inFlight: createSingleFlightGuard(),
     };
-    const server = createServer((req, res) => void handleRequest(req, res, context));
+    const server = createServer((req, res) => void handleRequest(req, res, {
+        ...context,
+        host: canvasHost(server.address()?.port),
+    }));
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const address = server.address();
-    const port = typeof address === "object" && address ? address.port : 0;
-    return { server, url: canvasUrl(port, context.token) };
+    return { server, url: canvasUrl(server.address().port, context.token) };
 }
 
 async function loadDashboardSummary() {
