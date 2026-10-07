@@ -141,6 +141,13 @@ try {
     releaseRecommend();
     assert.equal((await first).status, 200);
 
+    // The six calls above drained the copilot budget (capacity 6); a seventh must be refused.
+    assert.equal(
+        (await post("/api/issues/7/start", { executionLocation: "local", kickoffDigest: GOOD_DIGEST })).status,
+        429,
+        "The copilot route budget was never enforced.",
+    );
+
     const statuses = [];
     for (let attempt = 0; attempt <= DASHBOARD_BUDGET; attempt += 1) {
         statuses.push((await send({ path: "/api/dashboard", headers: authed() })).status);
