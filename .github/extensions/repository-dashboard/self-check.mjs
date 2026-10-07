@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 
+import "./wiring-check.mjs";
+
 import { renderDashboardHtml } from "./dashboard-html.mjs";
 import { DASHBOARD_SCRIPT } from "./dashboard-script.mjs";
 import {

@@ -32,7 +32,8 @@ rather than instruction:
 
 - The title and body are sanitised, length-capped, and wrapped in an explicit
   untrusted-data fence, preceded by a guard telling the agent not to follow
-  anything inside it. Forged fence markers in the content are stripped.
+  anything inside it. Forged fence markers in the content are stripped, and the real
+  markers carry a digest of the enclosed text, so only the matching END marker closes the block.
 - Expanding the form fetches the **exact text that will be sent** and shows it
   verbatim. The submit button stays disabled until it has been shown — the
   approval is meant to be informed, so do read it.
@@ -98,11 +99,15 @@ self-check fails — that is the bar this file is held to.
 
 | File | Responsibility |
 |---|---|
-| `extension.mjs` | Canvas registration, HTTP route table, server lifecycle |
+| `extension.mjs` | Canvas registration and the Copilot-session actions |
+| `http-handler.mjs` | HTTP server, request pipeline, CSP, budgets and error mapping |
+| `api-routes.mjs` | The route table; actions are injected so it can be tested |
+| `kickoff-approval.mjs` | Kickoff preview loading and the approval gate |
 | `github-data.mjs` | All `gh` access, pagination, normalisation |
 | `prompt-builder.mjs` | Untrusted-data fencing, prompt assembly, approval digests |
 | `request-security.mjs` | Token, Host and Origin checks |
 | `request-validation.mjs` | Shared JSON schemas for canvas actions and HTTP bodies |
 | `rate-limit.mjs` | Token buckets and the in-flight guard |
 | `dashboard-html.mjs` / `dashboard-script.mjs` / `dashboard-styles.mjs` | The rendered page |
-| `self-check.mjs` | Behavioural checks for all of the above |
+| `self-check.mjs` | Behavioural checks for the pure logic, browser script and data layer |
+| `wiring-check.mjs` | Drives the real HTTP server with stub actions; run by `self-check.mjs` |
