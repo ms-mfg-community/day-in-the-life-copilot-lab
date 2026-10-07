@@ -4,6 +4,7 @@ import { renderDashboardHtml } from "./dashboard-html.mjs";
 import { DASHBOARD_SCRIPT } from "./dashboard-script.mjs";
 import {
     canvasUrl,
+    DashboardRequestError,
     DASHBOARD_CSP,
     parseAuthorizedRequestUrl,
 } from "./request-security.mjs";
@@ -950,8 +951,49 @@ assert.equal(
         () => Promise.resolve(null),
         { maxPages: 3, pageSize: 100, deadlineAt: Date.now() + 60_000 },
     )).truncated,
-    false,
+    true,
     "An unreadable REST page was treated as a full page.",
+);
+
+// A failure after the first page keeps what was already read and says the list is incomplete.
+const pageFailure = new DashboardRequestError(502, "boom");
+const graphqlPage = (nodes, hasNextPage) => ({
+    data: { repository: { issues: { nodes, pageInfo: { hasNextPage, endCursor: "c1" } } } },
+});
+const graphqlPartial = await collectConnectionPages(
+    (cursor) => (cursor ? Promise.reject(pageFailure) : Promise.resolve(graphqlPage([{ number: 1 }], true))),
+    "issues",
+    { maxPages: 5, deadlineAt: Date.now() + 60_000 },
+);
+assert.deepEqual(graphqlPartial.data, [{ number: 1 }]);
+assert.equal(graphqlPartial.truncated, true);
+const restPartial = await collectRestPages(
+    (page) => (page === 1 ? Promise.resolve(Array.from({ length: 100 }, (_, i) => i)) : Promise.reject(pageFailure)),
+    { maxPages: 5, pageSize: 100, deadlineAt: Date.now() + 60_000 },
+);
+assert.equal(restPartial.data.length, 100);
+assert.equal(restPartial.truncated, true);
+
+// A first-page failure is a real error, not an empty list.
+await assert.rejects(
+    collectRestPages(() => Promise.reject(pageFailure), {
+        maxPages: 5, pageSize: 100, deadlineAt: Date.now() + 60_000,
+    }),
+    (error) => error === pageFailure,
+);
+await assert.rejects(
+    collectConnectionPages(() => Promise.reject(pageFailure), "issues", {
+        maxPages: 5, deadlineAt: Date.now() + 60_000,
+    }),
+    (error) => error === pageFailure,
+);
+// Programmer errors are not swallowed as a partial list.
+await assert.rejects(
+    collectRestPages(
+        (page) => (page === 1 ? Promise.resolve(Array.from({ length: 100 }, (_, i) => i)) : Promise.reject(new TypeError("bug"))),
+        { maxPages: 5, pageSize: 100, deadlineAt: Date.now() + 60_000 },
+    ),
+    TypeError,
 );
 
 const truncatedDashboard = { ...dashboard, truncated: { issues: true } };

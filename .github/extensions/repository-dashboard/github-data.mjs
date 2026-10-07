@@ -142,6 +142,18 @@ function splitRepositoryName(repo) {
     };
 }
 
+// After the first page, a gh failure ends pagination with what was read rather than discarding it.
+async function fetchLaterPage(fetchOnePage, pagesRead) {
+    try {
+        return { payload: await fetchOnePage(), failed: false };
+    } catch (error) {
+        if (pagesRead === 0 || !(error instanceof DashboardRequestError)) {
+            throw error;
+        }
+        return { payload: null, failed: true };
+    }
+}
+
 export async function collectConnectionPages(fetchPage, connectionName, limits) {
     const { maxPages, deadlineAt, clock = Date.now } = limits;
     const pages = [];
@@ -152,7 +164,10 @@ export async function collectConnectionPages(fetchPage, connectionName, limits) 
         if (remainingMs <= 0) {
             break;
         }
-        const payload = await fetchPage(cursor, remainingMs);
+        const { payload, failed } = await fetchLaterPage(() => fetchPage(cursor, remainingMs), pages.length);
+        if (failed) {
+            break;
+        }
         pages.push(payload);
         const pageInfo = payload?.data?.repository?.[connectionName]?.pageInfo;
         if (!pageInfo) {
@@ -196,10 +211,15 @@ export async function collectRestPages(fetchPage, limits) {
         if (remainingMs <= 0) {
             break;
         }
-        const batch = await fetchPage(page, remainingMs);
-        const received = Array.isArray(batch) ? batch : [];
-        items.push(...received);
-        if (received.length < pageSize) {
+        const { payload: batch, failed } = await fetchLaterPage(
+            () => fetchPage(page, remainingMs),
+            page - 1,
+        );
+        if (failed || !Array.isArray(batch)) {
+            break;
+        }
+        items.push(...batch);
+        if (batch.length < pageSize) {
             return { data: items, truncated: false };
         }
     }
