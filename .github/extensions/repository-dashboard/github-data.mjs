@@ -83,6 +83,18 @@ function describeExecFailure(error) {
     return "the GitHub CLI exited unexpectedly.";
 }
 
+export function summarizeGhFailure(error) {
+    const stderr = typeof error?.stderr === "string" ? error.stderr.trim() : "";
+    if (stderr) {
+        return stderr
+            .split("\n")
+            .slice(0, MAX_ERROR_DETAIL_LINES)
+            .join(" ")
+            .slice(0, MAX_ERROR_DETAIL_CHARACTERS);
+    }
+    return describeExecFailure(error);
+}
+
 async function runGh(args, timeoutMs = COMMAND_TIMEOUT_MS) {
     try {
         const { stdout } = await execFileAsync("gh", args, {
@@ -94,11 +106,10 @@ async function runGh(args, timeoutMs = COMMAND_TIMEOUT_MS) {
         });
         return stdout.trim();
     } catch (error) {
-        const stderr = typeof error?.stderr === "string" ? error.stderr.trim() : "";
-        const detail = stderr
-            ? stderr.split("\n").slice(0, MAX_ERROR_DETAIL_LINES).join(" ").slice(0, MAX_ERROR_DETAIL_CHARACTERS)
-            : describeExecFailure(error);
-        const failure = new DashboardRequestError(502, `GitHub request failed: ${detail}`);
+        const failure = new DashboardRequestError(
+            502,
+            `GitHub request failed: ${summarizeGhFailure(error)}`,
+        );
         failure.stdout = typeof error?.stdout === "string" ? error.stdout : "";
         throw failure;
     }
@@ -144,7 +155,10 @@ export async function collectConnectionPages(fetchPage, connectionName, limits) 
         const payload = await fetchPage(cursor, remainingMs);
         pages.push(payload);
         const pageInfo = payload?.data?.repository?.[connectionName]?.pageInfo;
-        if (!pageInfo?.hasNextPage || !pageInfo.endCursor) {
+        if (!pageInfo) {
+            break;
+        }
+        if (!pageInfo.hasNextPage || !pageInfo.endCursor) {
             return { data: flattenGraphqlPages(pages, connectionName), truncated: false };
         }
         cursor = pageInfo.endCursor;
@@ -173,19 +187,36 @@ async function loadPaginatedConnection(repo, connectionName, query) {
     });
 }
 
-async function loadAssignableUsers(repo) {
-    const users = [];
-    for (let page = 1; page <= MAX_REST_PAGES; page += 1) {
-        const batch = await runGhJson([
-            "api", `repos/${repo}/assignees?per_page=${REST_PAGE_SIZE}&page=${page}`,
-        ]);
-        const items = Array.isArray(batch) ? batch : [];
-        users.push(...items);
-        if (items.length < REST_PAGE_SIZE) {
-            return { data: users, truncated: false };
+export async function collectRestPages(fetchPage, limits) {
+    const { maxPages, pageSize, deadlineAt, clock = Date.now } = limits;
+    const items = [];
+
+    for (let page = 1; page <= maxPages; page += 1) {
+        const remainingMs = deadlineAt - clock();
+        if (remainingMs <= 0) {
+            break;
+        }
+        const batch = await fetchPage(page, remainingMs);
+        const received = Array.isArray(batch) ? batch : [];
+        items.push(...received);
+        if (received.length < pageSize) {
+            return { data: items, truncated: false };
         }
     }
-    return { data: users, truncated: true };
+
+    return { data: items, truncated: true };
+}
+
+async function loadAssignableUsers(repo) {
+    const fetchPage = (page, remainingMs) => runGhJson(
+        ["api", `repos/${repo}/assignees?per_page=${REST_PAGE_SIZE}&page=${page}`],
+        Math.min(remainingMs, PAGE_TIMEOUT_MS),
+    );
+    return collectRestPages(fetchPage, {
+        maxPages: MAX_REST_PAGES,
+        pageSize: REST_PAGE_SIZE,
+        deadlineAt: Date.now() + PAGINATION_DEADLINE_MS,
+    });
 }
 
 async function loadRepositoryAgents() {

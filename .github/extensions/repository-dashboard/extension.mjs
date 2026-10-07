@@ -22,6 +22,7 @@ import {
 import {
     canvasHost,
     canvasUrl,
+    DASHBOARD_CSP,
     DashboardRequestError,
     parseAuthorizedRequestUrl,
 } from "./request-security.mjs";
@@ -46,20 +47,10 @@ const COPILOT_RESPONSE_TIMEOUT_MS = 180_000;
 const REFILL_INTERVAL_MS = 60_000;
 const REQUEST_BUDGETS = {
     read: { capacity: 60, refillIntervalMs: REFILL_INTERVAL_MS },
+    dashboard: { capacity: 12, refillIntervalMs: REFILL_INTERVAL_MS },
     write: { capacity: 20, refillIntervalMs: REFILL_INTERVAL_MS },
     copilot: { capacity: 6, refillIntervalMs: REFILL_INTERVAL_MS },
 };
-const DASHBOARD_CSP = [
-    "default-src 'self'",
-    "script-src 'unsafe-inline'",
-    "style-src 'unsafe-inline'",
-    "connect-src 'self'",
-    "img-src 'self' data:",
-    "frame-ancestors 'none'",
-    "base-uri 'none'",
-    "form-action 'none'",
-    "object-src 'none'",
-].join("; ");
 let copilotSession;
 
 function sendJson(res, statusCode, payload) {
@@ -156,7 +147,7 @@ const API_ROUTES = [
         name: "dashboard",
         method: "GET",
         pattern: /^\/api\/dashboard$/,
-        budget: "read",
+        budget: "dashboard",
         run: () => loadDashboard(),
     },
     {

@@ -20,6 +20,18 @@ function secretsMatch(candidate, expected) {
     );
 }
 
+export const DASHBOARD_CSP = [
+    "default-src 'self'",
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    "connect-src 'self'",
+    "img-src 'self' data:",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "object-src 'none'",
+].join("; ");
+
 export function canvasHost(port) {
     return `${CANVAS_HOST}:${port}`;
 }
