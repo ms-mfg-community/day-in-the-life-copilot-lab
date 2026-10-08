@@ -105,3 +105,77 @@ when the workflow read it from the reviewer itself. Duplicating that to bolt on 
 gates would copy the hard part to change the easy part.
 
 ---
+
+## D-2026-10-08-04 — Loop independence is enforced in code, not in prompts
+
+**Decision:** Every independence guarantee in `spec-forge` and `lab-forge` is a function
+with a test, not a sentence in a prompt.
+
+| Guarantee | Enforced by | Defended by |
+|---|---|---|
+| The verifier never sees researcher prose, confidence or conclusions | `claimsForVerifier()` reduces each bundle to `{claim, sourceUrl, published}` | self-check + mutation "the verifier is shown the researcher's prose" |
+| Only `VERIFIED` claims reach a spec body | `partitionGraded()`; an unreadable grade falls to `UNVERIFIED`, never up to `VERIFIED` | 3 mutations |
+| Reviewers never see the author's/editor's summary | the summary is never placed in a review brief | mutation "the author's summary is leaked into the reviewer's brief" |
+| Each gate leg sees only its *own* prior findings | `priorOwnFindings(state, from)` filters by origin | mutation "a gate leg is shown its sibling's findings" |
+| An unreadable verdict is never a pass | `interpretVerdictStage()` refuses any token outside the stage's own vocabulary | 4 mutations |
+
+**Rationale.** A prompt instruction is a probabilistic control. Measured on this machine,
+description-triggered skills fire roughly 30% of the time — the instruction layer executes,
+but it is not something to hang a load-bearing gate on alone. These five properties are the
+entire reason the loops exist, so they are structural.
+
+**Evidence.** `spec-forge`: 42 self-checks, 12/12 mutations killed. `lab-forge`: 47
+self-checks, 16/16 mutations killed. Run `node self-check.mjs` and `node mutation-check.mjs`
+in either extension directory.
+
+---
+
+## D-2026-10-08-05 — `lab-forge` runs its two gate stages in parallel
+
+**Decision:** Plan §4.3 lists "run it" (`Wayne`) and "teachability" (`Hoid`) as sequential
+stages 4 and 5. They run **in parallel** instead, as two legs of one gate.
+
+**Rationale.** The two legs examine different properties of the same lab and neither
+consumes the other's result: `Wayne` executes commands, `Hoid` reads for pacing and
+prerequisite order. Run sequentially, a lab that fails both costs two full round-trips
+through the editor to discover that. Run in parallel, one round returns both sets of
+findings.
+
+**Fail-closed semantics, which the sequencing change makes load-bearing.** The gate passes
+only when **both** legs pass. A single leg that returns nothing usable makes the whole gate
+`unusable` and escalates — an ungraded leg is not a passed one. Both are tested, and both
+are covered by mutations.
+
+**Cost.** None in credits; the same two subagents run either way.
+
+---
+
+## D-2026-10-08-06 — `Khriss` and `Hoid` need a CLI restart; the Phase 1 dry runs are substituted
+
+**Decision:** The Phase 1 dry runs exercise the real loop code with `Khriss` remapped to
+`judge` (and `Hoid` where applicable) at the dispatch boundary. They are explicitly **not**
+full-fidelity runs, and the harness records every substitution it made in its result.
+
+**Why.** Measured, 2026-10-08, via throwaway workflow `probe-agent-resolve`
+(run `cac87061-6f0c-4ade-9913-38231fd9fcac`): a session dispatches workflow subagents
+against the agents that existed **when it started**.
+
+| Agent | Resolved | Returned its own identity |
+|---|---|---|
+| `Vasher` | yes | `Vasher` |
+| `judge` | yes | `judge` |
+| `Wayne` | yes | `Wayne` |
+| `Khriss` | **no** | — |
+| `Hoid` | **no** | — |
+
+Only 3 subagents were billed for 5 dispatches, confirming the two new agents failed at
+dispatch rather than at response. `model-defaults -Sync` added inherit entries for both and
+also reports that a restart is required.
+
+**Consequence — carry this forward.** The dry runs prove the *orchestration*: stage
+sequencing, `ctx.step` journaling, `ctx.parallel` fan-out, schema parsing against real model
+output, per-stage model application, and label uniqueness. They do **not** prove that
+`Khriss` and `Hoid` behave as written. **Re-run one dry run of each loop after restarting
+the CLI, with no substitutions, before pointing either loop at real curriculum content.**
+
+---
