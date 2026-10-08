@@ -44,15 +44,9 @@ A separate, portable gh-aw workflow (`.github/workflows/self-improving-agents.md
 
 | Agent | Purpose |
 |-------|---------|
-| `dev` | General development with full tool access |
-| `qa` | Testing specialist |
-| `pm` | Product manager — requirements and acceptance criteria |
-| `orchestrator` | Multi-agent workflow coordination |
+| `agentic-workflows` | GitHub Agentic Workflows (gh-aw) — create, debug and upgrade AI-powered workflows |
 | `code-reviewer` | Code review with high signal-to-noise ratio |
 | `planner` | Feature planning and architecture |
-| `architect` | System design and technical decisions |
-| `tdd-guide` | Test-driven development enforcement |
-| `security-reviewer` | Security vulnerability detection |
 
 ## MCP Servers
 
