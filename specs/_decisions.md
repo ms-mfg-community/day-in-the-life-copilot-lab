@@ -1450,3 +1450,39 @@ PIDs could not be identified. The audit afterwards still reads 47 calls, all fro
 incident (00:26Z to 00:41Z on 10-09). None came from these runs or the probes.
 
 ---
+
+## D-2026-10-09-25 — Both Phase 2 spec runs finished ESCALATED, so neither spec is READY; what they cost, what is open, and John's constraints
+
+**What happened.** The runs were relaunched from the Copilot CLI (session `4e4123cd`). `Khriss`, `Vasher` and `judge` all launched there, which confirms D-24's diagnosis. The first two attempts ended `error`: researchers were "cancelled" and their output failed the schema (2 of 12 and 6 of 12). Both were `non_resumable`, so both were relaunched from scratch.
+
+| run | spec | credits | subagents | outcome |
+|---|---|---|---|---|
+| `7cb24c8d-c17d-4810-a434-05137f033ba3` | memory slice | 140 | 13 | error, non-resumable |
+| `96b330a5-73aa-4eda-8f61-2b1818d57921` | spec 005 | 171 | 13 | error, non-resumable |
+| `3be04668-58b4-4a4d-9d0a-09e0f051051b` | memory slice | 5,046 | 33 | completed, **escalated** after 3 rounds |
+| `50598ea0-8e33-4907-9a39-d5c86b91f6a2` | spec 005 | 7,629 | 35 | completed, **escalated** after 3 rounds |
+
+Total 12,986 credits, 94 subagents, 160.7M tokens. By token share: `Khriss` 38%, `Vasher` 34%, `judge` 18%, researchers 10% (the log does not break credits out by stage). That is about 32 credits per verified claim for memory and 44 for spec 005, and 25 to 50 times the 150 to 218 credits of the 2-question dry runs. No ceiling was set on these runs.
+
+**Where the specs stand** (committed locally as `1ae6086`, about 180 KB each, not READY):
+- `specs/001-research-sota/memory.md`: slice 1 of 5 of spec 001. 160 verified claims, 6 child issues. Open: S1, no verified row for "loop engineering", so area 4 of 6 is empty (a first-party GitHub blog defining the term was found but never graded); S2, a §3 preamble sentence that §3.4 contradicts; S2, six rows (F24, F30, F49, F59, F84, F132) marked VERIFIED although the cited page lacks part of the claim; three S3.
+- `specs/005-teaching-spa.md`: the whole SPA spec. 174 verified claims, 25 acceptance criteria, 14 child issues. Open: S1, §2.2 L155-156 justifies AC25 with a JSON Schema claim that has no §3 row (it is true per JSON Schema draft 2020-12 core, §10.3.2.3, so the remedy is to reword the sentence or to verify a row); three S3.
+
+**Decided by John (2026-10-09).**
+1. No push. The docs are development docs and stay in the local branch; GitHub issues are created later, when the work is tracked against them.
+2. Future `spec-forge` runs use `maxRounds: 2`, to stop review cycles that may not lead anywhere. The loop's default is 3.
+3. He questioned the economics ("12k credits for a single spec with 7 more spec runs"). No further run is launched until he chooses a direction.
+
+**What the other seven runs are** (plan section 5.2, D-24(b)): spec 001 slices 2 to 5 (agents, skills, prompts and instruction precedence; extensions, plugins and MCP; gh-aw, the coding agent and code review; model lineup including "hydrafusion"), 002 curriculum architecture, 003 lab-refresh standard, 004 memory lab. No lab-level decision (retire-and-merge map, durations, declared surfaces) exists in any spec yet.
+
+**Supersedes** the "Recovery" paragraph of D-24. Runs `fe403ba5` and `24d23e48` are not to be resumed or relaunched; the table above holds their replacements.
+
+**Open.**
+(a) The next step: SPA first, run the seven, or rescope the labs track. Nothing is running.
+(b) `lab-forge`'s `Khriss` drift check verifies each lab's claims against sources, which overlaps the four remaining research slices. A cheaper route is possible; not decided.
+(c) A hand edit of the SPA spec must reword rather than add a row, because a hand-added row would bypass the verified ledger. It needs a `judge` delta pass before the spec counts as READY.
+(d) Memory area 4 needs a targeted research run (its child issue 4) or acceptance as an open question.
+
+**Guard.** Computer-use audit: 0 calls this session. A per-run guard was armed on the `spec-forge` host and never tripped.
+
+---
