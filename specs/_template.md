@@ -84,8 +84,8 @@ Assignment is by **stage property**, not stage prestige.
 | | `auto` | Divergent breadth, high volume, cheap to be wrong, output immediately checkable downstream |
 | | `claude-opus-5` | Adversarial judgment, load-bearing, must hold large context, wrongness is expensive **and invisible** |
 
-> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate —
-> see `_decisions.md` D-2026-10-08-01. Per-stage model assignment inside a loop is free.
+> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate.
+> Per-stage model assignment inside a loop is free.
 
 ---
 

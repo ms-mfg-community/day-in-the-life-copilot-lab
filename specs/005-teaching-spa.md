@@ -1269,8 +1269,8 @@ Assignment is by **stage property**, not stage prestige.
 | 6 — `Vin` | To be assigned by John | Voice and register judgment over prose |
 | 7 — `judge` | To be assigned by John | Adversarial judgment, load-bearing, must hold large context, wrongness is expensive **and invisible** |
 
-> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate —
-> see `_decisions.md` D-2026-10-08-01. Per-stage model assignment inside a loop is free.
+> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate.
+> Per-stage model assignment inside a loop is free.
 
 ---
 

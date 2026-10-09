@@ -1164,8 +1164,8 @@ Assignment is by **stage property**, not stage prestige.
 These are the models the loop **requests**. The model that actually served each stage is recorded in
 the run result and can differ, so a model named here is not evidence of what ran.
 
-> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate —
-> see `_decisions.md` D-2026-10-08-01. Per-stage model assignment inside a loop is free.
+> Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate.
+> Per-stage model assignment inside a loop is free.
 
 ---
 

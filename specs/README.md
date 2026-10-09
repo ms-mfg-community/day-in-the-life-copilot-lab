@@ -55,7 +55,6 @@ A search-engine summary is a **lead, not a source**. The verifier opens the unde
 | File | Purpose |
 |---|---|
 | `_template.md` | The required section set. Copy it to start a spec. |
-| `_decisions.md` | Append-only decision log. Every decision that constrains later work lands here, ISO-8601 dated, with its rationale. |
 | `NNN-slug.md` | A spec. Numbered in creation order; the number never changes. |
 
 ## Naming
