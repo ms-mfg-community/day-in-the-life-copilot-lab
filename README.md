@@ -580,7 +580,11 @@ erDiagram
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
-> enterprise scale and should be read after Lab 17.
+> enterprise scale and should be read after Lab 17. Labs 21 → 26 are the
+> self-paced **enterprise agentic SDLC harness** arc: governance and
+> marketplace lockdown → centralized specification assets → custom stages
+> and gates → executable tasks → telemetry → the Copilot App canvas
+> operator surface.
 
 ---
 
