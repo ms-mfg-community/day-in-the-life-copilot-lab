@@ -456,3 +456,202 @@ value is visible in the run record), or leave that check to a manual rehearsal? 
 in specs 003 and 005, not in this loop's defaults, which are now "never".
 
 ---
+
+## D-2026-10-08-14 — The full-fidelity `spec-forge` dry run escalated, correctly, and exposed a design gap
+
+**What ran.** Run `403beed9-24c9-42c1-8010-06cacb0b6060`, no harness and no substitutions, on a
+throwaway question about the Copilot CLI's custom-agent documentation, `maxRounds` 2. Nine
+subagents, 217.5 AI credits, about 30 minutes. Result status `escalated` after round 2.
+
+| Stage | What happened |
+|---|---|
+| scope | inline, no agent: exactly 3 sub-questions |
+| gather | 3 `research` agents returned 23 claims: 14, 8, and one absence claim ("No published guidance exists on: agent counts") |
+| verify | `Khriss`, 2 parallel batches. **20 `VERIFIED`; 2 `CONTRADICTED`; 1 `NO-SOURCE`; 0 ungraded; 0 ignored** |
+| author | `Vasher` wrote the spec: template-complete, F1–F20 only, the 3 open items only in §4 |
+| review r1 | `judge` returned one **S2**: the storage answer omits documented locations |
+| author r2 | `Vasher` refused: the fix needs facts that are not in the verified ledger → **escalated** |
+
+**Property 1 (verifier opened the sources itself), from the tool trace.** Batch 0 fetched 16
+pages and batch 1 fetched 5. All four pages the 20 verified claims cite were opened by the
+verifier, plus the docs-source commit API for two of them (the dates in the spec read "last
+article-source commit; page publication date not stated"). To refute the absence claim it
+opened the best-practices, comparison and admin pages, `github/copilot-cli`, its changelog,
+and ran `web_search` ×2 and `lexical_code_search` ×2; the result is `NO-SOURCE`, never
+`VERIFIED`, and the note says what the finding does *not* establish (it does not show the
+implementation is unlimited).
+
+**The loop earning its keep.** Both `CONTRADICTED` items were researcher over-claims that read
+as plausible: "each custom agent is defined by a `.agent.md` file" (the same page accepts
+`.md` too) and "the example shows a description-only agent" (the example carries `name` and
+`description`). Neither reached the spec body.
+
+**The review was right.** The S2 was checked against the live page, not taken on trust: the
+CLI reference's "Custom agent locations" table has five rows (user `~/.copilot/agents/`;
+project `.github/agents/` and project `.claude/agents/`, each from the working directory up to
+the Git root; added-root `.github/agents/` via `--add-dir`; plugin `<plugin>/agents/`). The
+spec named two of them.
+
+**The design gap.** Plan §4.2 loops back only 5 → 4 (review → author). A finding of the form
+"your answer is incomplete" needs *new evidence*, and the author may not invent it, so the loop
+can only escalate. That is correct under property 1 (a failure never counts as a pass, and
+nothing unverified reached the body even when a reviewer asked for it) but it will recur in
+Phase 2 whenever a reviewer finds an answer incomplete rather than wrong. **Not built.**
+Proposal for John: when the author returns `blocked` against a review finding, run one targeted
+gather → verify pass using the finding's text as the sub-question, then re-author, counted
+against `maxRounds`. It is a new transition with its own checks and its own mutations.
+
+**Observations, not fixed.** (a) The coverage gap was the researcher's, not the verifier's: a
+verifier grades the claims it is handed and does not go looking for ones that are missing.
+(b) The author narrated its own run into §1 and §5 (the spec says "Use only the supplied
+verified ledger…"), as if §5 described the author's contract rather than downstream
+execution; the reviewer did not flag it. A throwaway question invites that; watch for it in
+the first real spec. (c) This run used the pre-hardening code, so it logged the model
+mismatch as a warning; the final loop code also puts it in the headline.
+
+---
+
+## D-2026-10-08-15 — Resume semantics, measured; supersedes the resumability claim in D-13
+
+Four runs, three of them zero-cost probe workflows that use only `ctx.step`, `ctx.parallel` and
+`ctx.agent` (sources in the session's `files/dryrun/probes/`). They are lookalikes of the
+loops, not the loops, but they exercise the same runtime primitives.
+
+| Question | Run | Measured |
+|---|---|---|
+| Does a dead leg of a `ctx.parallel` fan-out behave like a dead single step? | `335878b9-8998-4dfe-925f-92b099e393e2` | Yes. Leg B's agent did not exist, so it resolved null and the leg threw; leg A completed. Attempt 1 ended `error`; the journal held leg A only. The resume replayed A (identical timestamp `1791507498779`; one agent row, not two) and ran only B. Credits rose 14.26 → 17.69. |
+| Does editing the code between attempts invalidate a journaled step? | `db43b382-078a-4aab-bad4-8e41f4ca90b8` | **No.** `a:v1` kept its key and changed its producer: the resume returned the **old** value. `c` was given a new key `c:v2`: it re-ran. `b` (never journaled) ran the **new** code. A resume runs the current code; a journaled step replays by key alone. |
+| Does a reload strand a run parked in a normal `error`? | `e19db87e-c09b-4183-a41b-e8f9bbd2aaff` | No. After `extensions_reload` the resume completed and replayed the journaled steps (identical timestamps). |
+| Can a run whose extension host was killed be resumed? | `db919fd4-0fd8-4c91-bb4a-cbd98cedee5d` | **No.** `non_resumable`: "interrupted before it settled durably". Its eight journal rows exist and are useless. |
+
+**Supersedes D-13.** D-13 said of the killed `lab-forge` run: "The journal … is intact and the
+run is resumable." The journal was intact; the run was not resumable. Killing the host is a
+terminal stop, not a pause. The 210 credits it had spent were unrecoverable, and the
+`lab-forge` dry run was restarted from scratch. It also corrects the plan I was working to
+(resume that run after the reload), which would have failed.
+
+**Consequences for operating the loops.**
+1. *Fix, reload, resume* works for a run that ended in a normal `error` (a thrown stage, a
+   `model_not_supported` 400). It does not work for a run that was in flight when a reload or a
+   kill took its host.
+2. **A prompt or schema change does not invalidate a journaled step.** The `:vN` suffix on every
+   step key is the only lever. Bump it when a change makes an old result wrong to reuse.
+   `lab-forge` is bumped to `v2` in D-16. `spec-forge` is still `v1`: its prompts changed
+   (the desktop prohibition) after its dry run was journaled, but that run is terminal, so
+   nothing can replay it; bump before resuming any `spec-forge` run across a prompt change.
+3. An emergency stop of a run therefore costs the run. The per-run guard described in D-16
+   exists because of this: it is the cheapest place to stop, not a pause button.
+
+**Not measured.** The agent-level memo row (keyed by prompt and options) was not exercised by
+the zero-agent code-change probe. A re-dispatched step with a changed prompt should hash to a
+new key and dispatch; that follows from the documented behaviour and was not observed.
+
+---
+
+## D-2026-10-08-16 — `lab-forge` handed its gates stale facts, so a correct edit could not pass
+
+**What happened.** The second full-fidelity `lab-forge` dry run (`0494893d-c66e-4e77-b5ba-17a98707ef39`,
+8 subagents, 127 credits, 21.6 minutes) escalated: "gate still failing after 2 round(s)". The
+machine did most of its job:
+
+- **Audit and drift** found all four planted defects (a missing path, a hardcoded version
+  against `docs/_meta/registry.yaml:19`, "nine agents" against three on disk, a "VS Code only"
+  lab that needs a terminal).
+- **The editor** fixed all four, and in round 2 followed the teach gate's own advice: it
+  declared the true duration (14 minutes), declared the real prerequisites, and explained what
+  a custom agent is.
+- **The execution gate** passed both rounds. It executed what could be executed headlessly
+  (paths, versions, counts) and reported every GUI step as S3 "not executed: requires operating
+  VS Code … remains unverified" (7 findings in round 1, 8 in round 2). **Zero `computer-use`
+  calls:** the session-wide count stayed at the first run's 47 and the guard never tripped.
+- **The teach gate** failed both rounds, and the second failure was wrong.
+
+**The defect.** The round-2 teach prompt (event log, 01:16:33Z) still said
+`duration: 10 minutes … prerequisites: none`. Those were the **audit's** values, read before
+the editor ran. The gate then flagged the editor's correction: "The revised fourteen-minute
+declaration is credible, but conflicts with the supplied gate profile." A loop that fails an
+editor for making the declaration true cannot converge, whatever the editor does.
+
+**Root cause, not symptom.** Every consumer of `state.audit` after the first edit, found by
+grep rather than by the one that tripped: the run gate's "Declared surface" line and its list of
+commands "as they stood at audit time"; the teach gate's four declared values; and the round-2
+editor prompt, which re-presented round 1's drift rows as "the repository as it stands … your
+work order". Only the drift stage, which runs straight after the audit, may use it.
+
+**Fix (`lab-forge/loop.mjs`).** The gates are handed nothing the audit recorded; the teach gate
+is told to read the lab's own declarations "AS IT STANDS NOW"; from round 2 the editor gets the
+drift rows labelled a pre-edit checklist, not a work order; step keys go to `v2` (D-15).
+Self-check 58 → **61**, mutations 29 → **34 killed**: one check proves the sentinel values reach
+the drift stage (so it cannot pass vacuously) and reach no gate, and five new mutations
+re-introduce each stale input and the round-2 mislabel.
+
+**Policy that falls out, and its edge.** What a lab *must* declare is now the **spec's** job,
+not the loop's: the loop accepts an editor correcting a declaration and measures the lab
+against what it says now. The edge: an editor could loosen a declaration to satisfy the teach
+gate. The defence is the spec's acceptance criteria and a reviewer who can `git diff`, so
+Phase 2 specs for labs must state the required duration, surface, tier and prerequisites as
+criteria. A lab outside a repository (as the throwaway is) cannot be diffed.
+
+**The guard.** For the reruns I armed a per-run external guard that tails the session event log
+and kills the loop's extension host on the first `computer-use` call
+(`files/dryrun/guard-computer-use.mjs`; its self-test passes and goes red with the kill
+removed). It is not part of the loops and not a substitute for the structural options in D-13.
+
+---
+
+## D-2026-10-08-17 — Third `lab-forge` dry run: READY in one round; every stage of both loops has now run live
+
+**Result.** Run `2e91cb94-7aba-4c4e-994b-ee713bf280b1`, run after the D-16 fix: status `done`,
+headline READY, **one round**, 6 subagents, 78.2 credits, about 15 minutes.
+
+| Stage | Outcome |
+|---|---|
+| audit → drift | 5 rows: the 4 planted defects, plus the lab's own "you have now met every agent" claim |
+| edit (`Vasher`) | applied the drift rows inside the spec; kept the title and four-step structure |
+| gate: run (`Wayne`) | `pass`; 4 × S3 "not executed: requires operating VS Code"; paths, versions and counts verified headlessly |
+| gate: teach (`Hoid`) | `pass`; derived 8–10 minutes against the lab's own declared 10; 2 × S3 |
+| review (`judge`) | `PASS`, no findings, and not a rubber stamp: it re-derived AC1–AC5 from the spec, opened every target, re-enumerated the agents on disk, searched for literal versions, checked the duration arithmetic (and said that is not a wall-clock timing), and listed the attacks that failed; 224 s active |
+
+With the throwaway fixtures, this is the first run in which all six `lab-forge` stages, and
+the `judge` review stage in either loop, completed live and in order.
+
+**The fix is on the wire, not only in the tests.** The event log shows the round-1 and round-2
+teach prompts of run 2 carrying the stale `duration: 10 minutes … prerequisites: none` block
+(01:07:35Z, 01:16:33Z) and run 3's round-1 teach prompt (01:37:22Z) carrying the new text with
+no stale block.
+
+**What this run does not show.** The gate passed in round 1, so the path D-16 was about, an
+editor correcting a declaration in round 2 and the gate accepting it, was not exercised
+end to end. It rests on the prompt check above and the new self-checks.
+
+**Safety.** The session-wide `computer-use` count is still 47, all from the first run (D-13);
+the three later `Wayne` dispatches made none, and the guard never tripped. The repository's
+only change is this log; nothing was pushed.
+
+**Models.** Five stages ran on `gpt-6.1-sol` against a declared `claude-opus-5`; the headline
+now says so ("CAVEAT: 5 stage(s) ran on a different model…"), which is D-12's reporting working
+live. The audit's `auto` resolved to `gpt-6-luna` here and to `claude-sonnet-5.5` earlier.
+
+**Closes D-06.** `Khriss` and `Hoid` are bound and dispatchable since the restart. Across the
+four full-fidelity runs `Khriss` completed 5 dispatches (2 verify batches, 3 drift checks) and
+`Hoid` 4 (teach legs), with no failures; the behaviour probes in D-11 were 6/6 planted claims
+and one planted mislabel (n=1 each: a discrimination check, not a calibration).
+
+**Final state of the machine** (supersedes the counts in D-10): `spec-forge` 77 self-checks and
+37 mutations killed; `lab-forge` 61 and 34. Workflow runs this phase: 16 runs, 61 subagents,
+1,732 AI credits, of which 1,407 were the loop dry runs (the rest, probes).
+
+**Still open, and whose call it is.**
+1. The review → gather route (D-14): built or not. *John.*
+2. Whether the loops' `claude-opus-5` pins should follow the new session default or stay as
+   declared intent (D-12). *John.*
+3. A structural stop for desktop automation (D-13). *John.*
+4. How a VS Code-only lab is to be verified at all: opt-in automation with per-run consent, or
+   a manual rehearsal. It belongs in specs 003 and 005. *John.*
+5. The `.gitignore` allowlist for `spec-forge`, `lab-forge` and the two agents in `~/.copilot`,
+   and the unpushed `e0f9f6e` on local `main` (D-02). *John.*
+6. `dev-qa-judge` keeps the journal-poisoning wrapper shape (D-08), left unchanged by D-03.
+7. Unproven: the cause of the first run's `model_not_supported` 400 (D-07) and of the ignored
+   pins (D-12).
+
+---
