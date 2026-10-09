@@ -1,12 +1,10 @@
 // lib/correlation.mjs — the shared correlation key this lab uses to tie a
 // dispatch/audit comment back to a feature, SDLC stage, task, and run.
 //
-// ghcp-was-here: this is Lab 26's OWN convention (schema "v1"), not yet the
-// ratified EPIC-001 "Provenance section" key that issue #59 references —
-// that section doesn't exist in this repo yet (Labs 23-25 are unimplemented
-// as of this lab). When EPIC-001's Provenance section ships, reconcile this
-// module against it rather than silently diverging. Upgrade path: bump
-// SCHEMA_VERSION and keep parse() accepting both versions during migration.
+// Implements EPIC-001's Provenance contract: one key names the feature,
+// stage, task, and run. SCHEMA_VERSION versions the hidden dispatch marker;
+// if the shared key shape changes, bump it and keep parse() accepting both
+// formats during migration.
 
 export const SCHEMA_VERSION = "v1";
 

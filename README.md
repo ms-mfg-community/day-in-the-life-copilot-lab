@@ -562,23 +562,29 @@ erDiagram
 | [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
-| [Lab 26](labs/lab26.md) | GitHub Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension (`enterprise-sdlc-workbench`), EPIC-001 board/code-map/release-composer canvases, capability-token + dry-run trust boundary |
+| [Lab 21](labs/lab21.md) | The Tech Lead's Plugin & Marketplace Lockdown | Role-based SDLC agents and centrally enforced marketplace controls |
+| [Lab 22](labs/lab22.md) | Centralized Spec Kit Templates & the Org Catalog | Org preset for spec/plan/tasks templates, `bundle.yml`, discovery-vs-install catalog control |
+| [Lab 23](labs/lab23.md) | Custom SDLC Stages, Gates & the Rework Loop | Custom epic and QA-review phases, workflow overlays with approval gates, first-class rework |
+| [Lab 24](labs/lab24.md) | The Notification Funnel & Executable Tasks | Stage-transition notification routing, tasks projected to issues, task-as-prompt format |
+| [Lab 25](labs/lab25.md) | Telemetry, Log Analytics & the Improvement Loop | Copilot OpenTelemetry export, offline file-exporter path, Logs Ingestion API, KQL pack and Workbook |
+| [Lab 26](labs/lab26.md) | Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension, SDLC board, code-aware workbench, dry-run release composer |
 
-**Total: ~7.5 hours** (21 labs — self-paced or presenter-led)
+**Total: ~10.8 hours** (26 labs — self-paced or presenter-led)
 
 > 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
 > standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
 > Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux. Labs 15-20 are the **2026
+> Lab 14 operationalizes them with tmux. Labs 15-20 are the **2026
 > modernization track**: Lab 15 (LSP) and Lab 17 (admin controls) are
 > standalone; Lab 16 → Lab 11 are companions (marketplace governance);
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
-> enterprise scale and should be read after Lab 17. Lab 26 is standalone
-> (GitHub Copilot App canvases) — Labs 21-25 don't exist yet in this repo,
-> so Lab 26 is self-contained and cross-links its EPIC-001 context as
-> GitHub issue links rather than assuming those labs shipped.
+> enterprise scale and should be read after Lab 17. Labs 21 → 26 are the
+> self-paced **enterprise agentic SDLC harness** arc: governance and
+> marketplace lockdown → centralized specification assets → custom stages
+> and gates → executable tasks → telemetry → the Copilot App canvas
+> operator surface.
 
 ---
 
@@ -657,7 +663,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 20 hands-on lab modules + per-track appendices
+├── labs/                          # 26 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
@@ -683,7 +689,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 |----------|---------|-------------|
 | **PRD Generation** | Feature branch created | PM agent generates a Product Requirements Document |
 | **Code Review** | Pull request opened | Code review agent provides automated feedback |
-| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the seven freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
+| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the nine freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing, Spec Kit release, Azure Monitor API versions) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
 
 ---
 
@@ -692,7 +698,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 14 hands-on labs — start here |
+| [Lab Modules](labs/) | 26 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |

@@ -35,7 +35,7 @@ describe('workflows: audit-report template format', () => {
     }
   });
 
-  it('Checks section enumerates all seven audit checks as level-3 headings', () => {
+  it('Checks section enumerates all nine audit checks as level-3 headings', () => {
     const body = readFileSync(TEMPLATE, 'utf8');
     const checksStart = body.indexOf('## Checks');
     const checksEnd = body.indexOf('## Suggestions for Additions');
@@ -50,6 +50,8 @@ describe('workflows: audit-report template format', () => {
       '### 5. Package versions',
       '### 6. Model names & pricing',
       '### 7. Lab pacing',
+      '### 8. Spec Kit release',
+      '### 9. Azure Monitor API versions',
     ];
     for (const heading of expected) {
       expect(checksBlock, `Checks section missing "${heading}"`).toContain(heading);
@@ -63,12 +65,12 @@ describe('workflows: audit-report template format', () => {
     expect(summaryStart).toBeGreaterThan(-1);
     expect(summaryEnd).toBeGreaterThan(summaryStart);
     const block = body.slice(summaryStart, summaryEnd);
-    // Markdown table header + separator + 7 check rows + 1 total row.
+    // Markdown table header + separator + 9 check rows + 1 total row.
     const rows = block.split('\n').filter((l) => l.trim().startsWith('|'));
     expect(
       rows.length,
-      `expected at least 10 table rows (header + sep + 7 + total), got ${rows.length}`,
-    ).toBeGreaterThanOrEqual(10);
+      `expected at least 12 table rows (header + sep + 9 + total), got ${rows.length}`,
+    ).toBeGreaterThanOrEqual(12);
     expect(block).toMatch(/\*\*Total\*\*/);
   });
 

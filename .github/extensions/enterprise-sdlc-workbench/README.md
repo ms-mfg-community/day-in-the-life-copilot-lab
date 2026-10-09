@@ -42,12 +42,8 @@ repo's real GitHub issues/PRs** and the **ContosoUniversity .NET solution**.
 - Dispatch audit comments include the correlation key, selected agent
   preset, preset/bundle version, execution location, and timestamp.
 
-## Known simplifications (`ghcp-was-here`)
+## Known simplification (`ghcp-was-here`)
 
-- `lib/correlation.mjs`'s `feature/stage/task/run` key is **this lab's own
-  v1 convention**, not the EPIC-001 "Provenance section" referenced by
-  issue #59 -- that section doesn't exist yet (Labs 21-25 are
-  unimplemented as of this lab). Reconcile against it once it ships.
 - `lib/dispatch.mjs`'s idempotency marker is a best-effort guard, not a
   lock: two concurrent dispatches for the same correlation key can both
   post a duplicate comment. See the comment above `buildMarker()` for the

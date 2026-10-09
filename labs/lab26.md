@@ -1,13 +1,13 @@
 ---
-title: "GitHub Copilot App Canvases for Applied SDLC Operations"
+title: "Copilot App Canvases for Applied SDLC Operations"
 lab_number: 26
 pace:
-  presenter_minutes: 8
-  self_paced_minutes: 30
+  presenter_minutes: 7
+  self_paced_minutes: 35
 registry: docs/_meta/registry.yaml
 ---
 
-# 26 — GitHub Copilot App Canvases for Applied SDLC Operations
+# 26 — Copilot App Canvases for Applied SDLC Operations
 
 Every earlier lab drove Copilot from a terminal or an editor chat pane.
 This lab drives it from a **canvas** — an interactive side-panel surface the
@@ -17,7 +17,7 @@ extension, open three canvases that visualize this repo's own EPIC-001
 tracking issues and the ContosoUniversity `.sln`, and make a real, checkable
 change to one of them.
 
-> ⏱️ Presenter pace: 8 minutes | Self-paced: 30 minutes
+> ⏱️ Presenter pace: 7 minutes | Self-paced: 35 minutes
 
 > 💡 **Why canvases, not just chat:** a chat reply is read once and
 > discarded. A canvas stays open, re-renders as state changes, and lets a
@@ -26,19 +26,19 @@ change to one of them.
 > human SDLC dashboard is a persistent tab, not a Slack message.
 
 References:
+- [EPIC-001 — Enterprise Agentic SDLC Harness](../docs/epics/EPIC-001-enterprise-agentic-sdlc-harness.md) — the shared architecture and Provenance contract
+- [Lab 23 — Custom SDLC Stages, Gates & the Rework Loop](lab23.md) — stage and gate semantics
+- [Lab 24 — The Notification Funnel & Executable Tasks](lab24.md) — task-as-prompt and issue projection
+- [Lab 25 — Telemetry, Log Analytics & the Improvement Loop](lab25.md) — telemetry and correlation-key propagation
 - [`.github/extensions/enterprise-sdlc-workbench/README.md`](../.github/extensions/enterprise-sdlc-workbench/README.md) — the extension's own trust-boundary and scope doc
 - [`tests/extensions/enterprise-sdlc-workbench.test.ts`](../tests/extensions/enterprise-sdlc-workbench.test.ts) — the no-SDK-required test suite you'll run in §26.7
 - EPIC-001 tracking issues this lab visualizes (real, frozen fixture snapshot — see §26.3): [#47](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/47) (epic), [#53](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/53), [#55](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/55), [#59](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/59) (this lab's own issue), [#66](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/66)
 - [Lab 09 — Copilot Coding Agent & Code Review](lab09.md) — the issue → PR flow this lab's dispatch action feeds into
 - [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md) — applies if you extend the canvas's exec probes
 
-> 📌 **A gap you'll notice:** issue [#59](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/59)
-> lists a dependency on issue #53, and #55 depends on several others — but
-> Labs 21-25 (the rest of EPIC-001) don't exist in this repo yet. This lab
-> is intentionally **self-contained**: it doesn't assume those labs shipped,
-> it defines its own provisional correlation-key convention (§26.5), and it
-> links the EPIC-001 issues above directly rather than to lab files that
-> don't exist.
+**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc. This lab
+is the operator surface for the stages and gates from Lab 23, the executable
+tasks from Lab 24, and the correlation/telemetry path from Lab 25.
 
 ## 26.0 Prerequisites
 
@@ -182,10 +182,11 @@ posts (or, in dry-run, *would* post) a hidden-marker audit comment —
 dispatch with the same key **updates** the existing comment instead of
 duplicating it.
 
-> 📌 This key format is **this lab's own `v1` convention**, not an
-> already-ratified EPIC-001 standard — there is no EPIC-001 "Provenance"
-> section yet. If one ships later, this convention is superseded, not
-> extended.
+> 📌 This is the shared EPIC-001
+> [Provenance](../docs/epics/EPIC-001-enterprise-agentic-sdlc-harness.md#provenance--one-key-durable-approvals)
+> key: one value names the feature, stage, task, and run. Lab 24 carries it
+> on task/stage artifacts, Lab 25 carries it into telemetry, and this lab
+> records it in the dispatch audit comment.
 
 Run `dispatch` against any fixture issue now. Confirm the result is the
 markdown comment text, not a live `gh` call — dry-run is the default and
@@ -300,10 +301,10 @@ asks every lab to address:
 | **Capability tokens** | Per-instance random token required on every mutating action |
 | **Dry-run default** | `dispatch()` defaults to `dryRun: true`; save and publish are separate confirmed actions |
 | **Fixture honesty** | Real issue numbers/titles/states; synthetic PR/check data clearly labeled; visible Fixture/Live badge |
-| **Correlation key** | `feature/stage/task/run`, versioned `v1`, explicitly provisional — not an EPIC-001 standard |
+| **Correlation key** | The EPIC-001 Provenance key follows `feature/stage/task/run` across tasks, telemetry, and dispatch audit comments |
 
 </details>
 
-This is the most recently added lab in the series — there is no Lab 27 yet.
+You have completed the Labs 21–26 enterprise agentic SDLC harness arc.
 Return to the [README](../README.md) for the full lab index, or revisit
-[Lab 01](lab01.md) to start again from a fresh Codespace/devcontainer.
+[Lab 21](lab21.md) to review the arc from its governance starting point.
