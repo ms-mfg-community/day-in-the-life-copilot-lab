@@ -179,3 +179,128 @@ output, per-stage model application, and label uniqueness. They do **not** prove
 the CLI, with no substitutions, before pointing either loop at real curriculum content.**
 
 ---
+
+## D-2026-10-08-07 — The first `spec-forge` dry run escalated; the cause was an API error, not the loop
+
+**What happened.** Run `c2576a29-792a-47a7-988d-f9be04af7d0d` (substituted, `Khriss`→`judge`,
+`maxRounds` 1) reached the review stage and **escalated**: 14 subagents, 774 AI credits, 13
+`completed` and 1 `failed`. The loop did not pass; it failed closed.
+
+**Root cause, read from the session event log (`events.jsonl`).** The review subagent did
+not return a bad verdict or malformed JSON. It was killed by an API error:
+
+| Time (UTC) | Event |
+|---|---|
+| 23:26:31 | turn 15 succeeded on `claude-opus-5` (188,214 input tokens) |
+| 23:26:34 | turn 16 → `400 The requested model is not supported` (`model_not_supported`) |
+| 23:26:36 | `subagent.failed`: `judge`, `explicitModelOverride=claude-opus-5`, 21 tool calls, 328 s |
+
+It is the **only** `subagent.failed` in the session. The agent's row in the run store reads
+`failed`; the other thirteen read `completed`.
+
+**What it was not.** Not a verdict-vocabulary mismatch (the stage never produced a verdict).
+Not a model that had been withdrawn: a probe minutes later (run
+`6364c5c7-e0be-402c-9da5-5a910a7fab37`) dispatched `claude-opus-5` plainly, with the exact
+options that failed (`high`, `long_context`), and `claude-opus-5.5`, and all returned; a
+second (run `37b55a99-16e0-4da5-b68a-47e9a9aca375`) showed `max` effort with `long_context`
+is accepted. The first inference in this session — "the model vanished from the catalog" —
+was wrong, and it was caught only because it was probed rather than assumed.
+
+**Cause: unproven.** The three opus stages peaked at 180.7K (verify), 140.0K (author) and
+188.2K (review) input tokens, and the failure was the call after 188.2K, which is circumstantial
+evidence for a context-size boundary. The SDK documents `long_context` as a *pin* ("when
+supported"), not a mid-run switch, so that theory is unproven and **nothing is built on it**.
+The design below holds whatever the cause was.
+
+**Models stay pinned; inherit was rejected.** `model-defaults` reports an org-managed default
+of `auto` that "replaces the model above at every new session start". A plain subagent in the
+restarted session resolved to `claude-sonnet-5.5`, not the `claude-opus-5` in `settings.json`.
+Switching the adversarial stages to inherit would therefore have silently run them on Sonnet.
+They remain pinned per plan §6, and every result now carries `modelsUsed` and
+`modelMismatches` (an explicit pin that resolved to a different model) so a downgrade is
+visible. Note the `task` tool's model enum in this session lists no `claude-opus-*` at all
+while workflows address it freely: that enum is not a statement of availability.
+
+---
+
+## D-2026-10-08-08 — A failed stage stops the run as a resumable error; nothing is journaled for it
+
+**The defect the dry run exposed.** The step wrapper converted a failed subagent into
+`{"stage":"review","outcome":"unusable"}` and journaled it as the step's result. A failed
+*agent call* is not journaled by the runtime (27 journal rows: 10 gather agent calls and their
+10 steps, scope/verify/author each as an agent call plus a step, and one review step), but the
+wrapper's record was. A resume would have replayed that 125-byte record and re-escalated
+without dispatching anything, discarding ~700 credits of finished work for one transient error.
+
+**The mechanics, proven rather than assumed** (throwaway workflow, run
+`bac647ff-a589-4c1b-8c0b-6d16614151a2`): a step whose producer throws is **not journaled**; the
+run ends in status `error`; resuming it completes as attempt 2 and **replays** the journaled
+step (identical timestamp `1791502849613`) rather than re-running it.
+
+**Change (both loops).** A `null` from `ctx.agent` now throws instead of being interpreted.
+The run ends as a resumable `error`; a resume replays every completed stage and re-dispatches
+only what failed. For a parallel fan-out the surviving legs finish and journal first. The
+error says *why*, using the run record: `failed` (the subagent errored; the event log has
+`subagent.failed`), `completed` but unparseable (a schema miss), or no row at all (an agent
+that does not exist resolves this way, as `Khriss` and `Hoid` did before the restart).
+
+**Narrowed, not removed.** A subagent that returns readable output the loop cannot use — an
+unreadable verdict, a verifier that grades nothing — is still journaled `unusable` and
+escalates. That is a judgment about content, not a transient fault.
+
+**Supersedes** the fail-closed paragraph of D-05 for infrastructure failures: a dead gate leg
+now stops the run resumably instead of escalating.
+
+**Flag for John, not actioned.** `dev-qa-judge/run.mjs` has the same wrapper shape — it
+journals `interpretDev/interpretReview(null)` as the step result — so a transient failure there
+would be replayed on resume too. D-03 reuses that loop unchanged, so it was left alone.
+
+---
+
+## D-2026-10-08-09 — `spec-forge` drops nothing silently
+
+**Evidence from the dry run's own journal.** Two of the ten researchers returned
+`"claims":[],"noPublishedGuidance":true`. The loop dropped both, and its result read
+`56 VERIFIED, 0 carried as open`. "No published guidance exists" is meant to be a first-class
+finding (specs/README.md); structurally it was not. Separately, a log line claimed ungraded
+claims "are treated as unverified" when nothing did so, and sub-questions cut by the cap were
+logged but never reached the author.
+
+**Changes.**
+- **Absence is a claim to refute.** A researcher's "nothing is published" goes to the verifier
+  as `No published guidance exists on: <sub-question>`, with the researcher's reasoning
+  withheld. The verifier is told to try to refute it: `CONTRADICTED` with a URL if guidance
+  exists, `NO-SOURCE` if a genuine search finds none. An absence claim can **never** be
+  `VERIFIED` — enforced in code, not asked for in a prompt.
+- **Grades are joined by id, not by text.** Claims carry ids; `reconcileGraded()` keeps the
+  *original* claim text (a paraphrase cannot change what was graded), ignores a row for an id
+  the verifier was never given (it cannot promote a claim it invented), and records a claim it
+  skipped as `UNVERIFIED` instead of losing it.
+- **Unanswered and unrun sub-questions are carried** to the author as open questions.
+- **Verification runs in bounded parallel batches** (≤ 12 claims per call, claims citing the same
+  page kept together). One verifier grading 56 claims reached ~180K tokens, because every turn
+  re-sends the whole context; that does not scale to a real research question.
+
+**Not changed, deliberately.** The 56 claims had no exact duplicates (56 distinct texts across
+5 distinct URLs), so no de-duplication was added.
+
+---
+
+## D-2026-10-08-10 — Alignment with what already existed
+
+- **Review verdicts use `judge`'s own contract.** `PASS | ACCEPT WITH FINDINGS | BLOCK`
+  (`judge.agent.md` line 393; the vocabulary `dev-qa-judge` already reads). The `READY /
+  NOT READY` pair came from the plan's wording, not from `judge`, and was a token `judge` does
+  not natively emit. The loops' own outcome word stays `READY`.
+- **`spec-forge` scopes inline.** The scope stage ran as `planner`, which is defined by *this
+  repository* (`.github/agents/planner.agent.md`, "for the ContosoUniversity .NET project").
+  A generic loop must not depend on a repo-scoped agent, and a .NET planner is the wrong lens
+  for decomposing a research question. Plan §4.2 allowed "`planner` or inline".
+- **Adversarial stages run at `max` effort.** Plan §6 says `max`; the code said `high` with no
+  recorded reason. Spec authoring also takes `long_context`, as the plan's table says.
+- **Corrections to earlier entries.** D-04's "enforced by `interpretVerdictStage()`" was true
+  of `lab-forge` only; `spec-forge`'s reviewer accepted any normalizable token and now enforces
+  its own vocabulary too. D-04's evidence counts are superseded: `spec-forge` 77 self-checks and
+  35/35 mutations killed; `lab-forge` 56 self-checks and 23/23 mutations killed.
+
+---
