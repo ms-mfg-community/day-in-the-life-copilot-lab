@@ -304,3 +304,155 @@ logged but never reached the author.
   35/35 mutations killed; `lab-forge` 56 self-checks and 23/23 mutations killed.
 
 ---
+
+## D-2026-10-08-11 — `Khriss` and `Hoid` are dispatchable, and they discriminate
+
+**Binding (supersedes D-06's blocker).** After the CLI restart, throwaway run
+`6364c5c7-e0be-402c-9da5-5a910a7fab37` dispatched both as workflow subagents and both
+returned (they inherit, and an inheriting subagent currently resolves to `claude-sonnet-5.5`;
+see D-07). The restart D-06 asked for has happened; its other demand — a full-fidelity dry run
+of each loop — is recorded in D-12.
+
+**Behaviour: `Khriss`.** Throwaway run `7a740181-40c7-473a-9f7e-1d33cc8346f9` handed `Khriss`
+`spec-forge`'s *real* verify prompt, built by `briefFor()`, over six planted claims. The ground
+truth was read from the primary page by hand first
+(`docs.github.com/en/copilot/reference/custom-agents-configuration`: `description` is the only
+Required property, `name` is "Optional", the prompt maximum is 30,000 characters).
+
+| Planted claim | Expected | `Khriss` returned |
+|---|---|---|
+| `description` is the only Required property (true) | `VERIFIED` | `VERIFIED`, quoting the properties table |
+| `name` is Required (false) | `CONTRADICTED` | `CONTRADICTED`: "Display name… Optional" |
+| prompt maximum is 50,000 characters (false) | `CONTRADICTED` | `CONTRADICTED`: "maximum of 30,000 characters" |
+| true claim, cited to a URL that returns 404 | not `VERIFIED` against the dead URL | `UNVERIFIED`: "HTTP 404… not silently replaced with a different URL" |
+| a researcher's "nothing is published" on the per-repository maximum | never `VERIFIED` | `NO-SOURCE`, after a described search of the docs, release notes through 1.0.94, SDK source and issue trackers |
+| true claim, cited to the Copilot docs landing page | not `VERIFIED` against the landing page | `VERIFIED`, recorded against the how-to page he actually opened |
+
+All six pre-registered checks passed. A rubber stamp fails four of them.
+
+**Behaviour: `Hoid`.** The same run gave him `lab-forge`'s real teachability prompt over the
+*unfixed* throwaway lab, which declares "VS Code Copilot only, beginner" and then tells the
+reader to run `copilot --version`. Verdict `NOT TEACHABLE`. His derived profile contradicts the
+declared one ("VS Code Explorer and Copilot Chat, **plus a terminal running a separately
+installed Copilot CLI**"; "Advanced relative to the declared VS Code-only beginner track"). Four
+S1, four S2, one S3, each with a `file:step` location, who it breaks, and the smallest fix. The
+planted surface defect was caught precisely ("even an integrated terminal uses a separate CLI").
+
+**Cost.** 72.7 AI credits for both calls.
+
+**What this evidence is not.** One run each, six claims, one lab — a discrimination check, not
+a calibration. It shows neither agent is a rubber stamp; it does not give an error rate.
+
+**Two things to know.** (1) The last row shows a policy asymmetry: `Khriss` refused to
+substitute a source for a dead URL but followed a live landing page to the correct page. It
+records the page he actually opened, so a spec built on it cites the page that states the
+claim, which is the outcome wanted. If John would rather any citation that does not itself
+state the claim grade `UNVERIFIED`, that is a one-line change to `khriss.agent.md`. (2)
+`Hoid` raised, unprompted, that `@planner` is not how VS Code selects a custom agent (it uses
+the Agent dropdown). That was not a planted defect, and it is **unverified** here: it was not
+opened against the VS Code documentation.
+
+**Correction, added by D-12.** Both agents in that run were pinned to `claude-opus-5` and
+actually ran on `gpt-6.1-sol`. The behavioural result stands; the model it was obtained on is
+not the one stated above.
+
+---
+
+## D-2026-10-08-12 — A workflow's model pin did not take effect for custom agents
+
+**What was observed.** The run store records `requested_model` and `resolved_model` per
+subagent. Every pin in this session was `claude-opus-5`.
+
+| Agent type | Dispatches | Resolved to |
+|---|---|---|
+| `general-purpose` (probes, incl. one at 00:28Z) | 5 | `claude-opus-5` — pin honoured |
+| `judge`, `Vasher` — first dry run, before the restart | 2 | `claude-opus-5` |
+| `Khriss` — probe, lab-forge drift, spec-forge verify ×2 | 4 | **`gpt-6.1-sol`** |
+| `Hoid` — probe, lab-forge teach | 2 | **`gpt-6.1-sol`** |
+| `Vasher` — lab-forge edit, spec-forge author | 2 | **`gpt-6.1-sol`** |
+| `judge` — spec-forge review | 1 | **`gpt-6.1-sol`** |
+
+The event log shows it is real and not a bookkeeping artefact. For `verify:r1:b1`,
+`subagent.started` reports `model: claude-opus-5`, `modelSelectionSource: explicit_override`;
+`subagent.completed` reports `firstDispatchedModel: gpt-6.1-sol` with the same
+`explicitModelOverride: claude-opus-5`; and **all nine of its assistant turns ran on
+`gpt-6.1-sol`**. The platform's own `model` field is therefore not to be trusted; the per-turn
+model and the run store's `resolved_model` are. The SDK documents a `modelOverrideReason`
+("why an explicit task-call model did not become the effective model"); it is absent here.
+
+**What is established, and what is not.** Established: in this environment, today, a
+`model` option on `ctx.agent` was ignored for custom agents and honoured for `general-purpose`.
+Not established: *why*. `settings.json`'s default model is now `gpt-6.1-sol` (rewritten at
+00:08:04Z, with a backup at 23:52:52Z that this session did not create; it read
+`claude-opus-5` when first read), which coincides with what the custom agents ran on, and the
+SDK documents `configured_required` and `complementary_default` selection sources. Testing the
+settings theory means changing John's configuration, so it was not tested and `settings.json`
+was not touched. The pre-restart `judge`/`Vasher` results are consistent with the same theory
+(the default was then `claude-opus-5`) but do not prove it.
+
+**Supersedes** D-07's "Models stay pinned; inherit was rejected" for custom agents, where
+neither a pin nor inherit controlled the outcome, and the model attribution in D-11.
+
+**What changed in the loops.** The pins in `STAGE_MODELS` are re-described as *declared
+intent*, not a control. Every result carries `modelsUsed` and `modelMismatches`, and a
+mismatch adds a `CAVEAT` to the headline so a passing verdict is never presented as having run
+on the declared model when it did not. **Not changed:** the loops do not refuse to continue on
+a mismatch. In this configuration every custom-agent stage mismatches, so refusing would block
+every run. That trade-off is John's to make.
+
+**For John (not taken).** What should the adversarial stages run on, and where is it set?
+(a) restore `settings.json`'s default to `claude-opus-5`; (b) give the five loop agents
+explicit per-agent entries with `model-defaults`, the mechanism `Tress` already uses; or (c)
+accept `gpt-6.1-sol`. A verifier that does not share the author's model family also does not
+share its blind spots, which is an argument for (c), but it is an argument, not a measurement.
+
+---
+
+## D-2026-10-08-13 — The `lab-forge` execution gate drove the operator's live VS Code
+
+**What happened.** In the full-fidelity `lab-forge` dry run (`db919fd4-0fd8-4c91-bb4a-cbd98cedee5d`)
+the execution gate (`Wayne`, `gate:run:r1`) made **45 `computer-use` calls between 00:29:36Z
+and 00:41:49Z** against the `Microsoft.VisualStudioCode` window `1052874`: it opened this
+repository's path, searched, typed `copilot_cli_version_floor`, set a Copilot Chat input to the
+lab's Step 4 prompt ("Plan a feature that lets a teacher sort a course list by title…") and
+then clicked an element that is very likely **Send**. `Vasher` (`edit:r1`) made two read-only
+calls (`list_apps`, `get_window_state`) at 00:26Z. An audit of every event in the session found
+47 `computer-use` calls in total and no others.
+
+**Cause: mine.** The gate prompt said "work through the lab as a learner would and actually
+EXECUTE it"; the throwaway lab declared "VS Code Copilot only"; no prompt forbade GUI
+automation. Operating VS Code is what "executing" that lab means. The agent was following its
+instructions, and the instructions never said not to touch someone's desktop.
+
+**Containment.** Noticed from the gate's elapsed time and confirmed from its tool trace. The
+`lab-forge` host process (PID 33340) was stopped at about 00:42Z; the run ended
+`error: connection closed`; `Wayne` shows `cancelled` at 00:41:57Z and made no call after
+00:41:49Z. The journal (audit, drift, edit and the teach leg) is intact and the run is
+resumable. A cancel workflow was tried first and failed to start (`startup-timeout`) while two
+`max`-effort subagents were loading the machine.
+
+**Impact assessed, not fully known.** No tracked file in the repository changed (`git status`
+shows only this log's own pending edit). The screen was **not** inspected, so these are
+unknown and John should check VS Code: whether the chat shows a sent prompt, whether the
+window's workspace changed, and whether the typed text landed in an editor buffer rather than
+a search box. `.github/logs/prompts.log` gained entries at 00:38:59Z and 00:41:21Z
+(timestamps only, no prompt text).
+
+**Fix, and its limit.** Every stage prompt in both loops now forbids driving a desktop
+application, and the execution gate is told that a GUI-only step is *not attempted*: it is
+reported as an S3 "not executed: requires operating <application>", stays visibly unverified,
+and is not a pass for that step. That is a prompt-level control, and this project has measured
+prompt-level controls as probabilistic (description-triggered skills fire roughly 30% of the
+time). It reduces the risk; it does not remove it. Structural options exist but are John's:
+a `preToolUse` hook that denies `computer-use-*` from subagent sessions, or `tools:` allowlists
+in the agent definitions. The allowlist is untested here: a changed agent definition needs a
+restart to load, and whether the `web` alias covers the fetch tools is unverified, so applying
+it blind could leave `Khriss` unable to open sources.
+
+**Open design question for Phase 2.** Verifying that a lab is "drivable entirely in VS Code
+Copilot" is exactly the thing that needs a VS Code to be driven, or a person. Should
+`lab-forge` offer opt-in desktop automation with explicit per-run consent (an argument whose
+value is visible in the run record), or leave that check to a manual rehearsal? That belongs
+in specs 003 and 005, not in this loop's defaults, which are now "never".
+
+---
