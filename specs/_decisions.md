@@ -1374,3 +1374,79 @@ the extras are dropped and reported), so spec 001 cannot be one run. The three r
 and 004; 005 may run in parallel; `dev-qa-judge` starts after 005 is READY, and `lab-forge` in Phase 3.
 
 ---
+
+## D-2026-10-09-24 — The first two Phase 2 runs failed because this session's host cannot launch custom agents; the loops, the pins and `Khriss` are not at fault
+
+**What happened.** John chose "start both". I launched two `spec-forge` runs: the memory slice of
+spec 001 (`fe403ba5-bc9c-433e-912b-daf6c20a56bf`, to write `specs/001-research-sota/memory.md`) and
+spec 005 (`24d23e48-a5f7-4aef-95c9-37d1738b3556`, to write `specs/005-teaching-spa.md`). Both ended
+as `error`, both are resumable, and no spec file was written. About 63 credits went on the two runs
+and about 21 on the probes below.
+
+| run | what completed | what stopped it |
+|---|---|---|
+| `fe403ba5` memory slice | scoper (12 sub-questions), 11 of 12 researchers | researcher `anthropic-memory-tool`: `400 internal server error` after 13 tool calls and 513,285 tokens |
+| `24d23e48` spec 005 | scoper (11 sub-questions), all 11 researchers | all 10 verify batches (`Khriss`): "never dispatched (no subagent was recorded)" |
+
+**Cause of the verify failure, established by probe.**
+1. *Not the model pins.* A workflow subagent on the default agent, pinned to `claude-opus-5`, ran
+   and returned OK (probe `f45dc56d`; 20.2 credits and 80,842 tokens for one word). Its completion
+   event gives `firstDispatchedModel: claude-sonnet-5.5`, the honest field per D-18: the pin was
+   served by the session's own model, as before. The pin is inert, not rejected.
+2. *Not `Khriss`, and not letter case.* `Khriss` with no model, with `claude-opus-5` and with
+   `gpt-6.1-sol` all returned null, left no run-record row and no `subagent.started` event. A second
+   probe (`597e5597`; 0.99 credits, `gpt-5-mini`) tried ten names. Only the built-in `research`
+   ran. `khriss`, `Khriss`, `hoid`, `Hoid`, `vasher`, `Vasher`, `wayne`, `Wayne` and `judge` all
+   returned null.
+3. *The host says so.* A plain `task` dispatch of `Khriss` from this session returned:
+   `host interaction call failed: Standalone server does not support session effect 'custom_agent_prompt'`.
+4. *A primary source describes the same failure.* `microsoft/PilotSwarm`,
+   `docs/proposals/session-workspaces.md`, line 2310 (its authors checked it against CLI 1.0.83):
+   with the SDK's bundled runtime a discovered custom agent "is listed but fails to launch" with
+   exactly this error. The same agent passed through `customAgents` launches, and "the full CLI
+   binary as the runtime does launch discovered agents".
+
+**What changed in the host (observed, then inferred).** Observed: `session.start` on 2026-10-08
+22:37Z was CLI 1.0.95-0, with git context, on `claude-opus-5`. After the resume at 23:30Z, `Khriss`
+launched 14 times in workflows (23:40Z to 06:38Z; `agentType` `Khriss`). The resume at 2026-10-09
+13:31Z differs: `selectedModel` `claude-sonnet-5.5` under managed Auto, `alreadyInUse: true`, and no
+git or repository context. Since it, 23 custom-agent launches were attempted (10 verify batches, the
+probes, the `task` call) and none launched. Inferred, and the first thing to check on resume: this
+session is now hosted by the desktop app's standalone runtime, not the terminal CLI.
+
+**Consequence.** In this host any workflow stage that names a custom agent fails. That is
+`spec-forge` verify (`Khriss`), author (`Vasher`) and review (`judge`); `lab-forge` drift (`Khriss`),
+edit (`Vasher`), run (`Wayne`), teach (`Hoid`) and review (`judge`); and all of `dev-qa-judge`
+(`Vasher`, `Wayne`, `judge`). Built-in agents are unaffected (`research`, `explore`, and the inline
+scoper), which is why all 23 researchers ran. The root `task` tool cannot launch a custom agent
+either, so `judge` cannot review anything from this host.
+
+**A weakness in my loops this exposed.** `ctx.parallel` turns a thrown dispatch error into null,
+and the loop's message ("most likely never dispatched") named no cause. The first custom-agent
+stage was reached only after every researcher had been paid for. **Proposed, not done:** a
+preflight at the top of each run, one trivial `gpt-5-mini` dispatch of the first custom agent the
+run needs, failing at once with the cause and the fix. It is about 1 credit and would have saved
+about 63. Test first, then a `judge` delta pass; both need a host where `judge` can launch.
+
+**Recovery, which is John's step.** Close this session in the app. In a terminal, run
+`copilot --resume b361cc20-9a6d-4579-8fc5-ec370ef88a88` (CLI 1.0.95 is on PATH). There: probe
+`Khriss` once (about 1 credit) to confirm the inference; resume `24d23e48` (replays the 11
+researchers free and re-dispatches the 10 verify batches, the costly stage); then resume
+`fe403ba5` (re-dispatches one researcher; if the 400 recurs it looks like a context overflow, so
+re-scope that sub-question rather than retry). Nothing journaled needs redoing.
+
+**Open.**
+(a) Make the loops host-independent by inlining an agent's instructions into a built-in agent when
+custom agents cannot launch. The teaching copies would then run in the app too. It changes three
+loops after the judge's READY, and `dev-qa-judge` was to be reused unchanged, so it is not done.
+(b) The spec 001 slice plan is a proposal, and only the memory slice has started: memory; agents,
+skills, prompts and instruction precedence; extensions, plugins and MCP; gh-aw, the coding agent and
+code review; model lineup, including "hydrafusion".
+(c) For the extension labs (specs 003 and 004): discovered custom agents can be listed yet fail to
+launch on a standalone host, and the fix is to pass them explicitly or use the CLI.
+
+**Guard.** No computer-use guard was armed for these runs, because this session's extension-host
+PIDs could not be identified. The audit afterwards still reads 47 calls, all from the earlier
+incident (00:26Z to 00:41Z on 10-09). None came from these runs or the probes.
+
+---
