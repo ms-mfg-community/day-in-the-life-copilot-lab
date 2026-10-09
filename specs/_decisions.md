@@ -926,7 +926,7 @@ and 357 the probes. The `computer-use` guard never tripped, and nothing was push
 **Verdict.** The `judge` agent's delta round (the full report is kept in the session workspace as
 `judge-report-phase1-delta-BLOCK.md`) returned **BLOCK** again, narrower than the first. It found
 no S1 in the code and called the S1-1 injection channel closed. It blocked entry to Phase 2 on
-three things, listed below, and raised five S2 defects (D-1 to D-4, with D-5 an S3 residue). It
+three things, listed below, and raised four S2 defects (D-1 to D-4) and one S3 (D-5). It
 also found four numbers in my own records wrong. I reproduced its five defect groups against the
 code as it stood (`dryrun/judge-delta-repro.mjs`: 16 `REPRODUCED`, 2 `CONTROL OK`) and checked its
 record corrections against the raw log before changing anything. It was right on all four, and D-18,
@@ -990,8 +990,9 @@ recorded the 1–256 range and the three pages, and the loop threw both away.
 (a) A recorded non-zero exit is still a FAIL, with one way out: the gate sets `expectedFailure` and
 quotes the lab's own words in `why`, and the exit must be a real non-zero integer. That becomes an
 S3 finding, so it is seen, and the headline says how many commands exited non-zero "as the lab
-itself documents (the gate's own reading)". It rests on the gate's say-so, which the reviewer then
-re-derives; it is exercised live in L2 below.
+itself documents (the gate's own reading)". It rests on the gate's say-so, and **nothing re-derives
+it**: I wrote that the reviewer does, but the review prompt tells the reviewer not to re-run the
+gate's work (the judge's R3-5, D-22). It is exercised live in L2 below.
 (b) `forbiddenWhy()` reads every command the gate **recorded**, after the fact: `git push`; any `gh`
 command not on a read-only list (`list view status diff checks`, `search`, `--version`,
 `auth status`, `api` with GET); `npm`/`pnpm` global installs and `yarn global`; `copilot plugin
@@ -1064,8 +1065,9 @@ a drift row about the agent count, so the editor (`Vasher`) **blocked and asked*
 could be revised, instead of widening its scope. That is the behaviour the loop was built for.
 Two facts for the record. The drift stage ran `gh issue create --help`, `gh workflow run --help` and
 `copilot plugin install --help`: inspections, not writes, but a detective check that flagged `--help`
-would have stopped a gate that did the same, so `forbiddenWhy` now treats `--help` and `-h` as
-reading (fixed, with a self-check and two mutation entries). And the completion event for the final
+would have stopped a gate that did the same, so I changed `forbiddenWhy` to treat `--help` and `-h`
+as reading, with a self-check and two mutation entries. **That change was not safe as written: it
+hid writes behind several shapes (D-22).** And the completion event for the final
 stage arrived 1.58 s after the loop recorded its result, past the 1.5 s grace, so that stage showed
 `ranModel: null` and was reported as a mismatch from the run store alone, which said `gpt-6.1-sol`:
 true, but evidenced thinly. The failure direction is safe (a spurious CAVEAT, never an assurance); the
@@ -1113,7 +1115,8 @@ both legs failed; escalated at 06:25:46.
   Expected for a fixture built to be unteachable.
 - Models: seven of eight stages on `gpt-6.1-sol` against a declared `claude-opus-5` (CAVEAT in the
   headline); the `explore` audit asked for `auto` and ran on `gpt-6-luna`. `ranModel` was filled
-  for all eight, so the completion-event lag of attempt 1 did not recur (n=1).
+  for all eight, so the completion-event lag of attempt 1 did not recur in that run (it did in
+  `2df007f1`, D-22).
 
 **F-L2-1 (new, not fixed): the exit-code rule cannot tell the gate's own checks from the lab's
 commands.** In round 2 the run gate returned PASS with no S1 or S2 and recorded two commands of
@@ -1153,7 +1156,8 @@ so the run shows the gate did not run them; had it done so the bare repository w
    L2 is `af414cb2` above: the write rule held in both rounds. It also surfaced F-L2-1, a fail-safe
    gap in the exit-code rule, which I have not changed. Neither closes the BLOCK by itself: the
    judge ruled on the code as it stood in its round, and nobody but me has read what changed since.
-3. The delta in this entry has **not** been independently reviewed. The last verdict is BLOCK.
+3. When this entry was written the delta in it had not been independently reviewed and the last
+   verdict was BLOCK. **Round 3 followed: D-22.**
 
 **Still open, and whose call it is.** The review → verifier route (now two escalations in two full
 runs where a reviewer's finding about the ledger had nowhere to go; the four gaps in D-19 stand);
@@ -1177,12 +1181,137 @@ internals in a spec (R2's round-1 S1), and the 1.5 s completion-event grace.
   `8a4aa28d`, **before** the D-4 rewrite of the run gate and the `--help` rule, so its READY path
   (the final `judge` stage and the READY headline) has not run on the final code. A regression run
   on the original READY fixture, `2df007f1`, was started to close that; its result is D-22.
-- Run store before `2df007f1`: 23 runs, about 2,394 credits, 100 subagents (98 completed, one
-  failed on an API error, one cancelled when I killed a host, D-13): `spec-forge` 3 runs, 557
+- Run store before `2df007f1`: 23 runs, about 2,394 credits, 100 subagents. The run store says 98
+  completed, one failed on an API error and one cancelled (the gate subagent whose host I killed,
+  D-13); the event log has 99 completions and the same one failure, so it records the cancelled one
+  as completed (the judge's count). `spec-forge` 3 runs, 557
   credits; `lab-forge` 6 runs, 706 credits; the rest are probes and the `dryrun-harness` run.
 - Nothing pushed. The only GitHub writes are the authorised ones: milestone #1, six labels, and
   epics #73 and #74.
 - The loops, `Khriss` and `Hoid` live in `~/.copilot`, outside this repository, and are untracked
   there.
+
+---
+
+## D-2026-10-08-22 — Judge round 3: READY FOR PHASE 2 once L1 is closed; a final-code READY run; my `--help` exemption hid writes, found and fixed
+
+**Verdict.** The `judge` agent's third round (the full report is kept in the session workspace as
+`judge-report-phase1-r3-READY.md`) returned **READY FOR PHASE 2 once L1 is closed**. No S1. **L1 is
+open and is yours.** L2 and R2 are **met**. D-1, D-2, D-3 and D-5 are closed; D-4 (a) and (c) are
+closed and (b) is partly closed. All four record corrections hold. It re-derived L2 and R2 from the
+event log and the exported results (hashes, windows, the prompt on the wire, the bare repository,
+counts), ran both suites in scratch copies (132/132 and 107/107), wrote 37 fresh mutants against the
+frozen files (24 died; the three that survived are all spec-forge, R3-8) and 22 against my first
+`--help` fix (all died). It also left the test vectors the next round needs, in
+`judge-r3-scratch\` (`attack-h.mjs`, `attack-fix.mjs`, `attack-j.mjs`, `judge-r3-repro.mjs`).
+
+**Its findings, and what I did.**
+
+| id | sev | what | disposition |
+|---|---|---|---|
+| R3-1 | S2 | my `--help`/`-h` exemption still hid writes: `gh api … -H "Accept: …"`, `winget … -h` (a silent install), a single `&`, an apostrophe in a bare word, escaped quotes | **fixed, below** (three passes; the judge confirmed the second and found four problems in it, fixed in the third); residual: an unquoted `--title -h`, two unterminated quotes, `sudo -h host` |
+| R3-2 | S2 | F-L2-1: the gate's own checks (`git diff`, a negative control) exit 1 and turn a PASS into a FAIL | **open**; the fix recommended in D-21 has not been reviewed |
+| R3-3 | S2 | `forbiddenWhy` misses a write by spelling or nesting: `gh.exe`, `git.exe`, `npm.cmd`, a quoted path, `env`/`command`/`time`, `npm -g install`, `pip`, `pipx`, `uv tool`, `go`/`cargo`/`gem install`, `dotnet tool install -g`, `Install-Module`, `Invoke-Expression`/`iex`, `irm … \| iex`, `curl … \| bash`, `{ }` blocks | **open**; 24 of its 59 `attack-h` shapes and all 16 `attack-j` shapes are unflagged |
+| R3-4 | S3 | spec-forge: free text survives inside an otherwise valid §3 row (the `#` cell, markdown link text, URL userinfo) | open |
+| R3-5 | S3 | `expectedFailure` is nobody's to check: the review prompt tells the reviewer not to re-run the gate's work, and D-21 said the reviewer re-derives it | **D-21 corrected**; the design stands, and a READY with a documented failure carries a headline clause |
+| R3-6 | S3 | the final stage's `ranModel` is null in 2 of the 4 live runs since the fix (`fe412800`, `2df007f1`) | open; fails safe |
+| R3-7 | S3 | spec-forge: `~\.copilot\agents\<id>.md` ≡ `~\.copilot\agents<id>.md` | open |
+| R3-8 | S3 | three of 17 fresh spec-forge mutants survive the self-check | open |
+
+**D-21 corrections it made, all applied in place:** four S2 and one S3, not "five S2"; the reviewer
+does not re-derive `expectedFailure`; the event log has 99 completions and 1 failure (the run
+store's "cancelled" is the gate whose host I killed); the completion-event lag did recur; the
+`--help` change was overstated. It confirmed everything else D-21 says about its reports. It could
+not check what I withheld: the run store's journal and prose reports, every credit figure, the
+`403beed9` ledger, R2's round-1 draft, and `validate-run.mjs` (it reads the store).
+
+**The `--help` exemption: what was wrong, and three fixes.** I read my newest code while waiting for
+the judge and found the first hole before it reported it. The exemption tested
+`words.includes("--help")` on a segment split on spaces, ignoring quotes, so
+`gh issue create --title "Add --help output"` and `--body "run it with -h first"` returned `null`
+(not flagged), a real write exempted by a word in a title. The test I had written for exactly this,
+`--title "see --help"`, passed **for the wrong reason**: the closing quote stuck to the token, so a
+test of "inside quotes" has to put the flag in the middle. *First fix*, quoted spans blanked:
+self-check 89, mutants 108/108. The judge then showed the exemption had introduced four more holes:
+`-H` (lower-casing turned gh's header flag into `-h`), `winget -h`, a single `&`, and an apostrophe
+in a bare word swallowing the separators after it. *Second fix*, its two vetted hunks plus two
+additions of mine: an apostrophe after a letter or digit is literal; any `&` separates; case is
+kept; winget's `-h` is not help while its `--help` still is; `sudo` skips its options. Test-first
+again (89 ok and one FAIL, then 90 ok). The mutation run then had one survivor that was not a gap
+in the tests: "a leading call operator hides a command" had become an equivalent mutant, because `&`
+now splits and the `.replace(/^&\s*/, "")` it targeted can never fire. I deleted the dead line.
+
+I then asked the judge for a minimal delta on the second fix. **It confirmed the fix** (no
+regression from `2>&1`, `&>`, `&&`, quoted URLs, the call operator, `cmd /c "a & b"`, here-strings
+or `don't`) **and found four problems, all in what I had added.** An unquoted URL's `&`
+(`gh api …?a=1&b=2 -X POST`) split the command and dropped the POST from the checked segment.
+`sudo winget install -h` and `sudo -u bob git push` passed: the winget rule keyed on `sudo`, and
+sudo's options were skipped but not their values. `winget install -?`, winget's real help flag, was
+flagged. And a quote glued to a short option (`rg -e'git push; gh pr create' labs`) was a false
+positive that would have stopped a run. It also accepted the escaped-quote shapes as a residual and
+gave a way to close them anyway. *Third fix*, its hunks as it wrote them: a single `&` separates only
+with whitespace beside it (or doubled), so `2>&1` and a URL's query stay whole; `sudo` is stripped
+first, with its value-taking options; winget's help is `-?`; an apostrophe after a short option
+opens a quote; and a segment containing an escaped quote (`\"` or `` `" ``) gets no help exemption,
+which is fail-safe and shell-agnostic. `"C:\x\"` merely loses it, and a test pins that a push after
+such a path is still seen, so nobody later "fixes" this with a backslash-aware regex. RED first (16
+expectations: ten failing, six controls), then GREEN. **Final: self-check 91, mutation 119 of 119**,
+none survived, vacuous or broken: six new mutants, the dead one deleted, the rest re-pointed. On the
+judge's vectors: N1a to N1g are all not reproduced; `attack-h` leaves 24 of 59 real writes
+unflagged (35 before) and flags 0 non-writes; `attack-fix` has 3 misses, exactly its accepted
+residuals; `attack-r4` has 44 vectors and 2 wrong. **The third fix's hunks are the judge's own,
+applied as written and then tested and mutated by me; the judge has not seen the finished tests
+and mutants.** **Residuals I am leaving:** an unterminated quote (cannot parse, so cannot run), an
+unquoted `--title -h` (the first-words ceiling, marked `ghcp-was-here`), `sudo -h host` (contrived),
+and `winget.exe -h`, which belongs to R3-3. Lesson kept: a safety check's exemption must be as
+narrow as the false positive it removes, and a test that cannot fail for the right reason is not
+a test.
+
+**Regression run `2df007f1`: `lab-forge` reaches READY.** Same arguments as the earlier READY run
+`8a4aa28d`, on the pristine fixture, with `loop.mjs` `4345129E8900D68A` (before all three `--help`
+fixes). READY in one round, 6 subagents, 80 credits, `openFindings` empty, 7 S3 in `allFindings`
+(five "not executed: requires operating VS Code", two beginner nits from `Hoid`). Five drift items,
+all fixed by the editor inside the spec. Audits over 06:36:00–06:54:30Z: 4 shell commands by
+workflow subagents (Khriss 3, Vasher 1), 0 flagged; `Wayne` ran none; `computer-use` calls still
+47; the guard never fired; the real repository, the spec and the sandbox are untouched.
+- **What READY means here.** The editor removed the lab's only terminal command (AC4: VS Code
+  only), so the run gate had nothing to run: `commandsRun` is empty, it opened the referenced paths
+  with read-only tools, and it listed the five GUI steps as unverified. The headline says so
+  ("recorded no command it ran and reported 5 step(s) not executed, which are UNVERIFIED"). READY
+  is "edited to the spec, judged teachable, survived adversarial review", **not** "executed". It is
+  the concrete form of the open question on how VS Code-only labs get verified (specs 003 and 005).
+- The completion-event lag recurred: `review:r1`, the final stage, has `ranModel: null` and
+  appears in `modelMismatches` on the run store's word. Two of the four live runs since the fix,
+  each on a run's final stage. It fails safe. An injectable grace is now worth building.
+
+**What I did not do, and the recommended next step.** One batched **hardening round** for the
+detective check and the exit-code rule, then a minimal judge delta, against an objective bar the
+judge set: every vector in `attack-h.mjs`, `attack-fix.mjs` and `attack-j.mjs` flagged, except the
+documented residuals (an unterminated quote, an unquoted flag-value `-h`, dynamic `iex`). Scope:
+R3-3 (strip the directory and `.exe`/`.cmd`/`.bat` from the executable, quote-aware;
+`env`/`command`/`time`; `npm`'s `-g` anywhere before the verb; `pip`, `pipx`, `uv tool`,
+`go`/`cargo`/`gem install`, `dotnet tool install -g`, `Install-Module`; unwrap literal
+`Invoke-Expression`/`iex`; pipe-to-shell; split on `{ } ( ) $(` but not on `{owner}` templates),
+R3-2 (separate the gate's own checks from the lab's commands in the schema), R3-5, and the
+spec-forge S3s. **Two of those shapes are in the real labs Phase 2 will run:**
+`dotnet tool install -g` (`labs/lab15.md:113`) and `pip install` (`labs/lab12.md:471,477`). My
+estimate is one to two hours plus one live run. **I stopped here because the judge's own conclusion
+is that the tokenizer will stay heuristic and the real control is L1**, and the best form of the
+hardening depends on the L1 route you choose: with deny rules in `pre-tool.sh` these vectors are the
+hook's tests; with a sandbox the detective check matters less. **If L1 does not land, the judge
+rates R3-1 to R3-3 blocking**, since they would be the only after-the-fact control.
+
+**State for the record.**
+- SHA-256, first 16 characters. `spec-forge` unchanged since D-21: `loop.mjs` `AA798E2A684741EA`,
+  `run.mjs` `F76698D7583DF242`, `self-check.mjs` `5F9390D9852C697C`, `mutation-check.mjs`
+  `A538758AE595D68A`. `lab-forge`: `loop.mjs` `F0938BE1A8033443` (was `4345129E8900D68A` at the
+  third review), `run.mjs` `E1A6F7AA8D8FC455`, `self-check.mjs` `B1119D1482BEC08D`,
+  `mutation-check.mjs` `F0ACBF13B8F1A716`. The agents are unchanged.
+- Suites: `spec-forge` self-check 132, mutation 132/132; `lab-forge` self-check 91, mutation 119/119.
+  The extension hosts were reloaded after the last change (host started after the last write).
+- Run store: 24 runs, about 2,474 credits, 106 subagents (`spec-forge` 3 runs, 557 credits;
+  `lab-forge` 7 runs, 786 credits). The judge's rounds are `task` agents and are not in that store.
+- Nothing pushed. The only GitHub writes remain the authorised ones: milestone #1, six labels, and
+  epics #73 and #74. The branch was six commits ahead of `origin/main` before this entry.
 
 ---
