@@ -1315,3 +1315,62 @@ rates R3-1 to R3-3 blocking**, since they would be the only after-the-fact contr
   epics #73 and #74. The branch was six commits ahead of `origin/main` before this entry.
 
 ---
+
+## D-2026-10-09-23 — The test sandbox is a throwaway repo made at Phase 3; Codespaces is not our harness; L1 relabelled; what the hook really covers
+
+**Decided by John, 2026-10-09, before any content work.** We had drifted into how to run and test
+things while the labs and the presentation were untouched. That is Phase 3, and nothing below is
+built now.
+
+1. **Test sandbox.** A fresh, throwaway repo at `C:\Users\johnhain\Documents\delete_after_test\`,
+   kept in sync with the branch the changes are on (`feature/curriculum-v2`) and destroyed after use.
+   One automation deletes it after a month if it still exists, or at least reminds John.
+   *Shape, unless John says otherwise at creation:* local only, a work clone plus a bare `origin`
+   inside that folder. No GitHub object exists to forget, and a `gh` write step fails closed (no
+   GitHub repo to resolve) unless it names one explicitly. Sync is a **fetch** from the real repo
+   into the bare repo and a pull in the work clone, because the hook denies every `git push`, a local
+   target included. The deletion task is registered in the same step that creates the repo, and
+   deletes only a folder carrying a marker file that step wrote. **Not created before Phase 3.**
+2. **Codespaces is not our test harness.** Driving one needs the `codespace` token scope (the active
+   token has `gist`, `repo` and `user`; `gh codespace list` returned 403) and a `lab-forge` change,
+   because its write scan would flag `gh codespace ssh`. It stays an **attendee-offer** question.
+   GitHub's billing page (opened 2026-10-09) says Codespaces is not available for repositories owned
+   by managed user (EMU) accounts, and that a Free personal account includes 120 compute hours a
+   month (a 2-core machine uses 2 per hour). The README's "Start here" says neither. Before the deck
+   recommends it: put the caveat in the setup lab (spec 003), and run the probe, which is
+   `files/codespace-probe/smoke.sh` in the session folder, run by John in a Codespace on a throwaway
+   fork. Neither blocks Phase 2.
+3. **Automation stays read-only.** It never gets `COPILOT_ALLOW_REMOTE_WRITE`, and the run gate
+   never executes a write step. A person rehearses those on the throwaway repo: about eight labs
+   (01, 08, 09, 11, 12, 15, 18, 19). The gate says which steps.
+
+**Corrections to D-21 and to my report.**
+(a) L1 gates `lab-forge` on real labs, which is Phase 3. I called it a Phase 2 blocker. Phase 2 is
+`spec-forge`, which researches and writes `specs/*.md` and executes no lab command.
+(b) I listed non-GET `gh api` among the deny rules to add. The hook already denies it. With the flag
+unset, `pre-tool.sh` denies: `git push`; `gh pr|issue` create, comment, edit, close, reopen, merge,
+review, ready, lock, unlock, delete, pin, unpin, transfer, develop; `gh release` create, edit, delete,
+upload; `gh repo|label|gist` create, edit, delete, fork, archive, rename, clone, sync; and `gh api`
+with `-X` or `--method` POST, PUT, PATCH or DELETE, or with `-f`, `-F`, `--field`, `--raw-field` or
+`--input`. It does not cover `gh workflow run`, `gh codespace`, `gh extension install`,
+`gh secret|variable set`, `npm -g`, `copilot plugin install`, `computer-use-*`, or the
+`--method=POST` spelling. A patch for those, with computer use behind its own launch flag so a GUI
+run stays opt-in, is John's to apply. I edited none of it.
+(c) This session was relaunched without the flag: `COPILOT_ALLOW_REMOTE_WRITE` is unset in its tool
+environment, and the hook denied a command containing `gh repo fork` on 2026-10-09. The gate is
+active now, and `gh issue create` from this session would be denied.
+
+**What the planning session produced.** Session `16564cc3`: a plan, a handoff and the unverified
+recon index, with no GitHub objects (four turns, no commit, PR or issue refs). The plan creates two
+issues before any spec, the epics, and this session made them: #73 and #74, open in milestone #1.
+Everything else is generated from each spec's child-issue list after Phase 2 (D5), so a guess never
+becomes scope. Posting those issues needs the flag (a relaunch) or John filing them; the kickoff
+authorised only the milestone, the labels and the two epics.
+
+**Facts that shape the Phase 2 kickoff.** `spec-forge` decomposes a question into at most 12
+sub-questions and verifies claims in batches of 12 (`MAX_QUESTIONS`, `MAX_CLAIMS_PER_VERIFY_CALL`;
+the extras are dropped and reported), so spec 001 cannot be one run. The three runs so far were all
+2-question runs: 150 to 218 credits, 7 to 9 subagents, 26 to 35 agent-minutes. 001 blocks 002, 003
+and 004; 005 may run in parallel; `dev-qa-judge` starts after 005 is READY, and `lab-forge` in Phase 3.
+
+---
