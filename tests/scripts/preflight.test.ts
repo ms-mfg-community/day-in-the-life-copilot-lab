@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, writeFileSync, chmodSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync, chmodSync } from 'node:fs';
+import { IS_WINDOWS, isCommittedExecutable } from '../helpers/platform';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -86,9 +87,9 @@ function parseJson(stdout: string): {
 describe('scripts/preflight — files exist and are executable', () => {
   it('preflight.sh exists and is executable', () => {
     expect(existsSync(SH)).toBe(true);
-    const mode = statSync(SH).mode;
-    // executable by owner
-    expect(mode & 0o100).toBeTruthy();
+    // Git's recorded mode, not the local filesystem's: NTFS has no exec bit,
+    // so a checkout can never satisfy this even when the commit is correct.
+    expect(isCommittedExecutable(SH)).toBe(true);
   });
 
   it('preflight.ps1 exists', () => {
@@ -96,7 +97,17 @@ describe('scripts/preflight — files exist and are executable', () => {
   });
 });
 
-describe('scripts/preflight.sh — CLI surface', () => {
+/**
+ * The behaviour suite stubs tool availability by replacing PATH with a scratch
+ * directory of fake executables. That is POSIX-only: Git Bash prepends its own
+ * /usr/bin and /mingw64/bin ahead of any PATH we set, so the real `git` wins
+ * over the stub and the classification under test never runs. Rather than
+ * assert something weaker on Windows, these run where the mechanism works and
+ * are covered for real by the Linux CI job in .github/workflows/tests.yml.
+ */
+const describeBehaviour = IS_WINDOWS ? describe.skip : describe;
+
+describeBehaviour('scripts/preflight.sh — CLI surface', () => {
   it('--help prints usage with fail-vs-warn vocabulary', () => {
     const r = runPreflight(['--help']);
     expect(r.status).toBe(0);
@@ -118,7 +129,7 @@ describe('scripts/preflight.sh — CLI surface', () => {
   });
 });
 
-describe('scripts/preflight.sh — green devcontainer path', () => {
+describeBehaviour('scripts/preflight.sh — green devcontainer path', () => {
   it('all tools present + native Linux => 0 fails, exit 0', () => {
     const stub = makeStubPath(REQUIRED_TOOLS);
     const r = runPreflight(['--json'], {
@@ -144,7 +155,7 @@ describe('scripts/preflight.sh — green devcontainer path', () => {
   });
 });
 
-describe('scripts/preflight.sh — FAIL classification', () => {
+describeBehaviour('scripts/preflight.sh — FAIL classification', () => {
   it('missing copilot CLI is a FAIL with remediation mentioning install', () => {
     const stub = makeStubPath(REQUIRED_TOOLS.filter((t) => t !== 'copilot'));
     const r = runPreflight(['--json'], {
@@ -206,7 +217,7 @@ describe('scripts/preflight.sh — FAIL classification', () => {
   });
 });
 
-describe('scripts/preflight.sh — WARN classification (does not fail)', () => {
+describeBehaviour('scripts/preflight.sh — WARN classification (does not fail)', () => {
   it('WSL2 with repo on /mnt/c/ is a WARN (degraded, not fail)', () => {
     const stub = makeStubPath(REQUIRED_TOOLS);
     const r = runPreflight(['--json'], {
@@ -260,7 +271,7 @@ describe('scripts/preflight.sh — WARN classification (does not fail)', () => {
   });
 });
 
-describe('scripts/preflight.sh — remediation is actionable', () => {
+describeBehaviour('scripts/preflight.sh — remediation is actionable', () => {
   it('every FAIL check carries a non-empty remediation string', () => {
     const stub = makeStubPath([]); // everything missing
     const r = runPreflight(['--json', '--lab14'], {

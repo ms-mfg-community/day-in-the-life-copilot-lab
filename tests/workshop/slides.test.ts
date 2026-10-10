@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative, isAbsolute } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 
 /**
@@ -54,7 +54,11 @@ function loadRegistryLabIds(): Set<string> {
 describe('workshop slides — build pipeline', () => {
   beforeAll(() => {
     // Build from a clean dist so we prove the target is reproducible.
-    execSync('rm -rf workshop/dist && make slides', {
+    // `rm -rf … && make slides` needed a POSIX shell and GNU make, which the
+    // suite does not otherwise require; the `slides` target is only an echo
+    // plus this exact node invocation.
+    rmSync(join(REPO_ROOT, 'workshop', 'dist'), { recursive: true, force: true });
+    execFileSync(process.execPath, ['scripts/workshop/build-slides.mjs'], {
       cwd: REPO_ROOT,
       stdio: 'pipe',
     });
