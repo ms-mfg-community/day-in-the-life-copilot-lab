@@ -131,7 +131,7 @@ no graph, just markdown the agent wrote to itself last time.
 - planner.agent.md — for feature planning
 
 ### Recommended Prompts
-- /handoff_prompt — for session continuity
+- /handoff — for session continuity
 - /consolidate-lessons — to reshape the wiki (always start with --dry-run)
 - /tdd — for test-driven development
 - /orchestrate — for multi-agent workflows

@@ -14,12 +14,12 @@ Copilot remembers things across sessions — without a knowledge-graph
 server, without embeddings, without anything that isn't already plain
 markdown in git.**
 
-Andrej Karpathy observed that LLMs compound knowledge dramatically better
-when they maintain **their own notes** instead of re-deriving context on
-every session via retrieval. The model already knows how to read and
-write markdown; give it a wiki and memory becomes a file you can `cat`,
-diff, revert, and commit — not a database you have to host. This lab
-teaches that pattern in three layers:
+An agent compounds knowledge far better when it maintains **its own
+notes** than when it re-derives the same context from scratch on every
+session. The model already knows how to read and write markdown; give it
+a wiki and memory becomes a file you can `cat`, diff, revert, and commit
+— not a database you have to host. This lab teaches that pattern in
+three layers:
 
 | Layer | Name | Surface | Lifetime |
 |-------|------|---------|----------|
@@ -36,22 +36,29 @@ at once.
 
 > 💰 **Cost Budget** — ~15k in / ~5k out across the three layers.
 > Markdown round-trips are cheap; no knowledge-graph server chews tokens
-> on every turn. Run Layer 1 and Layer 2 on `claude-haiku-4.5` or
-> `gpt-5-mini` (mechanical edits); stay on `auto` or upshift to
-> `claude-opus-4.7` only for the §10.4 consolidation pass. `/clear`
-> between §10.3 and §10.4. Full guidance:
+> on every turn. Run Layer 1 and Layer 2 on a `models.cheap` entry
+> (mechanical edits); stay on `auto` or upshift to `models.premium` only
+> for the §10.4 consolidation pass. `/clear` between §10.3 and §10.4.
+> Full guidance:
 > [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
 >
-> **Tier picker for this lab:**
+> **Tier picker for this lab.** The tiers below are the ones defined in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — look the
+> concrete model ids up there rather than copying one from this page, and
+> run `/model` to see what your own account can serve today.
 >
-> | Tier | Model | When to use it here | Rough cost vs. Opus 4.7 |
-> |------|-------|--------------------|-------------------------|
-> | Cheap | `claude-haiku-4.5` / `gpt-5-mini` | §10.1–10.3 schema + log appends, file reads | ≈ 1/15× |
-> | Standard | `claude-sonnet-4.6` / `gpt-5.4` | Mid-complexity edits, schema drafting | ≈ 1/5× |
-> | Premium (prior gen) | `claude-opus-4.6` | `task`-tool sub-agent dispatches per repo policy — pin here, not 4.7 | ≈ 0.7× |
-> | Premium (current) | `claude-opus-4.7` | §10.4 interactive consolidation pass only | 1.0× (baseline) |
+> | Registry tier | When to use it here |
+> |---------------|---------------------|
+> | `models.cheap` | §10.1–10.3 schema + log appends, file reads |
+> | `models.standard` | Mid-complexity edits, schema drafting |
+> | `models.premium` | §10.4 interactive consolidation pass only |
 >
-> Opus 4.7 is roughly 30–40 % more expensive per token than 4.6 and noticeably better at multi-document reconciliation; Haiku 4.5 is the new low-tier default and ~15× cheaper than 4.7 for the routine append/read loops in §10.1–10.3. Sub-agents launched via the `task` tool stay pinned to `claude-opus-4.6` (see repo `copilot-instructions.md`); the upshift to 4.7 applies only to your interactive pane during §10.4.
+> What matters is the ordering, not a price ratio: the append/read loops
+> in §10.1–10.3 are mechanical and belong at the bottom of the table,
+> while the multi-document reconciliation in §10.4 is the one step that
+> earns the top. The registry is the only place this repo names a model
+> id, so when the lineup moves you fix it once, there, and every lab
+> follows.
 
 References:
 - [Repository indexing](https://docs.github.com/en/copilot/concepts/context/repository-indexing)
@@ -96,8 +103,14 @@ References:
 
 Use this layer for the **work-in-flight**: the plan you are executing right
 now, the todos you have not finished, the half-formed scratchpad. None of
-it is meant to outlive the task. You've seen this layer in every earlier
-lab — we just name it explicitly here so the promotion story is clear.
+it is meant to outlive the task. Layer 1's surfaces are mostly new here —
+earlier labs used them implicitly; this section is where we name them.
+
+The **session SQL store** is a small SQLite database Copilot opens for
+each session. It ships with a `todos` table (plus `todo_deps` for
+prerequisites), the agent reads and writes it through the `sql` tool, and
+it is discarded when the session ends — which is precisely what makes it
+Layer 1 rather than Layer 2.
 
 🖥️ **Try it — todo tracking via the session SQL store:**
 
@@ -225,13 +238,21 @@ one, then ask:
 
 ```
 What have we learned about verifying .NET changes in this repo? Check
-.copilot/lessons/ before answering.
+.copilot/lessons/, including log.md, before answering.
 ```
 
-The agent reads `index.md`, opens `example-lesson.md`, and answers from
-the wiki — even though you never told *this* session anything. No
-knowledge-graph server, no embeddings; just markdown the agent wrote to
-itself last time.
+The agent reads `index.md`, opens `example-lesson.md` and `log.md`, and
+answers from the wiki — even though you never told *this* session
+anything. No knowledge-graph server, no embeddings; just markdown on
+disk.
+
+Read the answer carefully, because only half of it is yours. `index.md`
+and `example-lesson.md` **shipped with this repo** — the seed wiki
+already carries a build-verification lesson, so an answer citing only
+those two files proves the agent can read a file, nothing more. The
+`log.md` entry is the one *you* had the agent write in §10.2a. The agent
+should cite both, and it is that `log.md` entry surviving `/exit` that
+actually demonstrates the layer.
 
 ### 10.2c Project vs. global lessons
 
@@ -299,10 +320,15 @@ Get-Content AGENTS.md | Select-Object -First 60
 Get-Content .github/instructions/lessons.instructions.md | Select-Object -First 60
 ```
 
-You should see scoped instruction files (e.g. `dotnet.instructions.md`,
-`testing.instructions.md`, `lessons.instructions.md`) plus the project's
-`AGENTS.md`. Copilot pulls all three into every session in this repo
-without you asking.
+You should see four scoped instruction files — `dotnet.instructions.md`,
+`lessons.instructions.md`, `security.instructions.md`, and
+`testing.instructions.md`. Each one declares an `applyTo` glob in its
+front-matter: `security.instructions.md` uses `**/*`, so it attaches to
+every file in the repo, while the other three attach only to the paths
+they name. Alongside them, the project's `AGENTS.md` and
+`.github/copilot-instructions.md` load repo-wide. That is six schema
+sources Copilot pulls into the session without you asking for any of
+them.
 
 ### 10.3a Extend the schema
 
@@ -310,12 +336,24 @@ Schema changes are binding on every future session. Keep them tight:
 
 ```
 Append to .github/instructions/testing.instructions.md:
-"Every new repository class must have a corresponding xUnit fixture in
-dotnet/ContosoUniversity.Tests/Fixtures/."
+"Every new repository class must have a corresponding xUnit test class in
+dotnet/ContosoUniversity.Tests/Infrastructure/."
 ```
 
-Now open a fresh session and ask the agent to scaffold a repository — it
-will follow the rule because Layer 3 is loaded automatically.
+Now open a fresh session and ask the agent to scaffold a new **repository
+class** — a DDD data-access class, not a git repository:
+
+```
+Scaffold a DepartmentRepository class for the ContosoUniversity data layer.
+```
+
+**What to watch for:** the agent should also create a matching xUnit test
+class under `dotnet/ContosoUniversity.Tests/Infrastructure/` **without
+being asked for one**. That unrequested test class is the observable —
+it is Layer 3 firing, because the rule you just appended loads
+automatically into every new session. If you only get the repository
+class, the rule did not load: re-check that the append actually landed in
+[`.github/instructions/testing.instructions.md`](../.github/instructions/testing.instructions.md).
 
 ### 10.3b Agent personalities — the stewardship story
 
@@ -468,8 +506,11 @@ personal setup.
 Three layers, one direction of promotion, zero servers to operate.
 Your checklist for the next real task:
 
-1. **Open the session (L1):** `/checkpoint create "<task>"`, write a short
-   plan.md, insert todos into the SQL store.
+1. **Open the session (L1):** `/checkpoint create "<task>"` — the repo
+   ships this as
+   [`.github/prompts/checkpoint.prompt.md`](../.github/prompts/checkpoint.prompt.md)
+   and it snapshots the session's Layer 1 state — then write a short
+   plan.md and insert todos into the SQL store.
 2. **Consult the wiki (L2):** ask the agent to check
    `.copilot/lessons/index.md` and `~/.copilot/lessons/index.md` before
    starting.
@@ -481,10 +522,12 @@ Your checklist for the next real task:
    the live run when the diff is clean.
 
 🖥️ **End-of-lab handoff drill:** in the Copilot prompt (not your
-shell), type the slash command `/handoff_prompt` with work description
-"Completed Lab 10 — three-layer agent memory" and stop reason "Lab
-complete". The output is itself a Layer 1 artefact — it dies with the
-next session unless you graduate durable findings into Layer 2 or 3.
+shell), type the slash command `/handoff` — the repo ships it as
+[`.github/prompts/handoff.prompt.md`](../.github/prompts/handoff.prompt.md).
+Give work description "Completed Lab 10 — three-layer agent memory" and
+stop reason "Lab complete"; leave the blocker prompt empty. The output is
+itself a Layer 1 artefact — it dies with the next session unless you
+graduate durable findings into Layer 2 or 3.
 
 <details>
 <summary>Key Takeaways</summary>
@@ -577,9 +620,38 @@ Remove-Item (Join-Path $lessons "<topic-file-you-added>.md") -ErrorAction Silent
 Remove-Item $lessons -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
-The project-scoped `.copilot/lessons/` directory is committed to the
-repo — leave it alone unless you also revert the corresponding edits
-via `git restore`.
+This lab also edits two **tracked** files inside the repo, and the
+generic sweep below only looks for untracked leftovers. Revert them
+before moving on, or Lab 11 and everything after it inherit a testing
+rule you invented in §10.3a:
+
+**WSL/Bash:**
+```bash
+# Drop the §10.3a schema rule — it is binding on every future session:
+git restore .github/instructions/testing.instructions.md
+
+# Drop the §10.2a log entry and any §10.4b consolidation result,
+# unless you want to keep them:
+git restore .copilot/lessons/
+
+git status --short .github/instructions/ .copilot/lessons/
+```
+
+**PowerShell:**
+```powershell
+# Drop the §10.3a schema rule — it is binding on every future session:
+git restore .github/instructions/testing.instructions.md
+
+# Drop the §10.2a log entry and any §10.4b consolidation result,
+# unless you want to keep them:
+git restore .copilot/lessons/
+
+git status --short .github/instructions/ .copilot/lessons/
+```
+
+Both paths should report nothing. The project-scoped
+`.copilot/lessons/` directory is committed to the repo, so leaving a
+lesson in place is a deliberate choice — just make it deliberately.
 
 <!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
 > 🧹 **Cleanup — leave the machine the way you found it.**

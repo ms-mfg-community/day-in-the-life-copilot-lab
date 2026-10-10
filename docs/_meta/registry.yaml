@@ -121,17 +121,29 @@ prepared_core:
   gh_aw_sha256: "b8fd100d1d56a77b842ad28375ff361215a5aa1277db6b9a05d70054cde7260e"
 
 models:
+  # Curated model tiers. Labs MUST reference the tier names
+  # (`models.cheap` / `models.standard` / `models.premium`) rather than
+  # hardcoding an id — see tests/lab-structure/lab10-contract.test.ts,
+  # which fails any lab that names a model this block does not list.
+  #
+  # Re-verified 2026-10-10 against the installed Copilot CLI (1.0.96-2).
+  # Dropped `claude-sonnet-4.6`, `claude-opus-4.7` and `gpt-5.2`: the CLI
+  # no longer serves them, so a lab that pinned one was sending learners
+  # to a model they cannot select. `gpt-5.4` takes the standard-tier GPT
+  # slot and is the id the CLI's own `--help` uses in its `--model`
+  # example. These are CURATED tiers, not the full catalog — an
+  # enterprise default-availability policy (see
+  # model_default_availability_policy below) can make more models
+  # selectable than are listed here.
   default: auto
   cheap:
     - claude-haiku-4.5
     - gpt-5-mini
     - gpt-5.4-mini
   standard:
-    - claude-sonnet-4.6
     - claude-sonnet-5
-    - gpt-5.2
+    - gpt-5.4
   premium:
-    - claude-opus-4.7
     - claude-opus-5
     - gpt-5.3-codex
     - grok-4.6

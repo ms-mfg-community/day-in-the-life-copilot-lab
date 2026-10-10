@@ -83,7 +83,7 @@ The .NET project models a university system with these entities:
 
 ## Token discipline
 
-- Default to `auto`. Reach for `claude-haiku-4.5` / `gpt-5-mini` for routine tool-heavy loops; reserve `claude-opus-4.7` / `gpt-5.3-codex` for hard reasoning. Pin `task`-tool sub-agent dispatches to `claude-opus-4.6` (per `copilot-instructions.md`).
+- Default to `auto`. Reach for a `models.cheap` entry for routine tool-heavy loops; reserve `models.premium` for hard reasoning and for `task`-tool sub-agent dispatches where quality matters more than speed. Tier membership lives in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) — read the ids there rather than hardcoding one here.
 - Batch related tool calls — reads, edits, and shell commands — into a single turn whenever the calls are independent.
 - Keep context lean: prefer `view_range` over full-file reads, archive completed `plan.md` phases, and run `/clear` (or `scripts/orchestrator/clear-context.sh`) between worker-pane phases.
 - Run `/cost-check` once per phase to estimate the session footprint and surface the top compaction opportunities.
