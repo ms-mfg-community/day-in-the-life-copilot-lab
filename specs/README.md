@@ -5,9 +5,27 @@ A spec is the thing that stands between *an idea about what a lab should say* an
 
 ## The rule
 
-> **A lab may be edited directly. Any claim it makes about the outside world must be
-> either (a) checkable for free against this repository, or (b) carried by a `VERIFIED`
-> row in `specs/001-research-sota/`. A claim that is neither gets researched — or gets cut.**
+There are **two** kinds of spec here, and conflating them is what stalled this effort once
+already.
+
+| | Research spec | Lab spec |
+|---|---|---|
+| Lives at | `001-research-sota/<topic>.md` | `labs/<lab-file-stem>.md` |
+| Answers | "what is actually true about the outside world?" | "what must this lab become, and how do we observe it?" |
+| Written by | a `spec-forge` run | a person, by hand, from `labs/_lab-template.md` |
+| Costs | thousands of credits | minutes |
+| Required? | **only when a lab depends on a claim nothing free can settle** | **always, before `lab-forge` touches the lab** |
+
+> **A lab spec is mandatory.** `lab-forge` refuses to start without a `specPath`
+> (`loop.mjs:650` — *"lab-forge applies a spec, it does not invent changes"*), and its
+> editing, execution, teachability and judge stages each re-derive what "done" means from
+> that file. Editing a lab without one does not skip ceremony; it skips the loop, and puts
+> the work back into an unmanaged session.
+
+> **A research spec is conditional.** Commission one only when a lab asserts something
+> about current product behaviour that none of the free checks below can settle *and* the
+> lab genuinely depends on it. If the claim is incidental, cut the sentence — that is free,
+> and usually better teaching.
 
 The free checks, in order, before any research is commissioned:
 
@@ -18,18 +36,14 @@ The free checks, in order, before any research is commissioned:
 4. Every command names a tool that exists, with flags that exist.
 5. Declared counts — agents, skills, prompts, labs — match reality.
 
-A spec is written when a lab asserts something about current product behaviour that none
-of those can settle **and** that the lab genuinely depends on. If the claim is incidental,
-cut the sentence: that is free, and usually better teaching.
-
 ### Why this replaced an absolute gate
 
-The original rule here was *"No lab is edited and no SPA code is written without a merged
-spec that covers it."* It was aimed at a real risk — teaching 2026 practice from 2025
-memory — but it priced a lab edit at a full research run plus a hand-written spec, so in
-practice twelve commits produced zero lab edits and the risk was still there. A gate that
-nothing passes protects nothing. The rule above keeps the verification requirement and
-drops the toll.
+The original rule was *"No lab is edited and no SPA code is written without a merged spec
+that covers it."* It was aimed at a real risk — teaching 2026 practice from 2025 memory —
+but it meant *research* spec, so it priced every lab edit at thousands of credits. Twelve
+commits produced zero lab edits. A gate that nothing passes protects nothing. Separating
+the cheap mandatory contract from the expensive conditional research keeps the
+verification and drops the toll.
 
 ## What a spec is
 
@@ -73,8 +87,11 @@ A search-engine summary is a **lead, not a source**. The verifier opens the unde
 
 | File | Purpose |
 |---|---|
-| `_template.md` | The required section set. Copy it to start a spec. |
-| `NNN-slug.md` | A spec. Numbered in creation order; the number never changes. |
+| `_template.md` | The **research**-spec section set. Copy it to start a research spec. |
+| `labs/_lab-template.md` | The **lab**-spec section set. Copy it to start a lab spec. |
+| `NNN-slug.md` | A research spec. Numbered in creation order; the number never changes. |
+| `labs/<lab>.md` | A lab spec. Named for the lab file it governs, not numbered. |
+| `labs/lab10.md` | The worked example. Read this before writing your first lab spec. |
 
 ### Withdrawn
 
