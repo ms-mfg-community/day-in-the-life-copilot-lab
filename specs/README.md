@@ -5,12 +5,31 @@ A spec is the thing that stands between *an idea about what a lab should say* an
 
 ## The rule
 
-> **No lab is edited and no SPA code is written without a merged spec that covers it.**
+> **A lab may be edited directly. Any claim it makes about the outside world must be
+> either (a) checkable for free against this repository, or (b) carried by a `VERIFIED`
+> row in `specs/001-research-sota/`. A claim that is neither gets researched — or gets cut.**
 
-This is not ceremony. The single biggest risk to this curriculum is teaching 2026 practice
-from 2025 memory — agents, skills, prompt files, instruction precedence, CLI extensions,
-plugins, MCP, gh-aw, memory and the model lineup have all moved. A spec is where a claim
-has to survive a verifier before it can reach a learner.
+The free checks, in order, before any research is commissioned:
+
+1. `npm test` — structure, currency, registry consumption, pacing.
+2. Every path the lab references resolves on disk.
+3. Every version matches `docs/_meta/registry.yaml`, and the lab links to the registry
+   rather than hardcoding the value.
+4. Every command names a tool that exists, with flags that exist.
+5. Declared counts — agents, skills, prompts, labs — match reality.
+
+A spec is written when a lab asserts something about current product behaviour that none
+of those can settle **and** that the lab genuinely depends on. If the claim is incidental,
+cut the sentence: that is free, and usually better teaching.
+
+### Why this replaced an absolute gate
+
+The original rule here was *"No lab is edited and no SPA code is written without a merged
+spec that covers it."* It was aimed at a real risk — teaching 2026 practice from 2025
+memory — but it priced a lab edit at a full research run plus a hand-written spec, so in
+practice twelve commits produced zero lab edits and the risk was still there. A gate that
+nothing passes protects nothing. The rule above keeps the verification requirement and
+drops the toll.
 
 ## What a spec is
 
@@ -56,6 +75,16 @@ A search-engine summary is a **lead, not a source**. The verifier opens the unde
 |---|---|
 | `_template.md` | The required section set. Copy it to start a spec. |
 | `NNN-slug.md` | A spec. Numbered in creation order; the number never changes. |
+
+### Withdrawn
+
+| Spec | Why |
+|---|---|
+| `002-curriculum-architecture` | The retire-and-merge map is a set of hypotheses about overlapping labs. No published source can settle them; you find out by reading the two labs. Tracked as parked work, not research. |
+| `003-lab-refresh-standard` | The standard is whatever the first refreshed lab turns out to need, lifted afterwards. Most of what it would specify is already enforced by `npm test`. |
+| `004-memory-lab` | A spec for a single lab whose research (`001-research-sota/memory.md`) already exists and can be cited directly. Writing it is writing the lab twice. |
+
+Numbers stay frozen: these are withdrawn in place and are never reused.
 
 ## Naming
 
