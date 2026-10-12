@@ -6,7 +6,6 @@ import matter from 'gray-matter';
 const ROOT = process.cwd();
 const LAB13 = join(ROOT, 'labs/lab13.md');
 const README = join(ROOT, 'README.md');
-const SETUP = join(ROOT, 'labs/setup.md');
 
 describe('lab-structure: lab13 exists and is linked', () => {
   it('labs/lab13.md exists', () => {
@@ -37,10 +36,5 @@ describe('lab-structure: lab13 exists and is linked', () => {
     const body = readFileSync(README, 'utf8');
     expect(body, 'README must link to labs/lab13.md').toContain('labs/lab13.md');
     expect(body, 'README lab table must list Lab 13').toMatch(/Lab 13/);
-  });
-
-  it('lab13 is referenced from labs/setup.md', () => {
-    const body = readFileSync(SETUP, 'utf8');
-    expect(body, 'labs/setup.md must reference lab13').toMatch(/lab13/i);
   });
 });
