@@ -98,8 +98,8 @@ It stays on disk where you saved it until you delete it.
 
 **Commands to verify:**
 ```bash
-# Verify MCP config
-cat .copilot/mcp-config.json | jq .
+# Verify MCP config is present (read it; no JSON tool required)
+cat .copilot/mcp-config.json
 
 # Verify the wiki ships and is parseable
 ls .copilot/lessons/

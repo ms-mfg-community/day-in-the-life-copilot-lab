@@ -199,31 +199,26 @@ the file you wrote.
 ```
 
 That file is real on disk. Your machine keeps a folder for every session
-you have ever run, so a bare glob over all of them would show some other
-session's plan. These commands pick the newest `plan.md` whose first line
-is the heading you just asked for and print its path, which should match
-the one the agent gave you. Run the version for the environment where
-`copilot` runs: WSL and Windows have separate home folders, so the other
-one cannot see the file.
+you have ever run, and other sessions (or an earlier run of this lab) may
+hold a `plan.md` with the same heading, so do not search for it: open the
+exact path the agent just reported. Replace `<path>` below with that path,
+using the shell for the environment where `copilot` runs: WSL and Windows
+have separate home folders, so the other one cannot see the file.
 
 **WSL/Bash:**
 ```bash
-plan=""
-for f in ~/.copilot/session-state/*/plan.md; do
-  [ -f "$f" ] || continue                                              # the glob matched nothing
-  [ "$(head -n 1 "$f" | tr -d '\r')" = "# Lab 10 plan" ] || continue   # some other session's plan
-  if [ -z "$plan" ] || [ "$f" -nt "$plan" ]; then plan="$f"; fi        # keep the newest match
-done
-if [ -n "$plan" ]; then echo "$plan"; head -n 20 "$plan"; else echo 'No plan.md starting with "# Lab 10 plan" found - send the prompt above, in the same environment you run copilot in.'; fi
+head -n 20 "<path>"
 ```
 
 **PowerShell:**
 ```powershell
-$plan = Get-ChildItem "$HOME/.copilot/session-state" -Filter plan.md -Recurse -Depth 1 -File -ErrorAction SilentlyContinue |
-  Where-Object { (Get-Content $_.FullName -TotalCount 1) -eq "# Lab 10 plan" } |
-  Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if ($plan) { $plan.FullName; Get-Content $plan.FullName -TotalCount 20 } else { 'No plan.md starting with "# Lab 10 plan" found - send the prompt above, in the same environment you run copilot in.' }
+Get-Content "<path>" -TotalCount 20
 ```
+
+If the agent gave a `~/...` path, use it as written in Bash; in PowerShell,
+swap the leading `~` for `$HOME`. Its first line should be `# Lab 10 plan`.
+If the command says the file does not exist, you are in the wrong
+environment or the agent wrote somewhere else; ask it for the path again.
 
 > 🧭 **"How long does Layer 1 last?" is three questions, not one.** Keep
 > them apart:
