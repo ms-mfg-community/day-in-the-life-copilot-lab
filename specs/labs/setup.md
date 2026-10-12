@@ -97,7 +97,7 @@ one UNVERIFIED — not "could not run", UNVERIFIED — and the edit stage must n
 - `scripts/preflight.sh` and `pwsh scripts/preflight.ps1` — read-only in intent, but they probe the host toolchain; read them, do not run them.
 
 **May** be executed, because they are read-only and local: `npm test`, the three vitest
-invocations in §3, `make -n <target>` (dry run), `copilot login --help`,
+invocations in §3, `make -n <target>` (dry run), `copilot login --help`, `gh aw version`,
 `git ls-remote --heads origin <branch>`, and plain file reads.
 
 > There is no sandbox. `lab-forge` runs in the live working tree (`loop.mjs:889`); this
