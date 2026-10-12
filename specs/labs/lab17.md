@@ -50,7 +50,7 @@ field name it asserts matches the source it cites.
 
 | # | Claim as the lab states it | Disposition | Evidence / command / row |
 |---|---|---|---|
-| C1 | §17.2 + §17.5: default-on policy "**enforced org-wide by 2026-09-01**"; §17.2 heading "(Confirmed, Sept 2026)" | `free-check` — **UNSOURCED** | The cited changelog, opened 2026-10-12: *"For the next 28 days, this policy is configurable but has no effect… **On August 26, the policy takes effect**."* There is **no 2026-09-01 date** anywhere in it, and no second "org-wide enforcement" milestone. The only published date is 2026-08-26. **This error has propagated into `docs/_meta/registry.yaml:155`**, which asserts the same date citing the same changelog. |
+| C1 | §17.2 + §17.5: default-on policy "**enforced org-wide by 2026-09-01**"; §17.2 heading "(Confirmed, Sept 2026)" | `free-check` — **UNSOURCED** | The cited changelog, opened 2026-10-12: *"For the next 28 days, this policy is configurable but has no effect… **On August 26, the policy takes effect**."* There is **no 2026-09-01 date** anywhere in it, and no second "org-wide enforcement" milestone. The only published date is 2026-08-26. The same error had propagated into `docs/_meta/registry.yaml`, **corrected separately in commit `d0a36c1`**; `labs/lab14.md:45` and `labs/lab20.md:50` still carry it and are out of scope here (§5). |
 | C2 | §17.2 rollout "began 2026-08-26" | `free-check` — **CORRECT** | Same changelog: *"On August 26, the policy takes effect."* |
 | C3 | §17.2 + §17.4 + §17.5: **four** exception categories — open-weight, non-data-retention, **pre-GA**, **FedRAMP-restricted** | `free-check` — **two sourced, one is scope, one is invented** | Changelog, verbatim: *"**Open-weight models (e.g., DeepSeek, Kimi K2.7) and models not covered by GitHub's data retention agreement (e.g., Fable 5)** are excluded from default enablement regardless of your policy."* That is **two** categories. Pre-GA is not an exception but the policy's *scope* (it governs "generally available" models). **FedRAMP appears nowhere in the changelog** — it is unsourced. §17.4 then asks the learner to "name the four exception categories", teaching the invented count. |
 | C4 | §17.2: "open-weight models (e.g. DeepSeek, **Kimi**)" | `free-check` — imprecise | Changelog names **Kimi K2.7**, and gives **Fable 5** as the data-retention example, which the lab omits. |
@@ -70,7 +70,8 @@ field name it asserts matches the source it cites.
 - Do not change pacing (`presenter_minutes: 6`, `self_paced_minutes: 25`) or the registry's `lab17` rows. If a gate reports the 25 is wrong, that finding is **recorded, not fixed**.
 - Do not renumber sections. `17.0`–`17.5` stay, except as AC6 allows for the empty `17.0`.
 - Do not change the two 🖥️ discussion prompts or their 💡 expected answers, beyond the factual corrections C1/C3 force.
-- **Do not fix `docs/_meta/registry.yaml:155`** (C1), even though it carries the same unsourced date. The registry is referenced by other labs and other tests; correcting it is its own change with its own test. **Record it.**
+- **Do not edit `docs/_meta/registry.yaml`** (C1). Its copy of the unsourced date was already corrected in commit `d0a36c1`; the registry is shared by other labs and tests, and this pass has no business touching it.
+- **Do not edit `labs/lab14.md` or `labs/lab20.md`**, which still carry the same unsourced `2026-09-01` date. They have no spec and no contract test yet; correcting them here would be an unspecced edit to two labs outside this pass. **Record them.**
 - Do not verify, rewrite or expand §17.1's AI Controls nav list (C13). It needs an authenticated enterprise view that §7 forbids, and guessing is worse than leaving a sourced-looking list alone.
 - Do not add the Copilot API usage streaming material (C14).
 - Do not add commands to this lab. It is deliberately a discussion lab and the only write-free one besides `lab16`.
@@ -98,7 +99,7 @@ than executing them:
 - Visiting or authenticating to any enterprise/org settings page, the **AI Controls** nav, or any audit log — including to settle C13. There are no credentials for this, and a stage that tried would be driving a real enterprise console;
 - any `gh api` call against an enterprise, organization or audit-log endpoint;
 - every GitHub-side write;
-- editing `docs/_meta/registry.yaml`, notwithstanding the propagated date error in C1.
+- editing `docs/_meta/registry.yaml`, `labs/lab14.md` or `labs/lab20.md` (§5).
 
 **May** be executed, because they are read-only and local: `npm test`, the vitest
 invocations in §3, HTTP `GET` of the four reference URLs and the agents reference, and
