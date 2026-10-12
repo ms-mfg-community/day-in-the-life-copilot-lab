@@ -127,7 +127,7 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 |-----------|------|-------|-----|
 | `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
 | `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 6 | Lab 04 |
-| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 19 | Lab 04 |
+| `.github/prompts/` | Reusable command templates (`.prompt.md`) — run from IDE chat, not the CLI (see §1.2) | 19 | Lab 04 |
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
@@ -233,7 +233,7 @@ copilot --agent planner `
 | **Instructions** | `.github/copilot-instructions.md` | Always-on repo-wide rules |
 | **Path Instructions** | `.github/instructions/*.instructions.md` | Rules for specific file types |
 | **AGENTS.md** | `AGENTS.md` (repo root) | Non-obvious project context (keep minimal) |
-| **Prompts** | `.github/prompts/*.prompt.md` | Reusable prompt templates |
+| **Prompts** | `.github/prompts/*.prompt.md` | Reusable prompt templates, invoked from IDE chat |
 | **Hooks** | `.github/hooks/default.json` | Lifecycle guardrails |
 | **MCP** | `.copilot/mcp-config.json` | External tool integrations |
 
