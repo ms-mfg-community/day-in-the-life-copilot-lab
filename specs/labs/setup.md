@@ -78,11 +78,12 @@ not a rewrite; no path is added or removed.
 |---|---|---|
 | D1 | README ~41 and ~65 | "Node 18+" / "(v18+)" for the Copilot CLI install. Docs say Node.js 22 or later (C1). Both occurrences, plus the preflight-FAIL table row for `node not found`. |
 | D2 | README ~702 | Troubleshooting says "Copilot CLI not authenticated → Run `gh auth login`". The README's own Verify section says the opposite. Should be `copilot login`. |
-| D3 | `labs/setup.md` 17–35 | Lab-catalogue blurb: "Labs 01–10 cover the core agentic surface … Labs 15–20 are the 2026 modernization track". Stale (the repo has more labs than 20), duplicates README *Lab Modules*, and is the only content in the stub that can drift. Delete it. |
+| D3 | `labs/setup.md` 17–35 | Lab-catalogue blurb: "Labs 01–10 cover the core agentic surface … Labs 15–20 are the 2026 modernization track". Duplicates README *Lab Modules*, conflicts with the documented decision that setup.md is a grouped narrative not a manifest (`docs/archive/phase-A-findings.md:136`), and is the only content in the stub that can drift. Delete it. |
 | D4 | `labs/setup.md` 1–15 | Redirect stub has no intro sentence saying what the page is for, and the "Quick reference" table sits inside a blockquote. Mechanical tidy only; keep both links and the table. |
 | D5 | README ~278, ~285, ~332, ~339 | `git checkout feature/modernize` — branch exists (C8). No change; recorded so a reviewer does not "fix" it. |
 | D6 | README ~189 | Typos: "organizaiton", "Vitual Maching", "certification" for certificate. Mechanical. |
 | D7 | README ~13 | "Setup takes 15–30 minutes" vs. Option A "5–10 min" — consistent ranges, not a defect. No change. |
+| D8 | `tests/meta/enumeration-parity.test.ts`, `tests/lab-structure/lab12/13/14-exists-and-linked.test.ts` | Stale setup.md enumeration assertions retired per AC4 and `docs/archive/phase-A-findings.md:136`. |
 
 ## 7. Out of scope for `lab-forge`
 
