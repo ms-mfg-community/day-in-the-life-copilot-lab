@@ -15,6 +15,31 @@ story closes it, the same way a sprint works.
 Read `specs/labs/lab10.md` and `tests/lab-structure/lab10-contract.test.ts` before writing
 your first pair. They are the worked example, and they are deliberately small.
 
+## Pending contract tests
+
+A contract test is written **RED, before** its lab is edited — that is what makes it a
+contract rather than a description of what someone already did. But `npm test` is one
+global `vitest run`, so a wave of RED tests sitting in the default run would fail AC1
+("the repo's own gate passes") for *every* lab at once, including labs whose own work is
+finished. A run gate that is red for someone else's reasons is not a gate, and it invites
+the editing stage to wander into other labs to "fix" them.
+
+So a contract test lives in `tests/lab-structure/pending/` until its lab's pass begins.
+That directory is excluded in `vitest.config.ts`.
+
+The first step of a lab's pass — before `lab-forge` is called — is to un-park it:
+
+```sh
+git mv tests/lab-structure/pending/<lab>-contract.test.ts tests/lab-structure/
+npx vitest run tests/lab-structure/<lab>-contract   # MUST be red. If it is green, the
+                                                    # test is describing the lab, not
+                                                    # constraining it. Fix the test.
+```
+
+The rename is deliberate: it shows up in the worktree's diff, so "this lab's contract was
+activated" is an auditable event rather than a silent state change. A lab is closed when
+its test is out of `pending/` **and** green.
+
 ## The dev story
 
 > **As the curriculum owner, I want `labs/<lab>.md` to be current and teachable, so that a
