@@ -71,8 +71,9 @@ QA closes the dev story. The dev story does not close itself.
 ## Stopping rules
 
 - **One lab at a time.** Report credits and the verdict after each; wait for the go.
-- **A `lab-forge` run carries `limits.maxAiCredits`.** A limit hit is resumable by raising
-  it; an unbounded run is not recoverable money.
+- **A `lab-forge` run carries no `limits.maxAiCredits`, and `maxRounds` is 2.** A
+  ceiling-killed run is not recoverable: run `701f2e9f` hit a 2,500 cap and then vanished
+  (`workflow_run_not_found`, empty runs list), so there was nothing to resume.
 - **New ideas go to the plan's parked list.** They never reorder or enlarge the lab in hand.
 - **If a stage fails twice for the same reason, stop and report.** Do not re-run hoping.
 

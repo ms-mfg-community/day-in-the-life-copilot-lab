@@ -79,6 +79,7 @@ new section is added and no layer is renamed; this is a currency pass, not a rew
 | D4 | `docs/_meta/registry.yaml` `models:` | The registry itself is stale: `claude-sonnet-4.6`, `claude-opus-4.7`, `gpt-5.2`. Editing only the lab moves the staleness rather than removing it, and AC5 cannot pass against a stale registry. **Fix the registry in the same change.** |
 | D5 | `AGENTS.md` line 86 | Also names `claude-opus-4.7` / `claude-haiku-4.5`. Same root cause; fix with D4 so the repo is internally consistent. |
 | D6 | lines 63–89 | §10.0 is `@include docs/_partials/currency.md`, a partial included by **11 labs**. An inline edit here is wrong and will be re-synced away. Any §10.0 change belongs in the partial and is a separate, wider change. |
+| D7 | `labs/lab10.md:907` | A learner-facing file contains `rm -rf ~/.copilot/lessons`. It is opt-in, guarded by a `.created-by-lab10` marker, and skips a pre-existing wiki — but `~/.copilot/lessons` does **not** exist on the maintainer's workstation, so the guard protects a stranger and not the maintainer. Recorded as a defect, not fixed: a destructive command in a learner file is a design choice for a later pass. |
 
 ## 7. Out of scope for `lab-forge`
 
