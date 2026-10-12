@@ -255,10 +255,10 @@ labs:
     pace_workshop_minutes: 13
     pace_self_minutes: 20
   lab10:
-    title: "Context, Memory & Learning"
+    title: "Agent Memory: Personalities, Lessons, and Consolidation"
     pace_presenter_minutes: 5
     pace_workshop_minutes: 7
-    pace_self_minutes: 20
+    pace_self_minutes: 75
   lab11:
     title: "Building & Distributing a Copilot Plugin (Enterprise Marketplace Pattern)"
     pace_presenter_minutes: 6

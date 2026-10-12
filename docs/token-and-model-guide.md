@@ -255,7 +255,7 @@ doing. Run it once per phase as a habit.
 ## Cross-references
 
 - [Lab 07 — Multi-Agent Orchestration](../labs/lab07.md) — Cost Budget sidebar shows orchestrator footprint.
-- [Lab 10 — Context, Memory & Learning](../labs/lab10.md) — Cost Budget sidebar shows the three-layer memory cost trade-offs.
+- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](../labs/lab10.md) — Cost Budget sidebar shows the three-layer memory cost trade-offs.
 - [Lab 13 — A2A / ACP Concepts](../labs/lab13.md) — Cost Budget sidebar shows two-agent loop footprint.
 - [Lab 14 — Orchestrator + tmux Pattern](../labs/lab14.md) — Cost Budget sidebar shows multi-phase orchestrator footprint and is the canonical home for `/clear` discipline.
 - `strategic-compact` skill — when and how to compact mid-phase.
