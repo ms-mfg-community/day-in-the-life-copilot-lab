@@ -215,8 +215,9 @@ head -n 20 "<path>"
 Get-Content "<path>" -TotalCount 20
 ```
 
-If the agent gave a `~/...` path, use it as written in Bash; in PowerShell,
-swap the leading `~` for `$HOME`. Its first line should be `# Lab 10 plan`.
+If the agent gave a `~/...` path, use it as written in PowerShell; in Bash,
+swap the leading `~` for `$HOME`, because Bash does not expand `~` inside
+double quotes. Its first line should be `# Lab 10 plan`.
 If the command says the file does not exist, you are in the wrong
 environment or the agent wrote somewhere else; ask it for the path again.
 
