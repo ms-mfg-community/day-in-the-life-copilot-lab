@@ -1,0 +1,15 @@
+// id: cost-double-count
+// kind: diagnostic
+// tables: CopilotSpans_CL
+// columns: TimeGenerated, SpanName, ParentSpanId, NanoAiu
+// mirror: lib/queries.mjs costDoubleCount
+//
+// The trap, made visible: root-only AIU next to the naive sum of every span.
+// Overcount > 1 means a dashboard that sums all spans is overstating spend by that factor.
+let changeAt = datetime(2026-09-15);
+CopilotSpans_CL
+| summarize
+    RootOnlyAiu = sumif(NanoAiu, SpanName == "invoke_agent" and isempty(ParentSpanId)) / 1e9,
+    AllSpansAiu = sum(NanoAiu) / 1e9
+    by Window = iff(TimeGenerated < changeAt, "baseline", "after")
+| extend Overcount = round(AllSpansAiu / RootOnlyAiu, 2)

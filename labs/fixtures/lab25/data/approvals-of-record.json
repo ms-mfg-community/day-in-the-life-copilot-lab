@@ -1,0 +1,444 @@
+[
+  {
+    "correlation_key": "001-enrollment-cap/epic/-/3f9a2c1e",
+    "gate": "review-epic",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "a397aa0c65691dd289fbb6667ed8e1455b9a2fbe",
+    "source": "comment",
+    "at": "2026-09-01T14:03:23.807Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/feature-spec/-/3f9a2c1e",
+    "gate": "review-spec",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "216ea579d8517a3d9fe9a2770d80fe8085373718",
+    "source": "pr-review",
+    "at": "2026-09-01T18:45:09.588Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/plan/-/3f9a2c1e",
+    "gate": "review-plan",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "19a09626a516dfba1728e3a1a70a6c8926bce308",
+    "source": "pr-review",
+    "at": "2026-09-01T23:35:50.080Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/qa-review/-/3f9a2c1e",
+    "gate": "review-qa",
+    "run_id": "3f9a2c1e",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "faaa7b7b3b61dc9ffdb31c05c9f0d31b9f638a9d",
+    "source": "pr-review",
+    "at": "2026-09-02T06:27:35.750Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/qa-review/-/3f9a2c1e",
+    "gate": "review-qa",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "56972dda5fb9f1986004bca391437093d4d659bd",
+    "source": "pr-review",
+    "at": "2026-09-02T10:48:10.416Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/epic/-/7b1d4e90",
+    "gate": "review-epic",
+    "run_id": "7b1d4e90",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "19985f96d1ecb23ec85d930b24965882abc4c87b",
+    "source": "comment",
+    "at": "2026-09-03T12:08:22.295Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/feature-spec/-/7b1d4e90",
+    "gate": "review-spec",
+    "run_id": "7b1d4e90",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "3fa425a7590c5fd8f077e952a46664d88ea6a32d",
+    "source": "pr-review",
+    "at": "2026-09-03T17:50:28.272Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/plan/-/7b1d4e90",
+    "gate": "review-plan",
+    "run_id": "7b1d4e90",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "848d8be04a0ec47e88c026de3c2af482ba191610",
+    "source": "pr-review",
+    "at": "2026-09-03T21:56:57.525Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/qa-review/-/7b1d4e90",
+    "gate": "review-qa",
+    "run_id": "7b1d4e90",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "ba54db1ea3876faa6c68b51e149bd9f2f7c7af45",
+    "source": "pr-review",
+    "at": "2026-09-04T02:36:45.614Z",
+    "escalated_to": "blake-lead"
+  },
+  {
+    "correlation_key": "002-course-waitlist/feature-spec/-/7b1d4e90",
+    "gate": "review-spec",
+    "run_id": "7b1d4e90",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "1fee9a7de9a178f8322b714256754533b799a428",
+    "source": "pr-review",
+    "at": "2026-09-04T05:45:37.090Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/qa-review/-/7b1d4e90",
+    "gate": "review-qa",
+    "run_id": "7b1d4e90",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "4c7966f5e2c50c2b6b76a109c25796ae22f2ecad",
+    "source": "pr-review",
+    "at": "2026-09-04T08:51:45.556Z"
+  },
+  {
+    "correlation_key": "002-course-waitlist/qa-review/-/7b1d4e90",
+    "gate": "review-qa",
+    "run_id": "7b1d4e90",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "f3918278fd8706f748ccd9813ade69d26a185d4e",
+    "source": "pr-review",
+    "at": "2026-09-04T12:41:23.725Z"
+  },
+  {
+    "correlation_key": "003-grade-export/epic/-/c25e8a47",
+    "gate": "review-epic",
+    "run_id": "c25e8a47",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "1f533caa59eeda8b37ab7b6c8e59debb4e57e9c4",
+    "source": "comment",
+    "at": "2026-09-07T13:29:07.011Z"
+  },
+  {
+    "correlation_key": "003-grade-export/feature-spec/-/c25e8a47",
+    "gate": "review-spec",
+    "run_id": "c25e8a47",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "dd41fabf7c7769cab3c56fb112d4b1ec1aedf7f3",
+    "source": "pr-review",
+    "at": "2026-09-07T17:56:47.577Z"
+  },
+  {
+    "correlation_key": "003-grade-export/plan/-/c25e8a47",
+    "gate": "review-plan",
+    "run_id": "c25e8a47",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "ec20d452c0236d21a3efd2a31bc0acdf7d68ce3f",
+    "source": "pr-review",
+    "at": "2026-09-07T22:03:11.408Z"
+  },
+  {
+    "correlation_key": "003-grade-export/qa-review/-/c25e8a47",
+    "gate": "review-qa",
+    "run_id": "c25e8a47",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "13476341495043323fee860661cb4be399156152",
+    "source": "pr-review",
+    "at": "2026-09-08T05:13:05.992Z",
+    "escalated_to": "blake-lead"
+  },
+  {
+    "correlation_key": "003-grade-export/feature-spec/-/c25e8a47",
+    "gate": "review-spec",
+    "run_id": "c25e8a47",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "350589aa45d08353b3755c6a529f2ef1a87f735f",
+    "source": "pr-review",
+    "at": "2026-09-08T09:19:37.681Z"
+  },
+  {
+    "correlation_key": "003-grade-export/qa-review/-/c25e8a47",
+    "gate": "review-qa",
+    "run_id": "c25e8a47",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "c819dc4db99978e7c2611abb70d9d44478db5eec",
+    "source": "pr-review",
+    "at": "2026-09-08T12:50:17.245Z"
+  },
+  {
+    "correlation_key": "004-office-hours/epic/-/a6f2093b",
+    "gate": "review-epic",
+    "run_id": "a6f2093b",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "fcd99450fcef246de6dc510b96ae05a683b7805f",
+    "source": "comment",
+    "at": "2026-09-09T13:36:28.476Z"
+  },
+  {
+    "correlation_key": "004-office-hours/feature-spec/-/a6f2093b",
+    "gate": "review-spec",
+    "run_id": "a6f2093b",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "0948be9b140b2a4973a3a8c716b8a5d3d25f5ad3",
+    "source": "pr-review",
+    "at": "2026-09-09T15:11:53.129Z"
+  },
+  {
+    "correlation_key": "004-office-hours/plan/-/a6f2093b",
+    "gate": "review-plan",
+    "run_id": "a6f2093b",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "d7c9d4b510211fb8d31db539e946f046a96de077",
+    "source": "pr-review",
+    "at": "2026-09-09T17:59:49.906Z"
+  },
+  {
+    "correlation_key": "004-office-hours/qa-review/-/a6f2093b",
+    "gate": "review-qa",
+    "run_id": "a6f2093b",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "e140c67c02043f4bced4fdd8dbc3271d11eceac2",
+    "source": "pr-review",
+    "at": "2026-09-09T23:22:34.423Z"
+  },
+  {
+    "correlation_key": "004-office-hours/qa-review/-/a6f2093b",
+    "gate": "review-qa",
+    "run_id": "a6f2093b",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "693ed804a90fdcfb6a68c1978b7fb11a7de1c5c7",
+    "source": "pr-review",
+    "at": "2026-09-10T04:31:40.997Z"
+  },
+  {
+    "correlation_key": "005-instructor-load/epic/-/9d3f0b62",
+    "gate": "review-epic",
+    "run_id": "9d3f0b62",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "86b4d1353641500823c711acf002f64f4b80ad69",
+    "source": "comment",
+    "at": "2026-09-16T13:01:58.674Z"
+  },
+  {
+    "correlation_key": "005-instructor-load/feature-spec/-/9d3f0b62",
+    "gate": "review-spec",
+    "run_id": "9d3f0b62",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "f014a24b1cc31ca345e5bda6c7ecf35c9b58a8e2",
+    "source": "pr-review",
+    "at": "2026-09-16T17:03:38.496Z"
+  },
+  {
+    "correlation_key": "005-instructor-load/plan/-/9d3f0b62",
+    "gate": "review-plan",
+    "run_id": "9d3f0b62",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "7c65cba33e9882cfa5f3346821391d6204742788",
+    "source": "pr-review",
+    "at": "2026-09-16T21:10:26.618Z"
+  },
+  {
+    "correlation_key": "005-instructor-load/story-tasks/-/9d3f0b62",
+    "gate": "review-tasks",
+    "run_id": "9d3f0b62",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "27979906e64be5c8e81feadb2628142f8eb9f943",
+    "source": "comment",
+    "at": "2026-09-16T22:40:22.608Z"
+  },
+  {
+    "correlation_key": "005-instructor-load/qa-review/-/9d3f0b62",
+    "gate": "review-qa",
+    "run_id": "9d3f0b62",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "d8cb06490803924daf802dfa606ae20ff232dbcb",
+    "source": "pr-review",
+    "at": "2026-09-17T03:20:18.726Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/epic/-/e47a1c35",
+    "gate": "review-epic",
+    "run_id": "e47a1c35",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "52cd123c06dde7a5184eddb38fb990a12ce55457",
+    "source": "comment",
+    "at": "2026-09-18T13:49:15.300Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/feature-spec/-/e47a1c35",
+    "gate": "review-spec",
+    "run_id": "e47a1c35",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "7dc72b48cbfb86d93fec3a618a2a91ffe3bf2824",
+    "source": "pr-review",
+    "at": "2026-09-18T15:29:05.914Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/plan/-/e47a1c35",
+    "gate": "review-plan",
+    "run_id": "e47a1c35",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "c77b9c14eb4f561c1552e8d3fee39d9156c2885d",
+    "source": "pr-review",
+    "at": "2026-09-18T17:33:02.117Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/story-tasks/-/e47a1c35",
+    "gate": "review-tasks",
+    "run_id": "e47a1c35",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "f7c7689b4ce5e98bc7adc9f86e3226f2483a7808",
+    "source": "comment",
+    "at": "2026-09-18T19:10:40.007Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/qa-review/-/e47a1c35",
+    "gate": "review-qa",
+    "run_id": "e47a1c35",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "580f1abf80b4e9162b651966ddf4b6a7ade9935c",
+    "source": "pr-review",
+    "at": "2026-09-18T23:01:30.653Z"
+  },
+  {
+    "correlation_key": "006-dept-budget/qa-review/-/e47a1c35",
+    "gate": "review-qa",
+    "run_id": "e47a1c35",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "3b7a1bff3ab4b36758590a1ccbddd93fbb37636c",
+    "source": "pr-review",
+    "at": "2026-09-19T03:07:25.418Z"
+  },
+  {
+    "correlation_key": "007-transcript-pdf/epic/-/51c8d2fa",
+    "gate": "review-epic",
+    "run_id": "51c8d2fa",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "1fc75e86027cb4e16d87a4be43809b992dbf3bc1",
+    "source": "comment",
+    "at": "2026-09-21T13:20:09.213Z"
+  },
+  {
+    "correlation_key": "007-transcript-pdf/feature-spec/-/51c8d2fa",
+    "gate": "review-spec",
+    "run_id": "51c8d2fa",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "70223725959f54ca614d29b0ff3896f0bfa3aa3f",
+    "source": "pr-review",
+    "at": "2026-09-21T15:24:22.987Z"
+  },
+  {
+    "correlation_key": "007-transcript-pdf/plan/-/51c8d2fa",
+    "gate": "review-plan",
+    "run_id": "51c8d2fa",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "df273a67839758cf75dc8e80af3a7801bd986746",
+    "source": "pr-review",
+    "at": "2026-09-21T17:14:50.684Z"
+  },
+  {
+    "correlation_key": "007-transcript-pdf/story-tasks/-/51c8d2fa",
+    "gate": "review-tasks",
+    "run_id": "51c8d2fa",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "b9d8b1ef5b4eb0b1e01eb8103acc889d00309bd7",
+    "source": "comment",
+    "at": "2026-09-21T19:37:04.373Z"
+  },
+  {
+    "correlation_key": "007-transcript-pdf/qa-review/-/51c8d2fa",
+    "gate": "review-qa",
+    "run_id": "51c8d2fa",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "7c5da1cc7beec5d2aa592400845182f2ef6db6c7",
+    "source": "pr-review",
+    "at": "2026-09-22T00:10:08.292Z"
+  },
+  {
+    "correlation_key": "008-room-booking/epic/-/0c7e5b19",
+    "gate": "review-epic",
+    "run_id": "0c7e5b19",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "edda3e739dbc8800ba23c52548599cae6c19a043",
+    "source": "comment",
+    "at": "2026-09-23T12:35:45.701Z"
+  },
+  {
+    "correlation_key": "008-room-booking/feature-spec/-/0c7e5b19",
+    "gate": "review-spec",
+    "run_id": "0c7e5b19",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "0799e6b0930629a000e5c7e9c2bb0fddd672c019",
+    "source": "pr-review",
+    "at": "2026-09-23T15:46:55.879Z"
+  },
+  {
+    "correlation_key": "008-room-booking/plan/-/0c7e5b19",
+    "gate": "review-plan",
+    "run_id": "0c7e5b19",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "ba6189b942d3696b74c51c8953a8647075a6d131",
+    "source": "pr-review",
+    "at": "2026-09-23T19:26:11.511Z"
+  },
+  {
+    "correlation_key": "008-room-booking/story-tasks/-/0c7e5b19",
+    "gate": "review-tasks",
+    "run_id": "0c7e5b19",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "0309ce7b1b0772ead14dfcbdc74cdd41f3ffafc9",
+    "source": "comment",
+    "at": "2026-09-23T22:36:32.922Z"
+  },
+  {
+    "correlation_key": "008-room-booking/qa-review/-/0c7e5b19",
+    "gate": "review-qa",
+    "run_id": "0c7e5b19",
+    "verdict": "approve",
+    "approver": "casey-qa",
+    "artifact_sha": "aab1363ee1683ac4eefd0b57512c224f9814dc13",
+    "source": "pr-review",
+    "at": "2026-09-24T03:11:25.638Z"
+  }
+]
