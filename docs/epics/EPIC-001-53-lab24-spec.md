@@ -80,7 +80,8 @@ Agreed with the #54 session, using the epic's Provenance definition.
    comment that mentions only the routed user (or the escalation owner), and the exact
    reviewer set; a single `noop` when there is no target.
 3. **The validator never calls a model.** It parses YAML, checks the registry and the
-   bundle's agents, and resolves relative links. A failure blocks the PR.
+   bundle's agents, and resolves relative links. A failure blocks the PR. CI excludes the
+   intentional Lab 24 invalid fixture and Lab 25's evidence stubs, not real task lists.
 4. **Runs are stamped, not guessed.** Task prompts carry `{run}` until the workflow's
    `validate-tasks` step runs `--stamp-run`. An unstamped key is a validation error.
 5. **`--dispatch` emits a plan, not a session.** It prints agent, tier, model and fallback

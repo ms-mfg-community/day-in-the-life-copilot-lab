@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import yaml from "js-yaml";
 
 const ROOT = process.cwd();
@@ -118,5 +118,28 @@ describe("lab24: task-prompt validator", () => {
   it("never calls a model or the network", () => {
     const src = readFileSync(VALIDATOR, "utf8");
     expect(src).not.toMatch(/\bfetch\(|child_process/);
+  });
+
+  it("CI selects real task lists but not invalid or Lab 25 evidence fixtures", () => {
+    const workflow = readFileSync(join(ROOT, ".github", "workflows", "validate-task-prompts.yml"), "utf8");
+    const pathspecs = [...workflow.matchAll(/'(:\([^']+)'/g)].map((match) => match[1]);
+    const real = ["specs/001-enrollment-cap/tasks.md", "apps/sample/specs/001-enrollment-cap/tasks.md",
+      "labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md"];
+    const fixtures = ["labs/fixtures/lab24/invalid/specs/002-invalid/tasks.md",
+      "labs/fixtures/lab25/data/specs/001-enrollment-cap/tasks.md"];
+    const dir = mkdtempSync(join(tmpdir(), "lab24-ci-selection-"));
+    try {
+      execFileSync("git", ["init", "--quiet", dir]);
+      for (const file of [...real, ...fixtures]) {
+        const path = join(dir, file);
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, "");
+      }
+      const selected = execFileSync("git", ["-C", dir, "ls-files", "--others", "--exclude-standard", "--", ...pathspecs],
+        { encoding: "utf8" }).trim().split("\n").sort();
+      expect(selected).toEqual([...real].sort());
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
