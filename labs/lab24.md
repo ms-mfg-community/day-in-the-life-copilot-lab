@@ -143,7 +143,11 @@ is the QA rejection from the fixture, one line in the file, shown wrapped:
 | `feature` | The Spec Kit feature directory, such as `001-enrollment-cap` |
 | `stage` | `epic`, `feature-spec`, `plan`, `story-tasks`, `implement`, `qa-review` or `rework` |
 | `task` | A `tasks.md` ID such as `T016`, or `-` for stage-level work |
-| `run` | The eight-character Spec Kit run id |
+| `run` | The eight-character lowercase hexadecimal Spec Kit run id |
+
+Lab 25's shared key contract is
+`^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$`.
+The scripts also enforce the stages above and each task's identity.
 
 One key names the feature, the stage, the task and the run. The same key goes in the
 task prompt (§24.4), the funnel's comment (§24.3), the approval of record (§24.8) and,
@@ -240,7 +244,7 @@ guard fails the job and nothing is written.
 Compile it with the pinned gh-aw, and **name the workflow**:
 
 ```bash
-gh aw compile sdlc-funnel
+gh aw compile sdlc-funnel --strict
 ```
 
 > ⚠️ **Don't run a bare `gh aw compile`.** It recompiles every workflow in the repo, and
@@ -516,19 +520,22 @@ rejects T014 and two markers are forged:
 
 ```bash
 node labs/fixtures/lab24/scripts/approvals.mjs \
-  --count labs/fixtures/lab24/approvals/pr-comments.json
+  --count labs/fixtures/lab24/approvals/pr-comments.json \
+  --out labs/fixtures/lab24/approvals/approvals-of-record.json
 ```
 
 ```text
-records:  5   (epic, spec, plan, tasks approved; QA rejected)
 invalid:  2   dana-dev posted a review-qa approval naming casey-qa
               casey-qa's APPROVED review carried a reject marker
 counts:   {"approve": 4, "reject": 1, "escalated": 0}
 rework_rounds: 1 of 2
 ```
 
-The full output is in
+`--out` writes a **bare array of five records** (epic, spec, plan and tasks approved;
+QA rejected) to
 [`approvals-of-record.json`](../labs/fixtures/lab24/approvals/approvals-of-record.json).
+The `invalid`, `counts` and round-cap summary fields stay on stdout, not in that array.
+Without `--out`, stdout contains both records and the summary.
 Each record has the shape [Lab 25](lab25.md) joins on: `correlation_key`, `gate`,
 `run_id`, `verdict`, `approver`, `artifact_sha`, `source`, `at` and, when a rejection
 changes scope, `escalated_to`.
@@ -611,14 +618,20 @@ the `implement` step, so it can't be influenced by it.
 explicitly excludes the implementer's summary, the chat transcript and the PR description.
 The fixture's `qa-review.md` records what it read.
 
-**The `qa-review` command now has a `tools:` list**: `read`, `search`, `execute` and
+**The `qa-review` command has a provisional `tools:` list**: `read`, `search`, `execute` and
 `edit`, which is enough to read the inputs, run the acceptance commands and write
-`qa-review.md`. Lab 21's lockdown result sets how far that goes:
+`qa-review.md`. Its enforcement remains provisional until EPIC-001 **A.3 item 7 / Q8**
+is resolved; **#50 is still open**, not a completed lockdown result.
 
 > ⚠️ **`tools:` limits what the agent can see. It doesn't grant approval.** Under
-> `--yolo`, every visible tool is approved. Run with `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0`
-> and grant the operations QA needs with managed `permissions.allow` rules. Whether `-p
-> --yolo` bypasses `disableBypassPermissionsMode` is still open (Q8 in [Lab 21](lab21.md)).
+> `--yolo`, every visible tool is approved. As in [Lab 21](lab21.md), disable Spec Kit's
+> blanket grant with `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` and choose either interim
+> pre-approval path: narrowly scoped managed `permissions.allow` rules (such as
+> `Shell(...)` and `Edit(...)`), or explicit `--allow-tool` grants passed through
+> `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS`.
+> The latter is not yet verified under `permissions.disableBypassPermissionsMode`;
+> whether `-p --yolo` bypasses that key is also open. Neither option settles Q8 or
+> replaces the controlled enterprise test.
 
 ## 24.11 The honest caveats
 
@@ -643,7 +656,10 @@ earlier one isn't notified. Push each signal on its own.
 allowed but isn't fetched, so a dead link passes.
 
 **7. `--yolo` versus managed settings is unresolved** (Q8). Until the controlled
-enterprise test, run with `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0`.
+enterprise test, the QA `tools:` list is provisional. Run with
+`SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` and use either narrowly scoped managed
+`permissions.allow` rules or `--allow-tool` through `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS`
+(§24.10); neither path is a verified resolution of Q8.
 
 **8. The funnel is staged.** `staged: true` previews every write and applies none.
 That's correct for the workshop, and it does nothing on a real repo until you remove it.
@@ -661,10 +677,10 @@ node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs labs/fixtures/l
 node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs labs/fixtures/lab24/invalid/specs/002-invalid/tasks.md
 
 # One QA reject and two invalid markers in the seeded fixture
-node labs/fixtures/lab24/scripts/approvals.mjs --count labs/fixtures/lab24/approvals/pr-comments.json
+node labs/fixtures/lab24/scripts/approvals.mjs --count labs/fixtures/lab24/approvals/pr-comments.json --out labs/fixtures/lab24/approvals/approvals-of-record.json
 
 # The funnel compiles clean
-gh aw compile sdlc-funnel
+gh aw compile sdlc-funnel --strict
 
 # The lab's tests
 npx vitest run tests/lab24

@@ -31,12 +31,13 @@ The artifacts come before the lab so every command in the lab runs against a rea
 
 - `route.mjs` gives the same route for the fixture every time, and `--check` rejects any
   agent write that differs from it.
-- `gh aw compile sdlc-funnel` at the pinned gh-aw compiles cleanly; the lock is committed;
+- `gh aw compile sdlc-funnel --strict` at the pinned gh-aw compiles cleanly; the lock is committed;
   no other lock or `actions-lock.json` churn.
 - `validate-tasks.mjs` passes `specs/001-enrollment-cap/tasks.md` and fails
   `invalid/specs/002-invalid/tasks.md` with exactly ten errors, exit code 1, no model call.
-- `approvals.mjs --count` reproduces `approvals/approvals-of-record.json` from
-  `approvals/pr-comments.json`, including one QA reject.
+- `approvals.mjs --count ... --out approvals/approvals-of-record.json` reproduces the
+  bare array from `approvals/pr-comments.json`, including one QA reject. Counts, invalid
+  markers and round-cap fields stay on stdout.
 - Every `artifact_sha` in `stage-events/001-enrollment-cap.jsonl` equals
   `git hash-object` of its artifact.
 

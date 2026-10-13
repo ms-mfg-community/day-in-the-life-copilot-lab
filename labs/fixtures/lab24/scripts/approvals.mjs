@@ -4,11 +4,11 @@
 //
 //   node approvals.mjs --record --gate review-plan --key 001-enrollment-cap/plan/-/3f9a2c1e \
 //     --verdict approve --approver blake-lead --artifact specs/001-enrollment-cap/plan.md
-//   node approvals.mjs --count <comments-and-reviews.json> [--roles roles.json]
+//   node approvals.mjs --count <comments-and-reviews.json> [--roles roles.json] [--out approvals-of-record.json]
 //
 // --count reads raw GitHub API objects: {"comments": [issue comments], "reviews": [PR reviews]}.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,12 +23,14 @@ const GATE_STAGE = {
 };
 const REVIEW_VERDICT = { APPROVED: 'approve', CHANGES_REQUESTED: 'reject' };
 const SHA = /^[0-9a-f]{40}$/;
+const KEY = /^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$/;
 
 export function marker(record) {
   return `<!-- contoso-approval ${JSON.stringify(record)} -->`;
 }
 
 function problem(rec, author, gates, review) {
+  if (!KEY.test(rec.correlation_key ?? '')) return 'correlation_key does not match the Lab 25 key contract';
   const [feature, stage, task, run, extra] = String(rec.correlation_key).split('/');
   if (!GATE_STAGE[rec.gate]) return `unknown gate ${rec.gate}`;
   if (!feature || stage !== GATE_STAGE[rec.gate] || task !== '-' || extra !== undefined) {
@@ -118,7 +120,15 @@ function main() {
   }
   const file = arg('--count');
   if (!file) throw new Error('usage: approvals.mjs --record ... | --count <comments-and-reviews.json>');
-  process.stdout.write(`${JSON.stringify(count(JSON.parse(readFileSync(file, 'utf8')), roles), null, 2)}\n`);
+  const result = count(JSON.parse(readFileSync(file, 'utf8')), roles);
+  const out = arg('--out');
+  if (out) {
+    const { records, ...summary } = result;
+    writeFileSync(out, `${JSON.stringify(records, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+    return;
+  }
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

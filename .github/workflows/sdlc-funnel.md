@@ -19,7 +19,6 @@ tools:
   github:
     toolsets: [issues, pull_requests]
   bash: ["cat"]
-strict: false
 pre-agent-steps:
   - name: Compute the route (deterministic)
     env:

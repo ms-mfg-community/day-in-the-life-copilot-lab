@@ -14,7 +14,8 @@ const EXECUTION = ['agent', 'split', 'human'];
 const LADDER = ['self-heal', 'redispatch', 'stage-owner', 'scope-change'];
 const MAX_RETRY_BUDGET = 3;
 const TASK_LINE = /^- \[[ xX]\] (T\d{3,})\b(.*)$/;
-const RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const RUN_ID = /^[0-9a-f]{8}$/;
+const KEY = /^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$/;
 const REQUIRED = ['objective', 'deliverable', 'sizing', 'context', 'fresh_session', 'constraints',
   'do_not_modify', 'owned_files', 'agent', 'tier', 'fallback_tier', 'acceptance', 'execution',
   'escalation', 'correlation_key'];
@@ -100,7 +101,7 @@ function checkPrompt(task, p, ctx) {
   if (extra !== undefined || feature !== ctx.feature || !['implement', 'rework'].includes(stage) || id !== task.id) {
     errs.push(`correlation_key must be ${ctx.feature}/implement|rework/${task.id}/<run>`);
   } else if (run === '{run}') errs.push('correlation_key run is not stamped (run with --stamp-run)');
-  else if (!RUN_ID.test(run ?? '')) errs.push(`correlation_key run ${run} is not a Spec Kit run id`);
+  else if (!KEY.test(p.correlation_key)) errs.push('correlation_key does not match the Lab 25 key contract');
   if (p.supersedes !== undefined && (p.supersedes === task.id || !ctx.ids.includes(p.supersedes))) {
     errs.push(`supersedes ${p.supersedes} must name another task in this file`);
   }

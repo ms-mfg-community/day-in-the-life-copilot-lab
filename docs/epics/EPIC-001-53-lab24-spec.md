@@ -37,7 +37,7 @@ so no model string is written into a task.
 | 7 | Native task format preserved | Preset strategy `append`; task lines keep `[ID] [P] [Story]`, phases and checkpoints; the prompt block sits under the line |
 | 8 | Rework routing, classification, round cap, new task ID supersedes the old issue | lab §24.9; `qa-review.md` fixture (`classification: implementation`); T014 → T016 `supersedes: T014`; `contoso-tasks` taskstoissues fragment |
 | 9 | Approval of record per gate, rejects counted from it; seeded QA reject | `scripts/approvals.mjs`; `approvals/pr-comments.json` → `approvals/approvals-of-record.json`; lab §24.8 |
-| 10 | QA independence; `tools:` on `qa-review` | Lab 23 `speckit.contoso-review.qa-review.md` gains `tools:` and spec/diff/tasks-only inputs; lab §24.10 |
+| 10 | QA independence; `tools:` on `qa-review` | Lab 23 `speckit.contoso-review.qa-review.md` gains a provisional `tools:` list and spec/diff/tasks-only inputs; enforcement awaits A.3 item 7 / Q8 (#50); lab §24.10 |
 | 11 | Ships `contoso-sdlc` with an optional `review-tasks` gate | `contoso-sdlc/workflow.yml` (19 top-level steps, `review-tasks` inside an `if`) |
 | 12 | Stage → owner's surface | `roles.json`; lab §24.1 table |
 
@@ -49,7 +49,9 @@ Agreed with the #54 session, using the epic's Provenance definition.
 
 - **Correlation key** `<feature>/<stage>/<task>/<run>`, e.g.
   `001-enrollment-cap/implement/T014/3f9a2c1e`. `task` is `-` for stage-level work; `run`
-  is the Spec Kit run ID.
+  is the eight-character lowercase hexadecimal Spec Kit run ID. All three scripts use
+  Lab 25's exact regex:
+  `^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$`.
 - **Stage event** (one JSON line in `stage-events/<feature>.jsonl`): `correlation_key`,
   `feature`, `stage`, `task`, `run_id`, `from_stage`, `transition`, `actor`, `at`,
   `artifact`, `artifact_sha` (git blob SHA, or null), `classification` (on rework), plus
@@ -62,6 +64,9 @@ Agreed with the #54 session, using the epic's Provenance definition.
   state agrees with the verdict. The platform's author and timestamp win over the marker.
   The same decision posted twice (same key, gate, verdict, approver and `artifact_sha`)
   counts once, at its earliest time.
+  `approvals-of-record.json` is a bare array of these records, exported by
+  `approvals.mjs --count <input> --out <file>`. Invalid markers, counts and round-cap
+  fields are printed separately on stdout.
 
 ## 4. Design decisions
 
@@ -92,16 +97,18 @@ Agreed with the #54 session, using the epic's Provenance definition.
 - `source: qa-review.md` is never emitted: QA's file is evidence, not an approval. The
   `review-qa` owner's PR review is the record.
 - Stage events add `issue` and `pr` fields (additive; Lab 25 was told).
-- The Lab 23 `qa-review` command is edited (`tools:` and input restriction), as the AC
-  requires.
+- The Lab 23 `qa-review` command is edited (provisional `tools:` and input restriction).
+  The tools list's enforcement is not claimed verified while #50 / Q8 is open.
 - A CI workflow, `validate-task-prompts.yml`, is added so "runs in CI" is literal.
 
 **Open questions:**
 
 - Spec Kit has releases newer than the pin. #53 does not move the pin; the weekly audit
   owns that.
-- Q8: whether `--yolo` overrides a managed tool allowlist. The lab sets
-  `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` and points at Lab 21's lockdown result.
+- Q8 / A.3 item 7: whether `--yolo` overrides a managed tool allowlist (#50 is still open).
+  The lab sets `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` and presents both interim paths from
+  Lab 21: managed `permissions.allow`, or explicit `--allow-tool` through
+  `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS`. Neither is claimed to resolve Q8.
 - The `specify` CLI was not run live against `contoso-sdlc`; the workflow is checked
   structurally by tests and against the pinned engine source.
 - A gate nested in an `if` is read from the engine source, not observed.

@@ -11,7 +11,7 @@ const ROUTE = join(FIX, "scripts", "route.mjs");
 const APPROVALS = join(FIX, "scripts", "approvals.mjs");
 const RECORD = join(FIX, "contoso-sdlc", "scripts", "record-stage.mjs");
 const EVENTS = join(FIX, "stage-events");
-const KEY = /^[0-9]{3}-[a-z0-9-]+\/(epic|feature-spec|plan|story-tasks|implement|qa-review|rework)\/(-|T\d{3,})\/[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const KEY = /^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$/;
 
 const node = (...args: string[]) => spawnSync(process.execPath, args, { cwd: ROOT, encoding: "utf8" });
 
@@ -23,6 +23,25 @@ describe("lab24: stage signal", () => {
     for (const e of events) {
       expect(e.correlation_key).toMatch(KEY);
       expect(e.correlation_key).toBe(`${e.feature}/${e.stage}/${e.task}/${e.run_id}`);
+    }
+  });
+
+  it.each([
+    ["--feature", "1001-enrollment-cap"],
+    ["--task", "T1000"],
+    ["--run", "3F9A2C1E"],
+    ["--run", "3f9a2c1"],
+    ["--run", "3f9a2c1ee"],
+    ["--run", "run_1234"],
+  ])("rejects a key outside the Lab 25 contract: %s %s", (flag, value) => {
+    const args = ["--feature", "001-enrollment-cap", "--task", "T014", "--stage", "implement", "--run", "3f9a2c1e"];
+    const invalid = args.map((arg, i) => args[i - 1] === flag ? value : arg);
+    const dir = mkdtempSync(join(tmpdir(), "lab24-invalid-key-"));
+    try {
+      const r = node(RECORD, ...invalid, "--dir", dir);
+      expect(r.status, r.stderr).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 
@@ -121,12 +140,57 @@ describe("lab24: approvals of record", () => {
     expect(r.status, r.stderr).toBe(0);
     const counted = JSON.parse(r.stdout);
     const committed = JSON.parse(readFileSync(join(FIX, "approvals", "approvals-of-record.json"), "utf8"));
-    expect(counted).toEqual(committed);
+    expect(Array.isArray(committed)).toBe(true);
+    expect(committed.map((rec: { correlation_key: string }) => rec.correlation_key)).toHaveLength(5);
+    expect(counted.records).toEqual(committed);
     expect(counted.records.some((x: { gate: string; verdict: string }) => x.gate === "review-qa" && x.verdict === "reject")).toBe(true);
     expect(counted.invalid.length).toBeGreaterThan(0);
     for (const rec of counted.records) {
       expect(rec.correlation_key).toMatch(KEY);
       expect(["pr-review", "comment"]).toContain(rec.source);
+    }
+  });
+
+  it("writes only records to --out and leaves the summary on stdout", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lab24-records-"));
+    try {
+      const out = join(dir, "approvals-of-record.json");
+      const r = node(APPROVALS, "--count", join(FIX, "approvals", "pr-comments.json"), "--out", out);
+      expect(r.status, r.stderr).toBe(0);
+      const records = JSON.parse(readFileSync(out, "utf8"));
+      expect(records).toEqual(JSON.parse(readFileSync(join(FIX, "approvals", "approvals-of-record.json"), "utf8")));
+      expect(JSON.parse(r.stdout)).toMatchObject({
+        counts: { approve: 4, reject: 1, escalated: 0 },
+        rework_rounds: 1, max_rework_rounds: 2, round_cap_reached: false,
+      });
+      expect(JSON.parse(r.stdout)).not.toHaveProperty("records");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    "1001-enrollment-cap/plan/-/3f9a2c1e",
+    "001-enrollment-cap/plan/-/3F9A2C1E",
+    "001-enrollment-cap/plan/-/3f9a2c1",
+    "001-enrollment-cap/plan/-/3f9a2c1ee",
+    "001-enrollment-cap/plan/-/run_1234",
+  ])("refuses an approval key outside the Lab 25 contract: %s", (key) => {
+    const r = node(APPROVALS, "--record", "--gate", "review-plan", "--key", key,
+      "--verdict", "approve", "--approver", "blake-lead");
+    expect(r.status, r.stderr).toBe(1);
+  });
+
+  it("fails explicitly when the records file cannot be written", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lab24-unwritable-records-"));
+    try {
+      const r = node(APPROVALS, "--count", join(FIX, "approvals", "pr-comments.json"),
+        "--out", join(dir, "missing", "records.json"));
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("approvals.mjs:");
+      expect(r.stdout).toBe("");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 
@@ -148,9 +212,9 @@ describe("lab24: approvals of record", () => {
       expect(r.status, r.stderr).toBe(0);
       const committed = JSON.parse(readFileSync(join(FIX, "approvals", "approvals-of-record.json"), "utf8"));
       const counted = JSON.parse(r.stdout);
-      expect(counted.records).toEqual(committed.records);
-      expect(counted.counts).toEqual(committed.counts);
-      expect(counted.rework_rounds).toBe(committed.rework_rounds);
+      expect(counted.records).toEqual(committed);
+      expect(counted.counts).toEqual({ approve: 4, reject: 1, escalated: 0 });
+      expect(counted.rework_rounds).toBe(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -171,6 +235,7 @@ describe("lab24: gh-aw funnel", () => {
     expect(JSON.stringify(fm["pre-agent-steps"])).toContain("route.mjs");
     expect(JSON.stringify(fm["safe-outputs"].steps)).toContain("--check");
     expect(fm.permissions).not.toHaveProperty("issues", "write");
+    expect(fm).not.toHaveProperty("strict");
   });
 
   it("has a compiled lock committed beside it", () => {

@@ -90,6 +90,31 @@ describe("lab24: task-prompt validator", () => {
     expect(text).toMatch(/^- \[ \] G001 /m);
   });
 
+  it.each(["3F9A2C1E", "3f9a2c1", "3f9a2c1ee", "run_1234"])("rejects a non-contract run %s before stamping", (runId) => {
+    const r = run(TASKS, "--stamp-run", runId);
+    expect(r.status, r.stderr).toBe(1);
+  });
+
+  it.each([
+    ["001-enrollment-cap", "3F9A2C1E", "T014"],
+    ["1001-enrollment-cap", "3f9a2c1e", "T014"],
+    ["001-enrollment-cap", "3f9a2c1e", "T1000"],
+  ])("rejects a non-contract task key: %s/%s/%s", (feature, runId, task) => {
+    const tmp = mkdtempSync(join(tmpdir(), "lab24-key-"));
+    try {
+      cpSync(join(FIX, "specs", "001-enrollment-cap"), join(tmp, "specs", feature), { recursive: true });
+      const copy = join(tmp, "specs", feature, "tasks.md");
+      const text = readFileSync(TASKS, "utf8").replaceAll("001-enrollment-cap", feature)
+        .replaceAll("3f9a2c1e", runId).replaceAll("T014", task);
+      writeFileSync(copy, text);
+      const r = run(copy);
+      expect(r.status, r.stderr).toBe(1);
+      expect(r.stderr).toContain("correlation_key");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   it("never calls a model or the network", () => {
     const src = readFileSync(VALIDATOR, "utf8");
     expect(src).not.toMatch(/\bfetch\(|child_process/);

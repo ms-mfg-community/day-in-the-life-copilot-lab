@@ -13,9 +13,10 @@ import { fileURLToPath } from 'node:url';
 
 export const STAGES = ['epic', 'feature-spec', 'plan', 'story-tasks', 'implement', 'qa-review', 'rework'];
 const CLASSIFICATIONS = ['implementation', 'spec-scope'];
-const RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
-const FEATURE = /^\d{3,}-[a-z0-9][a-z0-9-]*$/;
-const TASK = /^(-|T\d{3,})$/;
+const RUN_ID = /^[0-9a-f]{8}$/;
+const FEATURE = /^[0-9]{3}-[a-z0-9-]+$/;
+const TASK = /^(-|T\d{3})$/;
+const KEY = /^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$/;
 
 function git(args) {
   try {
@@ -49,8 +50,10 @@ export function buildEvent(o) {
     throw new Error(`a rework event needs --classification ${CLASSIFICATIONS.join(' | ')}`);
   }
   const task = o.task ?? '-';
+  const key = `${o.feature}/${o.stage}/${task}/${o.run}`;
+  if (!KEY.test(key)) throw new Error('correlation_key does not match the Lab 25 key contract');
   const event = {
-    correlation_key: `${o.feature}/${o.stage}/${task}/${o.run}`,
+    correlation_key: key,
     feature: o.feature,
     stage: o.stage,
     task,

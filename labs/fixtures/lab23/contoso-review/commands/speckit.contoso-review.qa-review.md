@@ -1,7 +1,7 @@
 ---
 description: "Review an implemented feature against its spec and record a verdict"
-# Added in Lab 24. A tools list limits what QA can see; it does not approve
-# anything, and under Spec Kit's default `--yolo` it is the only limit (Lab 21, Q8).
+# Provisional Lab 24 addition pending EPIC-001 A.3 item 7 / Q8 (#50).
+# A tools list restricts visibility, not approval; enforcement under --yolo is unresolved.
 tools: ['read', 'search', 'execute', 'edit']
 ---
 

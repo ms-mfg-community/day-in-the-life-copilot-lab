@@ -81,6 +81,7 @@ describe("lab24: qa-review independence", () => {
   it("declares a tools list and reads spec, diff and tasks only", () => {
     expect(cmd).toMatch(/^tools:/m);
     expect(cmd).toMatch(/implementer'?s? summary/i);
+    expect(cmd).toMatch(/provisional[\s\S]*A\.3 item 7 \/ Q8/i);
   });
 });
 
@@ -94,6 +95,10 @@ describe("lab24: lab content", () => {
     ["rework rounds capped", /round_cap_reached/],
     ["fresh QA process", /copilot -p/],
     ["contoso-sdlc ships", /specify workflow add/],
+    ["provisional QA tools", /provisional[\s\S]*A\.3 item 7[\s\S]*#50/i],
+    ["managed QA permission grants", /permissions\.allow/],
+    ["explicit QA tool grants", /--allow-tool[\s\S]*SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS/],
+    ["bare approval record export", /--out labs\/fixtures\/lab24\/approvals\/approvals-of-record\.json/],
   ])("teaches %s", (_name, pattern) => {
     expect(lab).toMatch(pattern);
   });
