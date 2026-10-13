@@ -10,6 +10,12 @@ import yaml from 'js-yaml';
  * Helpers are deliberately inline rather than shared: a contract test is `git mv`-ed
  * between `pending/` and `tests/lab-structure/` when its lab's pass starts, and a
  * relative import would break on the move.
+ *
+ * AC6 is withdrawn in place and its number is never reused. It asserted that the lab
+ * manage COPILOT_GITHUB_TOKEN with one tool. Checking the installed extension showed
+ * `gh aw secrets` has only `set` and `bootstrap` — there is no delete — so the lab's
+ * `gh aw secrets set` / `gh secret delete` split is forced and correct. See
+ * specs/labs/lab08.md §4 C1.
  */
 
 const ROOT = process.cwd();
@@ -123,18 +129,6 @@ describe('lab08 contract: AC5 — the two shells push the same branch', () => {
       `the Bash and PowerShell forms are presented as equivalent but push different source ` +
         `refs: ${[...srcs].join(', ')}`,
     ).toHaveLength(1);
-  });
-});
-
-describe('lab08 contract: AC6 — one tool manages the secret', () => {
-  it('does not mix `gh aw secrets` and `gh secret` for COPILOT_GITHUB_TOKEN', () => {
-    const body = lab();
-    const both = /gh aw secrets set/.test(body) && /gh secret (?:set|delete)/.test(body);
-    expect(
-      both,
-      '§8.4 sets the secret with `gh aw secrets set` while §8.10 deletes it with ' +
-        '`gh secret delete`. Pick one tool for the whole lab.',
-    ).toBe(false);
   });
 });
 
