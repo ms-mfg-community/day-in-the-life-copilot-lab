@@ -17,6 +17,16 @@ safe-outputs:
   add-comment: {}
   add-labels:
     allowed: [ai-review]
+# AI-credits fallback for the `auto` model alias (#63). The AWF api-proxy prices
+# per model and rejects with HTTP 400 any model missing from its curated table;
+# `auto` resolves to the literal `copilot/auto`, which has no row. Rates are
+# $/1M tokens, set to the maximum across the models `auto` can reach
+# (`large` -> sonnet | gpt-5* | gemini-pro) so maxAiCredits binds early rather
+# than late. Requires AWF >= v0.27.43; this lock pins v0.27.44.
+models:
+  default-ai-credits-pricing:
+    input: 5.00
+    output: 30.00
 description: "Automated code review on pull requests using AI agent"
 ---
 ## Automated Code Review

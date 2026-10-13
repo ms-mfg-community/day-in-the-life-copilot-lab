@@ -54,7 +54,7 @@ The repository's content registry lives at `docs/_meta/registry.yaml`. Treat it 
 6. `node/package.json`, all `**/*.csproj` files.
 7. `tests/content-currency/**` — the assertions any new registry value must keep satisfying.
 
-### The seven checks (run all of them)
+### The nine checks (run all of them)
 
 1. **Copilot CLI version** — compare `copilot_cli_version_floor` in the registry to the current GitHub Copilot CLI release. Use `web-search` and `microsoft-learn` MCP to corroborate.
 2. **gh-aw schema/features** — compare `gh_aw_schema_version` and any documented features against the latest `github/gh-aw` release notes.
@@ -63,10 +63,12 @@ The repository's content registry lives at `docs/_meta/registry.yaml`. Treat it 
 5. **Package versions** — for each dependency in `node/package.json` and the top-level `<PackageReference>` entries in `**/*.csproj`, compare against the current latest stable on npm / NuGet via `context7` MCP. Flag majors as **review-needed**, patches/minors as **safe to bump**.
 6. **Model names & pricing hints** — for every model name in `models:` (registry) and any model referenced inline in labs, confirm it is still listed in the current model catalogue. Capture pricing-tier hints if they have changed.
 7. **Lab pacing** — for each `labs/lab*.md`, sanity-check the `pace_*` minutes in `registry.yaml` against the lab's word count (use ≈250 wpm for self-study, ≈150 wpm for presenter). Flag entries that are off by more than 50%.
+8. **Spec Kit release** — compare `spec_kit_version` in the registry with the latest `github/spec-kit` release, and `spec_kit_version_last_verified` with that release's publication date. Use the `github` MCP server's release tools (`get_latest_release`, `list_releases`, `get_release_by_tag`). For each release newer than `spec_kit_version`, read its release notes and record any change to the `specify` command list or to the Copilot integration layout. This check is report-only: record drift as **review-needed**, and never edit `spec_kit_version` or `spec_kit_version_last_verified`.
+9. **Azure Monitor API versions** — for each `*_api_version` key under `azure_monitor` in the registry, confirm with `microsoft-learn` MCP that it is still the newest stable (non-preview) version. Check each resource-type key against the Microsoft Learn ARM/Bicep template reference for its resource type (`learn.microsoft.com/azure/templates/…`): `data_collection_rules_api_version` for `Microsoft.Insights/dataCollectionRules`, `data_collection_endpoints_api_version` for `Microsoft.Insights/dataCollectionEndpoints`, and `workspaces_tables_api_version` for `Microsoft.OperationalInsights/workspaces/tables`. Check `logs_ingestion_data_plane_api_version` against the Logs Ingestion API documentation (*Logs Ingestion API in Azure Monitor*). This check is report-only: record any key that is not the newest stable version as **review-needed**, and never edit the `azure_monitor` block, including `last_verified` and `workspaces_tables_api_version_previous`.
 
 ### What to change in the PR
 
-- **`docs/_meta/registry.yaml`** — apply only **safe** updates: patch/minor SDK bumps, fixed redirected URLs, added MCP servers that are clearly in scope. Leave majors and model-catalogue churn for human review (record them in the report only).
+- **`docs/_meta/registry.yaml`** — apply only **safe** updates: patch/minor SDK bumps, fixed redirected URLs, added MCP servers that are clearly in scope. Leave majors and model-catalogue churn for human review (record them in the report only). `spec_kit_version`, `spec_kit_version_last_verified` and the `azure_monitor` block are report-only (checks 8 and 9): never edit them, even for a patch bump; record their drift in the report as review-needed.
 - **Lab files** — only mechanical edits (e.g., a moved doc URL, a renamed product). Do **not** rewrite prose.
 - **`docs/_meta/audit-report.md`** — generate this file fresh from `docs/_meta/audit-report.template.md`. It must contain:
   - A `## Summary` block with totals per check.
