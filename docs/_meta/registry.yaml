@@ -26,8 +26,7 @@ copilot_cli_version_floor: "1.0.82"
 # Recompiling with a different version rewrites the locks, so pin the
 # extension to match before running `gh aw compile`:
 #   gh extension install github/gh-aw --pin v0.86.2
-# NOTE: weekly-content-audit.lock.yml is still on an older schema and has
-# not been recompiled; upstream latest was v0.88.2 as of 2026-09-04.
+# upstream latest was v0.88.2 as of 2026-09-04.
 gh_aw_schema_version: "0.86.2"
 
 # GitHub Spec Kit (`github/spec-kit`) release the enterprise-harness arc

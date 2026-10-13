@@ -18,6 +18,8 @@ tools:
   edit:
   bash: ["git", "ls", "cat", "grep", "find", "head", "tail", "wc", "date"]
   web-fetch:
+
+mcp-servers:
   microsoft-learn:
     type: http
     url: "https://learn.microsoft.com/api/mcp"
