@@ -3,7 +3,7 @@ title: "Copilot Coding Agent & Code Review"
 lab_number: 9
 pace:
   presenter_minutes: 5
-  self_paced_minutes: 20
+  self_paced_minutes: 40
 registry: docs/_meta/registry.yaml
 ---
 
@@ -11,17 +11,28 @@ registry: docs/_meta/registry.yaml
 
 In this lab you will chain two platform-level agentic features: the **Copilot Coding Agent** to implement a feature from a GitHub Issue, and **Copilot Code Review** to automatically review the resulting pull request. You won't write a single line of code — you'll write an issue, and two AI agents handle the rest.
 
-> ⏱️ Presenter pace: 5 minutes | Self-paced: 20 minutes
+> ⏱️ Presenter pace: 5 minutes | Self-paced: 40 minutes
+
+**Prerequisites:**
+
+- Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md). §9.8 is about the `.github/copilot-instructions.md` file you edited there.
+- Finish [Lab 08 — GitHub Agentic Workflows: PRD Generation](lab08.md). §9.9 and §9.10 build on it, and its §8.5 shows how to turn on Issues in a fork — §9.4 needs Issues turned on.
+- Do this lab in **a fork you own**. §9.2 creates a repository ruleset and §9.3 changes a repository setting, so both changes should land in a repository that's yours.
+- Use a Copilot plan that includes both the Coding Agent and Code Review — see [Copilot plans](https://docs.github.com/en/copilot/get-started/plans).
+
+**Where you'll work:** mostly in your browser on GitHub.com. A few steps use a terminal in a clone of your fork — reading files in §9.8 and §9.10, plus the optional `gh` and `git` commands.
 
 > 🎤 **Presenter prep:** Before the session, create an issue, assign Copilot, and let the coding agent open a PR that gets auto-reviewed. When presenting, walk through the completed issue → PR → review chain — no waiting.
 
-> 💡 **Enterprise context:** This lab showcases two **platform features** that require zero local tooling. The Coding Agent turns issues into pull requests. Code Review automatically reviews every PR against your `copilot-instructions.md`. Organization owners can enable both across **all repositories** from Copilot policy settings. This is the enterprise scale story: issue → implementation → review, all AI-assisted, all governed by org policies.
+> 💡 **Enterprise context:** This lab showcases two **platform features** that run on GitHub itself rather than on your machine. The Coding Agent turns issues into pull requests. Code Review reviews pull requests against your `.github/copilot-instructions.md` — automatically, once a ruleset like the one in §9.2 is in place. Organizations govern both features through policy; the admin controls are covered in [Lab 17 — GitHub Admin Controls for Copilot/AI](lab17.md). This is the enterprise scale story: issue → implementation → review, all AI-assisted, all governed by org policies.
 
 References:
-- [About Copilot Coding Agent](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent)
+- [About Copilot on GitHub](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github)
+- [Using the Copilot cloud agent](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent)
 - [About Copilot Code Review](https://docs.github.com/en/copilot/concepts/agents/code-review)
-- [Configuring automatic code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/configure-automatic-review)
-- [Using Copilot code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review)
+- [Configuring automatic code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review)
+- [Using Copilot code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-code-review)
+- [Copilot plans](https://docs.github.com/en/copilot/get-started/plans)
 
 ## 9.0 Copilot CLI currency (2026 refresh)
 
@@ -59,12 +70,12 @@ Key characteristics:
 
 | Feature | Details |
 |---------|---------|
-| **Trigger** | Automatic (via rulesets) or manual (assign `@copilot` as reviewer) |
-| **Output** | Review comments — never approves or blocks merging |
-| **Context** | Reads your `copilot-instructions.md` and repository code for context |
-| **Static analysis** | Integrates CodeQL, ESLint, and PMD for high-signal findings |
-| **Plans** | Available on Copilot Pro, Pro+, Business, and Enterprise |
-| **Platforms** | GitHub.com, VS Code, Visual Studio, JetBrains, Xcode |
+| **Trigger** | Automatic (via rulesets) or manual (request **Copilot** as a reviewer on a pull request) |
+| **Output** | A **Comment** review — it doesn't block merging. Approving reviews are opt-in (public preview): see [Copilot approvals](https://docs.github.com/en/copilot/concepts/agents/code-review#copilot-approvals) |
+| **Context** | Reads your `.github/copilot-instructions.md` and repository code for context |
+| **Static analysis** | Integrates static analysis for high-signal findings |
+| **Plans** | Depends on your Copilot plan — see [Copilot plans](https://docs.github.com/en/copilot/get-started/plans) for what each plan includes |
+| **Platforms** | See [Availability](https://docs.github.com/en/copilot/concepts/agents/code-review#availability) in the Code Review docs for the supported platforms |
 
 > 💡 **Why built-in?** Copilot Code Review is the easiest path to AI-powered reviews. It already knows your repository's custom instructions, understands full project context, and requires zero workflow configuration.
 
@@ -72,33 +83,35 @@ Key characteristics:
 
 You can configure Copilot to automatically review every pull request using **repository rulesets**.
 
+> ⚠️ **This ruleset is for this exercise.** It includes **Require a pull request before merging** on your fork's default branch, so while the ruleset is active, changes to that branch — yours too, in later labs — have to come in through a pull request. §9.12 removes the ruleset when you're done.
+
 🌐 **On GitHub:**
 
-1. Go to your repository → **Settings** → **Rules** → **Rulesets**
+1. Go to your fork → **Settings**. In the left sidebar, under **Code, planning, and automation**, click **Rulesets**, then click **Rulesets** again.
 2. Click **New ruleset** → **New branch ruleset**
 3. Name it: `copilot-code-review`
-4. Under **Target branches**, add your default branch (`main` for upstream, or whatever the repo's "Default branch" setting shows under **Settings → General**)
-5. Under **Branch rules**, check **Require a pull request before merging**
-6. Check **Request pull request review from Copilot**
-7. Optionally enable:
-   - **Review new pushes** — re-reviews on each push to the PR branch
-   - **Review draft pull requests** — reviews even before the PR is marked "Open"
+4. Set **Enforcement status** to **Active** — a ruleset only takes effect once it's active
+5. Under **Target branches**, click **Add target** → **Include default branch**
+6. Under **Branch rules**, check **Require a pull request before merging**
+7. Check **Automatically request Copilot code review**, then choose its options:
+   - **Review draft pull requests** — turn this on for this lab. The Coding Agent opens its pull request as a **draft** (§9.5), and without this option Copilot doesn't review a draft until it's marked ready for review.
+   - **Review new pushes** — optional. Re-reviews each time someone pushes to the PR branch; without it, Copilot reviews the pull request once.
 8. Click **Create**
 
-> 💡 **No ruleset?** You can also manually request a review by assigning **Copilot** as a reviewer on any individual PR. The ruleset just automates it for every PR.
+> 💡 **No ruleset?** You can also request a review by hand on any individual pull request: under **Reviewers** in the right sidebar, click **Request** next to **Copilot**. The ruleset just automates it for every PR.
 
 ### Organization-level configuration
 
-Organization owners can enable automatic reviews across **all repositories** from the organization's Copilot policy settings. This is ideal for teams who want consistent AI review without per-repo setup.
+Teams that want consistent AI review without per-repository setup create the same kind of ruleset one level up: an **organization ruleset** (organization **Settings** → **Repository** → **Rulesets**) that targets repositories and turns on **Automatically request Copilot code review**. Enabling the Code Review policy on its own doesn't switch on automatic reviews. For the organization-level controls, see [Lab 17 — GitHub Admin Controls for Copilot/AI](lab17.md); for the ruleset steps, see [Configuring automatic code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review).
 
 ## 9.3 Meet the Copilot Coding Agent
 
 The **Copilot Coding Agent** is a platform-level feature that turns GitHub Issues into pull requests. You describe what you want in an issue, assign Copilot, and the agent:
 
 1. **Creates a branch** from your default branch
-2. **Reads your codebase** — including `copilot-instructions.md`, `AGENTS.md`, and all your custom instructions
+2. **Reads your codebase** — including `.github/copilot-instructions.md`, `AGENTS.md`, and all your custom instructions
 3. **Implements the change** — writes code, adds tests, updates documentation
-4. **Opens a pull request** — with a description of what it did and why
+4. **Opens a draft pull request** — with a description of what it did and why, and requests your review when it's finished
 
 Key characteristics:
 
@@ -107,9 +120,9 @@ Key characteristics:
 | **Trigger** | Assign `copilot` to an issue, or mention `@copilot` in an issue comment |
 | **Environment** | Runs in a secure cloud environment (GitHub-hosted) |
 | **Context** | Reads your full repository, custom instructions, and `AGENTS.md` |
-| **Output** | A pull request with code changes, ready for review |
+| **Output** | A draft pull request with code changes, for you to review |
 | **Iteration** | Responds to PR review comments — push back and it will revise |
-| **Plans** | Available on Copilot Pro+, Business, and Enterprise |
+| **Plans** | Depends on your Copilot plan and your organization's policy — see [Copilot plans](https://docs.github.com/en/copilot/get-started/plans) and [Managing access to GitHub Copilot cloud agent](https://docs.github.com/en/copilot/concepts/enterprise/cloud-agent-access) |
 
 > 💡 **Why the Coding Agent?** It bridges the gap between "I know what I want" and "here's the code." Combined with Code Review, you get a full loop: describe → implement → review — without writing code yourself.
 
@@ -117,11 +130,11 @@ Key characteristics:
 
 🌐 **On GitHub:**
 
-1. Go to your repository → **Settings** → **Copilot** → **Coding agent**
-2. Ensure the coding agent is **enabled**
-3. If you're in an organization, the org owner may need to enable it from **Organization settings** → **Copilot** → **Policies**
+1. Go to your fork → **Settings** → **Copilot** → **Cloud agent** (GitHub's docs and settings now call the Copilot Coding Agent the *cloud agent*)
+2. Check that the cloud agent is available for your fork. Depending on your plan and any organization policy, it may already be on; if you have to switch something on, note it so you can undo it in §9.12
+3. No **Copilot** or **Cloud agent** entry in Settings, or an organization setting is blocking it? Organization policy governs availability — see [Lab 17 — GitHub Admin Controls for Copilot/AI](lab17.md)
 
-> 💡 **Firewall rules:** If your organization uses a GitHub App allowlist or IP restrictions, ensure the Copilot Coding Agent's GitHub App is permitted. See [GitHub's documentation](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent) for details.
+> 💡 **Firewall rules:** If your organization restricts network access, or the agent's built-in firewall blocks something it needs, the [Copilot cloud agent documentation](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent) links to the firewall and network-access guides.
 
 ## 9.4 Create a GitHub Issue
 
@@ -129,7 +142,9 @@ Instead of making changes locally, let's describe the feature we want in a GitHu
 
 🌐 **On GitHub** (or use the CLI):
 
-1. Create a new issue in your repository:
+1. Create a new issue in your fork. In the browser, open the **Issues** tab → **New issue**, set the title to `feat: add MaxEnrollment property to Course model`, paste in the body (the Markdown between `@'` and `'@` in the PowerShell example below), and click **Create**. No **Issues** tab? Issues may be off on a fork — [Lab 08](lab08.md) §8.5 shows how to turn them on. Prefer the terminal? Use the commands below.
+
+> ⚠️ **Terminal users — check which repository `gh` will use.** A clone of a fork can leave `gh` pointed at the original repository, and `gh issue create` would then open the issue there. Run `gh repo set-default --view`; if it doesn't show your fork, run `gh repo set-default` and choose your fork.
 
 **WSL/Bash:**
 
@@ -185,8 +200,8 @@ Now assign Copilot to the issue and watch it work.
 🌐 **On GitHub:**
 
 1. Open the issue you just created
-2. In the **Assignees** panel on the right, click the gear icon
-3. Select **Copilot** from the list of assignees
+2. In the right sidebar, click **Assignees**
+3. Select **Copilot** from the list. If an optional prompt box or repository and branch dropdowns appear, leave the defaults and confirm the assignment
 4. Copilot will begin working on the issue
 
 Or use the CLI:
@@ -209,9 +224,9 @@ The Coding Agent will:
 
 1. **Start a session** — you'll see a status indicator on the issue showing Copilot is working
 2. **Read your codebase** — it examines the project structure, existing models, and your custom instructions
-3. **Create a branch** — named something like `copilot/fix-{issue-number}`
+3. **Create a branch** — Copilot picks the branch name itself; you don't need to match it to anything
 4. **Make the changes** — implements the requirements from the issue
-5. **Open a pull request** — linked back to the issue, with a description of the changes
+5. **Open a draft pull request** — linked back to the issue, with a description of the changes — and request your review when it finishes
 
 This typically takes **2–5 minutes**.
 
@@ -221,15 +236,15 @@ This typically takes **2–5 minutes**.
 
 1. Refresh the issue page to see status updates
 2. Once the PR is created, you'll see a link on the issue
-3. Click through to the PR — if you configured the ruleset in 9.2, **Code Review has already started automatically**
+3. Click through to the PR. If you turned on **Review draft pull requests** in the §9.2 ruleset, Code Review has already started on the draft. If you didn't, it starts when you mark the draft **Ready for review** — or you can start it now: under **Reviewers**, click **Request** next to **Copilot**
 
-> 💡 **Two agents, one flow.** The Coding Agent opened the PR, which triggered the Code Review ruleset. You didn't write code, you didn't push, you didn't manually request a review — the platform handled everything.
+> 💡 **Two agents, one flow.** With **Review draft pull requests** on, the Coding Agent opens the draft PR and the ruleset you created in §9.2 asks Code Review to look at it. You didn't write code, you didn't push, and you didn't request the review by hand — the platform handled it.
 
 ## 9.6 Review the Automated Feedback
 
 Your PR now has two types of AI activity:
 - The **Coding Agent** created the PR with its implementation
-- **Code Review** automatically reviewed those changes
+- **Code Review** reviewed those changes — automatically through your ruleset, or because you requested it
 
 🌐 **On GitHub:**
 
@@ -246,7 +261,7 @@ Your PR now has two types of AI activity:
 
 4. Many suggestions include **Apply suggestion** buttons — click to accept fixes directly
 
-> 💡 **Comment only:** Copilot Code Review never approves or requests changes on a PR. It only comments. This keeps humans in control of the merge decision while providing AI-assisted first-pass review.
+> 💡 **Comment by default:** Copilot Code Review leaves a **Comment** review. It doesn't approve the pull request or request changes, and by default its review doesn't count toward required approvals or block merging, so humans stay in control of the merge decision while AI provides a first-pass review. (Opt-in Copilot approvals exist and are in public preview — see [About Copilot Code Review](https://docs.github.com/en/copilot/concepts/agents/code-review#copilot-approvals).)
 
 ## 9.7 Iterate Based on Feedback
 
@@ -264,7 +279,7 @@ Here's where it gets powerful: you can ask the Coding Agent to address the Code 
 ```
 
 3. The Coding Agent will push additional commits to the PR addressing the feedback
-4. If "Review new pushes" is enabled, Code Review will automatically re-review the new commits
+4. If you turned on **Review new pushes** in the §9.2 ruleset, Code Review automatically re-reviews the new commits
 
 > 💡 **The feedback loop:** Issue → Coding Agent → PR → Code Review → feedback comment → Coding Agent iterates → Code Review re-reviews. Humans stay in the loop as reviewers and decision-makers, while AI handles the implementation cycles.
 
@@ -283,9 +298,11 @@ git push
 
 ## 9.8 How Custom Instructions Enhance Both Agents
 
-Both the Coding Agent and Code Review automatically read your `copilot-instructions.md` — the same file we explored in Lab 02.
+Both the Coding Agent and Code Review automatically read your repository's `.github/copilot-instructions.md` — the same file you worked with in [Lab 02](lab02.md).
 
 🖥️ **In your terminal:**
+
+Run this from the root of your clone of the fork. No clone handy? Open `.github/copilot-instructions.md` in your fork on GitHub.com instead.
 
 **WSL/Bash:**
 ```bash
@@ -297,13 +314,13 @@ head -30 .github/copilot-instructions.md
 Get-Content .github/copilot-instructions.md | Select-Object -First 30
 ```
 
-Because our repository has custom instructions covering:
+That's only the top of the file, which opens with general coding style. Further down, and in `AGENTS.md` and the path-specific files in `.github/instructions/`, our repository's custom instructions cover:
 - Clean architecture boundaries
 - Repository pattern requirements
 - Test naming conventions (`MethodName_Condition_ExpectedResult`)
 - Security rules (no hardcoded secrets, parameterized queries)
 
-...both agents are **contextually aware** of our project's standards:
+...so both agents are **contextually aware** of our project's standards:
 
 | Agent | How Instructions Help |
 |-------|-----------------------|
@@ -324,7 +341,7 @@ Step back and look at what just happened:
 └──────────────┘     └──────────────────┘     └───────────────┘     └──────────────┘
 ```
 
-**Three platform features, zero local tooling:**
+**Three platform features, all running on GitHub:**
 
 1. **GitHub Issues** — you describe the work
 2. **Copilot Coding Agent** — AI implements it
@@ -340,7 +357,7 @@ The human stays in control: you write the requirements, you review the output, y
 |--------|---------------------|-----------------------------|
 | **Implementation** | Developer writes code locally | Coding Agent writes code from issue description |
 | **Code review** | Human reviewer (hours/days) | AI review in minutes + human final review |
-| **Feedback loop** | Push → wait → fix → push | Comment `@copilot` → agent iterates → auto re-review |
+| **Feedback loop** | Push → wait → fix → push | Comment `@copilot` → agent iterates → re-review (automatic with **Review new pushes**) |
 | **Context** | Reviewer reads PR diff | AI reads full project + custom instructions |
 | **Setup** | IDE, local env, branch, push | Write an issue, assign Copilot |
 
@@ -351,6 +368,8 @@ The built-in Copilot Code Review covers most use cases. But if you need **full c
 This repository includes a custom gh-aw code review workflow:
 
 🖥️ **In your terminal:**
+
+Run these from the root of your clone of the fork. No clone handy? Open `.github/workflows/code-review.md` in your fork on GitHub.com instead.
 
 **WSL/Bash:**
 ```bash
@@ -363,12 +382,12 @@ Get-Content .github/workflows/code-review.md
 ```
 
 This workflow demonstrates:
-- **Custom review checklist** — five specific categories (architecture, C#, security, testing, docs)
-- **`safe-outputs`** — labels AI comments with `ai-review` for auditability
-- **Permission scoping** — `contents: read`, `pull-requests: write`
-- **Tool selection** — only `pull_requests` and `repos` toolsets
+- **Custom review checklist** — five specific categories (architecture compliance, .NET best practices, security, testing, documentation)
+- **`safe-outputs`** — the agent itself runs read-only, so everything it writes back goes through `safe-outputs`: `add-comment` posts the review comment, and a separate `add-labels` puts the `ai-review` label on the pull request (it may add no other label) for auditability
+- **Permission scoping** — `contents: read`, `pull-requests: read`
+- **Tool selection** — the GitHub tool gets only the `pull_requests` and `repos` toolsets, and `bash` is limited to `dotnet`
 
-See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for the complete workflow.
+The file above is the working version. The [reference solution](../solutions/lab09-gh-aw-review/code-review.md) attaches the label through a single `add-pr-comment` safe output instead, and the gh-aw version this repository pins (`gh_aw_schema_version` in [docs/_meta/registry.yaml](../docs/_meta/registry.yaml)) does not accept that option — read it for comparison, but don't copy it as-is.
 
 > 💡 **When to use which?** Use built-in Copilot Code Review for everyday reviews. Use gh-aw when you need a custom review pipeline — domain-specific checklists, labeled outputs, strict permission models, or integration with custom tools.
 
@@ -382,10 +401,10 @@ See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for
 | **Copilot Coding Agent** | Turns GitHub Issues into pull requests with working code |
 | **Copilot Code Review** | Built-in AI reviewer for pull requests |
 | **The agentic chain** | Issue → Coding Agent → PR → Code Review → human merge |
-| **Custom instructions** | Both agents read `copilot-instructions.md` and `AGENTS.md` |
-| **Iteration** | Comment `@copilot` on PRs to request changes; Code Review auto-re-reviews on push |
-| **Coding Agent setup** | Enable in repo settings → Copilot → Coding agent |
-| **Code Review setup** | Repository rulesets or manual `@copilot` reviewer assignment |
+| **Custom instructions** | Both agents read `.github/copilot-instructions.md` and `AGENTS.md` |
+| **Iteration** | Comment `@copilot` on PRs to request changes; Code Review re-reviews new pushes when **Review new pushes** is on |
+| **Coding Agent setup** | Repo **Settings** → **Copilot** → **Cloud agent**; your plan and org policy decide availability |
+| **Code Review setup** | A ruleset with **Automatically request Copilot code review**, or request a review by hand under **Reviewers** |
 | **gh-aw alternative** | For custom review checklists, labeled outputs, and advanced control |
 
 **The three review layers:**
@@ -409,88 +428,32 @@ See the [reference solution](../solutions/lab09-gh-aw-review/code-review.md) for
 
 ## 9.12 Cleanup
 
-<!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
-> 🧹 **Cleanup — leave the machine the way you found it.**
-> Run this checklist before moving to the next lab. Per-lab specifics (named
-> agent / hook / extension files this lab created) should already have been
-> reverted in the steps above; this is the generic sweep that catches the
-> long-tail.
+> 🧹 **Cleanup — leave your fork the way you found it.**
+> This lab left four things in your fork: the `copilot-code-review` **ruleset** (§9.2), the **issue** (§9.4), the **branch** the Coding Agent pushed, and the **pull request** it opened (§9.5). The ruleset matters most: while it's active, changes to your fork's default branch have to come in through a pull request, and Copilot is asked to review each one. Close all four out before the next lab.
+
+🌐 **On GitHub** (in your fork):
+
+1. **Close the pull request.** Go to **Pull requests**, open the Coding Agent's pull request, and click **Close pull request** below the comment box. Don't merge it — this lab never asks you to.
+2. **Delete its branch.** Near the bottom of the closed pull request, click **Delete branch**. GitHub only shows the button once no pull request for that branch is open.
+3. **Close the issue.** Go to **Issues**, open the issue from §9.4, and click **Close issue**. The arrow next to the button lets you pick a reason — *not planned* fits.
+4. **Delete the ruleset.** Open **Settings** → **Rulesets** → **Rulesets** (where you created it in §9.2), click `copilot-code-review`, open the **⋯** menu next to its name, and click **Delete ruleset**. To keep it for later instead, set **Enforcement status** to **Disabled** — it stops requiring pull requests and Copilot reviews until you turn it back on.
+5. **Undo the Coding Agent setting — only if you switched something on in §9.3.** Switch it back under **Settings** → **Copilot** → **Cloud agent**.
 
 🖥️ **In your terminal:**
 
-1. **Stop background processes.** Anything you started in the foreground with
-   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
-   tail-follows). If you used the bash tool in async mode, make sure those
-   shells are stopped.
+Optional — an alternative to steps 1–3. Run these from your clone of the fork, with `gh` pointed at your fork (see the tip in §9.4). They're the same in Bash and PowerShell; replace `<PR_NUMBER>` and `<ISSUE_NUMBER>` with your own numbers.
 
-   **WSL/Bash:**
-   ```bash
-   jobs -l                       # any background jobs in this shell?
-   # kill them by PID — never `pkill`/`killall`
-   ```
+```bash
+gh pr close <PR_NUMBER> --delete-branch
+gh issue close <ISSUE_NUMBER> --reason "not planned"
+```
 
-   **PowerShell:**
-   ```powershell
-   Get-Job                       # any background jobs?
-   Get-Job | Stop-Job; Get-Job | Remove-Job
-   ```
+`--delete-branch` removes the pull request's branch from your fork, and from your clone too (switching you to the default branch first if you had checked it out in §9.7). Pick one route, not both: if the pull request is already closed, `gh pr close` only prints a warning and deletes nothing — use **Delete branch** on GitHub instead. To check your work:
 
-2. **Restore Copilot CLI config if you mutated it.** Some labs ask you to
-   edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
-   `.copilot/mcp-config.json`. If you stashed the original, restore it now.
-   If you edited in place without backing up, check `git status` in the lab
-   repo (workspace configs) and revert anything you didn't mean to keep.
+```bash
+gh pr list --state open      # the Coding Agent's pull request should no longer be listed
+gh issue list --state open   # ...and neither should the issue
+git status --short           # prints nothing when your clone is clean
+```
 
-   **WSL/Bash:**
-   ```bash
-   # If you saved a backup like ~/.copilot/config.json.bak:
-   [ -f ~/.copilot/config.json.bak ] && mv ~/.copilot/config.json.bak ~/.copilot/config.json
-   ```
-
-3. **Exit and restart `copilot` if you touched extensions or MCP.** The
-   runtime caches loaded extensions and MCP servers; reloading via
-   `extensions_reload` does **not** clear an extension whose source dir was
-   deleted. Fully exit the `copilot` process and start a fresh session.
-
-4. **Sweep the long-tail artifact paths.** These directories accumulate
-   across labs and are safe to clean once you've finished:
-
-   ```bash
-   # Per-session scratch (safe to inspect; delete only what this lab created):
-   ls ~/.copilot/lessons/        2>/dev/null
-   ls node/.a2a/                  2>/dev/null
-   ls node/.a2a-transcript-*.md   2>/dev/null
-   ls .git/CLAB_SUMMARY.md        2>/dev/null
-   ```
-
-   Delete only files that this lab created. Do not blanket-delete
-   `~/.copilot/lessons/` if other sessions wrote to it.
-
-5. **Revert any `core.hooksPath` or other git-config mutations.** Some labs
-   point git at a custom hooks dir for the duration of an exercise.
-
-   ```bash
-   git config --get core.hooksPath
-   # if set to a lab path, unset:
-   git config --unset core.hooksPath
-   ```
-
-6. **Confirm working tree is clean (or expected).**
-
-   ```bash
-   git status --short
-   ```
-
-   Any unexpected files (untracked agents, hooks, extensions, scratch
-   notebooks) should be removed or moved out of the repo before continuing.
-
-7. **Verify build is still green.** Optional but recommended after labs that
-   touched hooks, agents, or skills:
-
-   ```bash
-   dotnet build dotnet/ContosoUniversity.sln --nologo
-   ```
-
-> ✅ Once `git status --short` is empty (or shows only files you intentionally
-> kept) and the build is clean, you're ready for the next lab.
-<!-- @end-include docs/_partials/cleanup.md -->
+> ✅ Done when no pull request or issue from this lab is still open in your fork and **Rulesets** no longer lists `copilot-code-review` (or lists it as Disabled).
