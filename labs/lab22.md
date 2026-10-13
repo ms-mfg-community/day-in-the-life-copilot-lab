@@ -16,7 +16,8 @@ No forks, no copy-paste, no drift.
 
 > ⏱️ Presenter pace: 7 minutes | Self-paced: 35 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on Lab 21.
+**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on [Lab 21](lab21.md).
+The [executive blueprint](../docs/enterprise-harness-blueprint.md) explains why the arc exists.
 
 > ⚠️ **Spec Kit moves fast.** It shipped thirteen releases in the five weeks to
 > 2026-09-25, twice within a single day. Nothing in this lab hardcodes a version:
@@ -439,3 +440,5 @@ This lab reads every version it depends on from the content registry at
 [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). No version string
 is hardcoded in this file. See the registry's re-verification obligations
 before running this lab with a cohort.
+
+**Next:** [Lab 23 — Custom SDLC Stages, Gates & the Rework Loop](lab23.md)
