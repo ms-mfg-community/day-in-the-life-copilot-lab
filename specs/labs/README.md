@@ -54,13 +54,20 @@ Steps:
 1. Write the spec from `_lab-template.md`. Its §3 acceptance criteria must each name the
    command that observes them, and its §4 must dispose of every outside-world claim as
    `free-check`, `cite F-nn`, `research`, or `cut`.
+
+   **Declared duration is not a contract-test criterion.** A spec may carry a derived
+   estimate as guidance, but re-deriving the real duration from the material is the
+   teachability gate's job and its number wins. A contract test may assert only that
+   frontmatter, `docs/_meta/registry.yaml` and the inline `⏱️` callout agree with each
+   other — never that a particular number is right. Asserting an estimate freezes one
+   author's guess into a gate nothing can get past.
 2. Write the contract test. **It must fail before the edit.** A test written after the
    edit proves nothing — it was fitted to what you already did.
 3. Triage §4. Only a claim that is load-bearing *and* unsettleable by a free check earns a
    `spec-forge` run (`maxRounds: 2`). Most claims are `free-check` or `cut`.
 4. One `lab-forge` call: `labPath`, `specPath`, `maxRounds: 2`, absolute paths with forward
    slashes, and a `scope` that restates the spec's §5 non-goals and §7 execution boundary.
-   Skip this and run the edit by hand **only** if the spec's §2 declares write steps.
+   Follow the spec's §2 **`lab-forge` verdict** — it is stated, not inferred.
 
 ## The QA story
 
@@ -104,8 +111,23 @@ QA closes the dev story. The dev story does not close itself.
 
 ## Labs that `lab-forge` must not run
 
-A lab whose spec §2 declares write steps — GitHub writes, global installs, GUI steps, or
-**anything that mutates state outside the repository working tree**. Lab 10 is the warning:
-a regex that looked only for GitHub writes and global installs called it safe, but it
-creates, fills and deletes `~/.copilot/lessons/` in the maintainer's home directory. Read
-the lab's commands; do not trust a keyword count.
+A lab's spec §2 states one of three **`lab-forge` verdicts**. It is stated, never inferred —
+the earlier blanket rule ("a lab with write steps is rehearsed by a person") was contradicted
+by the first lab it was applied to: Lab 10 declares write steps, was run under `lab-forge`
+anyway, and that was correct, because the *edit* was prose and the write steps were fenced
+in §7.
+
+| Verdict | When | What the run gate does |
+|---|---|---|
+| `run` | §2 declares no write steps | Executes the lab's commands |
+| `run with §7 fenced` | Write steps exist and every one is enumerated in §7 | Reports each §7 item UNVERIFIED; executes none. Anything **not** in §7 it may execute |
+| `do not run — rehearse by hand` | The lab cannot be meaningfully edited without executing something in §7 | Not invoked; a person rehearses it |
+
+A write step is any command that writes to GitHub, installs globally, needs a GUI, or
+**mutates state outside the repository working tree** — plus anything inside the tree that
+overwrites a committed file or changes git config. Read the lab's commands; do not trust a
+keyword count. Lab 10 is the warning: a regex looking only for GitHub writes and global
+installs called it safe, while it creates, fills and deletes `~/.copilot/lessons/` in the
+maintainer's home directory. Lab 12 is the sharper case — §12.2 overwrites a **committed**
+Parquet fixture that a committed test pins, and §12.5.4 redirects `core.hooksPath` for the
+whole repository. Neither contains the word "GitHub".

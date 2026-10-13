@@ -37,7 +37,8 @@
 | **Presenter minutes** | |
 | **Self-paced minutes** | |
 | **Prerequisites** | Labs that must come first, and why — not a courtesy list |
-| **Write steps** | `none`, or enumerate every command that writes to GitHub, installs globally, or needs a GUI. **A lab with write steps is rehearsed by a person; `lab-forge` is not run on it.** |
+| **Write steps** | `none`, or enumerate every command that writes to GitHub, installs globally, needs a GUI, or **mutates state outside the repository working tree**. Read the commands; a keyword scan misses a write phrased as a prompt. |
+| **`lab-forge` verdict** | Exactly one of: `run` — no write steps at all. `run with §7 fenced` — write steps exist, every one is enumerated in §7, and the run gate reports them UNVERIFIED and executes none. `do not run — rehearse by hand` — the lab cannot be meaningfully edited without executing something in §7. **State the verdict; do not leave it to be inferred.** |
 
 ## 3. Acceptance criteria
 
