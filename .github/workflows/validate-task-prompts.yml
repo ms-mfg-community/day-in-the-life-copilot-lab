@@ -1,0 +1,53 @@
+name: Validate task prompts
+
+# Lab 24: every T task in a changed tasks.md must carry a valid `yaml task-prompt`
+# block. The validator rejects; it never re-prompts or edits the file.
+on:
+  pull_request:
+    paths:
+      - "**/tasks.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: task-prompts-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    name: Validate task prompts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate changed tasks.md files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Any specs/<feature>/tasks.md, at the repo root or under a nested project
+          # root. The Lab 24 invalid/ copy is meant to fail; the Lab 24 tests cover it.
+          mapfile -t files < <(git diff --name-only --diff-filter=AMR "$BASE_SHA" HEAD -- \
+            ':(glob)**/specs/*/tasks.md' ':(exclude,glob)labs/fixtures/lab24/invalid/**' | sort -u)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No specs/<feature>/tasks.md changed."
+            exit 0
+          fi
+          status=0
+          for f in "${files[@]}"; do
+            node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs "$f" || status=1
+          done
+          exit "$status"

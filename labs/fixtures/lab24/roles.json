@@ -1,0 +1,63 @@
+{
+  "schema": "contoso-sdlc-roles/1",
+  "max_rework_rounds": 2,
+  "stages": {
+    "epic": {
+      "next": "review-epic",
+      "notify": "avery-pm",
+      "project_status": "Epic review",
+      "surface": "GitHub Copilot app"
+    },
+    "feature-spec": {
+      "next": "review-spec",
+      "notify": "blake-lead",
+      "project_status": "Spec review",
+      "surface": "GitHub Copilot app"
+    },
+    "plan": {
+      "next": "review-plan",
+      "notify": "blake-lead",
+      "project_status": "Plan review",
+      "surface": "IDE"
+    },
+    "story-tasks": {
+      "next": "review-tasks",
+      "notify": "blake-lead",
+      "project_status": "Tasks review",
+      "surface": "Pull request"
+    },
+    "implement": {
+      "next": "qa-review",
+      "notify": "casey-qa",
+      "project_status": "QA review",
+      "surface": "Copilot CLI"
+    },
+    "qa-review": {
+      "next": "review-qa",
+      "notify": "casey-qa",
+      "project_status": "QA verdict",
+      "surface": "Pull request"
+    }
+  },
+  "rework": {
+    "implementation": {
+      "next": "implement",
+      "notify": "dana-dev",
+      "project_status": "Rework",
+      "surface": "Copilot CLI"
+    },
+    "spec-scope": {
+      "next": "review-spec",
+      "notify": "blake-lead",
+      "project_status": "Spec re-review",
+      "surface": "Pull request"
+    }
+  },
+  "gates": {
+    "review-epic": "avery-pm",
+    "review-spec": "blake-lead",
+    "review-plan": "blake-lead",
+    "review-tasks": "blake-lead",
+    "review-qa": "casey-qa"
+  }
+}

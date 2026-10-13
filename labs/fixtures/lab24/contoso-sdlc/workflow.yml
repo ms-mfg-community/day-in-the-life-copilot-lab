@@ -1,0 +1,194 @@
+# The Contoso SDLC workflow that Labs 22 and 23 refer to. Lab 24 ships it.
+#
+# Install it with its scripts (Spec Kit copies the companion files when the
+# directory holds more than workflow.yml):
+#   specify workflow add --dev ../labs/fixtures/lab24/contoso-sdlc
+#
+# Run:
+#   specify workflow run contoso-sdlc \
+#     --input spec="Cap course enrollment at the course capacity" \
+#     --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101
+#
+# Stage order follows Lab 23: epic, review-epic, specify, review-spec, plan,
+# review-plan, tasks, [review-tasks], implement, qa-review, review-qa.
+# The signal-* steps write the stage event the Lab 24 funnel routes on. They
+# write to stage-events/<feature>.jsonl in the working tree; pushing that file
+# is what notifies the next person. Spec Kit's own run state stays local.
+schema_version: "1.0"
+workflow:
+  id: "contoso-sdlc"
+  name: "Contoso SDLC"
+  version: "1.0.0"
+  author: "Contoso Platform Engineering"
+  description: "Epic to QA verdict with review gates, validated task prompts and stage signals"
+
+requires:
+  speckit_version: ">=1.0.0"
+  integrations:
+    any:
+      - "copilot"
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe what you want to build"
+  feature:
+    type: string
+    required: true
+    prompt: "Feature directory Spec Kit will create, for example 001-enrollment-cap"
+  epic:
+    type: string
+    required: true
+    prompt: "Epic slug, the directory under .specify/epics/"
+  issue:
+    type: number
+    default: 0
+    prompt: "Epic issue number the funnel comments on (0 for none)"
+  pr:
+    type: string
+    default: "auto"
+    prompt: "Pull request number, or auto to read it from the current branch"
+  review_tasks:
+    type: boolean
+    default: true
+    prompt: "Pause for a human review of tasks.md before implementation?"
+  manifest:
+    type: string
+    default: "../enterprise-harness-bundle/manifest.yaml"
+    prompt: "Bundle manifest that lists the allowed agents"
+  registry:
+    type: string
+    default: "../docs/_meta/registry.yaml"
+    prompt: "Registry that defines the model tiers"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+
+steps:
+  - id: epic
+    command: speckit.contoso-review.epic
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: signal-epic
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage epic --run {{ context.run_id }} --require-artifact
+      --artifact ".specify/epics/{{ inputs.epic }}/epic.md" --issue "{{ inputs.issue }}"
+
+  - id: review-epic
+    type: gate
+    message: "Approve the epic before any spec is written. Record the approval with approvals.mjs."
+    options: [approve, reject]
+    on_reject: retry
+
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  # Fails loudly if Spec Kit numbered the feature differently from --input feature.
+  - id: signal-spec
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage feature-spec --from epic --run {{ context.run_id }} --check-feature-json
+      --require-artifact --artifact "specs/{{ inputs.feature }}/spec.md" --pr "{{ inputs.pr }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review the generated spec before planning."
+    options: [approve, reject]
+    on_reject: retry
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: signal-plan
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage plan --from feature-spec --run {{ context.run_id }}
+      --require-artifact --artifact "specs/{{ inputs.feature }}/plan.md" --pr "{{ inputs.pr }}"
+
+  - id: review-plan
+    type: gate
+    message: "Review the plan before generating tasks."
+    options: [approve, reject]
+    on_reject: retry
+
+  - id: tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  # Deterministic: a malformed task prompt fails the run here. Nothing re-prompts.
+  - id: validate-tasks
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/validate-tasks.mjs" "specs/{{ inputs.feature }}/tasks.md"
+      --stamp-run {{ context.run_id }} --manifest "{{ inputs.manifest }}" --registry "{{ inputs.registry }}"
+
+  - id: signal-tasks
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage story-tasks --from plan --run {{ context.run_id }}
+      --require-artifact --artifact "specs/{{ inputs.feature }}/tasks.md" --pr "{{ inputs.pr }}"
+
+  - id: maybe-review-tasks
+    type: if
+    condition: "{{ inputs.review_tasks }}"
+    then:
+      - id: review-tasks
+        type: gate
+        message: "Review tasks.md: every task is an executable prompt with an owner, a tier and a check."
+        options: [approve, reject]
+        on_reject: retry
+
+  - id: taskstoissues
+    command: speckit.taskstoissues
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: implement
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: signal-implement
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage implement --from story-tasks --run {{ context.run_id }} --pr "{{ inputs.pr }}"
+
+  - id: qa-review
+    command: speckit.contoso-review.qa-review
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: signal-qa
+    type: shell
+    run: >-
+      node "{{ context.workflow_dir }}/scripts/record-stage.mjs" --feature "{{ inputs.feature }}"
+      --stage qa-review --from implement --run {{ context.run_id }}
+      --require-artifact --artifact "specs/{{ inputs.feature }}/qa-review.md" --pr "{{ inputs.pr }}"
+
+  # On reject the run pauses here. Rework is a new task, not a re-run (Lab 24.6).
+  - id: review-qa
+    type: gate
+    message: "QA verdict: approve to close the feature, reject to send it back as a new task."
+    options: [approve, reject]
+    on_reject: retry
