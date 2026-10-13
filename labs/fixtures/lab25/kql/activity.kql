@@ -1,0 +1,20 @@
+// id: activity
+// kind: activity
+// tables: CopilotSpans_CL
+// columns: TimeGenerated, SpanName, ParentSpanId, InputTokens, OutputTokens
+// mirror: lib/queries.mjs activity
+//
+// ACTIVITY, NOT OUTCOME. Sessions, calls and tokens say how busy the agents were. They do not
+// say whether delivery got better, and a dashboard that leads with them rewards churn.
+let changeAt = datetime(2026-09-15);
+CopilotSpans_CL
+| extend IsRoot = SpanName == "invoke_agent" and isempty(ParentSpanId)
+| summarize
+    Sessions = countif(IsRoot),
+    ChatCalls = countif(SpanName startswith "chat"),
+    ToolCalls = countif(SpanName startswith "execute_tool"),
+    InputTokens = sumif(InputTokens, IsRoot),
+    OutputTokens = sumif(OutputTokens, IsRoot)
+    by Window = iff(TimeGenerated < changeAt, "baseline", "after")
+| extend Kind = "activity"
+| project Window, Kind, Sessions, ChatCalls, ToolCalls, InputTokens, OutputTokens

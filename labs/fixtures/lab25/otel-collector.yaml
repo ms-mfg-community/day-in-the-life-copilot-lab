@@ -1,0 +1,33 @@
+# Lab 25: minimal OpenTelemetry Collector that turns Copilot OTLP traffic into a file the
+# forwarder can read. Run it next to the developers (or in CI) and point the managed
+# `telemetry.endpoint` at it. It does not send anything to Azure; `lab25.mjs forward` does.
+#
+#   docker run --rm -p 4318:4318 -v "$PWD:/work" -w /work \
+#     otel/opentelemetry-collector-contrib:latest --config labs/fixtures/lab25/otel-collector.yaml
+#
+# The file exporter writes one OTLP/JSON `{"resourceSpans": [...]}` object per line.
+# lib/ingest.mjs parseSpans() reads that shape as well as the CLI's own file-exporter lines.
+# The adapter follows the OTLP/JSON spec; a live collector capture was not taken for this lab.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+  batch: {}
+
+exporters:
+  file:
+    path: ./copilot-otel.collector.jsonl
+    format: json
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [file]
