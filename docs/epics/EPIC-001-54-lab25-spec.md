@@ -79,7 +79,11 @@ Agreed with the #53 session and used exactly:
   run_id, from_stage, transition (advance|rework), actor, at, artifact, artifact_sha,
   classification`. `artifact_sha` is the git blob SHA (`git hash-object`).
 - **Approval of record** for gates `review-epic, review-spec, review-plan, review-tasks,
-  review-qa`, with `source` `comment | pr-review | qa-review.md`. It counts only if
+  review-qa`, with `source` `comment | pr-review` and task segment `-`. `qa-review.md` is
+  the artifact the QA verdict is about (its blob SHA is the approval's `artifact_sha`),
+  not a source. Lab 24 counts a duplicate decision once, at its earliest time; Lab 25
+  doesn't re-dedup. Stage events may carry optional `issue`/`pr` fields, which ingest
+  ignores. An approval counts only if
   `approver` equals the comment or review author and that login owns the gate in
   `roles.json`; a PR review's state agrees with its verdict.
 - **Rework**: `spec-scope` sets `escalated_to` to the review-spec/review-plan owner;

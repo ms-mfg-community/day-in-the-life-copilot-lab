@@ -36,7 +36,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "faaa7b7b3b61dc9ffdb31c05c9f0d31b9f638a9d",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-02T06:27:35.750Z"
   },
   {
@@ -46,7 +46,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "56972dda5fb9f1986004bca391437093d4d659bd",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-02T10:48:10.416Z"
   },
   {
@@ -86,7 +86,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "ba54db1ea3876faa6c68b51e149bd9f2f7c7af45",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-04T02:36:45.614Z",
     "escalated_to": "blake-lead"
   },
@@ -107,7 +107,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "4c7966f5e2c50c2b6b76a109c25796ae22f2ecad",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-04T08:51:45.556Z"
   },
   {
@@ -117,7 +117,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "f3918278fd8706f748ccd9813ade69d26a185d4e",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-04T12:41:23.725Z"
   },
   {
@@ -157,7 +157,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "13476341495043323fee860661cb4be399156152",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-08T05:13:05.992Z",
     "escalated_to": "blake-lead"
   },
@@ -178,7 +178,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "c819dc4db99978e7c2611abb70d9d44478db5eec",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-08T12:50:17.245Z"
   },
   {
@@ -218,7 +218,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "e140c67c02043f4bced4fdd8dbc3271d11eceac2",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-09T23:22:34.423Z"
   },
   {
@@ -228,7 +228,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "693ed804a90fdcfb6a68c1978b7fb11a7de1c5c7",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-10T04:31:40.997Z"
   },
   {
@@ -278,7 +278,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "d8cb06490803924daf802dfa606ae20ff232dbcb",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-17T03:20:18.726Z"
   },
   {
@@ -328,7 +328,7 @@
     "verdict": "reject",
     "approver": "casey-qa",
     "artifact_sha": "580f1abf80b4e9162b651966ddf4b6a7ade9935c",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-18T23:01:30.653Z"
   },
   {
@@ -338,7 +338,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "3b7a1bff3ab4b36758590a1ccbddd93fbb37636c",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-19T03:07:25.418Z"
   },
   {
@@ -388,7 +388,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "7c5da1cc7beec5d2aa592400845182f2ef6db6c7",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-22T00:10:08.292Z"
   },
   {
@@ -438,7 +438,7 @@
     "verdict": "approve",
     "approver": "casey-qa",
     "artifact_sha": "aab1363ee1683ac4eefd0b57512c224f9814dc13",
-    "source": "qa-review.md",
+    "source": "pr-review",
     "at": "2026-09-24T03:11:25.638Z"
   }
 ]

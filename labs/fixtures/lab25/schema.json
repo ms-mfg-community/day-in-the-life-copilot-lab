@@ -63,7 +63,7 @@
     },
     {
       "name": "SdlcApprovals",
-      "source": "Approval of record (Lab 24): PR review, <!-- contoso-approval {json} --> comment, or committed qa-review.md per round",
+      "source": "Approval of record (Lab 24): PR review or <!-- contoso-approval {json} --> comment. qa-review.md is the artifact the QA verdict is about (artifact_sha), not a source. Lab 24 counts a duplicate decision once, at its earliest time; Lab 25 does not re-dedup",
       "columns": [
         { "name": "TimeGenerated", "type": "datetime" },
         { "name": "CorrelationKey", "type": "string" },

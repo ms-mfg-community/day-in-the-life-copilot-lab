@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { loadDataset, parseSpans, spanToRow, splitCorrelationKey } from '../../labs/fixtures/lab25/lib/ingest.mjs';
+import { loadDataset, parseSpans, spanToRow, splitCorrelationKey, stageEventToRow } from '../../labs/fixtures/lab25/lib/ingest.mjs';
 import { costDoubleCount, isRoot, QUERY_IDS, reworkRate, RUNNERS } from '../../labs/fixtures/lab25/lib/queries.mjs';
 import {
   buildFindings, gateOwners, gitBlobSha, MEASURED_BY, REDACTED, sanitizeIdentifier, verifiedProvenance,
@@ -35,6 +35,23 @@ describe('lab25 engine: committed dataset', () => {
       expect(row.CorrelationKey).toMatch(/^[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}$/);
     }
     expect(t.SdlcApprovals.some((a: any) => a.RunId === '3f9a2c1e' && a.Gate === 'review-qa' && a.Verdict === 'reject')).toBe(true);
+  });
+
+  it('approvals follow Lab 24: PR review or comment sources, task "-", QA SHA is qa-review.md', () => {
+    const t = loadDataset(DATA);
+    for (const a of t.SdlcApprovals) {
+      expect(['pr-review', 'comment']).toContain(a.Source);
+      expect(splitCorrelationKey(a.CorrelationKey).Task).toBe('-');
+    }
+    const qaShas = new Set(t.SdlcStageEvents.filter((e: any) => e.Stage === 'qa-review').map((e: any) => e.ArtifactSha));
+    const qaApprovals = t.SdlcApprovals.filter((a: any) => a.Gate === 'review-qa');
+    expect(qaApprovals.length).toBe(14);
+    for (const a of qaApprovals) expect(qaShas.has(a.ArtifactSha)).toBe(true);
+  });
+
+  it('stage-event ingest tolerates optional issue/pr fields', () => {
+    const base = { correlation_key: '001-enrollment-cap/qa-review/-/3f9a2c1e', feature: '001-enrollment-cap', stage: 'qa-review', task: '-', run_id: '3f9a2c1e', at: '2026-09-01T00:00:00Z' };
+    expect(stageEventToRow({ ...base, issue: 42, pr: 77 })).toEqual(stageEventToRow(base));
   });
 });
 

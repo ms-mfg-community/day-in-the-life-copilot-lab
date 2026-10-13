@@ -194,12 +194,12 @@ function feature(c, f) {
     const decided = qaEnd + 60000 + c.between(60, 360) * 60000;
     if (outcome === 'approve') {
       step(c, f, decided, 'step_completed', 'review-qa', 'gate', 'completed');
-      approval(c, f, decided, 'review-qa', 'qa-review', 'approve', qa.artifact_sha, 'qa-review.md');
+      approval(c, f, decided, 'review-qa', 'qa-review', 'approve', qa.artifact_sha, 'pr-review');
       step(c, f, decided + 1000, 'workflow_finished', '', '', 'completed');
       return;
     }
     step(c, f, decided, 'step_completed', 'review-qa', 'gate', 'paused');
-    approval(c, f, decided, 'review-qa', 'qa-review', 'reject', qa.artifact_sha, 'qa-review.md', outcome === 'spec-scope' ? OWNERS['review-spec'] : undefined);
+    approval(c, f, decided, 'review-qa', 'qa-review', 'reject', qa.artifact_sha, 'pr-review', outcome === 'spec-scope' ? OWNERS['review-spec'] : undefined);
     const task = TASKS[(round + f.feature.length) % TASKS.length];
     stageEvent(c, f, decided + 60000, 'rework', 'qa-review', 'casey-qa', null, { task, transition: 'rework', classification: outcome });
     t = decided + 120000;

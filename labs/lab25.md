@@ -262,7 +262,13 @@ outcomes. These come from Lab 24's durable records:
 | --- | --- | --- |
 | `stage-events/<feature>.jsonl` (repo root, append-only) | Every `advance` and `rework` transition, with `actor`, `artifact` and its git blob SHA, and `classification` on rework | `SdlcStageEvents_CL` |
 | Spec Kit `log.jsonl` | `step_started` / `step_completed` per step, which gives dwell time | `SdlcStepLog_CL` |
-| Approvals of record (comments carrying `<!-- contoso-approval {json} -->`, PR reviews, `qa-review.md`) | Gate verdicts, approver, `escalated_to` | `SdlcApprovals_CL` |
+| Approvals of record (PR reviews and comments carrying `<!-- contoso-approval {json} -->`) | Gate verdicts, approver, `escalated_to` | `SdlcApprovals_CL` |
+
+`qa-review.md` isn't an approval source. It's the artifact the QA owner's verdict is about:
+the verdict arrives as a PR review (or a contoso-approval comment) whose `artifact_sha` is
+the blob SHA of that round's `qa-review.md`. Approvals are gate-level, so the task segment
+of their key is always `-`. Stage events may also carry optional `issue` and `pr` fields;
+ingest ignores them.
 
 Three rules keep the numbers honest:
 
@@ -275,6 +281,9 @@ Three rules keep the numbers honest:
    Lab 24 enforces this; the fixture only contains records that pass.
 3. **Rework is classified.** `implementation` rework resumes at `qa-review`; `spec-scope`
    rework is escalated to the `review-spec`/`review-plan` owner (`escalated_to`).
+
+Lab 24 already deduplicates approvals: it counts a duplicate decision once, at its earliest
+time. Lab 25 ingests the records as they are and doesn't deduplicate them again.
 
 Trace one feature end to end, with SHA verification against the real artifacts:
 
