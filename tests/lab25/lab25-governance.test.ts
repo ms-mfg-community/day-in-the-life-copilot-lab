@@ -17,7 +17,7 @@ describe('lab25 governance: managed telemetry settings', () => {
     );
     expect(Object.values(telemetry.capture).every((v) => v === false)).toBe(true);
     expect(telemetry.lockCaptureContent).toBe(true);
-    expect(telemetry).not.toHaveProperty('captureContent', true);
+    expect(telemetry.captureContent).toBe(false);
   });
 
   it('stamps the bundle version and keeps secrets out of headers', () => {

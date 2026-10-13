@@ -36,6 +36,12 @@ const MUST_SAY: Record<string, RegExp> = {
   'recommendation closes only when re-measured': /closes only when that re-measurement/,
   'activity is not outcome': /Activity isn't outcome/,
   'restamp': /--restamp/,
+  'restamped Workbook baseline setup': /each panel[\s\S]{0,180}let changeAt = datetime\(2026-09-15\)[\s\S]{0,180}CLI prints/,
+  'check both windows before interpretation': /both `baseline`\s+and `after`[\s\S]{0,100}nonzero/,
+  'retention below 31 days saves nothing': /retention under 31 days saves no money/i,
+  'table deletion does not stop retention charges': /deleting a table does not stop its retention charges/i,
+  'legacy VS Code capture switch': /VS Code's local harness honours only[\s\S]{0,100}`captureContent`/,
+  'missing key degrades to unjoined session telemetry': /Without a per-session key[\s\S]{0,100}unjoined session telemetry/,
 };
 
 describe('lab25 content: U5 claims the lab must make', () => {

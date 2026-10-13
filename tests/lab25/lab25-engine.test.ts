@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { loadDataset, parseSpans, spanToRow, splitCorrelationKey } from '../../labs/fixtures/lab25/lib/ingest.mjs';
-import { costDoubleCount, isRoot, QUERY_IDS, RUNNERS } from '../../labs/fixtures/lab25/lib/queries.mjs';
+import { costDoubleCount, isRoot, QUERY_IDS, reworkRate, RUNNERS } from '../../labs/fixtures/lab25/lib/queries.mjs';
 import {
   buildFindings, gateOwners, gitBlobSha, MEASURED_BY, REDACTED, sanitizeIdentifier, verifiedProvenance,
 } from '../../labs/fixtures/lab25/lib/report.mjs';
@@ -57,6 +57,20 @@ describe('lab25 engine: cost', () => {
 describe('lab25 engine: findings', () => {
   const f = buildFindings(loadDataset(DATA));
   const byMetric = Object.fromEntries(f.outcomes.map((o: any) => [o.Metric, o]));
+
+  it('assigns rework to the earliest QA decision even when a later decision comes first', () => {
+    const t = loadDataset(DATA);
+    const approvals = [
+      { Feature: 'cross-window', Gate: 'review-qa', TimeGenerated: '2026-09-16T00:00:00Z', Verdict: 'approve' },
+      { Feature: 'cross-window', Gate: 'review-qa', TimeGenerated: '2026-09-14T00:00:00Z', Verdict: 'reject' },
+    ];
+    expect(reworkRate({ ...t, SdlcApprovals: approvals })).toEqual([
+      { Window: 'baseline', Features: 1, Reworked: 1, ReworkRate: 1 },
+      { Window: 'after', Features: 0, Reworked: 0, ReworkRate: null },
+    ]);
+    expect(reworkRate({ ...t, SdlcApprovals: [...approvals].reverse() }))
+      .toEqual(reworkRate({ ...t, SdlcApprovals: approvals }));
+  });
 
   it('reports the outcome directions the lab quotes', () => {
     expect(byMetric.qa_reject_rate).toMatchObject({ Baseline: 0.556, After: 0.2, Direction: 'improved' });

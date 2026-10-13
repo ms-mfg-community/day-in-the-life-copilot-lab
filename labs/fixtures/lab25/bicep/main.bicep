@@ -22,7 +22,7 @@ param workspaceName string = 'law-lab25-${uniqueString(resourceGroup().id)}'
 @description('Data collection rule name.')
 param dcrName string = 'dcr-lab25-${uniqueString(resourceGroup().id)}'
 
-@description('Interactive retention in days for the workspace and the lab tables. Retain only what your governance review approves.')
+@description('Interactive retention for the workspace and lab tables. The 30-day service default is not a cost optimization: Analytics ingestion includes 31 days. Retain only what your governance review approves.')
 @minValue(30)
 @maxValue(730)
 param retentionInDays int = 30
@@ -178,7 +178,7 @@ var workbookContent = {
         type: 1
         name: 'intro'
         content: {
-          json: '## Lab 25: the improvement loop\nEach panel is a file in labs/fixtures/lab25/kql. AIU is a usage unit, not currency. Before/after comparisons are observational, not causal.'
+          json: '## Lab 25: the improvement loop\nEach panel is a file in labs/fixtures/lab25/kql. After forward --restamp, edit every query containing let changeAt to use the timestamp printed by the CLI (Lab 25 section 25.7), then save. Check that cost-per-task shows nonzero baseline and after task counts before interpreting comparisons. AIU is a usage unit, not currency. Before/after comparisons are observational, not causal.'
         }
       }
     ],

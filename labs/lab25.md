@@ -170,6 +170,7 @@ object. The delta is [`managed-settings.telemetry.json`](fixtures/lab25/managed-
     "identity": false, "prompts": false, "responses": false,
     "toolArguments": false, "toolOutput": false, "policyDetail": false
   },
+  "captureContent": false,
   "lockCaptureContent": true,
   "serviceName": "copilot-enterprise",
   "resourceAttributes": {
@@ -203,6 +204,13 @@ workspace retention and table-level access before the first byte lands.
 > capture class. With capture off, you may lose tool names. Test in your tenant before you
 > build a dashboard on them. The `errors` query degrades gracefully when they're missing.
 
+> 📝 **Capture deviation from the epic (verified 2026-10-13).** The epic named
+> `captureContent`; `capture.*` is current for fine-grained controls. For content,
+> VS Code's local harness honours only the legacy all-or-nothing `captureContent`
+> setting, not the five independent content classes (identity capture is supported).
+> The managed delta also sets `"captureContent": false` for legacy-only clients;
+> keep it alongside the six disabled classes and `lockCaptureContent`.
+
 > 📝 **Deviation from the epic.** EPIC-001 says the Copilot app emits no OTel. On
 > 2026-10-12 the concept page lists capture controls for Copilot CLI, the GitHub Copilot
 > app, and VS Code with Agent Host. Whether the app emits the same span tree is
@@ -235,8 +243,15 @@ The bundle version comes from managed settings, so one is per-session and one is
 > managed case needs admin rights to deploy file-based managed settings, which this lab's
 > authors didn't have on 2026-10-12. **To test it:** deploy the managed delta above with a
 > file exporter, set `OTEL_RESOURCE_ATTRIBUTES` in the session, run one prompt, and
-> `inspect` the file. If `CorrelationKey` is empty, managed replaced it: move the key into
-> a span attribute your step sets, or join on `gen_ai.conversation.id` instead.
+> `inspect` the file. If `CorrelationKey` is empty, the required key did not survive;
+> don't infer a feature from the session ID or assume an unsupported span-injection API.
+> Without a per-session key, the join degrades to **unjoined session telemetry**:
+> `gen_ai.conversation.id` groups spans within a session, but Lab 24's stage events and
+> approvals have no `ConversationId`, so it cannot join those records. Root-session
+> usage and errors remain available; cost per task and span-to-stage provenance are
+> unavailable for those sessions. Stage transitions, approval-based rejects/rework and
+> step-log dwell still work from their durable records. Keep the offline fixture for
+> the complete join until the managed-setting test confirms per-session keys survive.
 
 ## 25.5 Stages, rework and approvals: *you build this*
 
@@ -342,7 +357,23 @@ than a day in the future) with the receipt time, which would flatten the before/
 split. `--restamp` shifts the dataset into the last two days, keeping order and the
 split. Without it, `forward` refuses stale rows.
 
-Then open the Workbook, or paste any `.kql` file into the workspace's Logs blade.
+**Set the comparison boundary before reading the Workbook.** Save the `changeAt =
+datetime(...)` timestamp that `forward --restamp` prints. Open the Workbook in **Edit**
+mode. In each panel whose query contains `let changeAt = datetime(2026-09-15)`, replace
+that declaration with the change point the CLI prints, then run the query. Update all
+eight windowed panels (cost, double-count, rejects, rework, dwell, escalations,
+before/after and activity) and save the Workbook. Errors and provenance have no change
+boundary. When pasting a `.kql` file into Logs, make the same replacement.
+
+Use a query time range of at least the **last 2 days** (the deployed Workbook defaults
+to 90 days). After ingestion is visible, check **AI Credits per task**: both `baseline`
+and `after` must have nonzero `Tasks` (16 each for this fixture). Check the before/after
+panel has nonzero `NBaseline` and `NAfter` too. If not, fix the query boundary/time
+range or wait for ingestion before interpreting results. The September boundary baked
+into the query files is only for the original offline fixture; leaving it unchanged
+after restamping puts every row into "after" and gives no baseline. Re-forwarding with
+`--restamp` produces a new boundary; repeat these edits, and use a clean dataset/window
+to avoid counting duplicate uploads.
 
 ### The constraints that bite
 
@@ -352,6 +383,18 @@ _Restated from EPIC-001 Appendix A.2 (verified 2026-09-17)._
   `externaldata` and user-defined functions; Basic queries cover 30 days; Auxiliary has
   no alerts; and neither is visible to Power BI. The provenance and before/after queries
   join, so this pack **requires** Analytics.
+- **Retention under 31 days saves no money.** Analytics ingestion includes 31 days of
+  retention. `main.bicep` keeps the service's 30-day default for the workspace and
+  tables (`@minValue(30)` is this template's workspace bound, not the table API's
+  minimum); it is **not** a cost optimization. Shorter retention can serve privacy
+  requirements, but it doesn't reduce the included ingestion price.
+- **Deleting a table does not stop its retention charges.** For these Analytics custom
+  tables, deletion does not delete their data; interactive and long-term retention
+  charges continue to apply under the applicable retention policy. Review workspace,
+  table and total retention before cleanup, rather than treating deletion as a billing
+  switch. These two caveats were re-verified 2026-10-13 against Microsoft Learn's
+  [retention guidance](https://learn.microsoft.com/azure/azure-monitor/logs/data-retention-configure)
+  and [retention billing](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs#log-data-retention).
 - **Ingestion limits.** 1 MB per call, and 64 KB per field — longer fields are
   **silently truncated**. The forwarder batches under 1 MB and rejects any field over
   64 KB rather than lose data quietly.

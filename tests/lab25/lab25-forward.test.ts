@@ -5,7 +5,7 @@ import {
   assertFresh, assertRowsMatchSchema, batchRows, ingestionUrl, MAX_AGE_MS, MAX_CALL_BYTES, MAX_FIELD_BYTES,
   planForward, postBatches, restamp,
 } from '../../labs/fixtures/lab25/lib/forward.mjs';
-import { DEFAULT_CHANGE_AT } from '../../labs/fixtures/lab25/lib/queries.mjs';
+import { costPerTask, DEFAULT_CHANGE_AT, reworkRate } from '../../labs/fixtures/lab25/lib/queries.mjs';
 
 const DATA = join(process.cwd(), 'labs/fixtures/lab25/data');
 const dataset = loadDataset(DATA);
@@ -62,6 +62,8 @@ describe('lab25 forwarder: TimeGenerated freshness', () => {
     expect(Math.max(...times)).toBeLessThan(now);
     const before = (rows: any[], at: string) => rows.filter((r) => Date.parse(r.TimeGenerated) < Date.parse(at)).length;
     expect(before(out.SdlcApprovals, changeAt)).toBe(before(dataset.SdlcApprovals, DEFAULT_CHANGE_AT));
+    expect(costPerTask(out, { changeAt }).map((r: { Tasks: number }) => r.Tasks)).toEqual([16, 16]);
+    expect(reworkRate(out, { changeAt })).toEqual(reworkRate(dataset));
   });
 
   it('stops on a non-204 response and names the batch', async () => {

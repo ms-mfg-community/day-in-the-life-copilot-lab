@@ -1,5 +1,5 @@
 {
-  "$comment": "Lab 25 delta to Lab 21's copilot/managed-settings.json (labs/lab21.md section 21.3). Replace only the `telemetry` object; keep every other Lab 21 key. Endpoint is illustrative. `capture` (verified on docs.github.com 2026-10-12) supersedes the legacy `captureContent` boolean; every flag stays false unless a named privacy/security approver signs off, and lockCaptureContent stops users turning capture back on. resourceAttributes stamps every span's resource; contoso.correlation_key is per-session and is set by the Spec Kit step via OTEL_RESOURCE_ATTRIBUTES (see labs/lab25.md, open question Q1).",
+  "$comment": "Lab 25 delta to Lab 21's copilot/managed-settings.json (labs/lab21.md section 21.3). Replace only the `telemetry` object; keep every other Lab 21 key. Endpoint is illustrative. `capture` (verified on docs.github.com 2026-10-13) supersedes the legacy `captureContent` boolean. Keep captureContent false for VS Code's local harness and other legacy-only clients; every flag stays false unless a named privacy/security approver signs off, and lockCaptureContent stops users turning capture back on. resourceAttributes stamps every span's resource; contoso.correlation_key is per-session and is set by the Spec Kit step via OTEL_RESOURCE_ATTRIBUTES (see labs/lab25.md, open question Q1).",
   "telemetry": {
     "enabled": true,
     "endpoint": "https://otel.contoso.example",
@@ -12,6 +12,7 @@
       "toolOutput": false,
       "policyDetail": false
     },
+    "captureContent": false,
     "lockCaptureContent": true,
     "serviceName": "copilot-enterprise",
     "resourceAttributes": {

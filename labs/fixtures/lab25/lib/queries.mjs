@@ -77,7 +77,10 @@ export function reworkRate(t, { changeAt = DEFAULT_CHANGE_AT } = {}) {
   const qa = t.SdlcApprovals.filter((a) => a.Gate === 'review-qa');
   const features = groupBy(qa, (a) => a.Feature);
   return WINDOWS.map((Window) => {
-    const inWindow = [...features.values()].filter((rows) => windowOf(rows[0].TimeGenerated, changeAt) === Window);
+    const inWindow = [...features.values()].filter((rows) => {
+      const firstReview = Math.min(...rows.map((r) => Date.parse(r.TimeGenerated)));
+      return windowOf(new Date(firstReview).toISOString(), changeAt) === Window;
+    });
     const Reworked = inWindow.filter((rows) => rows.some((r) => r.Verdict === 'reject')).length;
     return { Window, Features: inWindow.length, Reworked, ReworkRate: round(inWindow.length ? Reworked / inWindow.length : null) };
   });

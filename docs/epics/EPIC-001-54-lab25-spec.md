@@ -110,9 +110,9 @@ reject, and owners `avery-pm`, `blake-lead`, `casey-qa`, `dana-dev`.
 
 | # | Departure | Why |
 |---|---|---|
-| D1 | Teaches `capture` (six classes) and names `captureContent` as legacy | The docs changed after the epic was written (§1) |
+| D1 | Teaches `capture` (six classes), also disables legacy `captureContent`, and calls out VS Code's local harness in the lab | The docs changed after the epic was written (§1); the local harness does not independently apply the five content classes |
 | D2 | States the Copilot app is listed for capture controls, hedged | Same; the span tree from the app is unconfirmed |
-| D3 | `forward --restamp` | The ingestion timestamp window would otherwise flatten the before/after split |
+| D3 | `forward --restamp`; learners set each windowed Workbook/Logs query to its printed change point and verify both windows have data | The ingestion timestamp window would otherwise flatten the before/after split; the offline September boundary cannot classify restamped rows |
 | D4 | Tool-name caveat | Docs disagree on whether tool identifiers are a capture class |
 | D5 | The offline path runs a semantic mirror, not KQL | No offline KQL engine without a dependency; the mirror is tested against the same rows, and percentile differences are disclosed |
 | D6 | Bicep repeats registry versions as literals | Bicep can't read YAML; `lab25-azure` enforces equality |
@@ -122,6 +122,10 @@ reject, and owners `avery-pm`, `blake-lead`, `casey-qa`, `dana-dev`.
 - **Q1 (#66).** Does a per-session `OTEL_RESOURCE_ATTRIBUTES` survive managed
   `resourceAttributes`? Untested: deploying file-based managed settings needs admin
   rights. With env vars only, both attributes land on the resource. The lab gives the test
-  procedure and the fallback (join on `gen_ai.conversation.id`).
+  procedure and honest degradation: without a per-session key, spans remain unjoined
+  session telemetry. `gen_ai.conversation.id` groups spans but cannot join Lab 24's
+  stage events or approvals, which have no conversation ID. Cost per task and
+  span-to-stage provenance are unavailable for those sessions; durable stage/approval
+  metrics and step-log dwell remain available. The Lab 24 field shape is unchanged.
 - **Collector capture.** The OTLP/JSON adapter follows the OTLP spec and is unit tested,
   but no live collector file was captured.
