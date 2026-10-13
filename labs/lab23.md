@@ -20,7 +20,8 @@ than it looks.
 
 > ⏱️ Presenter pace: 7 minutes | Self-paced: 35 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on Lab 22.
+**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on [Lab 22](lab22.md).
+The [executive blueprint](../docs/enterprise-harness-blueprint.md) explains why the arc exists.
 
 > ⚠️ **Spec Kit moves fast.** Nothing in this lab hardcodes a version: every
 > command reads the pin from
@@ -578,3 +579,5 @@ This lab reads every version it depends on from the content registry at
 [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). No version string
 is hardcoded in this file. See the registry's re-verification obligations
 before running this lab with a cohort.
+
+**Next:** [Lab 24 — The Notification Funnel & Executable Tasks](lab24.md)

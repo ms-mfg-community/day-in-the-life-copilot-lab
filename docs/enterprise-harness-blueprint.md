@@ -125,7 +125,7 @@ dash. *Verified* is the date the claim was read against the source.
 | Per-team overrides of `overridable` keys (server-managed deployment only) | Supported product | [Overriding managed settings for teams](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/override-settings-for-teams) | 2026-10-01 |
 | Plugin-contributed instructions (org-wide rules in the plugin) | Supported product (CLI) | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) | 2026-10-01 |
 | Least-privilege agents via `tools:` (omitting it grants every tool) | Supported product | [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration) | 2026-10-01 |
-| `permissions.disableBypassPermissionsMode` coexisting with Spec Kit's `--yolo` dispatch | **You build this** — coexistence is unverified; test it before mandating | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference); [github/copilot-cli#4528](https://github.com/github/copilot-cli/issues/4528) | 2026-10-01 |
+| `permissions.disableBypassPermissionsMode` coexisting with Spec Kit's `--yolo` dispatch | **You build this** — coexistence is unverified; test it before mandating. [Lab 21](../labs/lab21.md) ships the interim control: `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` plus explicit grants | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference); [github/copilot-cli#4528](https://github.com/github/copilot-cli/issues/4528) | 2026-10-01 |
 | Copilot Code Review as a managed-settings client | **You build this** — Code Review is not a managed-settings client; govern it with rulesets | [Enterprise managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings) | 2026-10-01 |
 
 ### 3.2 Templates, stages and gates (U2, U3)
@@ -150,8 +150,8 @@ dash. *Verified* is the date the claim was read against the source.
 | Capability | Status | Source | Verified |
 |---|---|---|---|
 | `taskstoissues` projection of tasks to Issues (weak-form duplicate check) | Supported product | [`taskstoissues.md` @ v1.0.12](https://github.com/github/spec-kit/blob/v1.0.12/templates/commands/taskstoissues.md) | 2026-10-01 |
-| gh-aw safe outputs (`staged: true`, `assign-to-user` with `allowed:` / `max:`) | Supported product; unchecked at the repo's pinned gh-aw version | [gh-aw safe outputs](https://github.github.com/gh-aw/reference/safe-outputs/) | 2026-10-01 |
-| Notification routing on stage transition | **You build this** (gh-aw workflows on a durable stage signal) | [gh-aw](https://github.github.com/gh-aw/) | 2026-10-01 |
+| gh-aw safe outputs (`staged: true`, `assign-to-user` with `allowed:` / `max:`) | Supported product; compiles under `--strict` at the repo's pinned gh-aw version ([Lab 24](../labs/lab24.md) `sdlc-funnel`) | [gh-aw safe outputs](https://github.github.com/gh-aw/reference/safe-outputs/) | 2026-10-13 |
+| Notification routing on stage transition | **You build this** (gh-aw workflows on a durable stage signal) — [Lab 24](../labs/lab24.md) computes the route in code and fails the run unless the agent's writes match it | [gh-aw](https://github.github.com/gh-aw/) | 2026-10-13 |
 | **Per-task agent and model binding** | **You build this** — see [§5.1](#51-per-task-agent-and-model-binding) | [`tasks-template.md` @ v1.0.12](https://github.com/github/spec-kit/blob/v1.0.12/templates/tasks-template.md) | 2026-10-01 |
 
 ### 3.4 Telemetry and reporting (U5)
@@ -159,10 +159,10 @@ dash. *Verified* is the date the claim was read against the source.
 | Capability | Status | Source | Verified |
 |---|---|---|---|
 | Copilot client OpenTelemetry export under the managed `telemetry` key (CLI and VS Code per the key's text; the docs' support table also ticks JetBrains) | Supported product | [OpenTelemetry for Copilot](https://docs.github.com/en/copilot/concepts/enterprise/opentelemetry); [Enterprise managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings) | 2026-10-01 |
-| `captureContent` (prompts and responses to *your* collector), off by default | Supported product — governance decision | [OpenTelemetry for Copilot](https://docs.github.com/en/copilot/concepts/enterprise/opentelemetry) | 2026-09-17 |
+| Content capture to *your* collector, off by default — the `capture` object (six classes) supersedes the all-or-nothing `captureContent`; VS Code's local harness still honours only `captureContent` ([Lab 25](../labs/lab25.md) sets both off and locked) | Supported product — governance decision | [OpenTelemetry for Copilot](https://docs.github.com/en/copilot/concepts/enterprise/opentelemetry) | 2026-10-12 |
 | Client OTel from the GitHub Copilot app (`epic`, `feature-spec` stages) | **You build this** — the app emits no client OTel; cover these stages with DIY stage events | [Enterprise managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings) | 2026-10-01 |
 | Agent and pseudonymous user identity on spans (`gen_ai.agent.*`, `enduser.pseudo.id`) | Supported product | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) | 2026-10-01 |
-| Per-session `OTEL_RESOURCE_ATTRIBUTES` surviving managed `resourceAttributes` | **You build this** — unverified; test before relying on it, and fall back to a per-event `task.id` attribute | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) | 2026-10-01 |
+| Per-session `OTEL_RESOURCE_ATTRIBUTES` surviving managed `resourceAttributes` | **You build this** — unverified (still open after [Lab 25](../labs/lab25.md): it needs admin-deployed managed settings); test before relying on it, and fall back to a per-event `task.id` attribute | [CLI command reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) | 2026-10-01 |
 | Copilot usage metrics reports API (NDJSON download links) | Supported product | [Copilot usage metrics API](https://docs.github.com/en/rest/copilot/copilot-usage-metrics) | 2026-09-17 |
 | Legacy `/copilot/metrics` and `/copilot/usage` APIs | **You build this** on the replacement metrics APIs — the legacy APIs closed 2026-04-02 | [Closing-down notice (changelog, 2026-01-29)](https://github.blog/changelog/2026-01-29-closing-down-notice-of-legacy-copilot-metrics-apis/) | 2026-10-12 |
 | Per-model billing and premium-request usage | Supported product | [Billing usage API](https://docs.github.com/en/rest/billing/usage); [Copilot requests](https://docs.github.com/en/copilot/concepts/billing/copilot-requests) | 2026-09-17 |
@@ -289,14 +289,14 @@ learn. You roll out in the order that produces evidence soonest.
               └─► U5 telemetry  (depends only on #48 — switch it on first)
 ```
 
-| Unit | Depends on | Delivers |
-|---|---|---|
-| U1 — tech-lead plugin + marketplace lockdown | Registry scaffolding | Same mandated agents and skills everywhere; deny-by-default sourcing |
-| U2 — centralized Spec Kit templates + org catalog | Registry scaffolding | Same templates in every repo from one org source |
-| U3 — custom stages, gates, rework loop | U2 | `epic` and `qa-review` stages, gates, pause-and-resume rework |
-| U4 — notification funnel + executable tasks | U3 | Stage-owner notification, task-as-prompt, approvals of record |
-| U5 — telemetry → Log Analytics → improvement loop | Registry scaffolding | Baseline and outcome measurement |
-| U6 — Copilot app canvases | U4 | An operator surface over the same artifacts |
+| Unit | Hands-on lab | Depends on | Delivers |
+|---|---|---|---|
+| U1 — tech-lead plugin + marketplace lockdown | [Lab 21](../labs/lab21.md) | Registry scaffolding | Same mandated agents and skills everywhere; deny-by-default sourcing |
+| U2 — centralized Spec Kit templates + org catalog | [Lab 22](../labs/lab22.md) | Registry scaffolding | Same templates in every repo from one org source |
+| U3 — custom stages, gates, rework loop | [Lab 23](../labs/lab23.md) | U2 | `epic` and `qa-review` stages, gates, pause-and-resume rework |
+| U4 — notification funnel + executable tasks | [Lab 24](../labs/lab24.md) | U3 | Stage-owner notification, task-as-prompt, approvals of record |
+| U5 — telemetry → Log Analytics → improvement loop | [Lab 25](../labs/lab25.md) | Registry scaffolding | Baseline and outcome measurement |
+| U6 — Copilot app canvases | [Lab 26](../labs/lab26.md) | U4 | An operator surface over the same artifacts |
 
 **Minimum viable harness:** U5's client OTel export (as a baseline), U1's plugin and lockdown,
 and the merge-time ruleset from §5.2. That gives you consistent tools, a baseline and a

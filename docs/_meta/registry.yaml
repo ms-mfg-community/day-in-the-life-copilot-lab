@@ -253,6 +253,8 @@ enterprise_managed_settings:
     - sandbox
     - telemetry
     - remoteControl
+    - features.computerUse # false blocks computer use in the CLI and Copilot app
+    - forceRemoteSettingsRefresh # CLI and VS Code: no cached-policy fallback
   # Highest-precedence first. sandbox and permissions.deny/.ask/.allow are
   # the exception: they compose most-restrictively across delivery methods.
   # disableBypassPermissionsMode is NOT in that exception list.
@@ -271,7 +273,7 @@ enterprise_managed_settings:
     non_overridable_keys:
       - telemetry
   strict_known_marketplaces_ga_date: "2026-07-01" # public preview: 2026-06-25
-  last_verified: "2026-10-01"
+  last_verified: "2026-10-12"
 
 # Pace-field semantics (Phase 1 audit):
 #   pace_presenter_minutes — quick in-lab fly-by pace. Used by the inline

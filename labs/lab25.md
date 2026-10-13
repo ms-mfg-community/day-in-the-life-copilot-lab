@@ -24,7 +24,16 @@ Everything runs offline. Azure is optional.
 > ⏱️ Presenter pace: 8 minutes | Self-paced: 45 minutes
 
 **Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on
-[Lab 24](lab24.md), and chains forward to [Lab 26](lab26.md).
+[Lab 24](lab24.md), and chains forward to [Lab 26](lab26.md). The
+[executive blueprint](../docs/enterprise-harness-blueprint.md) frames the arc as unit U5.
+
+> 💰 **Cost Budget**
+> - Expected token footprint: low. The offline path (`lab25.mjs` and the KQL mirror) runs
+>   no model; only §25.9's improvement-review agent spends tokens, once per weekly run, to interpret findings
+>   that KQL already computed.
+> - The larger cost is Azure, not tokens: Log Analytics Analytics-plan ingestion and
+>   retention (§25.2). The offline path needs no subscription at all.
+> - See [docs/token-and-model-guide.md](../docs/token-and-model-guide.md) for model choice.
 
 > ⚠️ **Telemetry surfaces move fast.** Every capability claim below carries the date it
 > was verified against the primary source. API versions come from
@@ -529,3 +538,5 @@ This lab reads every version it depends on from the content registry at
 [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). No version string
 is hardcoded in this file. See the registry's re-verification obligations
 before running this lab with a cohort.
+
+**Next:** [Lab 26 — Copilot App Canvases for Applied SDLC Operations](lab26.md)

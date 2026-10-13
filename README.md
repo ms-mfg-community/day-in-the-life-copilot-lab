@@ -580,7 +580,11 @@ erDiagram
 > Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
-> enterprise scale and should be read after Lab 17.
+> enterprise scale and should be read after Lab 17. Labs 21 → 26 are the
+> sequential **enterprise agentic SDLC harness** arc (~3.5 hours), framed by
+> the [executive blueprint](docs/enterprise-harness-blueprint.md). The arc is
+> **self-paced only** — it is not part of the 4-hour
+> [workshop curriculum](workshop/curriculum.md).
 
 ---
 
