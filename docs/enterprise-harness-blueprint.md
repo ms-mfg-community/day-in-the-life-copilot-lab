@@ -150,8 +150,8 @@ dash. *Verified* is the date the claim was read against the source.
 | Capability | Status | Source | Verified |
 |---|---|---|---|
 | `taskstoissues` projection of tasks to Issues (weak-form duplicate check) | Supported product | [`taskstoissues.md` @ v1.0.12](https://github.com/github/spec-kit/blob/v1.0.12/templates/commands/taskstoissues.md) | 2026-10-01 |
-| gh-aw safe outputs (`staged: true`, `assign-to-user` with `allowed:` / `max:`) | Supported product; unchecked at the repo's pinned gh-aw version | [gh-aw safe outputs](https://github.github.com/gh-aw/reference/safe-outputs/) | 2026-10-01 |
-| Notification routing on stage transition | **You build this** (gh-aw workflows on a durable stage signal) | [gh-aw](https://github.github.com/gh-aw/) | 2026-10-01 |
+| gh-aw safe outputs (`staged: true`, `assign-to-user` with `allowed:` / `max:`) | Supported product; compiles under `--strict` at the repo's pinned gh-aw version ([Lab 24](../labs/lab24.md) `sdlc-funnel`) | [gh-aw safe outputs](https://github.github.com/gh-aw/reference/safe-outputs/) | 2026-10-13 |
+| Notification routing on stage transition | **You build this** (gh-aw workflows on a durable stage signal) — [Lab 24](../labs/lab24.md) computes the route in code and fails the run unless the agent's writes match it | [gh-aw](https://github.github.com/gh-aw/) | 2026-10-13 |
 | **Per-task agent and model binding** | **You build this** — see [§5.1](#51-per-task-agent-and-model-binding) | [`tasks-template.md` @ v1.0.12](https://github.com/github/spec-kit/blob/v1.0.12/templates/tasks-template.md) | 2026-10-01 |
 
 ### 3.4 Telemetry and reporting (U5)

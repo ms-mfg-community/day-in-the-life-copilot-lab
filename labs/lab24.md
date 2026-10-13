@@ -28,7 +28,16 @@ You'll build three things:
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 30 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on Lab 23.
+**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on
+[Lab 23](lab23.md), and chains forward to [Lab 25](lab25.md). The
+[executive blueprint](../docs/enterprise-harness-blueprint.md) frames the arc as unit U4.
+
+> 💰 **Cost Budget**
+> - Expected token footprint: low. Routing, approvals and task validation run in code with
+>   no model; only the `sdlc-funnel` agent spends tokens, once per stage transition, to word
+>   a notification whose recipients code already chose.
+> - The task-prompt validator runs offline in CI and never calls a model.
+> - See [docs/token-and-model-guide.md](../docs/token-and-model-guide.md) for model choice.
 
 > ⚠️ **Spec Kit and gh-aw move fast.** This lab hardcodes no versions. Every command reads
 > its pin from [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). If a flag below
@@ -729,3 +738,5 @@ This lab reads every version it depends on from the content registry at
 [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). No version string
 is hardcoded in this file. See the registry's re-verification obligations
 before running this lab with a cohort.
+
+**Next:** [Lab 25 — Telemetry, Log Analytics & the Improvement Loop](lab25.md)
