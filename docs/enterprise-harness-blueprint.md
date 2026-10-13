@@ -1,6 +1,6 @@
 # Enterprise Agentic SDLC Harness — Executive Blueprint
 
-**Audience:** the engineering executive who decides whether to fund the work. This is not a lab.
+**Audience:** the engineering executive who decides whether to fund the work. Executive decision document; the hands-on implementation is Labs 21–26.
 **Tracks:** EPIC-001, unit U0 ([#49](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/49),
 part of [#47](https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/47))
 **Capability facts verified:** 2026-09-17 and 2026-10-01 against primary sources; every link in
