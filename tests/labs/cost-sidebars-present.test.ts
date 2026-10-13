@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = process.cwd();
-const LABS = ['lab07.md', 'lab10.md', 'lab13.md', 'lab14.md'];
+const LABS = ['lab07.md', 'lab10.md', 'lab13.md', 'lab14.md', 'lab25.md'];
 
 // A Cost Budget sidebar is recognized by the sentinel
 // `> 💰 **Cost Budget**` (a Markdown blockquote opener).
