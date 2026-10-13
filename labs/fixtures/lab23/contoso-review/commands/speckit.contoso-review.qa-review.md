@@ -1,5 +1,8 @@
 ---
 description: "Review an implemented feature against its spec and record a verdict"
+# Provisional Lab 24 addition pending EPIC-001 A.3 item 7 / Q8 (#50).
+# A tools list restricts visibility, not approval; enforcement under --yolo is unresolved.
+tools: ['read', 'search', 'execute', 'edit']
 ---
 
 # QA Review
@@ -34,8 +37,11 @@ $ARGUMENTS
    a task list. The feature comes from `.specify/feature.json`, not from the checked-out
    Git branch.
 
-2. **Read the artifacts** in `FEATURE_DIR`: `spec.md`, `plan.md`, `tasks.md`, and any
-   checklists. Read the spec **last-to-first against the implementation**, not the
+2. **Read the artifacts** in `FEATURE_DIR`: `spec.md`, `tasks.md`, and the diff
+   (`git diff` against the feature's base branch). Those three are QA's only inputs.
+   Do **not** read the implementer's summary, chat transcript or PR description: QA
+   that starts from the implementer's account of the work tends to confirm it.
+   Read the spec **last-to-first against the implementation**, not the
    other way round — you are checking whether what was built matches what was
    specified, not whether what was specified is plausible.
 
@@ -61,6 +67,11 @@ $ARGUMENTS
 
    - **`approve`** — every criterion is met or has a written, accepted deviation.
    - **`reject`** — at least one criterion is unmet, or at least one is unverified.
+
+   On `reject`, also record a **classification** (Lab 24 routes on it):
+
+   - **`implementation`** — the fix fits inside the current spec and plan.
+   - **`spec-scope`** — the fix needs the spec, plan or scope to change.
 
 6. **Report** the verdict, the counts, and the path — then stop. The human gate that
    follows this step is what actually decides; this command produces the evidence it
