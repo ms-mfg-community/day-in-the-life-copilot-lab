@@ -123,12 +123,15 @@ mcp_servers:
     note: "Prepared core only; restricted to this checkout's synthetic fixture directory."
 
 # Azure Monitor / Log Analytics resource API versions for Lab 25 (EPIC-001 U5).
-# Labs and Bicep MUST read these rather than hardcoding an apiVersion.
+# Labs and Bicep MUST read these rather than hardcoding an apiVersion. Bicep
+# needs the version as a literal in the resource type string, so
+# labs/fixtures/lab25/bicep/main.bicep repeats them and
+# tests/lab25/lab25-azure.test.ts fails if any literal drifts from this block.
 #
 # RE-VERIFICATION OBLIGATION (epic EPIC-001 Appendix A.3, item 3): re-confirm
 # against the ARM/Bicep template reference before any cohort. Verified
-# 2026-09-23 against learn.microsoft.com/azure/templates/* and the Logs
-# Ingestion API overview; all four values unchanged since 2026-09-22.
+# 2026-10-12 against learn.microsoft.com/azure/templates/* and the Logs
+# Ingestion API overview; the original four values unchanged since 2026-09-22.
 azure_monitor:
   # Microsoft.Insights/dataCollectionRules — newest dated version in the
   # reference version list. Unchanged since 2026-09-17.
@@ -153,7 +156,18 @@ azure_monitor:
   # Unchanged since 2026-09-17.
   logs_ingestion_data_plane_api_version: "2023-01-01"
 
-  last_verified: "2026-09-23"
+  # Added 2026-10-12 for Lab 25 (bicep/main.bicep). Each is the version the
+  # learn.microsoft.com/azure/templates "Latest" page emitted that day; all stable.
+  # Microsoft.OperationalInsights/workspaces
+  log_analytics_workspaces_api_version: "2026-03-01"
+  # Microsoft.Insights/scheduledQueryRules (log search alert)
+  scheduled_query_rules_api_version: "2026-03-01"
+  # Microsoft.Insights/workbooks
+  workbooks_api_version: "2023-06-01"
+  # Microsoft.Authorization/roleAssignments
+  role_assignments_api_version: "2022-04-01"
+
+  last_verified: "2026-10-12"
 
 # Phase 1 local packaging inputs, not an approved attendee image.
 # Base digests were resolved for linux/amd64 on 2026-09-08. The tool
