@@ -1,6 +1,18 @@
-# SHA-256 baseline for workshop/site/hackathon.html, frozen by AC21 (specs/005-teaching-spa.md).
-# The digest is of the page's LF form, which is the bytes git stores. A core.autocrlf=true checkout
-# holds the same page with CRLF line endings, so a raw hash of that working copy differs; the AC21
-# test hashes the LF form and accepts the page in either form.
-# Reproduce from a POSIX shell: git show HEAD:workshop/site/hackathon.html | sha256sum
-0fc164d64b5f03ccb76256f876641026297a35c14e10c6c73b15a74aea9a61cb
+# SHA-256 of workshop/site/hackathon.html: the freeze baseline for AC21 (specs/005-teaching-spa.md).
+# The page stays byte-identical until workshop/spa/docs/hackathon-retired.md exists. A rehearsal
+# record, passing or failing, does not release it.
+#
+# The digest is of the exact bytes of the file on disk; tests/spa/hackathon-untouched.test.ts
+# hashes it as read, with no line-ending normalization. It was taken in the freeze worktree, where
+# the page is the CRLF checkout that git for Windows makes under its system gitconfig
+# (core.autocrlf=true): 203350 bytes, all 3581 line endings CRLF. To reproduce:
+#   PowerShell: (Get-FileHash -Algorithm SHA256 workshop/site/hackathon.html).Hash
+#   POSIX:      sha256sum workshop/site/hackathon.html
+#
+# Environment limit: git stores the page with LF endings (199769 bytes, SHA-256
+# 0fc164d64b5f03ccb76256f876641026297a35c14e10c6c73b15a74aea9a61cb). A checkout that does not
+# convert line endings, such as Linux CI, holds those bytes instead and fails the guard against
+# the digest below. Do not edit the digest to make one checkout pass: the cause is that the
+# page's line endings are not pinned. Pinning them (a .gitattributes rule for this one path) is
+# outside child issue 12; when it lands, record the digest of the pinned form.
+343e783eb0252d984a474010c3a90d83c16f3f3d8591951cef2fd5fd9770edf2

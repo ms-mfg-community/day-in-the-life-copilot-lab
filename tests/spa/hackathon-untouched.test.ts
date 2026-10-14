@@ -14,13 +14,12 @@
  *     over) without needing an edit.
  *   - Only existence is tested here. That the record names a passing rehearsal is AC23's job.
  *
- * Line endings: AC21 says "its SHA-256" without saying of which bytes. The page is committed
- * with LF endings, but a core.autocrlf=true checkout (this repo's Windows default) holds the
- * same page with CRLF, so a raw hash differs per checkout and would be red on Linux CI. The
- * baseline is therefore the SHA-256 of the LF form (what
- * `git show HEAD:workshop/site/hackathon.html | sha256sum` prints), and the page is accepted in
- * exactly two byte forms: that LF form, or that LF form with every LF expanded to CRLF. Any
- * other difference (a changed byte, a stray CR, mixed endings) is a violation.
+ * Exact bytes: the page is hashed as read from disk, with no line-ending normalization, and
+ * that SHA-256 must equal the baseline. AC21 names no other form of the page and §1 says it
+ * stays byte-identical, so converting every line ending (LF to CRLF or back) is a change and a
+ * violation, and a page whose own bytes hash to the baseline passes whatever endings it has.
+ * The baseline therefore describes one checkout's bytes; hackathon-baseline.sha256 says which,
+ * and what a checkout that converts line endings differently would see.
  *
  * The release-condition cases run against throwaway trees under os.tmpdir() with synthetic page
  * bytes. Nothing is created in the repo, and they keep passing after the real page is retired.
@@ -55,12 +54,6 @@ interface Verdict {
 
 const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
 
-// latin1 maps each byte to one code unit, so both conversions are lossless for any content.
-const toLf = (bytes: Buffer): Buffer =>
-  Buffer.from(bytes.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
-const toCrlf = (lf: Buffer): Buffer =>
-  Buffer.from(lf.toString('latin1').replace(/\n/g, '\r\n'), 'latin1');
-
 const isFile = (path: string): boolean => {
   try {
     return statSync(path).isFile();
@@ -68,9 +61,6 @@ const isFile = (path: string): boolean => {
     return false;
   }
 };
-
-/** The value AC21 records for a page: the SHA-256 of its LF form. */
-const baselineDigest = (page: Buffer): string => sha256(toLf(page));
 
 function readBaseline(root: string): { digest?: string; violation?: Violation } {
   const path = join(root, BASELINE);
@@ -106,16 +96,12 @@ function evaluateFreeze(root: string): Verdict {
   if (!isFile(pagePath)) {
     violations.push({ code: 'page-missing', detail: `${PAGE} is absent` });
   } else if (baseline.digest !== undefined) {
-    const bytes = readFileSync(pagePath);
-    const lf = toLf(bytes);
-    const actual = sha256(lf);
-    const endingsUniform = bytes.equals(lf) || bytes.equals(toCrlf(lf));
-    if (actual !== baseline.digest || !endingsUniform) {
+    // The bytes as read, so the digest covers the line endings too: no normalization.
+    const actual = sha256(readFileSync(pagePath));
+    if (actual !== baseline.digest) {
       violations.push({
         code: 'page-changed',
-        detail:
-          `${PAGE} has SHA-256 ${actual} (LF form), baseline is ${baseline.digest}` +
-          (endingsUniform ? '' : '; its line endings are neither all LF nor all CRLF'),
+        detail: `${PAGE} has SHA-256 ${actual}, baseline is ${baseline.digest}`,
       });
     }
   }
@@ -129,7 +115,14 @@ const PAGE_LF = Buffer.from(
   '<!doctype html>\n<title>Hackathon</title>\n<p>Build \u2014 don\u2019t read \u2713</p>\n',
   'utf8',
 );
-const DIGEST = baselineDigest(PAGE_LF);
+const DIGEST = sha256(PAGE_LF);
+
+/**
+ * The page as a core.autocrlf=true checkout holds it: each LF of an LF-only page as CRLF.
+ * (latin1 maps each byte to one code unit, so this and `edited` are lossless for any content.)
+ */
+const withCrlf = (lfPage: Buffer): Buffer =>
+  Buffer.from(lfPage.toString('latin1').replace(/\n/g, '\r\n'), 'latin1');
 
 /** One byte different from the input. */
 const edited = (bytes: Buffer): Buffer =>
@@ -278,22 +271,45 @@ describe('AC21 — freeze guard for workshop/site/hackathon.html', () => {
     });
   });
 
-  describe('line endings', () => {
-    it('accepts the page as committed (LF) and as a core.autocrlf=true checkout (CRLF)', () => {
-      expect(codes(tree({ page: PAGE_LF }))).toEqual([]);
-      expect(codes(tree({ page: toCrlf(PAGE_LF) }))).toEqual([]);
+  describe('exact bytes: line endings are part of the page', () => {
+    const PAGE_CRLF = withCrlf(PAGE_LF);
+
+    /** Violation codes for `page` on disk when the baseline records the digest of `recorded`. */
+    const check = (page: Buffer, recorded: Buffer): string[] =>
+      codes(tree({ page, baseline: `${sha256(recorded)}\n` }));
+
+    it('passes a page whose own bytes hash to the baseline, LF or CRLF', () => {
+      expect(check(PAGE_LF, PAGE_LF)).toEqual([]);
+      expect(check(PAGE_CRLF, PAGE_CRLF)).toEqual([]);
     });
 
-    it('still catches a one-byte change in either form', () => {
-      expect(codes(tree({ page: edited(PAGE_LF) }))).toEqual(['page-changed']);
-      expect(codes(tree({ page: edited(toCrlf(PAGE_LF)) }))).toEqual(['page-changed']);
+    it('fails a page with every line ending converted, in either direction', () => {
+      // Same text, only the endings differ: not the recorded bytes, so not the recorded page.
+      expect(check(PAGE_CRLF, PAGE_LF)).toEqual(['page-changed']);
+      expect(check(PAGE_LF, PAGE_CRLF)).toEqual(['page-changed']);
     });
 
-    it('rejects a page that mixes LF and CRLF, and one with a stray CR', () => {
-      const mixed = Buffer.from(PAGE_LF.toString('latin1').replace('\n', '\r\n'), 'latin1');
-      const stray = Buffer.concat([PAGE_LF, Buffer.from('\r')]);
-      expect(codes(tree({ page: mixed }))).toEqual(['page-changed']);
-      expect(codes(tree({ page: stray }))).toEqual(['page-changed']);
+    it('fails a page with one line ending converted, or a stray CR added', () => {
+      const oneConverted = Buffer.from(PAGE_LF.toString('latin1').replace('\n', '\r\n'), 'latin1');
+      const strayCr = Buffer.concat([PAGE_LF, Buffer.from('\r')]);
+      for (const recorded of [PAGE_LF, PAGE_CRLF]) {
+        expect(check(oneConverted, recorded)).toEqual(['page-changed']);
+        expect(check(strayCr, recorded)).toEqual(['page-changed']);
+      }
+    });
+
+    it('fails a one-byte change, in either form', () => {
+      expect(check(edited(PAGE_LF), PAGE_LF)).toEqual(['page-changed']);
+      expect(check(edited(PAGE_CRLF), PAGE_CRLF)).toEqual(['page-changed']);
+    });
+
+    it('reports the SHA-256 of the bytes it read, not of a normalized form', () => {
+      const { violations } = evaluateFreeze(
+        tree({ page: PAGE_CRLF, baseline: `${sha256(PAGE_LF)}\n` }),
+      );
+      expect(violations).toHaveLength(1);
+      expect(violations[0]?.detail).toContain(sha256(PAGE_CRLF));
+      expect(violations[0]?.detail).toContain(sha256(PAGE_LF));
     });
   });
 });
