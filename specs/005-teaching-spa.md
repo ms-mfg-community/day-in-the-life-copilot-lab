@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **State** | `verified` |
+| **State** | `verified` — the four escalation findings are closed (see Changelog, 2026-10-14). The lifecycle gate out of `verified` is an adversarial review returning READY over the amended text; that has not happened, and is not self-certified here |
 | **Created** | 2026-10-09 |
-| **Last updated** | 2026-10-09 |
+| **Last updated** | 2026-10-14 |
 | **Milestone** | Curriculum v2 — Labs Refresh & Teaching SPA |
 | **Depends on** | none |
 | **Executed by** | `dev-qa-judge` |
@@ -37,11 +37,13 @@ degrade visibly** rather than assume.
 - **The lab content itself.** No lab, slide, speaker script, agenda entry or registry entry is
   authored, edited, re-ordered or retired by this spec. The application consumes them.
 - **Any other spec.** This spec defines one application and the issues that build it.
-- **Touching `workshop/site/hackathon.html`.** It stays byte-identical until a live rehearsal
-  records the verdict `PASS` (AC21, AC22). A rehearsal that records `FAIL` is the state of
-  *not proven*, so it leaves the freeze in force; only a `PASS` record releases it. The page is
-  then retired by its own child issue (AC23) and by nothing else. Retirement means the file is
-  gone and nothing under `workshop/`, `scripts/` or `docs/` still points a reader or a script at
+- **Touching `workshop/site/hackathon.html`.** It stays byte-identical until it is retired, and
+  it may not be retired until a live rehearsal records the verdict `PASS` (AC21, AC22, AC23). A
+  rehearsal that records `FAIL` is the state of *not proven*, so it authorizes nothing. The page is
+  then retired by its own child issue (AC23) and by nothing else, and the retirement record that
+  issue writes is what releases the freeze — so exactly one of the two guards is ever active, and
+  neither is red while the other holds. Retirement means the file is gone and nothing under
+  `workshop/`, `scripts/` or `docs/` still points a reader or a script at
   it. It does **not** mean the path stops being *named*: this spec names it, the retirement's own
   records under `workshop/spa/docs/` name it, and the criteria that retire it could not be
   written otherwise. AC23 is scoped to that code-and-documentation surface and excludes both,
@@ -71,7 +73,7 @@ tests**: the table is the contract, the subsections are its content.
 
 | # | Criterion | How it is observed |
 |---|---|---|
-| AC1 | Every file under `workshop/spa/content/` validates against a schema in `workshop/spa/schema/`, the front matter of every `workshop/slides/*.md`, `workshop/speaker-scripts/*.md` and `labs/*.md` validates against `workshop/spa/schema/frontmatter.schema.json`, and an intentionally invalid fixture fails | `npm run spa:validate` exits 0 for `workshop/spa/content/` and for those three curriculum globs, non-zero for `tests/spa/fixtures/invalid/` |
+| AC1 | Every file under `workshop/spa/content/` validates against a schema in `workshop/spa/schema/`, the front matter of every `workshop/slides/*.md`, `workshop/speaker-scripts/*.md` and `labs/*.md` validates against `workshop/spa/schema/frontmatter.schema.json`, and the invalid fixtures fail — among them one carrying a front-matter key the document of record does not list, which is what observes the closure AC25 requires | `npm run spa:validate` exits 0 for `workshop/spa/content/` and for those three curriculum globs, non-zero for `tests/spa/fixtures/invalid/` |
 | AC2 | Every `slideSource`, `scriptSource` and `labRefs` entry in `workshop/spa/content/deck.json` resolves to an existing file, and each segment's `minutes` equals the `minutes` front-matter value of its slide source | `npx vitest run tests/spa/content-refs.test.ts` |
 | AC3 | Built HTML derived from curriculum markdown contains no `on*` event-handler attribute, no `<script>`, no `javascript:` URL, and gives every heading a prefixed `id` | `npx vitest run tests/spa/markdown-pipeline.test.ts` |
 | AC4 | The multi-file build succeeds and writes `workshop/spa/dist/index.html` | `npm run spa:build` exits 0 and the artifact exists |
@@ -91,15 +93,18 @@ tests**: the table is the contract, the subsections are its content.
 | AC18 | Under an emulated `prefers-reduced-motion: reduce`, no element has a non-zero computed animation or transition duration, and no content auto-advances | `npm run spa:test:a11y` |
 | AC19 | Every chart and every diagram has an accessible name and a long description that is reachable in the page, declared in `interactions.json` and present in the DOM | `npx vitest run tests/spa/long-descriptions.test.ts` |
 | AC20 | The portable build's first element inside `<head>` is a `<meta http-equiv="Content-Security-Policy">` whose `script-src` lists only `sha256-` hashes that match the file's inline scripts and contains none of `'unsafe-inline'`, `'unsafe-eval'`, `data:` | `npx vitest run tests/spa/single-file-csp.test.ts` |
-| AC21 | Unless some `workshop/spa/docs/rehearsal-*.md` has a `## Verdict` section whose first word is `PASS`, `workshop/site/hackathon.html` is present and its SHA-256 equals the value in `workshop/spa/docs/hackathon-baseline.sha256`. A record whose verdict is `FAIL`, and the absence of any record, each leave this guard armed | `npx vitest run tests/spa/hackathon-untouched.test.ts` |
+| AC21 | Unless `workshop/spa/docs/hackathon-retired.md` exists, `workshop/site/hackathon.html` is present and its SHA-256 equals the value in `workshop/spa/docs/hackathon-baseline.sha256`. A rehearsal record does not release this guard — a `PASS` record authorizes the retirement (AC23), and only the retirement record itself ends the freeze | `npx vitest run tests/spa/hackathon-untouched.test.ts` |
 | AC22 | A rehearsal record `workshop/spa/docs/rehearsal-<YYYY-MM-DD>.md` exists containing the headings `## Environment`, `## What was presented`, `## Defects found`, `## Verdict`, and a `Verdict` section whose first word is `PASS` or `FAIL` | `npx vitest run tests/spa/rehearsal-record.test.ts` |
-| AC23 | Once a rehearsal record with verdict `PASS` exists, `workshop/site/hackathon.html` is absent from the working tree and no tracked file under `workshop/`, `scripts/` or `docs/` references that path, other than the retirement's own records under `workshop/spa/docs/` | `npx vitest run tests/spa/hackathon-retired.test.ts` |
+| AC23 | Unless `workshop/spa/docs/hackathon-retired.md` exists, this criterion asserts nothing. Once it exists: it names a `workshop/spa/docs/rehearsal-<YYYY-MM-DD>.md` that exists and whose `## Verdict` section's first word is `PASS`; `workshop/site/hackathon.html` is absent from the working tree; and no tracked file under `workshop/`, `scripts/` or `docs/` references that path, other than the retirement's own records under `workshop/spa/docs/` | `npx vitest run tests/spa/hackathon-retired.test.ts` |
 | AC24 | `workshop/spa/docs/content-authoring.md` holds one table whose column headers are exactly `Key`, `Occurs in`, `Meaning`, and whose set of `Key` values equals exactly the set of top-level front-matter keys occurring across `workshop/slides/*.md`, `workshop/speaker-scripts/*.md` and `labs/*.md` — no key present in those files is missing from it, and no key it lists is absent from all of them | `npx vitest run tests/spa/content-authoring-keys.test.ts` |
 | AC25 | `workshop/spa/schema/frontmatter.schema.json` declares `additionalProperties: false`, and the set of top-level property names it accepts equals exactly the set of `Key` values in `workshop/spa/docs/content-authoring.md` — no documented key is missing from the schema, and the schema accepts no key the document does not list | `npx vitest run tests/spa/frontmatter-schema-keys.test.ts` |
 
 ### 2.1 Repository layout and commands
 
-The build adds these paths and nothing outside them, except the `package.json` script entries.
+The build adds these paths and nothing outside them, except `package.json` — whose script and
+dependency entries the pipeline in §2.9 and the packages named in §2.2 both require — the SPA's
+own build configuration beside its source under `workshop/spa/`, and a `.gitignore` entry for
+`workshop/spa/dist/`.
 
 | Path | Holds |
 |---|---|
@@ -116,7 +121,8 @@ The build adds these paths and nothing outside them, except the `package.json` s
 | `workshop/spa/docs/a11y-tool.md` | The automated checker the gate runs and its exact rule selection (AC15) |
 | `workshop/spa/docs/probe-runs/*.json` | Raw probe output backing the matrix |
 | `workshop/spa/docs/hackathon-baseline.sha256` | Freeze hash for the page being retired (AC21) |
-| `workshop/spa/docs/rehearsal-<YYYY-MM-DD>.md` | Live-rehearsal record; its `## Verdict` is what arms or releases the freeze (AC21, AC22, AC23) |
+| `workshop/spa/docs/rehearsal-<YYYY-MM-DD>.md` | Live-rehearsal record; a `## Verdict` of `PASS` is what authorizes retirement (AC22, AC23) |
+| `workshop/spa/docs/hackathon-retired.md` | Retirement record; naming the passing rehearsal, it is what releases the freeze and arms the retirement guard (AC21, AC23) |
 | `workshop/spa/dist/` | Multi-file build output (ignored by git) |
 | `workshop/spa/dist/standalone/teaching-spa.html` | Portable single-file build |
 | `tests/spa/**` | Vitest and Playwright suites named in §2 |
@@ -152,8 +158,9 @@ needed:**
    document.
 2. **AC25 binds the schema to the document.** The set of top-level property names
    `frontmatter.schema.json` accepts must equal exactly that same `Key` column, and the schema
-   must close that set with `additionalProperties: false` — without the closure, "the set the
-   schema accepts" is unbounded and there is nothing to compare it against. A schema that stops
+   must close that set with `additionalProperties: false`. That closure is a requirement this
+   spec imposes so that AC25 has two finite sets to compare; AC1's undeclared-key fixture is
+   what observes that the declaration bites. A schema that stops
    accepting a documented key fails AC25; so does one that quietly accepts a key the document
    does not list.
 3. **AC1 binds the schema to the files.** The validator runs that schema over the curriculum
@@ -900,8 +907,11 @@ A criterion 2.2.2 instead [F108].
 
 ## 3. Verified facts
 
-Every factual claim this spec relies on. **Mandatory** — a spec with no factual claims
-states that explicitly rather than omitting the table.
+Every claim about the outside world this spec relies on — published standards, browser
+behaviour, library behaviour. **Mandatory** — a spec with no such claims
+states that explicitly rather than omitting the table. Claims about this repository's own
+files and this machine's own tooling are not rows here; they are checkable by reading the
+file, and §5 and §6 name the source for each.
 
 A search-engine summary is a lead, not a source. The verifier opens the primary page.
 
@@ -1220,7 +1230,7 @@ contradiction, and not the claim, is what reaches the build.
 | Q7 | Can a service worker be registered from a `file:` URL? | Only secure contexts may register service workers [F61, in a section the specification labels non-normative]; MDN describes the secure context as the document being served over HTTPS, with `http://localhost` also treated as secure, and does not mention `file:` [F68]. Not established. | Nothing — offline support for the local-file case is the portable single-file artifact [F110] |
 | Q8 | Does an inline `type="module"` script execute in a document loaded from a `file:` URL in each of the four browsers? | MDN warns that loading an HTML file locally with a `file://` URL produces CORS errors because of JavaScript module security requirements and that a local web server is needed [F55]; the portable build's plugin preserves `type="module"` on the scripts it inlines [F114] and its README states the output is for offline apps opened directly with no server [F110], with the caveat that only some behaviours were tested in Chromium-based browsers [F111 caveat]. No source read settles the per-browser outcome for an inline module script. | AC11; it is the single highest-value cell in the capability matrix |
 | Q9 | What is the complete set of WCAG 2.2 Level A and Level AA success criteria? | No source enumerating the full set was read for this spec. The thirteen criteria listed in §2.11 are those whose text this spec relies on, not a claim of completeness. | AC16 — its checklist must be built from the published WCAG 2.2 Recommendation at the time of execution, not from §3 |
-| Q10 | Which of those criteria can an automated checker decide? | No source read for this spec establishes the WCAG coverage of any automated tool. | AC16 — which is why every row carries an explicit `automated` / `manual` method |
+| Q10 | Which of those criteria can an automated checker decide, and what rule or tag vocabulary does any given checker expose? | No source read for this spec establishes the WCAG coverage of any automated tool, nor the rule or tag selection any particular tool accepts. Both halves are open, and §2.11 relies on both. | AC15 — which is why the checker and its exact selection are declared in `workshop/spa/docs/a11y-tool.md` and bound to the gate rather than named here; and AC16 — which is why every row carries an explicit `automated` / `manual` method |
 | Q11 | How does the `window-management` permission behave for a document with an opaque or `file:` origin — prompt, auto-deny, or policy rejection? | The specification describes the prompt and the `NotAllowedError` for a disallowed policy-controlled feature [F17, F21] and MDN describes the policy behaviour [F20], but none of those sources addresses opaque or `file:` origins. | AC11 |
 | C1 | `CONTRADICTED` — "requestFullscreen's `screen` option rejects with `NotAllowedError` when the relevant global object lacks transient activation, waiving it within the transient activation duration after a `[[targetScreenFullscreen]]` time." | The Window Management draft assigns both behaviours to different methods. Its `Element.requestFullscreen()` changes are two steps and reject nothing: take `options["screen"]` into account when moving and resizing the viewport, and set `[[targetScreenFullscreen]]`. The `NotAllowedError`-for-missing-transient-activation step belongs to "Request a window display state change" (serving `minimize()`, `maximize()`, `restore()`) and to `setResizable()`. | §2.5 must not assume the `screen` option carries its own activation rejection; it relies on [F1] instead |
 | C2 | `CONTRADICTED` — "Only `http`, `https`, `ftp`, `ws` and `wss` return a tuple origin; other schemes return a new opaque origin." | The URL Standard's origin switch has a `blob` branch **before** the scheme list that can return a tuple origin, illustrated by the standard's own worked example. The exclusivity assertion is wrong. F49, which states the same scheme list without "only", is the row this spec uses. | §2.7 must not treat `blob:` as opaque by default |
@@ -1241,17 +1251,32 @@ The application is built by the `dev-qa-judge` loop. The developer's claims are 
 verification or review: QA and the judge each re-derive what the change must do from this spec
 and from the diff, and never see the developer's account of what was built.
 
-| Stage | Agent | Contract — what it is given, what it must return |
-|---|---|---|
-| 1 | `slidesmith` | Given the interaction inventory (§2.4), the presentation-mode requirements (§2.5) and the conformance target (§2.11). Returns the visual design of the presentation surface and the speaker-script surface, including focus indication meeting [F86] and [F91] and target sizes meeting [F89]. |
-| 2 | `Vasher` | Given this spec and the design from stage 1. Returns the implementation and the build pipeline, against the acceptance criteria in §2 and nothing beyond them. |
-| 3 | `Wayne` | Given this spec and the diff, **not** the developer's claims. Independently re-derives the acceptance criteria, writes the missing tests, runs the full gate itself, and returns findings with reproductions and a machine-readable verdict. |
-| 4 | `slide-review` gate | Given the built presentation surface. Returns a layout and composition report, which is an input to stage 6. |
-| 5 | `deck-standards` gate | Given the built presentation surface and its speaker scripts. Returns a standards report, which is an input to stage 6. |
-| 6 | `Vin` | Given the speaker-script content surfaced by the application. Returns the voice pass on those scripts. |
-| 7 | `judge` | Given this spec, the diff, and the stage 4 and 5 gate reports — **not** the developer's summary. Re-derives the acceptance criteria, actively tries to break the result, and returns a verdict with reproductions. |
+**The loop is three stages, not seven.** `dev-qa-judge` dispatches exactly `Vasher` (dev),
+`Wayne` (qa) and `judge` (`~/.copilot/extensions/dev-qa-judge/loop.mjs`), and the arguments that
+carry the work are `{ task, scope?, branch?, maxRounds? }` — a free-text brief, not a spec path.
+(The schema also accepts `agentBinding`, an opt-in compatibility path that re-applies each role's
+authored prompt before dispatch; it changes how a subagent is bound, not what it is told.) The
+four remaining
+stages this spec depends on therefore run **around** the loop, dispatched by the session driving
+it. The `Runs` column below is what makes the difference operable; a stage listed as an input to
+stage 7 reaches the judge only by being named in the `task` brief at a path the judge can read,
+because the loop has no parameter for it.
 
-**Loop:** `dev-qa-judge`  **maxRounds:** `to be assigned by John`  **Escalates to:** John
+| Stage | Agent | Runs | Contract — what it is given, what it must return |
+|---|---|---|---|
+| 1 | `slidesmith` | before the loop | Given the interaction inventory (§2.4), the presentation-mode requirements (§2.5) and the conformance target (§2.11). Returns the visual design of the presentation surface and the speaker-script surface, including focus indication meeting [F86] and [F91] and target sizes meeting [F89]. Its output is an input to the stage 2 brief. |
+| 2 | `Vasher` | loop stage `dev` | Given this spec and the design from stage 1. Returns the implementation and the build pipeline, against the acceptance criteria in §2 and nothing beyond them. |
+| 3 | `Wayne` | loop stage `qa` | Given this spec and the diff, **not** the developer's claims. Independently re-derives the acceptance criteria, writes the missing tests, runs the full gate itself, and returns findings with reproductions and a machine-readable verdict. |
+| 4 | `slide-review` gate | before stage 7; named in the brief | Given the built presentation surface. Returns a layout and composition report, which is an input to stage 7. |
+| 5 | `deck-standards` gate | before stage 7; named in the brief | Given the built presentation surface and its speaker scripts. Returns a standards report, which is an input to stage 7. |
+| 6 | `Vin` | after the loop | Given the speaker-script content surfaced by the application. Returns the voice pass on those scripts. |
+| 7 | `judge` | loop stage `judge` | Given this spec, the diff, and the stage 4 and 5 gate reports — **not** the developer's summary. Re-derives the acceptance criteria, actively tries to break the result, and returns a verdict with reproductions. |
+
+**Loop:** `dev-qa-judge`  **maxRounds:** `2`  **Escalates to:** John
+
+**Unit of a run.** One loop run per child issue in §7, not one run for the application. Each run
+carries its own `task` brief, its own `scope` fence naming the paths that issue may touch, and
+its own `branch`.
 
 ---
 
@@ -1259,15 +1284,23 @@ and from the diff, and never see the developer's account of what was built.
 
 Assignment is by **stage property**, not stage prestige.
 
-| Stage | Model | Rationale |
-|---|---|---|
-| 1 — `slidesmith` | To be assigned by John | Generative visual work, cheap to iterate, immediately checkable against AC15 and AC17 |
-| 2 — `Vasher` | To be assigned by John | Long implementation context across build, runtime and tests; wrongness is expensive but visible to stages 3 and 7 |
-| 3 — `Wayne` | To be assigned by John | Must re-derive criteria independently and execute the gate; wrongness here is expensive **and invisible** |
-| 4 — `slide-review` | To be assigned by John | Narrow mechanical gate over a rendered artifact |
-| 5 — `deck-standards` | To be assigned by John | Narrow mechanical gate over a rendered artifact plus its scripts |
-| 6 — `Vin` | To be assigned by John | Voice and register judgment over prose |
-| 7 — `judge` | To be assigned by John | Adversarial judgment, load-bearing, must hold large context, wrongness is expensive **and invisible** |
+The three loop stages are assigned by the loop, not here. `run.mjs`'s `STAGE_ROLES` maps each
+stage to a role — stage 2 `EXECUTION`, stage 3 `VERIFICATION`, stage 7 `JUDGMENT` — and
+`_loopkit/roles.mjs` maps a role to a model in one place, pinning the checker to a different
+model family from the implementer on purpose. `VERIFICATION`
+and `JUDGMENT` are voiding roles — a substituted model does not caveat the verdict, it voids it.
+Naming models for those stages in this spec would duplicate that policy and go stale against it,
+which is what the rows below used to do.
+
+| Stage | Runs | Model | Rationale |
+|---|---|---|---|
+| 1 — `slidesmith` | outside the loop | To be assigned by John | Generative visual work, cheap to iterate, immediately checkable against AC15 and AC17 |
+| 2 — `Vasher` | loop | `EXECUTION`, per `roles.mjs` | Long implementation context across build, runtime and tests; wrongness is expensive but visible to stages 3 and 7 |
+| 3 — `Wayne` | loop | `VERIFICATION`, per `roles.mjs` (voiding) | Must re-derive criteria independently and execute the gate; wrongness here is expensive **and invisible** |
+| 4 — `slide-review` | outside the loop | To be assigned by John | Narrow mechanical gate over a rendered artifact |
+| 5 — `deck-standards` | outside the loop | To be assigned by John | Narrow mechanical gate over a rendered artifact plus its scripts |
+| 6 — `Vin` | outside the loop | To be assigned by John | Voice and register judgment over prose |
+| 7 — `judge` | loop | `JUDGMENT`, per `roles.mjs` (voiding) | Adversarial judgment, load-bearing, must hold large context, wrongness is expensive **and invisible** |
 
 > Workflow-owned subagents are **not** subject to the `task`-tool sub-agent model gate.
 > Per-stage model assignment inside a loop is free.
@@ -1292,9 +1325,9 @@ Scope comes from this list and nowhere else; anything added mid-flight needs a s
 | 9 | Keyboard model: full operability, no traps, single-key shortcut toggle and modifier equivalents (AC12, AC13, AC14) | `spa`, `a11y` | 4, 5, 6 |
 | 10 | Accessibility gate: select and declare the automated checker and its rule selection in `workshop/spa/docs/a11y-tool.md`, bind the gate to that declaration, target-size audit and exceptions doc, reduced-motion assertions, per-criterion conformance record (AC15, AC16, AC17, AC18) | `a11y`, `test`, `docs` | 4, 5, 9 |
 | 11 | Portable single-file build with build-time CSP hashes (AC5, AC20) | `spa`, `build` | 3, 7 |
-| 12 | Freeze `workshop/site/hackathon.html`: record its SHA-256 and add the guard test, which stays armed until a rehearsal record with verdict `PASS` exists and is **not** released by a `FAIL` record (AC21) | `test` | — |
+| 12 | Freeze `workshop/site/hackathon.html`: record its SHA-256 and add the guard test, which stays armed until the retirement record exists and is released by **no** rehearsal record, passing or failing (AC21) | `test` | — |
 | 13 | Live rehearsal of the Teaching SPA and its rehearsal record (AC22) | `docs` | 6, 7, 8, 10, 11, 12 |
-| 14 | Retire `workshop/site/hackathon.html` — delete it, update every reference to it under `workshop/`, `scripts/` and `docs/`, and flip the guard test (AC23) | `spa`, `docs` | 13 |
+| 14 | Retire `workshop/site/hackathon.html` — in one change: write `workshop/spa/docs/hackathon-retired.md` naming the passing rehearsal record, delete the page, and update every reference to it under `workshop/`, `scripts/` and `docs/`. The AC21 guard releases itself on that record; do not edit it (AC21, AC23) | `spa`, `docs` | 13 |
 
 ---
 
@@ -1305,3 +1338,5 @@ Scope comes from this list and nowhere else; anything added mid-flight needs a s
 | 2026-10-09 | Created |
 | 2026-10-09 | Review round 2: AC15 no longer asserts an unsourced external tool or its tag vocabulary and now binds the gate to a declared `workshop/spa/docs/a11y-tool.md` (§2.11); AC11 separates `Verdict` from `Evidence` and gains the browser dimension the objective requires, with §2.8 restated to match; AC21's freeze is released only by a `PASS` rehearsal record, never by a `FAIL` one; `dialog` added to child issue 4; `workshop/spa/docs/content-authoring.md` given a slot in §2.1 and an observable criterion, AC24. |
 | 2026-10-09 | Review round 3, three structural defects closed. (1) AC11's `Evidence` rule was unsatisfiable for exactly the rows whose verdict is `not measured` — the two permitted forms were the two things that verdict asserts are absent — so the rule is now conditional on the verdict and `not measured` rows carry `—` or a §4 `Q` id; §2.8 restates the rule and records that `not measured` is a permanent verdict, not only a campaign artifact. (2) AC23's second clause forbade any tracked file from referencing `workshop/site/hackathon.html`, which this spec itself must do to state AC21–AC23 at all; it is now scoped to the `workshop/`, `scripts/` and `docs/` surface, excluding the retirement's own records, with the reasoning in §1. (3) The schema↔content loop was open: nothing compared the schema to anything, and §2.2's second MUST was observed by no criterion. AC1 now runs `spa:validate` over the three curriculum globs, new AC25 binds `frontmatter.schema.json`'s closed key set to `content-authoring.md`, and §2.2 states the three-link chain instead of claiming one test does the work of three. |
+| 2026-10-14 | The four escalation findings closed, plus the execution sections reconciled with the loop as built. (1) §2.2 no longer justifies AC25's `additionalProperties: false` with an ungraded JSON Schema claim; the closure is stated as a requirement this spec imposes so AC25 has two finite sets to compare. (2) §5 `maxRounds` set to `2`. (3) Q10 now carries both halves it is cited for — tool coverage *and* rule/tag vocabulary — and blocks AC15 as well as AC16. (4) **AC21 and AC23 no longer flip on the same trigger.** Both keyed to a passing rehearsal record, they left the gate red between child issues 13 and 14: the record made AC23 demand the page be absent while its deletion still belonged to the next issue. The trigger is now the retirement record `workshop/spa/docs/hackathon-retired.md`, which child issue 14 writes in the same change that deletes the page; a `PASS` rehearsal *authorizes* retirement, and AC23 requires the retirement record to name one. The freeze therefore holds through the rehearsal instead of releasing early — jointly no weaker than before and armed for longer, and still never released by a `FAIL`, which was review round 2's requirement. §2.1 gains the retirement-record row and §1 states the three states. (5) §5 and §6 said seven stages; `dev-qa-judge` dispatches three (`Vasher`, `Wayne`, `judge`) and takes a free-text `task`, not a spec path. Both tables now mark which stages run inside the loop and which run around it, state that a gate report reaches the judge only by being named in the brief, and defer the three loop stages' models to `_loopkit/roles.mjs` rather than restating a policy they would go stale against. One loop run per child issue. |
+| 2026-10-14 | Review round 4, over the amendment above. (1) §7 issue 14 still said "flip the guard test", an instruction left from the design the amendment replaced — under the new AC21 the guard reads the retirement record itself, so the only edit available to that implementer was to weaken it; the row now says so explicitly. (2) §5's argument list read as exhaustive and omitted `agentBinding`, the member that matters when custom agents cannot bind in a given host; named, with its effect scoped. (3) §6 attributed the stage→role map to `roles.mjs`; that map is `run.mjs`'s `STAGE_ROLES`, and `roles.mjs` maps role→model. (4) §2.2's replacement sentence claimed the build confirms the `additionalProperties` closure, which no criterion did: AC1 now requires an undeclared-key fixture among the invalid ones, and that is what observes it. (5) §2.1's fence permitted only `package.json` *script* entries while §2.2 and §2.9 require packages the repository does not yet have and a build configuration; the fence now covers dependency entries, the SPA's own build config and the `dist/` ignore entry. (6) §3's preamble claimed to hold every factual claim in the spec, which §5's and §6's claims about local tooling are not and should not be; scoped to outside-world claims. (7) Changelog wording: the freeze is jointly no weaker and armed longer, not "strictly stronger", which was false of AC21 read alone. |
