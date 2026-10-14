@@ -1,0 +1,6 @@
+# SHA-256 baseline for workshop/site/hackathon.html, frozen by AC21 (specs/005-teaching-spa.md).
+# The digest is of the page's LF form, which is the bytes git stores. A core.autocrlf=true checkout
+# holds the same page with CRLF line endings, so a raw hash of that working copy differs; the AC21
+# test hashes the LF form and accepts the page in either form.
+# Reproduce from a POSIX shell: git show HEAD:workshop/site/hackathon.html | sha256sum
+0fc164d64b5f03ccb76256f876641026297a35c14e10c6c73b15a74aea9a61cb
