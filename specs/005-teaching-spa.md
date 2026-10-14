@@ -103,8 +103,9 @@ tests**: the table is the contract, the subsections are its content.
 
 The build adds these paths and nothing outside them, except `package.json` — whose script and
 dependency entries the pipeline in §2.9 and the packages named in §2.2 both require — the SPA's
-own build configuration beside its source under `workshop/spa/`, and a `.gitignore` entry for
-`workshop/spa/dist/`.
+own build configuration beside its source under `workshop/spa/`, a `.gitignore` entry for
+`workshop/spa/dist/`, and a `.gitattributes` line pinning `workshop/site/hackathon.html` as `-text`
+so the AC21 byte hash is identical on every checkout (added 2026-10-14, child issue 12).
 
 | Path | Holds |
 |---|---|
