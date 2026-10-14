@@ -18,8 +18,8 @@
  * that SHA-256 must equal the baseline. AC21 names no other form of the page and §1 says it
  * stays byte-identical, so converting every line ending (LF to CRLF or back) is a change and a
  * violation, and a page whose own bytes hash to the baseline passes whatever endings it has.
- * The baseline therefore describes one checkout's bytes; hackathon-baseline.sha256 says which,
- * and what a checkout that converts line endings differently would see.
+ * .gitattributes pins the page with -text, so every checkout on every OS holds the committed
+ * (LF) bytes and the baseline is the digest of those bytes.
  *
  * The release-condition cases run against throwaway trees under os.tmpdir() with synthetic page
  * bytes. Nothing is created in the repo, and they keep passing after the real page is retired.
