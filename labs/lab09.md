@@ -3,7 +3,7 @@ title: "Copilot Coding Agent & Code Review"
 lab_number: 9
 pace:
   presenter_minutes: 5
-  self_paced_minutes: 40
+  self_paced_minutes: 55
 registry: docs/_meta/registry.yaml
 ---
 
@@ -11,11 +11,13 @@ registry: docs/_meta/registry.yaml
 
 In this lab you will chain two platform-level agentic features: the **Copilot Coding Agent** to implement a feature from a GitHub Issue, and **Copilot Code Review** to automatically review the resulting pull request. You won't write a single line of code — you'll write an issue, and two AI agents handle the rest.
 
-> ⏱️ Presenter pace: 5 minutes | Self-paced: 40 minutes
+> ⏱️ Presenter pace: 5 minutes | Self-paced: 55 minutes
+
+> 📋 **Before you start.** This is an **advanced-tier lab**: it runs on GitHub.com rather than in an editor, and it assumes the repository context from Lab 02 and the platform workflow from Lab 08. The 55 minutes is a planning estimate, not a target — two agent round-trips set the real pace and they vary, so 45–65 is an ordinary range.
 
 **Prerequisites:**
 
-- Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md). §9.8 is about the `.github/copilot-instructions.md` file you edited there.
+- Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md). §9.8 is about the `.github/copilot-instructions.md` file you edited there. Both agents in this lab run on GitHub, so they read what is **committed on your fork's default branch** — not edits sitting in your working copy. Open `.github/copilot-instructions.md` in your fork on GitHub.com and check that it says what you expect. If your Lab 02 edits never got pushed, carry on: this repository ships its own instructions and the lab works the same way. Just don't credit the agents' behaviour to changes they can't see.
 - Finish [Lab 08 — GitHub Agentic Workflows: PRD Generation](lab08.md). §9.9 and §9.10 build on it, and its §8.5 shows how to turn on Issues in a fork — §9.4 needs Issues turned on.
 - Do this lab in **a fork you own**. §9.2 creates a repository ruleset and §9.3 changes a repository setting, so both changes should land in a repository that's yours.
 - Use a Copilot plan that includes both the Coding Agent and Code Review — see [Copilot plans](https://docs.github.com/en/copilot/get-started/plans).
@@ -237,6 +239,9 @@ This typically takes **2–5 minutes**.
 1. Refresh the issue page to see status updates
 2. Once the PR is created, you'll see a link on the issue
 3. Click through to the PR. If you turned on **Review draft pull requests** in the §9.2 ruleset, Code Review has already started on the draft. If you didn't, it starts when you mark the draft **Ready for review** — or you can start it now: under **Reviewers**, click **Request** next to **Copilot**
+4. **Wait for both agents to finish before moving on.** The Coding Agent is done when it stops posting status updates and requests your review on the PR — a PR link appearing is not the same as the work being finished. Code Review is done when its comments are actually on the **Files changed** tab, or it reports it found nothing to comment on. Read an unfinished PR and you'll be reviewing a half-written change.
+
+> ⚠️ **If it doesn't finish.** The Coding Agent can fail or stop and say so on the issue or the PR. If that happens, or nothing has moved for well past the 2–5 minutes above, open its session log from the PR to see where it stopped. You have three ways forward: comment on the PR telling it what to do differently, close the PR and re-assign the issue for a fresh attempt, or skip to §9.8 — the rest of the lab is reading and still works without a finished PR. Clean up whatever you did create using §9.12.
 
 > 💡 **Two agents, one flow.** With **Review draft pull requests** on, the Coding Agent opens the draft PR and the ruleset you created in §9.2 asks Code Review to look at it. You didn't write code, you didn't push, and you didn't request the review by hand — the platform handled it.
 
@@ -250,9 +255,9 @@ Your PR now has two types of AI activity:
 
 1. Go to your PR — you'll see **Copilot** listed under Reviewers
 2. Examine the code changes the Coding Agent made in the **Files changed** tab
-3. Read the Code Review comments posted on the changed files:
+3. Read the Code Review comments posted on the changed files. The four kinds below are **examples of what a review can raise — not a checklist of what yours will say**:
 
-| Feedback type | What You'll See |
+| Feedback type | What it might look like |
 |--------------|----------------|
 | ✅ **Positive** | "Clean property addition with sensible default" |
 | ⚠️ **Suggestion** | "Consider adding validation for MaxEnrollment range" (with a suggested fix) |
@@ -260,6 +265,8 @@ Your PR now has two types of AI activity:
 | 🧪 **Testing** | May note missing unit tests for the new property |
 
 4. Many suggestions include **Apply suggestion** buttons — click to accept fixes directly
+
+> 💡 **A clean review is a real result.** On a change this small, Code Review may finish with praise and nothing to fix. That is the feature working, not a step you missed — the agents wrote code that matched your instructions. §9.7 tells you what to do in either case.
 
 > 💡 **Comment by default:** Copilot Code Review leaves a **Comment** review. It doesn't approve the pull request or request changes, and by default its review doesn't count toward required approvals or block merging, so humans stay in control of the merge decision while AI provides a first-pass review. (Opt-in Copilot approvals exist and are in public preview — see [About Copilot Code Review](https://docs.github.com/en/copilot/concepts/agents/code-review#copilot-approvals).)
 
@@ -269,8 +276,10 @@ Here's where it gets powerful: you can ask the Coding Agent to address the Code 
 
 🌐 **On GitHub:**
 
-1. Read the Code Review comments on your PR
-2. Leave a comment on the PR tagging `@copilot` with instructions to address the feedback:
+1. Read the Code Review comments on your PR, and take whichever branch matches what you actually got
+2. Leave a comment on the PR tagging `@copilot`:
+
+   **If the review raised something**, ask it to address that — quote the review's own wording rather than the example below, which is only a template:
 
 ```markdown
 @copilot Please address the review feedback:
@@ -278,8 +287,16 @@ Here's where it gets powerful: you can ask the Coding Agent to address the Code 
 - Add XML documentation if missing
 ```
 
-3. The Coding Agent will push additional commits to the PR addressing the feedback
+   **If the review came back clean**, you can still drive a second cycle by asking for something new. Say so plainly, because this is a new requirement you are adding — not feedback the review gave you:
+
+```markdown
+@copilot New requirement, not from the review: add range validation for
+MaxEnrollment (must be > 0), with a unit test covering the invalid case.
+```
+
+3. The Coding Agent will push additional commits to the PR addressing the comment
 4. If you turned on **Review new pushes** in the §9.2 ruleset, Code Review automatically re-reviews the new commits
+5. Wait for the same two completion signals as in §9.5 — the agent requesting review again, and the re-review's comments actually appearing — before you judge the result
 
 > 💡 **The feedback loop:** Issue → Coding Agent → PR → Code Review → feedback comment → Coding Agent iterates → Code Review re-reviews. Humans stay in the loop as reviewers and decision-makers, while AI handles the implementation cycles.
 
@@ -340,6 +357,8 @@ Step back and look at what just happened:
 │              │     │  opens a PR      │     │  PR changes   │     │              │
 └──────────────┘     └──────────────────┘     └───────────────┘     └──────────────┘
 ```
+
+That last box is the production lifecycle, not this exercise. **You stop at the review** — §9.12 closes the pull request unmerged and deletes its branch, so your fork ends up the way it started. Merging is what you'd do on a real change you wanted to keep.
 
 **Three platform features, all running on GitHub:**
 

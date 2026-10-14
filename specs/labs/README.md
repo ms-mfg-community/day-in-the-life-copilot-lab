@@ -55,12 +55,21 @@ Steps:
    command that observes them, and its §4 must dispose of every outside-world claim as
    `free-check`, `cite F-nn`, `research`, or `cut`.
 
-   **Declared duration is not a contract-test criterion.** A spec may carry a derived
-   estimate as guidance, but re-deriving the real duration from the material is the
-   teachability gate's job and its number wins. A contract test may assert only that
-   frontmatter, `docs/_meta/registry.yaml` and the inline `⏱️` callout agree with each
-   other — never that a particular number is right. Asserting an estimate freezes one
-   author's guess into a gate nothing can get past.
+   **Declared duration is a guideline, and it is never a reason to fail anything.**
+   Every pacing number in this curriculum — the spec's, the registry's, the teachability
+   gate's — is an estimate produced by reading the material, not a measurement taken from
+   a learner. Most of them are an AI's guess. Treat them accordingly:
+
+   - A pacing number may be changed at any time, by anyone, without ceremony or a re-run.
+     It is the one field that needs no evidence to move.
+   - A disagreement about pacing is **not a finding**. A gate that reports one reports it
+     as advice; it may not block, escalate, or lower a verdict on that basis, and a lab is
+     never returned for it. If the teachability gate's number looks better, take it —
+     because it is probably the more considered guess, not because it wins.
+   - The only pacing rule with teeth is **internal consistency**: frontmatter,
+     `docs/_meta/registry.yaml` and the inline `⏱️` callout must state the same number.
+     That is all a contract test may assert — never that a particular number is right.
+     Asserting an estimate freezes one author's guess into a gate nothing can get past.
 2. Write the contract test. **It must fail before the edit.** A test written after the
    edit proves nothing — it was fitted to what you already did.
 3. Triage §4. Only a claim that is load-bearing *and* unsettleable by a free check earns a
