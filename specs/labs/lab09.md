@@ -32,7 +32,7 @@ asks the learner to sit through. No section is added or renamed.
 | **Presenter minutes** | 5 (unchanged — the lab already instructs the presenter to pre-run the issue → PR → review chain) |
 | **Self-paced minutes** | **55** (was 20). A guideline, never a floor or a gate — see D6 and `specs/labs/README.md`: a pacing number is an estimate, may be changed at any time by anyone, and is never a reason to fail or return a lab. The contract test asserts only that frontmatter, registry and the inline callout agree with each other. |
 | **Prerequisites** | **Lab 02** — §9.8 is *about* `.github/copilot-instructions.md` and the lab's thesis collapses without it. **Lab 08** — §9.9 explicitly builds on the gh-aw chain and §9.10 reads `.github/workflows/code-review.md`. Also: **a fork you own**, because §9.2 creates a repository ruleset and §9.3 flips a repo setting — both are Settings work. State all three; the lab currently states none. |
-| **Write steps** | **Yes — four GitHub objects, all created and none cleaned up.** §9.2 creates a **repository ruleset**; §9.3 toggles the **Coding agent** repo setting; §9.4 `gh issue create`; §9.5 `gh issue edit --add-assignee @copilot`, which causes the agent to **create a branch and open a PR**; §9.7 comments `@copilot` on the PR, causing **more commits**; §9.7 optionally `gh pr checkout` + `git commit` + `git push`. |
+| **Write steps** | **Yes — four GitHub objects, all created and none cleaned up.** §9.2 creates a **repository ruleset**; §9.3 toggles the **Coding agent** repo setting; §9.4 `gh issue create`, and the ⚠️ callout above it offers `gh repo set-default`, which **writes repository-local git config**; §9.5 `gh issue edit --add-assignee @copilot`, which causes the agent to **create a branch and open a PR**; §9.7 comments `@copilot` on the PR, causing **more commits**; §9.7 optionally `gh pr checkout` + `git commit` + `git push`. |
 
 > **`lab-forge` verdict: `run with §7 fenced`.** The commissioned edit is prose, a cleanup
 > block and frontmatter — no execution needed. The run gate must report every §7 item
@@ -108,6 +108,10 @@ is a GitHub write against a real repository:
 - §9.2 — creating the `copilot-code-review` repository ruleset (changes merge requirements on the default branch).
 - §9.3 — toggling **Settings → Copilot → Coding agent**.
 - §9.4 — `gh issue create` (both the Bash and PowerShell forms).
+- §9.4 — `gh repo set-default` (the non-`--view` form). It **changes repository-local git
+  config**, which `specs/labs/README.md` defines as a write step. `--view` is read-only and
+  may be run. This fence was added after the first `lab-forge` run: the run gate declined the
+  mutating form on its own judgement, which is luck, not a control.
 - §9.5 — `gh issue edit <n> --add-assignee @copilot`. **Spends Coding Agent quota and opens a pull request.**
 - §9.6/§9.7 — "Apply suggestion", commenting `@copilot` on the PR, `gh pr checkout`, `git commit`, `git push`.
 - §9.12 — anything in the cleanup block that deletes a GitHub object.

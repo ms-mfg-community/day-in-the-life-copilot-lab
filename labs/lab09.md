@@ -13,11 +13,11 @@ In this lab you will chain two platform-level agentic features: the **Copilot Co
 
 > ⏱️ Presenter pace: 5 minutes | Self-paced: 55 minutes
 
-> 📋 **Before you start.** This is an **advanced-tier lab**: it runs on GitHub.com rather than in an editor, and it assumes the repository context from Lab 02 and the platform workflow from Lab 08. The 55 minutes is a planning estimate, not a target — two agent round-trips set the real pace and they vary, so 45–65 is an ordinary range.
+> 📋 **Before you start.** This is an **advanced-tier lab**: it runs on GitHub.com rather than in an editor, and it assumes the repository context from Lab 02 and the platform workflow from Lab 08. The self-paced figure above is a planning estimate, not a target — two agent round-trips set the real pace and they vary, so finishing well either side of it is normal.
 
 **Prerequisites:**
 
-- Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md). §9.8 is about the `.github/copilot-instructions.md` file you edited there. Both agents in this lab run on GitHub, so they read what is **committed on your fork's default branch** — not edits sitting in your working copy. Open `.github/copilot-instructions.md` in your fork on GitHub.com and check that it says what you expect. If your Lab 02 edits never got pushed, carry on: this repository ships its own instructions and the lab works the same way. Just don't credit the agents' behaviour to changes they can't see.
+- Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md). §9.8 is about the `.github/copilot-instructions.md` file you edited there. Both agents in this lab run on GitHub rather than on your machine, so they read what you have **committed and pushed** — not edits sitting in your working copy. Open `.github/copilot-instructions.md` in your fork on GitHub.com and check that it says what you expect. If your Lab 02 edits never got pushed, carry on: this repository ships its own instructions and the lab works the same way. Just don't credit the agents' behaviour to changes they can't see.
 - Finish [Lab 08 — GitHub Agentic Workflows: PRD Generation](lab08.md). §9.9 and §9.10 build on it, and its §8.5 shows how to turn on Issues in a fork — §9.4 needs Issues turned on.
 - Do this lab in **a fork you own**. §9.2 creates a repository ruleset and §9.3 changes a repository setting, so both changes should land in a repository that's yours.
 - Use a Copilot plan that includes both the Coding Agent and Code Review — see [Copilot plans](https://docs.github.com/en/copilot/get-started/plans).
@@ -366,7 +366,7 @@ That last box is the production lifecycle, not this exercise. **You stop at the 
 2. **Copilot Coding Agent** — AI implements it
 3. **Copilot Code Review** — AI reviews it
 
-The human stays in control: you write the requirements, you review the output, you decide to merge. The AI handles the implementation and first-pass review.
+The human stays in control: you write the requirements, you review the output, and on a real change you'd decide whether to merge. The AI handles the implementation and first-pass review.
 
 > 💡 **Connect the labs.** Remember Lab 08? The gh-aw workflow generated a PRD from a feature branch. Imagine the full chain: PRD generation (Lab 08) → issue creation → Coding Agent implements → Code Review validates. Each piece is a building block you can compose into your own workflow.
 
@@ -406,7 +406,7 @@ This workflow demonstrates:
 - **Permission scoping** — `contents: read`, `pull-requests: read`
 - **Tool selection** — the GitHub tool gets only the `pull_requests` and `repos` toolsets, and `bash` is limited to `dotnet`
 
-The file above is the working version. The [reference solution](../solutions/lab09-gh-aw-review/code-review.md) attaches the label through a single `add-pr-comment` safe output instead, and the gh-aw version this repository pins (`gh_aw_schema_version` in [docs/_meta/registry.yaml](../docs/_meta/registry.yaml)) does not accept that option — read it for comparison, but don't copy it as-is.
+The file above is the working version — it's the one wired into `.github/workflows/`, and the repo's own gate compiles it on every run. The [reference solution](../solutions/lab09-gh-aw-review/code-review.md) attaches the label through a single `add-pr-comment` safe output instead, and it isn't wired in or compiled by the gate. Read it for comparison, but don't copy it as-is.
 
 > 💡 **When to use which?** Use built-in Copilot Code Review for everyday reviews. Use gh-aw when you need a custom review pipeline — domain-specific checklists, labeled outputs, strict permission models, or integration with custom tools.
 

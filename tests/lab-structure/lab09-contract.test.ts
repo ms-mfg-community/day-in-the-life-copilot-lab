@@ -42,20 +42,6 @@ const headingLevel = (l: Line): number => {
   return m ? m[1].length : 0;
 };
 
-function section(prefix: string): string {
-  const all = lines();
-  const head = new RegExp(`^#{2,6}\\s+${prefix.replace(/\./g, '\\.')}(?![\\d.])`);
-  const from = all.findIndex((l) => headingLevel(l) > 0 && head.test(l.text));
-  expect(from, `heading "${prefix}" not found outside a code fence`).toBeGreaterThanOrEqual(0);
-  const level = headingLevel(all[from]);
-  const rest = all.slice(from + 1);
-  const end = rest.findIndex((l) => {
-    const lv = headingLevel(l);
-    return lv > 0 && lv <= level;
-  });
-  return (end === -1 ? rest : rest.slice(0, end)).map((l) => l.text).join('\n');
-}
-
 interface Registry {
   labs?: Record<string, { pace_self_minutes?: number }>;
 }
@@ -143,7 +129,7 @@ describe('lab09 contract: AC8 — no branch-name shape presented as expected out
 
 describe('lab09 contract: AC9 — prerequisites are stated up front', () => {
   const head = (): string => {
-    const body = lab().replace(/^---\n[\s\S]*?\n---\n/, '');
+    const body = lab().replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
     return body.slice(0, body.search(/^## /m));
   };
 
@@ -168,8 +154,9 @@ describe('lab09 contract: AC9 — prerequisites are stated up front', () => {
 });
 
 describe('lab09 contract: AC10 — declared pacing is internally consistent', () => {
-  // Consistency only — the spec's ~40-minute figure is an estimated guideline, not a
-  // floor. Re-deriving the real duration is the teachability gate's job.
+  // Consistency only. Pacing is an estimate and may be changed at any time by anyone; it
+  // is never a finding and never blocks. Internal agreement is the only part with teeth.
+  // See specs/labs/README.md, "The dev story" step 1.
   it('frontmatter, the registry and the inline callout agree', () => {
     const declared = frontmatter().pace?.self_paced_minutes;
     expect(registry().labs?.lab09?.pace_self_minutes, 'registry disagrees with frontmatter').toBe(
