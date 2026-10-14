@@ -46,11 +46,11 @@ invokes anymore quietly rots. The self-improving pattern here is:
    schedule, using an agent.
 2. **Propose only mechanical fixes** as a draft PR — never a design change.
 3. **Escalate anything non-mechanical to a human** instead of editing the
-   file — flag it in the report attached to the draft PR. (The workflow's
-   prompt says to "open an issue", but its `safe-outputs` configure only
-   `create-pull-request`, so it has no way to open a findings issue: the
-   report is the channel. If a run breaks, gh-aw's own failure handling can
-   open a diagnostic issue — a separate mechanism, not a place for findings.)
+   file — flag it in the report attached to the draft PR. The report is the
+   only findings channel: `safe-outputs` configures `create-pull-request`
+   and nothing else, so the workflow cannot open an issue even if it wanted
+   to. (gh-aw's own failure handling can open a *diagnostic* issue when a
+   run breaks — a separate mechanism, not a place for findings.)
 4. **Never let the workflow touch itself** — it explicitly excludes its own
    workflow file (the `.md` source and its compiled `.lock.yml`) from any
    edit it's allowed to make, so it cannot expand its own permissions.
