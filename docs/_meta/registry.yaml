@@ -239,7 +239,7 @@ labs:
     title: "MCP Server Configuration"
     pace_presenter_minutes: 3
     pace_workshop_minutes: 10
-    pace_self_minutes: 15
+    pace_self_minutes: 50
   lab06:
     title: "Hooks"
     pace_presenter_minutes: 3
