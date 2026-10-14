@@ -494,12 +494,23 @@ the driver, never the peers themselves.
 git stash push -u -m "lab13-trial1" -- node
 ```
 
-Then start the loop from the §13.3.2 instruction exactly as written.
-That retires the always-demand-more critic and puts the §13.3.1
-contract and the four-round limit back.
+Then start the loop from the §13.3.2 instruction with its normal critic
+and four-round limit — that retires the always-demand-more critic and
+puts the §13.3.1 contract back — and apply the one change below before
+you paste it.
 
-**Trigger.** After turn 2, edit the contract from §13.3.1 (e.g. raise the
-cap from 100 to 500) but only update *one* peer.
+**Trigger.** For this trial only, replace step 4 of the paste-ready
+instruction with: *"After each critic reply, tell me 'round N of 4',
+then stop and wait — send nothing to either peer until I tell you to."*
+That hands the round boundary back to you, so the driver can neither run
+past the trigger point nor end the trial early by stopping at the
+critic's first *"no blocking issues"*.
+
+After the **second** critic reply, raise the cap in the §13.3.1 contract
+from 100 to 500 and update *one* peer only — tell the driver: *"The
+contract's cap is now 500. Give the implementer the updated contract;
+the critic keeps the one it already has."* Then release the remaining
+rounds one at a time.
 
 **What you'll see.** The implementer codes against the new contract,
 the critic reviews against the old one, and the loop never converges
