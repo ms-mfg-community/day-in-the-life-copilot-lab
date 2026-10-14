@@ -274,7 +274,7 @@ labs:
     title: "Fabric MCP with Copilot CLI & VS Code"
     pace_presenter_minutes: 8
     pace_workshop_minutes: 20
-    pace_self_minutes: 30
+    pace_self_minutes: 120
   lab13:
     title: "A2A Concepts with Copilot CLI ACP"
     pace_presenter_minutes: 10
