@@ -210,7 +210,11 @@ git commit -m "feat: add Course.Prerequisites model and schema change"
 git push -u origin feature/course-prereqs-model
 gh pr create --base main --head feature/course-prereqs-model \
   --title "Course prerequisites: model + schema change" \
-  --body "Layer 1 of 4 in the course-prerequisites stack."
+  --body "Layer 1 of the course-prerequisites stack."
+
+# STOP: review layer 1 now (§18.4) and address what comes back, before layer 2
+# exists to assume its shape. Building a layer on an unreviewed one below it is
+# the mistake this lab exists to prevent.
 
 # Layer 2: targets layer 1's branch, NOT main
 git checkout -b feature/course-prereqs-cycle-detection feature/course-prereqs-model
@@ -221,9 +225,11 @@ git push -u origin feature/course-prereqs-cycle-detection
 gh pr create --base feature/course-prereqs-model \
   --head feature/course-prereqs-cycle-detection \
   --title "Course prerequisites: cycle detection" \
-  --body "Layer 2 of 4 in the course-prerequisites stack."
+  --body "Layer 2 of the course-prerequisites stack."
 
-# ...repeat for layers 3 and 4, each based on the layer below...
+# Review layer 2 the same way before going any further. Two layers is enough to
+# see the pattern; layers 3 and 4 repeat these same steps, each based on the
+# layer below, if you want the full stack.
 ```
 
 > 💡 **Register the stack** (optional but recommended once every layer's PR
@@ -236,9 +242,8 @@ gh pr create --base feature/course-prereqs-model \
 > ```bash
 > gh api --method POST 'repos/{owner}/{repo}/stacks' \
 >   -F 'pull_requests[]=<layer-1-pr-number>' \
->   -F 'pull_requests[]=<layer-2-pr-number>' \
->   -F 'pull_requests[]=<layer-3-pr-number>' \
->   -F 'pull_requests[]=<layer-4-pr-number>'
+>   -F 'pull_requests[]=<layer-2-pr-number>'
+> # ...plus one -F line per further layer, if you built layers 3 and 4
 > ```
 
 > ⚠️ **Rules of thumb for stacking:**
@@ -299,7 +304,7 @@ The payoff is bigger than in a single-PR flow:
 🖥️ **In your terminal — observe/rehearse:**
 
 ```
-For each of the four course-prerequisites stack layers, once its PR is
+For each course-prerequisites stack layer you built, once its PR is
 open and I've requested Copilot as a reviewer on it, wait for Copilot
 Code Review to complete, then summarize: what did it flag (if anything),
 and did addressing that feedback change what the next layer up needed to
@@ -326,9 +331,11 @@ missing.
 ✅ You built at least a 2-layer PR stack where the upper layer's base is
 the lower layer's branch, not `main`.
 
-✅ You requested Copilot Code Review on each layer, saw it run
-independently on each one, and can name one piece of feedback that would
-have been harder to act on if all layers had been one giant PR.
+✅ You requested Copilot Code Review on each layer you built, saw it run
+independently on each one, and can either name one piece of feedback that
+would have been harder to act on if all layers had been one giant PR, or —
+if a review came back clean — say which risk the smaller layer made easier
+to inspect.
 
 ### Clean up
 
