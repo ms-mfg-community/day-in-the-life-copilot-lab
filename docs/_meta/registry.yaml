@@ -80,8 +80,12 @@ mcp_servers:
     last_verified: "2026-06-15"
     note: >-
       This pin targets the LOCAL/open-source Fabric.Mcp.Server
-      (github.com/microsoft/mcp/tree/main/servers/Fabric.Mcp.Server), used by
-      Lab 12's offline/Codespaces path. A separate REMOTE "Fabric Core MCP
+      (github.com/microsoft/mcp/tree/main/servers/Fabric.Mcp.Server), which is
+      what Lab 12's LIVE path configures — "local" describes where the server
+      process runs, not that it works without a tenant; it still authenticates
+      through your Azure CLI session. Lab 12's offline/Codespaces path reads the
+      committed Parquet fixture and does not run this server at all.
+      A separate REMOTE "Fabric Core MCP
       Server" also exists (https://api.fabric.microsoft.com/v1/mcp/core,
       Entra ID auth + RBAC, public preview since 2026-03) for live-tenant
       work — Lab 12 should make explicit which variant each exercise uses.

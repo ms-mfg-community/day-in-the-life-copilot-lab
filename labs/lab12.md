@@ -119,10 +119,12 @@ your org pins a different fork (common in regulated tenants), update the
 
 ## 12.1 Prerequisites
 
-> 📌 **Start with [Lab 05](lab05.md).** Steps A.1 and B.1 (the Live path) ask
-> you to merge a server entry into an MCP config file, and they assume you
-> already know the difference between a `local` (stdio) server and an `http`
-> one. Lab 05 teaches both; this lab does not re-teach them.
+> 📌 **Start with [Lab 05](lab05.md) if you are taking the Live path.** Steps
+> A.1 and B.1 ask you to merge a server entry into an MCP config file, and they
+> assume you already know the difference between a `local` (stdio) server and an
+> `http` one. Lab 05 teaches both; this lab does not re-teach them. The Offline
+> path skips A.1 and B.1 and never starts the MCP server, so Lab 05 is not
+> required for it.
 
 > 📎 **Builds on [Lab 11](lab11.md).** Lab 11 introduced the
 > "configuration as a product" / plugin-distribution mindset; this lab
@@ -862,7 +864,7 @@ workflow Prism (the Fabric Data Architect agent — see
 > - **Pre-commit hook:** if §12.5.4 set `core.hooksPath` to `.githooks`, revert with `git config --unset core.hooksPath` (or restore your previous value if you had one). `.githooks/pre-commit` is a committed repo file, so don't delete it; if you ran the §12.5.4 `cat` block, `git restore .githooks/pre-commit` puts the committed copy back.
 > - **`.gitattributes` edits:** if you added the notebook/parquet rules from §12.5.1 only to try them, `git checkout -- .gitattributes` returns the file to its committed state. The repo already ships `*.parquet binary`, so you can leave that even if you remove the notebook rules.
 > - **Offline fixtures stay committed.** `labs/fixtures/lab12/sales.parquet` is **part of the repo** — do not delete it. Any *additional* `*.parquet` files you generated (e.g. `sales-2.parquet`) sit in the directory but are git-ignored; remove them with `git clean -fdX -- labs/fixtures/lab12/` if you want a pristine fixtures dir without touching the canonical file.
-> - **Notebook from B.2 and the §12.5.4 practice branch:** the `lab12-practice` branch and its one commit exist only on your machine; nothing was pushed. If you want to keep `my-explore.ipynb`, copy it out of the repo first. Then switch back with `git switch main` (or whichever branch you started on) and delete the practice branch with `git branch -D lab12-practice` (capital `-D`, because the branch was never merged). Switching away also removes the committed notebook from the working folder. If Git refuses to switch because you saved changes to the notebook after the practice commit, copy it out, run `git restore my-explore.ipynb`, and switch again. If you skipped §12.5.4, the notebook is still untracked: delete it if you don't want it, and `git status --short` stops listing it.
+> - **Notebook from B.2 and the §12.5.4 practice branch:** the `lab12-practice` branch and its one commit exist only on your machine; nothing was pushed. If you want to keep `my-explore.ipynb`, copy it out of the repo first. Then switch back with `git switch main` (or whichever branch you started on) and delete the practice branch with `git branch -D lab12-practice` (capital `-D`, because the branch was never merged). Because that commit is the only place the notebook is tracked, switching away also removes it from the working folder. If Git refuses to switch because you saved changes to the notebook after the practice commit, copy it out, run `git restore my-explore.ipynb`, and switch again. If you skipped §12.5.4, the notebook you created is still untracked: delete it if you don't want it, and `git status --short` stops listing it. None of this applies if you worked in a notebook that was already tracked in the repo before the lab — that one stays where it was; just undo any edits you don't want to keep.
 > - **MCP config:** if you merged the `fabric` block into `~/.copilot/mcp-config.json`, `.vscode/mcp.json` or your VS Code user-profile MCP configuration (Command Palette → **MCP: Open User Configuration**) and want to remove it, edit the file and delete just that entry (plus the `fabric-workspace-id` input in the VS Code files) — not the whole `mcpServers` (Copilot CLI) or `servers` (VS Code) object.
 
 <!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
