@@ -254,7 +254,7 @@ labs:
     title: "GitHub Agentic Workflows: PRD Generation"
     pace_presenter_minutes: 5
     pace_workshop_minutes: 12
-    pace_self_minutes: 15
+    pace_self_minutes: 75
   lab09:
     title: "Copilot Coding Agent & Code Review"
     pace_presenter_minutes: 5
