@@ -45,11 +45,15 @@ invokes anymore quietly rots. The self-improving pattern here is:
    instructions, underused skills, duplicated responsibility) — on a
    schedule, using an agent.
 2. **Propose only mechanical fixes** as a draft PR — never a design change.
-3. **Escalate anything non-mechanical to a human-reviewed issue** instead of
-   editing the file.
+3. **Escalate anything non-mechanical to a human** instead of editing the
+   file — flag it in the report attached to the draft PR. (The workflow's
+   prompt says to "open an issue", but its `safe-outputs` configure only
+   `create-pull-request`, so it has no way to open a findings issue: the
+   report is the channel. If a run breaks, gh-aw's own failure handling can
+   open a diagnostic issue — a separate mechanism, not a place for findings.)
 4. **Never let the workflow touch itself** — it explicitly excludes its own
-   workflow file from any edit it's allowed to make, so it cannot expand its
-   own permissions.
+   workflow file (the `.md` source and its compiled `.lock.yml`) from any
+   edit it's allowed to make, so it cannot expand its own permissions.
 
 This is the same "detect → propose PR → human merges" shape as Lab 08's
 `generate-prd.md` and the repo's own `weekly-content-audit.md` — applied to
@@ -76,8 +80,24 @@ generic.
 gh aw compile self-improving-agents
 ```
 
-You should see `✓ Compiled 1 workflow: 1 succeeded, 0 warnings` and a
-regenerated `.github/workflows/self-improving-agents.lock.yml`.
+Compilation should finish without errors. It also **rewrites the committed**
+`.github/workflows/self-improving-agents.lock.yml`, so it can leave your
+working tree modified. You haven't edited the workflow's `.md` source, so
+there is nothing to commit — check, then **discard** the change:
+
+```bash
+git status --short
+git checkout -- .github/workflows/self-improving-agents.lock.yml
+```
+
+If `git status --short` also listed another modified file you didn't edit,
+restore it the same way.
+
+A changed lock file can mean your `gh aw` isn't the version the repo pins as
+`gh_aw_schema_version` in
+[`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml); [Lab 08](lab08.md)
+§8.3 shows how to install the matching one. (If you do change the `.md`
+itself, commit the regenerated lock file with it — the two travel as a pair.)
 
 > 💡 **What you should see:** if compilation fails, check the error against
 > `gh aw`'s schema docs — a common cause is a `tools:` key that doesn't
@@ -110,6 +130,22 @@ Review the report:
 
 ## 19.4 Trigger the Real Workflow
 
+> ⚠️ **This step writes to GitHub.** `gh workflow run` starts a real Actions
+> run that opens a draft PR on your own repository when the scan finds
+> something to fix. Before you run it:
+>
+> - Work in a **fork you own**, from a clone of that fork — not the upstream
+>   repository.
+> - Enable GitHub Actions on the fork: a new fork starts with workflows
+>   switched off, so open its **Actions** tab and enable them.
+> - Run `gh repo set-default --view`. If it doesn't show your fork, run
+>   `gh repo set-default` and choose it.
+> - Make sure the fork has the `COPILOT_GITHUB_TOKEN` secret and the
+>   **Allow GitHub Actions to create and approve pull requests** setting
+>   from [Lab 08](lab08.md) §8.4.
+>
+> Teardown is at the end of this section.
+
 🖥️ **In your terminal:**
 
 ```bash
@@ -118,6 +154,8 @@ gh workflow run self-improving-agents.lock.yml
 
 Or wait for the schedule (see the `on.schedule` cron in the workflow
 frontmatter — adjust the cadence for your own repo's pace of change).
+
+🖥️ **In Copilot CLI:**
 
 ```
 Watch the triggered run and report back once safe-outputs opens (or
@@ -129,9 +167,22 @@ skips) a pull request.
 > auto-merged change. If the scan found nothing actionable, no PR opens at
 > all; that's success, not failure.
 
+> 🧹 **Teardown.** When you've seen the result, undo what this section left
+> behind:
+>
+> - Close the draft PR and delete its branch. Find it with
+>   `gh pr list --label self-improving-agents`, then run
+>   `gh pr close <number> --delete-branch`.
+> - If `git status --short` still shows the lock file modified, restore it as
+>   in §19.2.
+> - The workflow keeps running on its cron schedule in your fork. If you
+>   don't want that, open the fork's **Actions** tab, select the workflow and
+>   choose **⋯ → Disable workflow**.
+
 ## 19.5 Adapt It to Another Repo
 
-Because the "Portability config" block in §19.1 is the only repo-specific
+Because the "Portability config" block in
+`.github/workflows/self-improving-agents.md` is the only repo-specific
 part, porting this workflow is mechanical:
 
 🖥️ **Discuss/rehearse:**
@@ -166,17 +217,21 @@ node modernization-bundle/scripts/install.mjs   # expect ok=true
 
 ## 19.7 Check your work
 
-✅ `gh aw compile self-improving-agents` succeeds with 0 warnings.
+✅ `gh aw compile self-improving-agents` finishes without errors, and you
+checked `git status --short` afterwards so a regenerated lock file doesn't
+linger in your working tree.
 
 ✅ You ran a local dry-run scan in Copilot CLI and reviewed its report
 before triggering the real workflow.
 
-✅ You can name the one file this workflow is explicitly forbidden from
-editing, and explain why (self-privilege-escalation risk).
+✅ You can name the two files this workflow is explicitly forbidden from
+editing — `.github/workflows/self-improving-agents.md` and its compiled
+`.lock.yml` — and explain why (self-privilege-escalation risk).
 
 ✅ You can name the three things a real run of this workflow is allowed to
-do (mechanical fix, open an issue, log a limitation) and the two things it
-must never do (delete an agent/skill, edit itself).
+do (apply a mechanical fix in the draft PR, flag a design-level finding in
+the report, log a limitation) and the two things it must never do (delete an
+agent/skill, edit itself).
 
 ## 19.8 Final
 
@@ -186,7 +241,7 @@ must never do (delete an agent/skill, edit itself).
 | Concept | Details |
 |---------|---------|
 | **Not an official feature** | This is a DIY gh-aw pattern you assemble from agents + skills + gh-aw, not a GitHub product |
-| **Bounded scope** | Mechanical fixes only; anything design-level becomes an issue, not an edit |
+| **Bounded scope** | Mechanical fixes only; anything design-level is flagged in the report for a human, not edited |
 | **Self-exclusion** | The workflow can never edit its own `.md`/`.lock.yml` — prevents privilege escalation |
 | **Portability** | One "Portability config" block at the top makes it reusable across repos |
 | **Draft-only PRs** | Never auto-merges; always requires human review |

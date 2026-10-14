@@ -13,7 +13,8 @@
 
 Lab 19 teaches a bounded self-improvement pattern: a scheduled gh-aw workflow scans the
 repo's own agents, skills and prompts for drift, proposes only mechanical fixes as a draft
-PR, escalates anything design-level to an issue, and is forbidden from editing itself. The
+PR, escalates anything design-level to a human through the report attached to that PR, and
+is forbidden from editing itself. The
 teaching idea is that **"self-improving" is a safe pattern only because of what it is not
 allowed to do** — and the lab is already admirably loud that this is a DIY pattern, not a
 GitHub product.
@@ -32,7 +33,7 @@ this is the smallest lab in the batch and the lightest pass.
 | **Presenter minutes** | 7 (unchanged) |
 | **Self-paced minutes** | 25 (unchanged) |
 | **Prerequisites** | Lab 08 (gh-aw fundamentals — the lab says so itself and `gh aw compile` is step one) and Lab 11 (the plugin-template conventions §19.6's bundle is built on). Labs 04 and 07 are useful background. `gh aw` must be installed. |
-| **Write steps** | **Yes, but only two, and only one is remote.** (a) §19.2 `gh aw compile self-improving-agents` **regenerates `.github/workflows/self-improving-agents.lock.yml`, a committed file**. (b) §19.4 `gh workflow run self-improving-agents.lock.yml` triggers a real Actions run that opens a draft PR — a GitHub write. §19.6's `node modernization-bundle/scripts/install.mjs` is **not** a write step: it is a read-only dry-run simulator (`readFileSync`/`existsSync` only). See §7. |
+| **Write steps** | **Yes — three, of which one is remote.** (a) §19.2 `gh aw compile self-improving-agents` **regenerates `.github/workflows/self-improving-agents.lock.yml`, a committed file**. (b) §19.4 `gh workflow run self-improving-agents.lock.yml` triggers a real Actions run that opens a draft PR — a GitHub write, and the teardown that follows it closes that PR and deletes its branch. (c) §19.4's fork checklist offers `gh repo set-default`, which **writes repository-local git config** — the same write `specs/labs/lab09.md` §7 fences. §19.6's `node modernization-bundle/scripts/install.mjs` is **not** a write step: it is a read-only dry-run simulator (`readFileSync`/`existsSync` only). See §7. |
 | **`lab-forge` verdict** | **`run with §7 fenced`.** Only the two items above are fenced. Notably `node modernization-bundle/scripts/install.mjs` is **outside** §7 and the run gate **may and should** execute it — AC7 depends on it. |
 
 ## 3. Acceptance criteria
@@ -63,6 +64,7 @@ this is the smallest lab in the batch and the lightest pass.
 | C6 | "Labs 07–09 (agents), Lab 04 (skills), and Lab 08 (gh-aw)" | `free-check` — **correct** | `labs/lab04.md` frontmatter title is "Skills & Prompts"; `lab07` "Multi-Agent Orchestration"; `lab08` "GitHub Agentic Workflows: PRD Generation"; `lab09` "Copilot Coding Agent & Code Review". The attributions hold. No change. |
 | C7 | "**Next:** Lab 20 — Enterprise Token Optimization & Reporting" | `free-check` — **correct** | `labs/lab20.md` title matches exactly. No change. |
 | C8 | `gh_aw_schema_version` in the registry governs compile-time schema drift | `free-check` | Present in `docs/_meta/registry.yaml` and already linked from the lab's References. No change. |
+| C9 | The workflow "escalates anything non-mechanical to a human-reviewed **issue**" (lab §19.1 item 3, §19.7, §19.8 table) | `free-check` — **the lab was wrong; corrected 2026-10-14** | The workflow's `safe-outputs:` block configures **only** `create-pull-request` (`.github/workflows/self-improving-agents.md` lines 22–30) and the job holds `issues: read` (line 11). It has no mechanism to open an issue. Its own prompt body still says "open an **issue**" (lines 97, 109) — a real contradiction inside the workflow, which the lab had been faithfully repeating. Per §5, when lab and workflow disagree the **lab** is wrong, so the lab now says the finding is flagged in the report attached to the draft PR. **Do not revert this to "issue" without first re-reading `safe-outputs:`.** The workflow itself is out of scope to fix here (§5); that contradiction is a defect in the workflow, recorded for a later pass. |
 
 > No `research` disposition. Every claim resolved to a file in this repo or a test that
 > already runs. **Do not commission a `spec-forge` run for this lab.**
@@ -98,15 +100,32 @@ this is the smallest lab in the batch and the lightest pass.
 > already better than most of the suite's. D1–D5 are the whole worklist; resist adding to
 > it.
 
+> **Status (2026-10-14).** D1–D5 are closed. One change landed outside the worklist: the
+> C9 correction above, which was sanctioned by §5's own "if they disagree, the lab is
+> wrong" rule rather than by a defect row. D6 remains open and deliberately deferred.
+
 ## 7. Out of scope for `lab-forge`
 
 The run gate must report these UNVERIFIED and execute none:
 
 - `gh workflow run self-improving-agents.lock.yml` — triggers a real Actions run on the
   remote and opens a draft pull request.
-- Any step that merges, closes or comments on the PR that run produces.
+- Any step that merges, closes or comments on the PR that run produces — including the
+  §19.4 teardown's `gh pr close <number> --delete-branch`. (`gh pr list --label
+  self-improving-agents`, which finds it, is read-only and may be run.)
 - `gh aw compile self-improving-agents` **as a lab step**, because it rewrites the
   committed `.github/workflows/self-improving-agents.lock.yml`.
+- `gh repo set-default` from §19.4's fork checklist — **both forms, including `--view`.**
+  The bare form writes repository-local git config, which `specs/labs/README.md` defines as
+  a write step. `--view` is genuinely read-only, but fence it anyway: `lab-forge`'s
+  post-hoc detector matches on a `gh` command's verb against a fixed read-only set
+  (`list`, `view`, `status`, `diff`, `checks` — see `loop.mjs`), and `set-default` is not
+  in it. A gate that runs `--view` therefore gets recorded as having run a forbidden
+  command and **escalates the whole loop**, which is exactly what happened on the first
+  run of this spec. Fencing both forms costs nothing — AC9 is a prose assertion the
+  contract test already covers — and is the only thing that prevents the false escalation,
+  since the detector is hardcoded and does not read this spec. `specs/labs/lab09.md` §7
+  permits `--view`; that is the weaker precedent and this supersedes it.
 
 > `npx vitest run tests/workflows/all-workflows-compile` already proves the workflow
 > compiles, from the repo root, without the lab's targeted invocation and without leaving a
