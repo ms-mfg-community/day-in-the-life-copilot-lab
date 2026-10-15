@@ -35,7 +35,9 @@ without losing the plot.
 >   BOUNCE from the rubric, a test to re-run, a pane to fix), then
 >   §14.8 and the teardown. Do not plan on a first-try PROMOTE.
 > - **Untimed extension.** §14.5 Step 6, the optional QA pane, sits
->   outside both routes. Do it afterwards if you want it.
+>   outside both routes. If you want it, do it after Step 5 and before
+>   the §14.8 teardown — the teardown kills the session and deletes the
+>   hand-off docs Step 6 needs.
 >
 > **Prepare before the clock starts.** None of this is counted in the
 > 45 minutes:
