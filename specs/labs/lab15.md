@@ -20,7 +20,17 @@ After the refresh the lab teaches the same thing, but it is honest about what it
 learner's machine to absorb: the two global tool installs and the project-wide rename of a
 **committed** C# property are called out before they happen and undone afterwards. It also
 names the CLI's real LSP configuration surface rather than telling the learner to guess.
-No section is added or reordered.
+No section is reordered, and the **only** section added is the §15.7 cleanup that D5
+requires.
+
+> **On size.** This refresh roughly triples the lab's line count, and that is the
+> expected outcome, not scope creep. Guarding a 58-site rename, proving the undo,
+> making the C# prerequisite explicit for Node-track learners and adding a cleanup
+> section are all *prose costs of the defects below*. Do not treat the original
+> 180 lines as a budget, and do not cut a guard to hit one. The test of a passage
+> is whether it is traceable to a defect in §6 or an AC in §3 — material that is
+> not should be cut no matter how short the lab is, and material that is should be
+> kept no matter how long it gets.
 
 ## 2. Declared surface
 
@@ -79,6 +89,15 @@ No section is added or reordered.
 - Do not pick a different rename target to dodge D2. The `FirstMidName` → `FirstName`
   rename is the lab's best demonstration precisely because it is wide (58 sites); the fix
   is to guard and undo it, not to shrink it.
+- **Do not fix `docs/_partials/cleanup.md` from this worktree, and do not re-attach it.**
+  Running that partial's sweep against Lab 15 surfaced three defects in the *partial*:
+  its scratch-path listing and its `core.hooksPath` lookup exit nonzero when the target is
+  merely absent (one listed path sits inside `.git`, a plain file in a git worktree), and
+  its config-backup move would copy a stale `config.json.bak` over a live config in a lab
+  that never edits one. Those bugs belong to the partial's seven consumers, not to Lab 15.
+  §15.7 is therefore a deliberate lab-local cleanup with the rationale recorded inline.
+  No test enforces `cleanup.md` sync (unlike `currency.md`/AC5), so re-attaching would be
+  silent — leave it detached until the partial is fixed in a pass that owns all consumers.
 
 ### Stage-2 ordering constraint
 
