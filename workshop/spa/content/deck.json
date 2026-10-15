@@ -41,14 +41,14 @@
       "slideSource": "workshop/slides/55-module-5b-gh-extensions.md",
       "scriptSource": "workshop/speaker-scripts/module-05b-gh-extensions.md",
       "labRefs": ["labs/lab-gh-extensions.md"],
-      "minutes": 15
+      "minutes": 20
     },
     {
       "id": "m5c-copilot-cli-extensions",
       "slideSource": "workshop/slides/56-module-5c-copilot-cli-extensions.md",
       "scriptSource": "workshop/speaker-scripts/module-05c-copilot-cli-extensions.md",
       "labRefs": ["labs/lab-copilot-cli-extensions.md"],
-      "minutes": 12
+      "minutes": 10
     },
     {
       "id": "m6-a2a-tmux",

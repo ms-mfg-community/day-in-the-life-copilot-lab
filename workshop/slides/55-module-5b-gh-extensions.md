@@ -2,7 +2,7 @@
 module: M5b
 title: "GitHub CLI extensions — `gh extension`"
 anchor_labs: [lab-gh-extensions]
-minutes: 15
+minutes: 20
 phase: 3c
 ---
 
