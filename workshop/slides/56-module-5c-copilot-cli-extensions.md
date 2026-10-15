@@ -2,7 +2,7 @@
 module: M5c
 title: "Copilot CLI extensions × hooks — deterministic gate, probabilistic body"
 anchor_labs: ["lab-copilot-cli-extensions"]
-minutes: 10
+minutes: 12
 phase: 3c
 ---
 
