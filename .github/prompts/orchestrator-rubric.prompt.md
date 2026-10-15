@@ -22,11 +22,11 @@ Score each dimension `pass | partial | fail`. Decide:
 - **BOUNCE** — at least one dimension is `fail`. Send the worker back
   with a targeted instruction; do **not** clear the worker context yet.
 - **STOP-AND-ASK** — schema is intact but a stop-and-ask trigger from
-  Lab 14 §14.6 fired. Surface to the human in the orchestrator pane.
+  Lab 14 §14.7 fired. Surface to the human in the orchestrator pane.
 
 ## 1. Schema integrity
 
-The hand-off doc MUST contain all five Lab 13 §B.2 sections:
+The hand-off doc MUST contain all five Lab 13 §13.4.2 sections:
 
 - `phase` (frontmatter)
 - `## inputs`

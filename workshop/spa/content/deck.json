@@ -1,0 +1,61 @@
+{
+  "$schema": "../schema/deck.schema.json",
+  "segments": [
+    {
+      "id": "m1-extensibility-architecture",
+      "slideSource": "workshop/slides/10-module-1.md",
+      "scriptSource": "workshop/speaker-scripts/module-01-extensibility-architecture.md",
+      "labRefs": ["labs/lab01.md", "labs/lab02.md", "labs/lab03.md", "labs/lab04.md", "labs/lab06.md", "labs/lab10.md"],
+      "minutes": 35
+    },
+    {
+      "id": "m2-mcp",
+      "slideSource": "workshop/slides/20-module-2.md",
+      "scriptSource": "workshop/speaker-scripts/module-02-mcp.md",
+      "labRefs": ["labs/lab05.md", "labs/lab12.md"],
+      "minutes": 30
+    },
+    {
+      "id": "m3-multi-agent",
+      "slideSource": "workshop/slides/30-module-3.md",
+      "scriptSource": "workshop/speaker-scripts/module-03-multi-agent.md",
+      "labRefs": ["labs/lab07.md"],
+      "minutes": 25
+    },
+    {
+      "id": "m4-gh-aw",
+      "slideSource": "workshop/slides/40-module-4.md",
+      "scriptSource": "workshop/speaker-scripts/module-04-gh-aw.md",
+      "labRefs": ["labs/lab08.md", "labs/lab09.md"],
+      "minutes": 25
+    },
+    {
+      "id": "m5-marketplace",
+      "slideSource": "workshop/slides/50-module-5.md",
+      "scriptSource": "workshop/speaker-scripts/module-05-marketplace.md",
+      "labRefs": ["labs/lab11.md"],
+      "minutes": 20
+    },
+    {
+      "id": "m5b-gh-extensions",
+      "slideSource": "workshop/slides/55-module-5b-gh-extensions.md",
+      "scriptSource": "workshop/speaker-scripts/module-05b-gh-extensions.md",
+      "labRefs": ["labs/lab-gh-extensions.md"],
+      "minutes": 20
+    },
+    {
+      "id": "m5c-copilot-cli-extensions",
+      "slideSource": "workshop/slides/56-module-5c-copilot-cli-extensions.md",
+      "scriptSource": "workshop/speaker-scripts/module-05c-copilot-cli-extensions.md",
+      "labRefs": ["labs/lab-copilot-cli-extensions.md"],
+      "minutes": 10
+    },
+    {
+      "id": "m6-a2a-tmux",
+      "slideSource": "workshop/slides/60-module-6.md",
+      "scriptSource": "workshop/speaker-scripts/module-06-a2a-tmux.md",
+      "labRefs": ["labs/lab13.md", "labs/lab14.md"],
+      "minutes": 25
+    }
+  ]
+}
