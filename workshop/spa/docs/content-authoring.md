@@ -20,8 +20,8 @@ column, and the command keeps what is already there.
 |---|---|---|
 | anchor_labs | slides | The labs a module's slides anchor to, each written as a lab id: the lab's file name under `labs/` without `.md` (`lab05`, `lab-gh-extensions`). |
 | lab_number | labs | A lab's place in the lab sequence: an integer for the numbered labs (`1` for `lab01`) or a short string for a lab outside the numbering (`gh-extensions`). Both forms occur in the curriculum, so the schema accepts both. |
-| minutes | slides, speaker-scripts | Minutes a module is allotted in the four-hour budget. The slide's value is the one a `deck.json` segment must equal (AC2); a speaker script carries its own copy. |
-| module | slides, speaker-scripts | The module a file belongs to: `M1` to `M6`, plus `M5b` and `M5c` for the two add-on modules. Pairs a speaker script with its slides. |
+| minutes | slides, speaker-scripts | Minutes a module is allotted when it is taught. The slide's value is the one a `deck.json` segment must equal (AC2); a speaker script carries its own copy. |
+| module | slides, speaker-scripts | The module a file belongs to: `M1` to `M6`, plus `M5b` and `M5c`. |
 | pace | labs | A lab's timing as a mapping: `presenter_minutes` for the quick in-lab fly-by and `self_paced_minutes` for solo completion. A `pace` missing either one is rejected. |
 | phase | slides, speaker-scripts | The content phase (`3a`, `3b` or `3c`) in which a module's slides and script were written. The curriculum does not define it further. |
 | prerequisites | labs | Lab ids that should be completed before this lab (`lab02`, `lab04`). Optional; only a lab that depends on earlier ones carries it. |
