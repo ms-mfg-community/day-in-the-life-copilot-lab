@@ -602,7 +602,10 @@ is not just Steps 2–5 again.
 and start a Copilot CLI session there.
 
 **Brief it.** From the control shell, write the QA brief and send it with
-the same pane mapping as before (worker = 0, qa = 1). Replace
+the same pane mapping as before (worker = 0, qa = 1). The QA session
+started empty, so its brief has to name the rubric as well — the
+orchestrator was handed it back in Step 0, this pane never was, and a
+reviewer that hasn't read the rubric just invents its own bar. Replace
 `<printed-path>` with the Step 4 hand-off's path and
 `<absolute-plan-path>` as in Step 2:
 
@@ -611,7 +614,7 @@ the same pane mapping as before (worker = 0, qa = 1). Replace
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-qa \
   --role orchestrator \
-  --input  "Read the dev hand-off at <printed-path> and the plan at <absolute-plan-path>" \
+  --input  "Judge against .github/prompts/orchestrator-rubric.prompt.md; read the dev hand-off at <printed-path> and the plan at <absolute-plan-path>" \
   --output "rubric verdict + spot-checked tests" \
   --question "_none_" \
   --accept "verdict recorded; carry-forwards logged" \
@@ -623,18 +626,36 @@ to do with it and what to hand back:
 
 **Prompt — QA session:**
 
-> Read the hand-off you were just sent, then the dev hand-off it points
-> to. Spot-check the two commits it names and re-run `pnpm -C node test`
-> yourself. Reply with a verdict — PROMOTE, BOUNCE or STOP-AND-ASK — and
-> one line of reasons.
+> Read the hand-off you were just sent, then the rubric and the dev
+> hand-off it points to. Spot-check the two commits that dev hand-off
+> names and re-run `pnpm -C node test` yourself. Reply with the rubric's
+> verdict block — PROMOTE, BOUNCE or STOP-AND-ASK — and one line of
+> reasons.
 
-**Record it, then clear.** The orchestrator is the pane that remembers,
-so give it QA's verdict first:
+**Return the verdict as a doc, then clear.** Rule 3 in §14.3 binds this
+pane too: QA's verdict reaches the orchestrator on disk, the way dev's
+did in Step 4 — don't retype it from one pane into the other. From the
+control shell, write it down, replacing `<verdict>` and `<reasons>` with
+what QA replied:
+
+**Bash — control shell:**
+
+```bash
+./scripts/orchestrator/handoff.sh 14-courses-qa \
+  --role qa \
+  --input  "Orchestrator brief for 14-courses-qa; dev hand-off at <printed-path>" \
+  --output "verdict <verdict>; reasons: <reasons>" \
+  --question "_none_" \
+  --accept "verdict recorded against the rubric; carry-forwards logged"
+```
+
+As in Step 4 there is no `--to-pane`. Copy the path this prints and give
+it to the pane that remembers:
 
 **Prompt — orchestrator session:**
 
-> QA's verdict on the 14-courses-dev phase was `<verdict and reason>`.
-> Record it as a carry-forward.
+> Read the QA hand-off at `<qa-printed-path>` and record its verdict on
+> the 14-courses-dev phase as a carry-forward.
 
 Only then clear QA from the control shell:
 
