@@ -216,12 +216,19 @@ in §15.3.
 > cannot tell you — a text search prints `file:line` results too. Look at
 > the tool calls Copilot made instead (press `Ctrl+O` to expand the
 > timeline if they are collapsed):
-> - a call to the **`lsp`** tool, naming an operation (for example
->   `goToDefinition`, `findReferences`, `rename` or `documentSymbol`) with
->   a file, line and character, is a language-server operation;
+> - an **`lsp`** call naming an operation (for example `goToDefinition`,
+>   `findReferences`, `rename` or `documentSymbol`) **that came back with a
+>   result for the symbol you asked about** is a language-server answer;
 > - calls to `grep`, `glob`, `view` or a shell command are a text search.
 >   The language server was not used, even if the answer looks right.
+> - an `lsp` call that **failed** — an error such as *"the language server
+>   command for X was not found"*, or an empty result — and is then
+>   followed by `grep`/`view` calls is **also a text search**. Copilot
+>   tried the server, it did not answer, and Copilot fell back silently.
 >
+> The tool name alone is not the evidence; the tool name plus a real result
+> is. A failed call means the exercise did not demonstrate anything: go back
+> to the checkpoint above, get the server running, and run the step again.
 > Check this for every exercise in §15.3 and §15.4 — it is the skill this
 > lab teaches. The exact wording of the timeline varies by CLI version;
 > look for the tool name `lsp`.
@@ -309,10 +316,17 @@ in §15.3.
    across the entire dotnet/ solution.
    ```
 
-   In the timeline, look for an `lsp` call whose operation is `rename` —
-   that is the server doing the work. If you see only text-search and edit
-   calls, Copilot did a text replace instead: ask it again to use the LSP
-   rename operation.
+   In the timeline, look for an `lsp` call whose operation is `rename`
+   **and that succeeded** — that is the server doing the work. If you see
+   only text-search and edit calls, or an `lsp` rename that errored and was
+   followed by edit calls, Copilot did a text replace instead.
+
+   Before asking again, check whether that fallback already edited the
+   files: run `git status --short dotnet/`. If it lists anything, run
+   `git restore dotnet/` first (safe — the guard above proved none of it is
+   yours) and confirm the status prints nothing. Retrying on an
+   already-replaced symbol asks the server to rename a `FirstMidName` that
+   is no longer there, which fails for a second, unrelated reason.
 
    **Inspect — two things, then stop.** Back in the second terminal, first
    see what the rename changed. The diff marks every removed line with `-`
@@ -390,7 +404,12 @@ in §15.3.
    dotnet/` should then list your own files again. If there is no
    `lab15-preserve` entry you had nothing to set aside, so skip this —
    running `git stash pop` then would apply an unrelated stash.
-   (§15.7 repeats this in case you skip ahead.)
+
+   > ✋ **Once you have done this, you are finished with the rename.** The
+   > tree is dirty again on purpose: what it lists now is *your* work, not
+   > the lab's. Skip the rename bullet in §15.7 entirely — running its
+   > `git restore dotnet/` at this point would discard exactly the work you
+   > just brought back, and the stash that held it is already gone.
 
 4. **Extension — optional, and not part of the timed path.** Ask for a
    **call hierarchy** (incoming/outgoing calls) — useful before a
@@ -480,8 +499,9 @@ sits in a code file.
 shows it. (The Node server is an optional extra and does not count here.)
 
 ✅ You ran a go-to-definition, a find-references and a rename, and for each
-one you saw an `lsp` call in the timeline — not just an answer with file
-and line numbers, which a text search can give you too.
+one you saw an `lsp` call in the timeline **that returned a result** — not
+just an answer with file and line numbers, which a text search can give you
+too, and not an `lsp` call that errored before Copilot fell back to grep.
 
 ✅ You compared one reference the rename changed with two it left behind (a
 `[Bind]` string and a Razor `asp-for`), and can say why the server
@@ -515,25 +535,38 @@ two answered.
 
 > 🛠️ **Lab 15 specifics — revert before the generic sweep below.**
 >
-> - **Rename (§15.3 step 3):** if you never ran the rename, skip this
->   bullet — any file `git status --short dotnet/` lists is then your own
->   work, so leave it alone. If you did run it:
+> - **Rename (§15.3 step 3) — read the skip test first.** Skip this entire
+>   bullet if **either** is true:
+>   - you never ran the rename; or
+>   - you finished §15.3 step 3 to its end — its `git restore dotnet/` left
+>     `git status --short dotnet/` printing nothing, and you have already
+>     brought back any work you set aside.
+>
+>   In both cases anything `git status --short dotnet/` lists **now is your
+>   own work**. Leave it alone, and do **not** run `git restore dotnet/`
+>   here: it would discard that work, and a `lab15-preserve` stash you have
+>   already popped no longer exists to recover it from.
+>
+>   Only if you ran the rename and did **not** complete step 3's undo:
 >   1. Run `git status --short dotnet/`. If it prints nothing, the rename
 >      is already undone; go to part 4.
 >   2. Run `git restore dotnet/`. It discards every uncommitted change to
 >      tracked files under `dotnet/`, which is safe only because the guard
->      in §15.3 step 3 made sure none of that was your own work.
+>      in §15.3 step 3 made sure none of that was your own work. If you
+>      cannot confirm that — you are unsure whether the guard printed
+>      nothing, or whether you already popped your stash — **stop and ask
+>      the presenter or a teammate** rather than running it.
 >   3. Run `git status --short dotnet/` again. It must print nothing.
 >      `git restore` never deletes a new file, so a `??` line is a file it
 >      left behind: delete it only if you can positively say Copilot
 >      created it during the rename (`Ctrl+O` shows the timeline). If you
 >      cannot, leave it and ask the presenter or a teammate. Never use
 >      `git clean`, which removes every untracked file at once.
->   4. If the guard made you set work aside, run `git stash list` — but
->      only once part 3 printed nothing. When `stash@{0}` ends with
->      `lab15-preserve`, `git stash pop` brings that work back. With no
->      `lab15-preserve` entry, skip this: a pop would apply an unrelated
->      stash.
+>   4. If the guard made you set work aside **and you have not popped it
+>      yet**, run `git stash list` — but only once part 3 printed nothing.
+>      When `stash@{0}` ends with `lab15-preserve`, `git stash pop` brings
+>      that work back. With no `lab15-preserve` entry, skip this: either you
+>      already popped it in §15.3, or a pop would apply an unrelated stash.
 > - **C# server (§15.2 step 2):** if you ran that install,
 >   `dotnet tool uninstall -g csharp-ls` removes it. Skip this if
 >   `csharp-ls` was already on your machine before the lab (step 2 told
@@ -552,99 +585,42 @@ two answered.
 >   configured before this lab. Then run `/lsp reload` in a session and
 >   `copilot lsp list` in your terminal to confirm the C# entry is gone.
 
-<!-- The generic sweep below is intentionally lab-local. It was detached from
-docs/_partials/cleanup.md because three of its commands misbehave when Lab 15
-runs them: a listing of other labs' scratch paths and a git-config lookup
-exit nonzero when their target is simply absent (one listed path sits inside
-.git, which is a plain file in a git worktree), and the config-backup move
-would copy any old config backup over the live config, which Lab 15 never
-edited (a stale backup from an earlier lab or experiment is easy to have).
-This copy keeps the git-config lookup, guarded, and turns the other two into
-prose. Re-attach the shared partial only once it is corrected. -->
-> 🧹 **Cleanup — leave the machine the way you found it.**
-> Run this checklist before moving to the next lab. Per-lab specifics (named
-> agent / hook / extension files this lab created) should already have been
-> reverted in the steps above; this is the generic sweep that catches the
-> long-tail.
+<!-- This cleanup is deliberately lab-local: Lab 15 does not @include
+docs/_partials/cleanup.md. Running that partial's generic sweep here found three
+problems. (a) Its listing of other labs' scratch paths and its git-config lookup
+exit nonzero when the target is simply absent — one listed path sits inside
+.git, which is a plain file in a git worktree. (b) Its config-backup move would
+copy a stale config.json.bak over the live config, and Lab 15 never edits that
+file, so any backup present came from an earlier lab or experiment. (c) The rest
+of the sweep is about artifacts Lab 15 never creates. Lab 15's own residue —
+two global tools, one LSP config entry, the rename — is handled above. Re-attach
+the shared partial once it is corrected; the fixes belong to the partial's
+owner, not to this lab. -->
+> 🧹 **Cleanup — confirm the tree really is back.** The Lab 15 specifics
+> above are the cleanup. These two checks confirm they worked.
 
 🖥️ **In your terminal:**
 
-1. **Stop background processes.** Anything you started in the foreground with
-   `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
-   tail-follows). If you used the bash tool in async mode, make sure those
-   shells are stopped.
-
-   **WSL/Bash:**
-   ```bash
-   jobs -l                       # any background jobs in this shell?
-   # kill them by PID — never `pkill`/`killall`
-   ```
-
-   **PowerShell:**
-   ```powershell
-   Get-Job                       # any background jobs?
-   Get-Job | Stop-Job; Get-Job | Remove-Job
-   ```
-
-2. **Leave the Copilot CLI config alone — Lab 15 did not change it.** Some
-   labs edit `~/.copilot/config.json`, `~/.copilot/mcp-config.json`, or
-   `.copilot/mcp-config.json` and keep a backup so that their own cleanup
-   can put the original back. Lab 15 edits none of them — its one
-   configuration change is the LSP entry, which the Lab 15 specifics above
-   remove — so this step runs no command. Do **not** move a
-   `config.json.bak` you happen to find over `config.json` here: if it is
-   left over from an earlier lab or an old experiment, that silently
-   replaces your current settings with an older copy. If an earlier lab did
-   leave one, that lab's cleanup is the place to restore it. Changes to
-   workspace configs inside this repo show up in the `git status --short`
-   check in step 6.
-
-3. **Exit and restart `copilot` if you touched extensions or MCP.** The
-   runtime caches loaded extensions and MCP servers; reloading via
-   `extensions_reload` does **not** clear an extension whose source dir was
-   deleted. Fully exit the `copilot` process and start a fresh session.
-
-4. **Sweep the long-tail artifact paths.** Other labs leave their own scratch
-   behind: an agent-to-agent scratch folder and transcripts under `node/`, a
-   lessons folder under `~/.copilot/`, and a summary file inside `.git/`.
-   Lab 15 creates none of them, so this lab has nothing of theirs to
-   inspect, and those labs' own cleanup sections cover them. What Lab 15
-   itself leaves behind — the global tools, the LSP configuration entry and
-   any rename leftovers — is covered in the Lab 15 specifics above. Delete
-   only what this lab created, and never blanket-delete a
-   `~/.copilot/lessons/` that other sessions wrote to.
-
-5. **Check `core.hooksPath` and other git-config mutations.** Some labs
-   point git at a custom hooks dir for the duration of an exercise. Lab 15
-   never sets one, so this is a look, not an undo:
-
-   ```bash
-   git config --default "(not set)" --get core.hooksPath
-   ```
-
-   The same command works in PowerShell. `(not set)` is the normal answer.
-   A value of `.githooks` is the repository's own hook setup from
-   `make setup-hooks`, which you chose to run, so leave it. Any other path
-   was set by another lab, and that lab's cleanup is the place to undo it.
-
-6. **Confirm working tree is clean (or expected).**
+1. **Confirm the working tree is clean (or expected).**
 
    ```bash
    git status --short
    ```
 
-   Any unexpected files (untracked agents, hooks, extensions, scratch
-   notebooks) should be removed or moved out of the repo before continuing.
+   Empty is the normal result. If it lists work of your own that you
+   brought back from a `lab15-preserve` stash, that is expected and
+   correct — leave it. Anything else should be removed or moved out of the
+   repo before continuing.
 
-7. **Verify build is still green.** Optional, but recommended after this
-   lab: it edited source files under `dotnet/` and then reverted them, and a
-   clean build confirms the revert left the solution compiling. It should
-   finish without errors (warnings that were already in the repo are not
-   yours):
+2. **Verify the build is still green.** Recommended after this lab
+   specifically: it edited source files under `dotnet/` and then reverted
+   them, and a clean build is what proves the revert left the solution
+   compiling. Warnings that were already in the repo are not yours:
 
    ```bash
    dotnet build dotnet/ContosoUniversity.sln --nologo
    ```
 
-> ✅ Once `git status --short` is empty (or shows only files you intentionally
-> kept), and the build is clean if you ran it, you're ready for the next lab.
+> ✅ Once `git status --short` is empty (or shows only work you
+> intentionally kept), and the build is clean if you ran it, you're ready
+> for the next lab.
