@@ -258,6 +258,38 @@ describe('spa:frontmatter-keys: a Meaning is never lost', () => {
     expect(run.stderr).toMatch(message);
     expect(documentIn(dir)).toBe(CANONICAL);
   }, SLOW);
+
+  // The table has a header cell called Key and a delimiter row of dashes. A front-matter key may be spelled
+  // the same way, and the script accepts it and writes its row. A reader that took any row whose first cell
+  // is `Key` or dashes for the table's own furniture would drop that row, and with it the Meaning a person
+  // wrote, and replace it with the placeholder on the next run, with exit 0 both times.
+  it.each(['Key', '---'])('keeps the Meaning written for the key "%s", which reads like a header or delimiter cell', (key) => {
+    const dir = seed({ ...BASE, 'labs/lab02.md': withFrontMatter(`${JSON.stringify(key)}: 1`) });
+    const first = generate(dir);
+    expect(first.status, first.stdout + first.stderr).toBe(0);
+    const written = lines(documentIn(dir));
+    const placeholderRow = written.find((line) => line.startsWith(`| ${key} | labs | TODO`));
+    expect(placeholderRow, `the first run wrote a row for "${key}"`).toBeDefined();
+
+    const authored = `| ${key} | labs | What a person wrote for this key. |`;
+    writeFileSync(join(dir, DOC_PATH), written.map((line) => (line === placeholderRow ? authored : line)).join('\n'), 'utf8');
+    const edited = documentIn(dir);
+
+    const current = generate(dir, '--check');
+    expect(current.status, `--check on a document that holds a Meaning for "${key}": ${current.stdout}${current.stderr}`).toBe(0);
+    expect(current.stdout).toContain('is up to date');
+
+    const again = generate(dir);
+    expect(again.status, again.stdout + again.stderr).toBe(0);
+    expect(lines(documentIn(dir)), `the row of "${key}"`).toContain(authored);
+    expect(documentIn(dir), 'the second run changes nothing').toBe(edited);
+    expect(again.stdout).toContain('unchanged');
+    expect(again.stdout).not.toContain('no hand-written Meaning yet');
+    expect(again.stdout).not.toContain('rows were dropped');
+    // The table's real header and delimiter are still there, once each, and not mistaken for rows of keys.
+    expect(lines(documentIn(dir)).filter((line) => line === TABLE_HEAD[0])).toHaveLength(1);
+    expect(lines(documentIn(dir)).filter((line) => line === TABLE_HEAD[1])).toHaveLength(1);
+  }, SLOW);
 });
 
 describe('spa:frontmatter-keys: it is invoked correctly or not at all', () => {

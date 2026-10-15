@@ -89,6 +89,20 @@ function collectKeys(root) {
   return { keys, problems, files };
 }
 
+/**
+ * The table's own header row: every cell is a column name. Matching the first cell
+ * alone would also swallow the row of a front-matter key that is literally called
+ * Key, and its hand-written Meaning with it.
+ */
+const isHeaderRow = (cells) => HEADERS.every((header, i) => cells[i] === header);
+
+/**
+ * The row under the header: every cell is dashes (`---`, `:--`, `:-:`). A key that
+ * is literally called --- has dashes in its first cell only; its Occurs in cell
+ * names a kind, so its row is data.
+ */
+const isDelimiterRow = (cells) => cells.every((cell) => /^:?-+:?$/.test(cell));
+
 /** The rows of the table the document holds now: key -> the text of its Meaning cell. */
 function readTable(region) {
   const rows = new Map();
@@ -100,7 +114,7 @@ function readTable(region) {
       // hand-written Meaning text with the placeholder without anyone noticing.
       throw new Failure(`${DOC}: a table row has ${cells.length} cells, not 3, so its Meaning cannot be kept (write a literal | inside a Meaning as \\|): ${line.trim().slice(0, 100)}`, 1);
     }
-    if (cells[0] === HEADERS[0] || /^:?-+:?$/.test(cells[0])) continue;
+    if (isHeaderRow(cells) || isDelimiterRow(cells)) continue;
     rows.set(cells[0], cells[2]);
   }
   return rows;

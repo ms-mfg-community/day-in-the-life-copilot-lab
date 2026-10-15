@@ -69,18 +69,21 @@ function schemaIssues(kind, data) {
 const isPlainObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
- * Which schema governs a file, decided by its name and its parent directory:
- * deck.json, interactions.json, datasets/*.json and *.md (front matter).
- * Returns null for anything else, which the validator reports as a failure so a
- * stray file under workshop/spa/content/ cannot escape validation.
+ * Which schema governs a file, decided by its parent directory and its name:
+ * datasets/*.json, deck.json, interactions.json and *.md (front matter).
+ * The directory decides first. Spec 005 section 2.1 says every .json file in
+ * datasets/ is a dataset, so datasets/deck.json is a dataset that happens to be
+ * called deck.json, not a deck. Only outside datasets/ does a reserved name pick
+ * the schema. Returns null for anything else, which the validator reports as a
+ * failure so a stray file under workshop/spa/content/ cannot escape validation.
  */
 export function classify(abs) {
   const name = basename(abs);
   if (name.endsWith('.md')) return 'frontmatter';
   if (!name.endsWith('.json')) return null;
+  if (basename(dirname(abs)) === 'datasets') return 'dataset';
   if (name === 'deck.json') return 'deck';
   if (name === 'interactions.json') return 'interactions';
-  if (basename(dirname(abs)) === 'datasets') return 'dataset';
   return null;
 }
 
@@ -129,10 +132,15 @@ function globToRegExp(glob) {
   return new RegExp(`^${body}$`);
 }
 
+/**
+ * Every regular file in dir, sorted. Nothing is skipped by name: a dotfile, a
+ * hidden directory and a directory called node_modules are listed like any
+ * other, because AC1 says every file under workshop/spa/content/ validates and a
+ * file the walker hides is a file that can be malformed without anyone noticing.
+ */
 function listFiles(dir, recursive) {
   const files = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
     const abs = join(dir, entry.name);
     if (entry.isDirectory()) {
       if (recursive) files.push(...listFiles(abs, true));
@@ -144,9 +152,12 @@ function listFiles(dir, recursive) {
 }
 
 /**
- * Files a target names: a directory (recursive), a single file, or a pattern
- * whose wildcard sits in the file name only (`labs/*.md`, matched like a shell
- * glob: `*` never crosses a directory and never matches a leading dot).
+ * Files a target names: a directory (every file under it, hidden files and
+ * node_modules included), a single file, or a pattern whose wildcard sits in the
+ * file name only (`labs/*.md`, matched like a shell glob: `*` never crosses a
+ * directory and never matches a leading dot). The leading-dot rule belongs to
+ * the glob, which is how the curriculum targets are written; a directory target
+ * is a promise to check everything in it.
  */
 export function expandTarget(target, baseDir) {
   const abs = resolve(baseDir, target);
@@ -184,7 +195,9 @@ function indexRoot(root) {
   const hasDatasetDir = existsSync(datasetDir) && statSync(datasetDir).isDirectory();
   const datasetFiles = new Map();
   if (hasDatasetDir) {
-    for (const name of readdirSync(datasetDir).filter((n) => n.endsWith('.json') && !n.startsWith('.')).sort()) {
+    // The same set classify() calls datasets (every .json in datasets/), hidden
+    // names included, so an id shared with a dotfile is still a duplicate.
+    for (const name of readdirSync(datasetDir).filter((n) => n.endsWith('.json')).sort()) {
       const id = readOptionalJson(join(datasetDir, name))?.id;
       if (typeof id === 'string') datasetFiles.set(id, [...(datasetFiles.get(id) ?? []), join(datasetDir, name)]);
     }
