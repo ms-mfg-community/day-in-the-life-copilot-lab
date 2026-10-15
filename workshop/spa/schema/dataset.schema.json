@@ -7,7 +7,11 @@
   "additionalProperties": false,
   "required": ["id", "label", "provenance", "parameters", "outputs"],
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "description": "Relative path to the schema this file is validated against. Constrained so it cannot hold a sentence.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+\\.json$"
+    },
     "id": {
       "description": "Dataset id; an interaction names it in its dataset field. Unique across datasets/.",
       "type": "string",

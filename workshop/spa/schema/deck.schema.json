@@ -7,7 +7,11 @@
   "additionalProperties": false,
   "required": ["segments"],
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "description": "Relative path to the schema this file is validated against. Constrained so it cannot hold a sentence: the description above promises no string in this file carries prose.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+\\.json$"
+    },
     "segments": {
       "type": "array",
       "minItems": 1,

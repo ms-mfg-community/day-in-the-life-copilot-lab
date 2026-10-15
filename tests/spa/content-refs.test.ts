@@ -61,7 +61,7 @@ function shapeProblem(ref: unknown): string | undefined {
   return undefined;
 }
 
-const frontMatter = (rel: string): Record<string, unknown> => matter(readFileSync(join(ROOT, rel), 'utf8')).data as Record<string, unknown>;
+const frontMatter = (rel: string): Record<string, unknown> => matter(readFileSync(join(ROOT, rel), 'utf8'), {}).data as Record<string, unknown>;
 
 /** True when the reference is well formed and names a file that exists. */
 const resolves = (ref: unknown): ref is string => typeof ref === 'string' && shapeProblem(ref) === undefined && isFileExactCase(ref);
