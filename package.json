@@ -11,7 +11,9 @@
     "test:content-currency": "vitest run tests/content-currency",
     "test:packaging": "vitest run tests/packaging",
     "test:packaging:coverage": "vitest run tests/packaging --coverage",
-    "build:slides": "node scripts/workshop/build-slides.mjs"
+    "build:slides": "node scripts/workshop/build-slides.mjs",
+    "spa:validate": "node scripts/spa/validate.mjs",
+    "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
