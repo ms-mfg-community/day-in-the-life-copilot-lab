@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/workshop/spa/schema/interactions.schema.json",
+  "title": "Teaching SPA interaction inventory",
+  "description": "The inventory of named, individually addressable interactions (spec 005 section 2.4). The pattern enum is exactly the nine patterns of that table. Visual patterns must declare longDescriptionId (AC19); patterns whose table row requires a status live region must declare statusRegion true. Whether ids are unique and segment and dataset resolve is checked by scripts/spa/validate.mjs, which JSON Schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["interactions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "interactions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/interaction" }
+    }
+  },
+  "$defs": {
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pattern", "segment", "label", "keys", "statusRegion"],
+      "properties": {
+        "id": {
+          "description": "Id of the component in the built DOM (AC6). Unique within the inventory.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "pattern": {
+          "description": "Interaction pattern; the nine patterns of spec 005 section 2.4.",
+          "enum": [
+            "tabs",
+            "accordion",
+            "carousel",
+            "dialog",
+            "disclosure-popover",
+            "parameter-chart",
+            "node-diagram",
+            "staged-reveal",
+            "segment-timer"
+          ]
+        },
+        "segment": {
+          "description": "Id of the deck.json segment this interaction belongs to.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "label": {
+          "description": "Accessible name of the component.",
+          "type": "string",
+          "pattern": "^[^\\r\\n]+$",
+          "maxLength": 80
+        },
+        "keys": {
+          "description": "Keys that operate the component, as Playwright key names (Space for the spacebar, Shift+Tab for a chord).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[^\\s]+$", "maxLength": 24 }
+        },
+        "statusRegion": {
+          "description": "Whether the component writes to a status live region.",
+          "type": "boolean"
+        },
+        "longDescriptionId": {
+          "description": "DOM id of the long description of a visual component (AC19).",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "dataset": {
+          "description": "Id of the datasets/*.json dataset behind a chart or simulation.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "pattern": { "enum": ["parameter-chart", "node-diagram"] } },
+            "required": ["pattern"]
+          },
+          "then": {
+            "required": ["longDescriptionId"],
+            "properties": { "longDescriptionId": true }
+          }
+        },
+        {
+          "if": {
+            "properties": { "pattern": { "enum": ["parameter-chart", "staged-reveal", "segment-timer"] } },
+            "required": ["pattern"]
+          },
+          "then": { "properties": { "statusRegion": { "const": true } } }
+        }
+      ]
+    }
+  }
+}
