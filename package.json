@@ -12,6 +12,8 @@
     "test:packaging": "vitest run tests/packaging",
     "test:packaging:coverage": "vitest run tests/packaging --coverage",
     "build:slides": "node scripts/workshop/build-slides.mjs",
+    "spa:dev": "vite --config workshop/spa/vite.config.ts",
+    "spa:build": "vite build --config workshop/spa/vite.config.ts",
     "spa:validate": "node scripts/spa/validate.mjs",
     "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs"
   },
@@ -33,6 +35,7 @@
     "shiki": "^4.0.2",
     "typescript": "^5.9.3",
     "unified": "^11.0.5",
+    "vite": "^5.4.21",
     "vitest": "^2.1.9"
   }
 }
