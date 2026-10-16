@@ -14,7 +14,7 @@ Three files, three deterministic-vs-probabilistic surfaces:
 
 ## Authoring source-of-truth
 
-**Every line in `extension.mjs` is authored from the runtime authoring guide** captured by `extensions_manage operation: "guide"` and saved to the session workspace at `~/.copilot/session-state/<id>/files/copilot-cli-extensions-authoring-guide.md`. Do **not** edit the extension based on prior knowledge of Copilot CLI extensions — re-fetch the guide first if the runtime version has moved.
+**Every line in `extension.mjs` is authored from the runtime authoring guide** returned by `extensions_manage({ operation: "guide" })`, which gives the paths to the installed `extensions.md` and `agent-author.md` docs. Do **not** edit the extension based on prior knowledge of Copilot CLI extensions — re-fetch the guide first if the runtime version has moved.
 
 The guide states (verbatim):
 
@@ -120,11 +120,11 @@ Project-scope (`.github/extensions/`) shadows user-scope on name collision.
 In a `copilot` session, after `extensions_reload({})`:
 
 1. Type a normal prompt: *"Summarize the contents of `README.md`."* — the agent should call `clab_summarize` and return a bullet summary.
-2. Type a deterministic-trigger prompt: `summarize: <paste a paragraph>` — the `userPromptSubmitted` hook fires (you'll see its stderr line in the timeline). The agent then decides to call `clab_summarize` based on the prompt convention. **The hook itself does not invoke the tool** — see the lab's §5 honest-limitation note.
+2. Type a deterministic-trigger prompt: `summarize: <paste a paragraph>` — the `userPromptSubmitted` hook fires (the CLI may not display its stderr line, because the hook exits 0 and stderr surfacing is documented for exit code 2). The agent then decides to call `clab_summarize` based on the prompt convention. **The hook itself does not invoke the tool** — see the lab's §5 honest-limitation note.
 3. Paste an oversize input (>10 KB) into a summarize prompt — the `preToolUse` hook denies the call with a clear reason **before** the LLM body runs. This is the deterministic guardrail in front of the probabilistic body.
 
 ---
 
 ## Forward-link
 
-For tool allow-lists that compose with the `preToolUse` deny pattern at the agent and MCP layer, see the upcoming `labs/lab-hardening.md` (delivered by Workstream B of this materials-gap branch).
+For tool allow-lists that compose with the `preToolUse` deny pattern at the agent and MCP layer, see [`../../labs/lab-hardening.md`](../../labs/lab-hardening.md).

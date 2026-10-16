@@ -151,7 +151,7 @@ The guide further pins three things you must internalize:
 - **stdout is reserved for JSON-RPC.** Use `session.log()`; never `console.log()`.
 - **Authentication and the model surface come from the session.** The extension does **not** mint its own GitHub token, it does **not** open its own HTTPS connection to a model endpoint. It calls `session.sendAndWait({ prompt })` and the runtime routes through the user's already-authenticated `copilot` session.
 
-> ⚠️ **Re-entrancy caution — `session.sendAndWait` inside a tool handler (unverified; see §7.2).** The guide describes `sendAndWait` as "Send and block until the agent finishes (resolves on `session.idle`)". It shows that call on its own, never from inside a tool handler, and states no rule either way — so the guide cannot confirm that the `clab_summarize` handler in §3.2, which does exactly that, is safe on your build. Be cautious because, while your handler runs, the agent turn that called it is still open and the call waits for idle. The SDK typings give that wait a 60-second default and say it throws when it runs out; the shipped handler catches the error and returns a `failure` result, and §3.4 is where you find out what happens on your build. For injecting a follow-up message the guide's own pattern is fire-and-forget: `session.send()`, deferred with `setTimeout(() => session.send(...), 0)` inside `onUserPromptSubmitted` (its *Gotchas* say not to call `session.send()` synchronously there).
+> ⚠️ **Re-entrancy caution — `session.sendAndWait` inside a tool handler (unverified; see §7.2).** The guide describes `sendAndWait` as "Send and block until the agent finishes (resolves on `session.idle`)". It shows that call on its own, never from inside a tool handler, and states no rule either way — so the guide cannot confirm that the `clab_summarize` handler in §3.2, which does exactly that, is safe on your build. Be cautious because, while your handler runs, the agent turn that called it is still open and the call waits for idle; the SDK typings note that other queued work "may delay session.idle", which is the mechanism by which an open calling turn can stall `sendAndWait` (not a guaranteed deadlock). The SDK typings give that wait a 60-second default and say it throws when it runs out; the shipped handler catches the error and returns a `failure` result, and §3.4 is where you find out what happens on your build. For injecting a follow-up message the guide's own pattern is fire-and-forget: `session.send()`, deferred with `setTimeout(() => session.send(...), 0)` inside `onUserPromptSubmitted` (its *Gotchas* say not to call `session.send()` synchronously there).
 
 The reload contract (verbatim):
 
@@ -211,7 +211,7 @@ The agent will pick the new tool out of its catalog (because the description mat
 
 **This step is also the test of the §2 caution.** The expected result is a short bullet summary. If you instead see `clab_summarize failed: …` or `model returned no content` in the agent's reply, or the call stalls (the SDK's default wait is 60 seconds), the caution applied on your build: note the exact message and tell your presenter or the lab owner — it is not a slip in how you followed the steps.
 
-✅ **Checkpoint:** if you got the summary, you have a project-committed extension, the agent discovered its tool, and the tool body delegated back to the runtime model — the "probabilistic body" half of the synergy. If you got a failure message, you have still shown that the extension loads and that the agent calls it, plus a precise observation about `sendAndWait` inside a tool handler.
+✅ **Checkpoint:** if you got the summary, you have a project-scoped extension, the agent discovered its tool, and the tool body delegated back to the runtime model — the "probabilistic body" half of the synergy. If you got a failure message, you have still shown that the extension loads and that the agent calls it, plus a precise observation about `sendAndWait` inside a tool handler. The §4 and §5 checkpoints are judged on whether the tool call is allowed, denied, or invoked — not on summary content.
 
 ---
 
@@ -280,7 +280,7 @@ The hook reads the event JSON from stdin (the runtime passes `{toolName, toolArg
 ### 4.3 Verify the gate fires
 
 1. Reload hooks (drops in on next turn — no `extensions_reload` needed for hook configs; hook configs are re-read on each event).
-2. Try a small input: agent calls `clab_summarize`, summary returns. ✅
+2. Try a small input: agent calls `clab_summarize`, summary returns. ✅ — or, if §3.4 returned `clab_summarize failed: …`, the same failure again; either way the call was allowed through. Step 3 does not depend on a working summary.
 3. Try an input > 10 KB: the hook prints the deny JSON, the runtime blocks the tool call, and the agent — which still ran its own turn to propose the call — receives the rejection reason and explains it back to you. **The extension body never ran, so its extra model call (`sendAndWait`) was never made.** That is the cost saving: a denial avoids the body's additional model work, not the agent's own turn.
 
 ### 4.4 Why this matters
@@ -335,8 +335,8 @@ If you take that follow-up later, the pattern is: **detect the trigger from the 
    > *"For the rest of this session: when a message of mine starts with `summarize:`, call `clab_summarize` with everything after the colon as `text`."*
 
 2. Type `summarize: the meaning of life is 42 and lots of other stuff…`
-3. **The deterministic part.** The JSON hook runs and writes its `[clab-auto-summarize] trigger detected …` line to stderr. The Hooks reference documents stderr being surfaced to you only for exit code 2, and this hook exits 0, so your CLI may not show the line — that is not a failure, and nothing below depends on it.
-4. **The observed part.** Watch what the agent does. If it calls `clab_summarize` and returns a summary, that is the agent following the instruction from step 1 — the hook did not cause it, and different wording or a different model can change the outcome. If it answers in prose instead, the convention did not take: restate it and try again. Either outcome is an honest result.
+3. **The deterministic part.** The JSON hook runs and writes its `[clab-auto-summarize] trigger detected …` line to stderr. The Hooks reference documents stderr being surfaced to you for exit code 2, and this hook exits 0, so your CLI may not show the line — that is not a failure, and nothing below depends on it.
+4. **The observed part.** Watch what the agent does. If it calls `clab_summarize` and returns a summary — or gets the §3.4 `clab_summarize failed: …` result, which still means the convention worked because the tool call happened (the failure is the §2 `sendAndWait` caution, not part 3) — that is the agent following the instruction from step 1 — the hook did not cause it, and different wording or a different model can change the outcome. If it answers in prose instead, the convention did not take: restate it and try again. Either outcome is an honest result.
 
 ✅ **Checkpoint:** you can say which part is enforced (the hook detects and logs the `summarize:` prefix whenever a prompt starts with it) and which is only observed (the agent choosing to call the tool), and explain that difference to a stakeholder.
 
