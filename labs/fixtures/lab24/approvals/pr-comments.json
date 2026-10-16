@@ -1,0 +1,80 @@
+{
+  "comments": [
+    {
+      "id": 9001,
+      "html_url": "https://github.com/contoso-internal/contoso-university/issues/101#issuecomment-9001",
+      "user": {
+        "login": "avery-pm",
+        "type": "User"
+      },
+      "created_at": "2026-05-04T14:31:09Z",
+      "body": "Epic reads right. Approving.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/epic/-/3f9a2c1e\",\"gate\":\"review-epic\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"approve\",\"approver\":\"avery-pm\",\"artifact_sha\":\"2f7e3b51c44dfae007ef5df6b8617e7ee7953c2d\"} -->"
+    },
+    {
+      "id": 9002,
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#issuecomment-9002",
+      "user": {
+        "login": "dana-dev",
+        "type": "User"
+      },
+      "created_at": "2026-05-06T16:25:00Z",
+      "body": "QA is slow today, approving so I can merge.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/qa-review/-/3f9a2c1e\",\"gate\":\"review-qa\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"approve\",\"approver\":\"casey-qa\",\"artifact_sha\":\"6267cc8c4ca917d6e090d433ec2afd86cebcb408\"} -->"
+    },
+    {
+      "id": 9003,
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#issuecomment-9003",
+      "user": {
+        "login": "blake-lead",
+        "type": "User"
+      },
+      "created_at": "2026-05-05T09:50:44Z",
+      "body": "Plan approved. One public method, no migration surprises.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/plan/-/3f9a2c1e\",\"gate\":\"review-plan\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"approve\",\"approver\":\"blake-lead\",\"artifact_sha\":\"b73b6949c572eee4bd978acea33dd0ea1ff58396\"} -->"
+    }
+  ],
+  "reviews": [
+    {
+      "id": 7001,
+      "user": {
+        "login": "blake-lead",
+        "type": "User"
+      },
+      "state": "APPROVED",
+      "submitted_at": "2026-05-04T16:12:30Z",
+      "body": "Spec is testable. FR-002 is the one QA should hold us to.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/feature-spec/-/3f9a2c1e\",\"gate\":\"review-spec\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"approve\",\"approver\":\"blake-lead\",\"artifact_sha\":\"5240ae71c985556e2e5d1a8f48c4a92d78795a51\"} -->",
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#pullrequestreview-7001"
+    },
+    {
+      "id": 7002,
+      "user": {
+        "login": "blake-lead",
+        "type": "User"
+      },
+      "state": "APPROVED",
+      "submitted_at": "2026-05-05T11:02:16Z",
+      "body": "Every task has a valid prompt. T015 stays split, reason recorded.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/story-tasks/-/3f9a2c1e\",\"gate\":\"review-tasks\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"approve\",\"approver\":\"blake-lead\",\"artifact_sha\":\"109898fda2e9e0e989f08d7bf9205875468b9cb0\"} -->",
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#pullrequestreview-7002"
+    },
+    {
+      "id": 7003,
+      "user": {
+        "login": "casey-qa",
+        "type": "User"
+      },
+      "state": "APPROVED",
+      "submitted_at": "2026-05-07T11:07:02Z",
+      "body": "Rejecting: FR-002 fails at the boundary. See qa-review.md.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/qa-review/-/3f9a2c1e\",\"gate\":\"review-qa\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"reject\",\"approver\":\"casey-qa\",\"artifact_sha\":\"6267cc8c4ca917d6e090d433ec2afd86cebcb408\"} -->",
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#pullrequestreview-7003"
+    },
+    {
+      "id": 7004,
+      "user": {
+        "login": "casey-qa",
+        "type": "User"
+      },
+      "state": "CHANGES_REQUESTED",
+      "submitted_at": "2026-05-07T11:08:15Z",
+      "body": "Rejecting: FR-002 fails at the boundary (`<=` should be `<`). Implementation rework, T016.\n\n<!-- contoso-approval {\"correlation_key\":\"001-enrollment-cap/qa-review/-/3f9a2c1e\",\"gate\":\"review-qa\",\"run_id\":\"3f9a2c1e\",\"verdict\":\"reject\",\"approver\":\"casey-qa\",\"artifact_sha\":\"6267cc8c4ca917d6e090d433ec2afd86cebcb408\"} -->",
+      "html_url": "https://github.com/contoso-internal/contoso-university/pull/42#pullrequestreview-7004"
+    }
+  ]
+}

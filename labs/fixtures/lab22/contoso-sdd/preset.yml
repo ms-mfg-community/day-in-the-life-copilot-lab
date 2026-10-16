@@ -1,0 +1,46 @@
+schema_version: "1.0"
+
+preset:
+  id: "contoso-sdd"
+  name: "Contoso SDD Standards"
+  version: "1.0.0"
+  description: "Contoso's org-wide spec, plan and tasks templates — one source, no forks."
+  author: "Contoso Platform Engineering"
+  repository: "https://github.com/contoso/spec-kit-preset-contoso-sdd"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=1.0.0"
+
+provides:
+  templates:
+    # replace (the default) — Contoso's spec template fully supersedes core's.
+    # `replaces:` names the core template being superseded.
+    - type: "template"
+      name: "spec-template"
+      file: "templates/spec-template.md"
+      description: "Contoso feature specification, with the mandatory risk section"
+      replaces: "spec-template"
+
+    # wrap — keeps core's plan template and surrounds it. The wrapper file MUST
+    # contain the {CORE_TEMPLATE} placeholder, which is replaced with whatever
+    # the next layer down resolves to.
+    - type: "template"
+      name: "plan-template"
+      file: "templates/plan-template.md"
+      description: "Wrap the core plan with Contoso architecture-review gates"
+      strategy: "wrap"
+
+    # append — Contoso governance tasks are added AFTER core's task list.
+    # Note `file:` differs from `name:`: `name` says which template to compose
+    # with, `file` says where this fragment lives.
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-governance.md"
+      description: "Append Contoso's governance and sign-off tasks"
+      strategy: "append"
+
+tags:
+  - "contoso"
+  - "governance"
+  - "standards"

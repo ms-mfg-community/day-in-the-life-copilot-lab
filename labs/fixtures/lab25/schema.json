@@ -1,0 +1,81 @@
+{
+  "$comment": "Lab 25 ingestion contract. ONE source of truth: bicep/main.bicep builds the custom tables and the DCR streamDeclarations from this file, lib/ingest.mjs shapes forwarder rows to it, and every kql/*.kql declares the columns it reads from it. The Logs Ingestion API does not auto-adjust schema on drift: a new span attribute is dropped until you add a column here, redeploy, and update the forwarder.",
+  "tables": [
+    {
+      "name": "CopilotSpans",
+      "source": "Copilot CLI OpenTelemetry (file exporter JSON-lines, or a collector's OTLP/JSON file)",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "TraceId", "type": "string" },
+        { "name": "SpanId", "type": "string" },
+        { "name": "ParentSpanId", "type": "string" },
+        { "name": "SpanName", "type": "string" },
+        { "name": "SpanKind", "type": "int" },
+        { "name": "DurationMs", "type": "real" },
+        { "name": "StatusCode", "type": "int" },
+        { "name": "ConversationId", "type": "string" },
+        { "name": "AgentName", "type": "string" },
+        { "name": "Model", "type": "string" },
+        { "name": "ToolName", "type": "string" },
+        { "name": "ErrorType", "type": "string" },
+        { "name": "InputTokens", "type": "long" },
+        { "name": "OutputTokens", "type": "long" },
+        { "name": "NanoAiu", "type": "real" },
+        { "name": "CostMultiplier", "type": "real" },
+        { "name": "CorrelationKey", "type": "string" },
+        { "name": "Feature", "type": "string" },
+        { "name": "Stage", "type": "string" },
+        { "name": "Task", "type": "string" },
+        { "name": "RunId", "type": "string" },
+        { "name": "BundleVersion", "type": "string" },
+        { "name": "ServiceVersion", "type": "string" }
+      ]
+    },
+    {
+      "name": "SdlcStageEvents",
+      "source": "Lab 24 stage signal: stage-events/<feature>.jsonl at the repo root (org-emitted — You build this)",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "CorrelationKey", "type": "string" },
+        { "name": "Feature", "type": "string" },
+        { "name": "Stage", "type": "string" },
+        { "name": "Task", "type": "string" },
+        { "name": "RunId", "type": "string" },
+        { "name": "FromStage", "type": "string" },
+        { "name": "Transition", "type": "string" },
+        { "name": "Actor", "type": "string" },
+        { "name": "Artifact", "type": "string" },
+        { "name": "ArtifactSha", "type": "string" },
+        { "name": "Classification", "type": "string" }
+      ]
+    },
+    {
+      "name": "SdlcStepLog",
+      "source": "Spec Kit run log: .specify/workflows/runs/<run_id>/log.jsonl (step_started / step_completed timestamps)",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "RunId", "type": "string" },
+        { "name": "Event", "type": "string" },
+        { "name": "StepId", "type": "string" },
+        { "name": "StepType", "type": "string" },
+        { "name": "Status", "type": "string" }
+      ]
+    },
+    {
+      "name": "SdlcApprovals",
+      "source": "Approval of record (Lab 24): PR review or <!-- contoso-approval {json} --> comment. qa-review.md is the artifact the QA verdict is about (artifact_sha), not a source. Lab 24 counts a duplicate decision once, at its earliest time; Lab 25 does not re-dedup",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "CorrelationKey", "type": "string" },
+        { "name": "Feature", "type": "string" },
+        { "name": "Gate", "type": "string" },
+        { "name": "RunId", "type": "string" },
+        { "name": "Verdict", "type": "string" },
+        { "name": "Approver", "type": "string" },
+        { "name": "ArtifactSha", "type": "string" },
+        { "name": "Source", "type": "string" },
+        { "name": "EscalatedTo", "type": "string" }
+      ]
+    }
+  ]
+}

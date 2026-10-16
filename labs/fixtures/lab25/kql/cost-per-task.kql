@@ -1,0 +1,16 @@
+// id: cost-per-task
+// kind: cost
+// tables: CopilotSpans_CL
+// columns: TimeGenerated, SpanName, ParentSpanId, Feature, Task, NanoAiu
+// mirror: lib/queries.mjs costPerTask
+//
+// AI Credits (AIU) per task, p50/p95/max per window. Sums ONLY the root `invoke_agent` span:
+// the chat children carry the same AIU the root already totals, so summing every span double
+// counts (see cost-double-count.kql). `permission` spans are also parentless, hence the name test.
+// AIU is a usage unit, not currency. percentile() is an estimate; the offline mirror is nearest-rank.
+let changeAt = datetime(2026-09-15);
+CopilotSpans_CL
+| where SpanName == "invoke_agent" and isempty(ParentSpanId)
+| where isnotempty(Task) and Task != "-"
+| summarize TaskAiu = sum(NanoAiu) / 1e9 by Window = iff(TimeGenerated < changeAt, "baseline", "after"), Feature, Task
+| summarize Tasks = count(), P50Aiu = percentile(TaskAiu, 50), P95Aiu = percentile(TaskAiu, 95), MaxAiu = max(TaskAiu) by Window

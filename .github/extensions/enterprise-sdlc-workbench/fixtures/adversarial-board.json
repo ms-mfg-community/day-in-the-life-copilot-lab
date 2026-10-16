@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "v1",
+  "sourceRepo": "ms-mfg-community/day-in-the-life-copilot-lab",
+  "capturedAt": "2026-10-01T23:00:00Z",
+  "note": "Adversarial fixture: used only by tests to prove the renderer HTML-escapes untrusted titles/labels instead of interpolating them raw.",
+  "issues": [
+    {
+      "number": 999,
+      "title": "<script>alert('xss')</script> & \"quoted\" <img src=x onerror=alert(1)>",
+      "state": "open",
+      "labels": ["<b>bold-label</b>"],
+      "dependsOn": [],
+      "linkedPRs": [],
+      "checks": []
+    }
+  ]
+}

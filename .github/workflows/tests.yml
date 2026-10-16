@@ -1,0 +1,161 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  repository:
+    name: Repository tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes tmux jq
+          npm ci
+      - name: Install the registry-pinned gh-aw compiler
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node --input-type=module -e 'import fs from "node:fs"; import yaml from "js-yaml"; process.stdout.write(yaml.load(fs.readFileSync("docs/_meta/registry.yaml", "utf8")).gh_aw_schema_version)')"
+          gh extension install github/gh-aw --pin "v${version}"
+          gh aw --help > /dev/null
+          tmux -V
+      - name: Run every root Vitest suite
+        run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/repository.xml
+      - name: Upload repository test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-test-results
+          path: test-results/
+          if-no-files-found: warn
+
+  node:
+    name: Node tests and Chromium E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Install registry-pinned pnpm and application dependencies
+        run: |
+          version="$(sed -n 's/^    pnpm: "\(.*\)"/\1/p' ../docs/_meta/registry.yaml)"
+          test -n "$version"
+          corepack enable
+          corepack prepare "pnpm@${version}" --activate
+          pnpm install --frozen-lockfile
+      - name: Type-check application
+        run: pnpm build
+      - name: Install Chromium
+        id: browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run Node unit and integration tests
+        run: pnpm test --reporter=default --reporter=junit --outputFile=test-results/unit.xml
+      - name: Run Node browser tests
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        env:
+          CI: "true"
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/e2e.xml
+        run: pnpm exec playwright test --reporter=list,junit --output=playwright-results
+      - name: Upload Node test results and traces
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: node-test-results
+          path: |
+            node/test-results/
+            node/playwright-results/
+          if-no-files-found: warn
+
+  dotnet:
+    name: .NET tests and Chromium E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore and build solution
+        run: dotnet build dotnet/ContosoUniversity.sln --configuration Release
+      - name: Install Chromium
+        id: browsers
+        run: pwsh dotnet/ContosoUniversity.PlaywrightTests/bin/Release/net8.0/playwright.ps1 install --with-deps chromium
+      - name: Run .NET unit and integration tests
+        run: dotnet test dotnet/ContosoUniversity.Tests --configuration Release --no-build --logger trx --results-directory test-results/unit
+      - name: Run .NET browser tests against an isolated local app
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://127.0.0.1:52380
+          ConnectionStrings__DefaultConnection: Data Source=${{ runner.temp }}/contoso-e2e.db
+          PreparedCore__Enabled: "true"
+          E2E_BASE_URL: http://127.0.0.1:52380
+        run: |
+          mkdir -p test-results/screenshots
+          dotnet run --project dotnet/ContosoUniversity.Web --configuration Release --no-build --no-launch-profile > test-results/app.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"; wait "$server_pid" || true' EXIT
+          ready=false
+          for attempt in {1..60}; do
+            if curl --fail --silent --output /dev/null "$E2E_BASE_URL/Account/SignIn"; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat test-results/app.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat test-results/app.log
+            echo "Application did not become ready within 60 seconds" >&2
+            exit 1
+          fi
+          dotnet test dotnet/ContosoUniversity.PlaywrightTests --configuration Release --no-build --logger trx --results-directory test-results/e2e
+      - name: Upload .NET results and application log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dotnet-test-results
+          path: |
+            test-results/
+            dotnet/ContosoUniversity.PlaywrightTests/**/screenshots/
+          if-no-files-found: warn

@@ -75,7 +75,8 @@ describe('workflows: weekly-content-audit gh-aw schema', () => {
         );
       }
       const combined = `${stdout}\n${stderr}`;
-      expect(combined).toMatch(/0 error\(s\)/);
+      expect(combined).toMatch(/Compiled 1 workflow: 1 succeeded/);
+      expect(combined).not.toMatch(/\d+ failed/);
       expect(existsSync(join(targetDir, 'weekly-content-audit.lock.yml'))).toBe(true);
     } finally {
       rmSync(work, { recursive: true, force: true });

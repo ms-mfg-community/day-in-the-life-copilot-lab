@@ -1,0 +1,74 @@
+# Overlay: Contoso's custom SDLC stages
+#
+# Added with:
+#   specify workflow overlay add ../labs/fixtures/lab23/overlays/contoso-stages.yml
+#
+# Lands at:
+#   .specify/workflows/overlays/speckit/contoso-stages.yml
+#
+# Note the directory: it is the id of the workflow being EXTENDED (`speckit`),
+# not this overlay's own id. Spec Kit refuses to load an overlay stored under a
+# directory that does not match its `extends` value.
+#
+# `id` and `extends` accept lowercase letters, digits and hyphens only.
+# A dot — `contoso.stages` — is rejected.
+id: contoso-stages
+extends: speckit
+priority: 10
+enabled: true
+
+# Every `insert_after` / `insert_before` anchor must name a step in the BASE
+# workflow. You cannot anchor on a step this same overlay inserted: the anchors
+# are resolved against the base step list, so
+#   - insert_after: epic
+# fails with "Edit 1: anchor 'epic' does not match any base step id."
+#
+# Sibling edits that share an anchor are applied in AUTHORING ORDER, which is
+# what places `epic` before `review-epic` below.
+#
+# This file uses the shorthand form throughout: the operation IS the key and its
+# value is the anchor. Never combine it with an explicit `operation:`/`anchor:`
+# pair in the same edit — that is rejected as a mixed form.
+edits:
+  # --- Stage 1: the epic, before anything is specified -------------------
+  - insert_before: specify
+    step:
+      id: epic
+      command: speckit.contoso-review.epic
+      integration: "{{ inputs.integration }}"
+      input:
+        args: "{{ inputs.spec }}"
+
+  - insert_before: specify
+    step:
+      id: review-epic
+      type: gate
+      message: "Approve the epic before any spec is written."
+      # `options` MUST contain `reject` or `abort` when `on_reject` is abort or
+      # retry. And rejection is matched ONLY against `reject`/`abort` — a choice
+      # named `rework` would be read as APPROVAL and the run would walk straight
+      # past the gate.
+      options: [approve, reject]
+      # `on_reject` accepts exactly: abort | skip | retry.
+      # There is no backward jump. `retry` PAUSES the run on this gate — fix the
+      # epic, then `specify workflow resume <run-id>` and the gate runs again.
+      on_reject: retry
+
+  # --- Stage 2: QA review, after implementation --------------------------
+  # The base workflow ends on `implement` with no gate, so this is a genuine
+  # addition rather than a replacement.
+  - insert_after: implement
+    step:
+      id: qa-review
+      command: speckit.contoso-review.qa-review
+      integration: "{{ inputs.integration }}"
+      input:
+        args: "{{ inputs.spec }}"
+
+  - insert_after: implement
+    step:
+      id: review-qa
+      type: gate
+      message: "QA verdict: approve to close the feature, reject to send it back."
+      options: [approve, reject]
+      on_reject: retry

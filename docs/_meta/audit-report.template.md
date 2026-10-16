@@ -20,6 +20,8 @@
 | 5. Package versions | 0 | 0 | 0 |
 | 6. Model names & pricing | 0 | 0 | 0 |
 | 7. Lab pacing | 0 | 0 | 0 |
+| 8. Spec Kit release | 0 | 0 | 0 |
+| 9. Azure Monitor API versions | 0 | 0 | 0 |
 | **Total** | **0** | **0** | **0** |
 
 ## Checks
@@ -49,6 +51,14 @@ _No findings._
 _No findings._
 
 ### 7. Lab pacing
+
+_No findings._
+
+### 8. Spec Kit release
+
+_No findings._
+
+### 9. Azure Monitor API versions
 
 _No findings._
 
