@@ -65,11 +65,17 @@ At enterprise scale, three things break that assumption:
 1. **The default-on model policy (Lab 17) removes the implicit cost
    ceiling.** Since the policy took effect on 2026-08-26 (per the
    changelog, as recorded in the registry's
-   `model_default_availability_policy`), any newly-GA model a developer's
-   org hasn't explicitly disabled is available in their `/model` picker —
-   including models the individual guide's `models.premium` tier never
-   anticipated. A developer optimizing *their own* cost has no visibility
-   into whether the *org* wants that model available at all.
+   `model_default_availability_policy`), generally available models an
+   admin has not explicitly configured follow the org/enterprise "default
+   availability for released models" policy. That policy is on by default,
+   so those models are available to developers; if an admin disables it,
+   they are not. Explicit per-model choices are always preserved, and
+   open-weight models and models not covered by GitHub's data retention
+   agreement are excluded from default enablement regardless of the
+   policy. In practice, a developer's `/model` picker can show models the
+   individual guide's `models.premium` tier never anticipated. A developer
+   optimizing *their own* cost has no visibility into whether the *org*
+   wants such models available at all.
 2. **No developer has aggregate visibility.** An individual can watch
    their own token spend; only an org admin can see whether 40 developers
    are all defaulting to a premium model for routine work.
@@ -82,18 +88,24 @@ At enterprise scale, three things break that assumption:
 
 At the enterprise/org level, token/usage visibility is a governance
 concern, not a per-developer curiosity. Three sources get mixed up here,
-and only one of them is where usage numbers come from:
+and only one of them is where the aggregate usage numbers come from:
 
-- **Audit logs (Lab 17 §17.3)** give you *policy-change and agent-activity*
-  events — which Copilot settings and policies changed, and what an agent
-  did on GitHub — but explicitly **not** token/cost figures or
-  conversation content. They are not a usage source.
+- **The standard enterprise audit log (Lab 17 §17.3)** gives you
+  *policy-change and agent-activity* events — which Copilot settings and
+  policies changed, and what an agent did on GitHub — but **not**
+  token/cost figures or the content of local IDE/CLI sessions. The
+  standard audit log is not a usage source.
   *Self-paced detail:* agent events carry documented fields such as
   `actor_is_agent` (always `true` for agentic events) and
   `agent_session_id` (present when an event came from an agent session; it
   ties the event to that session) — see the
   [Audit log events for agents](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/agentic-audit-log-events)
-  reference.
+  reference. The same reference also documents a public-preview *Streaming
+  audit log events* feature (available only to enterprises that use
+  Enterprise Managed Users or GitHub Enterprise Cloud with data residency)
+  that streams Copilot API usage records whose fields include the
+  request/response body — a content/compliance stream, not the aggregate
+  seat and premium-request source the question below asks about.
 - **Copilot usage metrics/billing views** (enterprise/org settings; the
   "usage/billing dashboard" in the question below) are the **primary
   usage source** for aggregate seat usage and premium-request
@@ -121,8 +133,8 @@ that, and why aren't the other two?
 
 > 💡 **Expected answer:** the usage/billing dashboard is the primary
 > source for aggregate seat usage and premium-request consumption. The
-> audit log records policy changes and agent activity, not token or cost
-> figures, so it can't answer a consumption question. A custom harness is
+> standard audit log records policy changes and agent activity, not token or
+> cost figures, so it can't answer a consumption question. A custom harness is
 > downstream: it can only repackage what the org's usage export provides,
 > so it never replaces that export as the source of the numbers. Nothing
 > in this lab establishes anything finer (per-team splits, per-session
@@ -186,8 +198,8 @@ implicit cost ceiling that individual-scale guidance used to rely on.
 
 ✅ You can name which of audit logs / usage-billing dashboard / custom
 harness is the primary source for aggregate seat usage and premium-request
-consumption, and say why the audit log isn't one and a custom harness sits
-downstream of it.
+consumption, and say why the standard audit log isn't one and a custom
+harness sits downstream of it.
 
 ✅ You can describe one concrete governance mechanism (review requirement,
 deprecation discipline, or shared repo pattern) for keeping prompts or
@@ -202,7 +214,7 @@ knowledge bases consistent across teams, not just within one repo.
 |---------|---------|
 | **Scale shift** | Individual guide optimizes one session; enterprise lens optimizes aggregate spend + consistency |
 | **No implicit ceiling anymore** | Default-on model policy (Lab 17) means new models can silently appear org-wide |
-| **Right reporting source** | The usage/billing dashboard is the primary source for aggregate seat usage and premium-request consumption — NOT the audit log (policy changes and agent activity); a custom harness is downstream of the usage export |
+| **Right reporting source** | The usage/billing dashboard is the primary source for aggregate seat usage and premium-request consumption — NOT the standard audit log (policy changes and agent activity); a custom harness is downstream of the usage export |
 | **Prompt governance** | Central, reviewed prompt libraries beat per-team reinvention |
 | **Knowledge-base governance** | Promote reusable lessons to a shared repo with explicit ownership, versioning, and review — don't build a cross-repo memory *service* that has none of the three |
 
