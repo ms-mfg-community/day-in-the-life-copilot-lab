@@ -205,6 +205,7 @@ in this workshop repo. Copy it over the scaffolded bash entrypoint:
 ```bash
 # From inside gh-clab/ (where §3.1 left you); $WORKSHOP is the absolute path set in §3.1
 : "${WORKSHOP:?run the WORKSHOP block from section 3.1 first}"
+: "${SCAFFOLD:?run the scaffold block from section 3.1 first}" && cd "$SCAFFOLD"
 cp "$WORKSHOP/solutions/lab-gh-extensions/gh-clab/gh-clab" ./gh-clab
 cp "$WORKSHOP/solutions/lab-gh-extensions/gh-clab/package.json" ./package.json
 chmod +x ./gh-clab
