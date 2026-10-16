@@ -69,7 +69,7 @@ References:
 > live in the registry — labs reference it rather than hardcoding values, so a
 > single registry update propagates everywhere.
 
-> 🆕 **Terminal UX refresh (confirmed GA, ~Aug 2026):** `/plugin`, `/mcp`, and
+> 🆕 **Terminal UX refresh (GA June 23, 2026):** `/plugin`, `/mcp`, and
 > `/skills` are real interactive commands backed by an in-terminal dashboard —
 > you can discover, install, and configure plugins, MCP servers, and skills
 > without hand-editing config files. The terminal also gained tabs for
