@@ -311,6 +311,8 @@ describe('QA vite-content-plugin and loadSegments', () => {
     expect(watched).toContain(path.normalize(path.join(fixture, 'workshop/spa/content/deck.json')));
     expect(watched).toContain(path.normalize(path.join(fixture, 'workshop/slides/0-seg-1.md')));
     expect(watched).toContain(path.normalize(path.join(fixture, 'workshop/slides/1-seg-2.md')));
+    expect(watched).toContain(path.normalize(path.join(fixture, 'workshop/speaker-scripts/0-seg-1.md')));
+    expect(watched).toContain(path.normalize(path.join(fixture, 'workshop/speaker-scripts/1-seg-2.md')));
 
     // Even when deck.json has 0 segments, deck.json itself must be watched so adding a segment triggers rebuild.
     const emptyFixture = makeRepoFixture([]);
@@ -607,6 +609,76 @@ describe('QA shell runtime (main.ts)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('reports an unknown initial route while rendering the fallback exactly once', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#/missing-segment');
+      expect(dom.renderHistory).toEqual(['Copilot CLI extensibility architecture']);
+      expect(dom.win.location.hash).toBe('#/m1-extensibility-architecture');
+      vi.advanceTimersByTime(60);
+      expect(dom.liveRegion.textContent).toBe('Unknown segment "missing-segment"');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('preserves the mounted segment and stays silent when presenter parameters change without navigation', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#/m2-mcp');
+      const mountedBody = dom.main.children[1];
+      dom.win.teachingSpa?.store.update('m2-mcp', (current) => ({
+        ...current, revealedSteps: 2, parameters: { budget: 42 },
+      }));
+      expect(dom.main.children[1]).toBe(mountedBody);
+      expect(dom.renderHistory).toEqual(['MCP servers in anger']);
+      expect(dom.win.location.hash).toBe('#/m2-mcp');
+      vi.advanceTimersByTime(60);
+      expect(dom.liveRegion.textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    ['workshop/slides/56-module-5c-copilot-cli-extensions.md', 'm5c-copilot-cli-extensions'],
+    ['gh extensions', 'm5b-gh-extensions'],
+  ])('keeps the real curriculum link "%s" inside the deployed hash-routed application', async (label, targetId) => {
+    const { loadSegments } = await importContentPlugin();
+    const dom = await bootMain('#/m6-a2a-tmux', loadSegments(ROOT));
+    const links = [...dom.main.children[1].innerHTML.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+    const linkHtml = links.find((match) => match[2].replace(/<[^>]*>/g, '') === label);
+    expect(linkHtml, 'fixture must use a link emitted from the real curriculum').toBeDefined();
+
+    const link = makeElement('a');
+    link.setAttribute('href', linkHtml![1]);
+    link.href = new URL(linkHtml![1], dom.win.location.href).href;
+    const event = {
+      target: link,
+      defaultPrevented: false,
+      preventDefault() {
+        this.defaultPrevented = true;
+      },
+    };
+    for (const listener of dom.clickListeners) listener(event);
+
+    // Emulate the browser's default navigation, not just an application's click-handler report.
+    const destination = new URL(link.href, dom.win.location.href);
+    const current = new URL(dom.win.location.href);
+    let leftApplication = false;
+    if (!event.defaultPrevented) {
+      if (destination.origin === current.origin && destination.pathname === current.pathname) {
+        dom.navigateToHash(destination.hash);
+      } else leftApplication = true;
+    }
+    if (!leftApplication) {
+      for (const listener of dom.hashListeners) listener();
+    }
+    expect(leftApplication, `${label} navigates to an absent deployed page: ${destination.href}`).toBe(false);
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe(targetId);
+    expect(dom.win.location.hash).toBe(hashFor(targetId));
   });
 
   it('executes the built dist/assets/*.js bundle and verifies dist/index.html structure and relative base (AC4, §2.9)', async () => {

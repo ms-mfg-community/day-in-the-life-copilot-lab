@@ -80,5 +80,17 @@ describe('spa:build (AC4)', () => {
     const deck = JSON.parse(readFileSync('workshop/spa/content/deck.json', 'utf8'));
     for (const segment of deck.segments) expect(bundle).toContain(segment.id);
     expect(bundle).toContain('user-content-');
+    // A link from one slide to another is a route in the built application, not the .md file it was written against:
+    // the deployed site serves no such file, so following one leaves the application for a 404. Module 6's two links to
+    // Modules 5c and 5b are the ones the curriculum carries today; the sweep covers every slide the manifest names.
+    expect(bundle).toContain('#/m5c-copilot-cli-extensions');
+    expect(bundle).toContain('#/m5b-gh-extensions');
+    for (const segment of deck.segments) {
+      const file = path.posix.basename(segment.slideSource).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // `href=` as it sits in the bundle: inside a string literal, so its quotes may be escaped.
+      expect(bundle, `a link to ${segment.slideSource} survived the build`).not.toMatch(
+        new RegExp(`href=\\\\?["'][^"'>]*${file}`),
+      );
+    }
   }, 120000);
 });
