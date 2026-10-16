@@ -19,7 +19,8 @@
 //
 // There is no option to skip, move or loosen the sanitizer. The extra-plugin seam exists so that a test can put hostile
 // nodes into the tree and prove the sanitizer, as wired here, removes them; the extras run before rehype-slug and
-// rehype-sanitize, never after.
+// rehype-sanitize, never after. The build also uses it, for one plugin (slide-links.ts, which routes a link from one
+// slide to another): whatever an extra writes, the sanitizer still checks it.
 //
 // Two things for whoever renders this in the shell (child issue 3):
 //   - `data` is whatever the front matter holds, untrusted and of any shape, and it is not sanitized. A title such as
@@ -44,7 +45,7 @@ export interface ProcessorOptions {
   extraRehypePlugins?: PluggableList;
 }
 
-/** The pipeline. Production callers pass no options; the extras are a test seam, and run before the sanitizer. */
+/** The pipeline. The extras are a seam: tests put hostile nodes through it, the build passes the slide-link rewrite. They run before the sanitizer. */
 export function createProcessor(options: ProcessorOptions = {}) {
   return unified()
     .use(remarkParse)
@@ -79,8 +80,6 @@ const REFUSED = {
  */
 const MATTER_OPTIONS = { engines: { javascript: REFUSED, js: REFUSED } };
 
-const processor = createProcessor();
-
 export interface RenderedMarkdown {
   /** The front matter as gray-matter parsed it: untrusted, not coerced, and of any shape. `{}` when there is none. */
   data: unknown;
@@ -89,10 +88,23 @@ export interface RenderedMarkdown {
 }
 
 /**
+ * `renderMarkdown` with extra plugins: the same front matter lock-down and the same pipeline, so the sanitizer is still
+ * the last stage and an extra cannot put anything past it. Without options it is `renderMarkdown`.
+ */
+export function createRenderer(options: ProcessorOptions = {}): (raw: string) => RenderedMarkdown {
+  const processor = createProcessor(options);
+  return (raw) => {
+    const { data, content } = matter(raw, MATTER_OPTIONS);
+    return { data, html: String(processor.processSync(content)) };
+  };
+}
+
+const render = createRenderer();
+
+/**
  * Render a curriculum markdown file: gray-matter splits off the front matter, and the pipeline renders the body.
  * Throws for front matter in a language the pipeline refuses, or for front matter that is not valid.
  */
 export function renderMarkdown(raw: string): RenderedMarkdown {
-  const { data, content } = matter(raw, MATTER_OPTIONS);
-  return { data, html: String(processor.processSync(content)) };
+  return render(raw);
 }
