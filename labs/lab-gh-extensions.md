@@ -178,9 +178,12 @@ before §3.2, too. Now scaffold from any other folder:
 
 ```bash
 cd /tmp   # or any workspace of your choice
-gh extension create clab        # non-interactive; creates a bash script extension by default
-cd gh-clab
-SCAFFOLD="$PWD"                 # remember this folder for the Cleanup section
+if [ -e gh-clab ] || gh extension list | grep -q 'gh clab'; then
+  echo "Stop: gh-clab already exists in $PWD or in gh extension list. Move or remove it before running this lab." >&2
+else
+  # non-interactive; creates a bash script extension by default
+  gh extension create clab && cd gh-clab && SCAFFOLD="$PWD"   # remember this folder for the Cleanup section
+fi
 ```
 
 `gh extension create clab` creates a `gh-clab/` directory (note the `gh-`
@@ -214,7 +217,7 @@ global `fetch` only.
 ### 3.3 Install and run
 
 ```bash
-gh extension install .           # installs the cwd as a local extension
+gh extension install . && CLAB_INSTALLED=1   # installs the cwd as a local extension; records that this lab owns it
 gh extension list | grep clab || echo "gh clab is NOT installed - re-run the line above"
 # A line starting "gh clab" means it loaded; the echo only runs when grep finds nothing.
 
@@ -347,15 +350,15 @@ under your temp directory, gives it a throwaway identity and its own hooks folde
 shared), and makes a first commit so `HEAD` exists:
 
 ```bash
-DEMO_REPO="$(mktemp -d "${TMPDIR:-/tmp}/clab-demo.XXXXXX")" && cd "$DEMO_REPO"
-git init -q --template=
-git config core.hooksPath "$DEMO_REPO/.git/hooks"
-git config user.name "clab demo"
-git config user.email "clab-demo@example.invalid"
-git config commit.gpgsign false
-echo v1 > notes.txt
-git add notes.txt               # on Windows a harmless "LF will be replaced by CRLF" warning may print
-git commit -q -m "demo: first commit"
+DEMO_REPO="$(mktemp -d "${TMPDIR:-/tmp}/clab-demo.XXXXXX")" && cd "$DEMO_REPO" &&
+git init -q --template= &&
+git config core.hooksPath "$DEMO_REPO/.git/hooks" &&
+git config user.name "clab demo" &&
+git config user.email "clab-demo@example.invalid" &&
+git config commit.gpgsign false &&
+echo v1 > notes.txt &&
+git add notes.txt &&            # on Windows a harmless "LF will be replaced by CRLF" warning may print
+git commit -q -m "demo: first commit" || echo "Demo repo setup failed - fix the error above before continuing" >&2
 ```
 
 ### 4.2 Install the hook
@@ -562,7 +565,7 @@ cd "${WORKSHOP:-$HOME}"
 
 # 2. Uninstall the extension (it lives in your gh profile, not in this repo).
 #    If the last line prints a "gh clab" row instead of "confirmed", the removal failed.
-if gh extension list | grep -q 'gh clab'; then gh extension remove gh-clab; else echo "gh-clab is not installed"; fi
+if [ "${CLAB_INSTALLED:-}" = "1" ] && gh extension list | grep -q 'gh clab'; then gh extension remove gh-clab; else echo "this lab did not install gh-clab: nothing to remove"; fi
 gh extension list | grep 'gh clab' || echo "confirmed: gh clab is gone from the extension list"
 
 # 3. Delete the demo repo from section 4 - its hook and CLAB_SUMMARY.md go with it.
@@ -578,7 +581,7 @@ case "${SCAFFOLD:-}" in
 esac
 
 # 5. Forget this lab's shell variables (OPENAI_API_KEY only matters if you exported it in 3.3).
-unset WORKSHOP DEMO_REPO SCAFFOLD GH_CLAB_HOOK_MODE OPENAI_API_KEY
+unset WORKSHOP DEMO_REPO SCAFFOLD CLAB_INSTALLED GH_CLAB_HOOK_MODE OPENAI_API_KEY
 ```
 
 Two things this block deliberately leaves alone:
