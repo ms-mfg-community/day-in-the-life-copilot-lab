@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "v1",
+  "sourceRepo": "ms-mfg-community/day-in-the-life-copilot-lab",
+  "capturedAt": "2026-10-01T23:00:00Z",
+  "note": "Issue number/title/state/labels below are a real, frozen snapshot captured while building Lab 26. `linkedPRs`, `checks`, and `recentRuns` are illustrative synthetic data layered on top for teaching purposes -- this is dry-run fixture data, never a live feed. Switch the board to live mode to see current state.",
+  "epic": {
+    "number": 47,
+    "title": "[Epic] Enterprise Agentic SDLC Harness (Labs 21-26 + executive blueprint)",
+    "state": "open",
+    "labels": ["documentation", "epic", "enterprise-harness"],
+    "url": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/issues/47"
+  },
+  "issues": [
+    {
+      "number": 48,
+      "title": "Registry and scaffolding for the enterprise-harness arc (EPIC-001)",
+      "state": "closed",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [{ "number": 60, "state": "merged", "title": "feat: EPIC-001 registry and scaffolding" }],
+      "checks": [{ "name": "ci / lab-structure", "conclusion": "success" }]
+    },
+    {
+      "number": 49,
+      "title": "Executive blueprint for the enterprise agentic SDLC harness (EPIC-001 U0)",
+      "state": "open",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [],
+      "checks": []
+    },
+    {
+      "number": 50,
+      "title": "Lab 21 - tech-lead plugin and marketplace lockdown (EPIC-001 U1)",
+      "state": "open",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [],
+      "checks": []
+    },
+    {
+      "number": 51,
+      "title": "Lab 22 - centralized Spec Kit templates and org catalog (EPIC-001 U2)",
+      "state": "closed",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [{ "number": 61, "state": "merged", "title": "feat: Lab 22 Spec Kit org catalog" }],
+      "checks": [{ "name": "ci / lab-structure", "conclusion": "success" }]
+    },
+    {
+      "number": 52,
+      "title": "Lab 23 - custom SDLC stages, gates and rework loop (EPIC-001 U3)",
+      "state": "closed",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [51],
+      "linkedPRs": [{ "number": 62, "state": "merged", "title": "feat: Lab 23 stages, gates, rework loop" }],
+      "checks": [{ "name": "ci / lab-structure", "conclusion": "success" }]
+    },
+    {
+      "number": 53,
+      "title": "Lab 24 - notification funnel and executable tasks (EPIC-001 U4)",
+      "state": "open",
+      "labels": ["documentation", "agentic-workflows", "enterprise-harness"],
+      "dependsOn": [52],
+      "linkedPRs": [],
+      "checks": []
+    },
+    {
+      "number": 54,
+      "title": "Lab 25 - telemetry, Log Analytics and the improvement loop (EPIC-001 U5)",
+      "state": "open",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [],
+      "checks": []
+    },
+    {
+      "number": 59,
+      "title": "Lab 26 - GitHub Copilot App canvases for applied SDLC operations (EPIC-001 U6)",
+      "state": "open",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [53],
+      "linkedPRs": [{ "number": 63, "state": "open", "title": "Lab 26: Copilot App canvases for SDLC operations" }],
+      "checks": [
+        { "name": "ci / lab-structure", "conclusion": "success" },
+        { "name": "ci / packaging", "conclusion": "pending" }
+      ]
+    },
+    {
+      "number": 55,
+      "title": "Integration - wire the enterprise-harness arc into the lab suite (EPIC-001)",
+      "state": "open",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [49, 50, 51, 52, 53, 54, 59],
+      "linkedPRs": [],
+      "checks": []
+    },
+    {
+      "number": 66,
+      "title": "EPIC-001 cleanup: align the epic and open child issues with The Agentic SDLC Handbook",
+      "state": "closed",
+      "labels": ["documentation", "enterprise-harness"],
+      "dependsOn": [],
+      "linkedPRs": [{ "number": 67, "state": "merged", "title": "docs: align EPIC-001 with the Agentic SDLC Handbook" }],
+      "checks": [{ "name": "ci / lab-structure", "conclusion": "success" }]
+    }
+  ],
+  "recentRuns": [
+    { "workflow": "weekly-content-audit", "status": "completed", "conclusion": "success", "createdAt": "2026-09-28T05:00:00Z" },
+    { "workflow": "self-improving-agents", "status": "completed", "conclusion": "success", "createdAt": "2026-09-21T05:00:00Z" }
+  ]
+}
