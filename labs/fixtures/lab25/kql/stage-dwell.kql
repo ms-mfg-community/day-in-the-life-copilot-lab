@@ -1,0 +1,20 @@
+// id: stage-dwell
+// kind: outcome
+// tables: SdlcStepLog_CL
+// columns: TimeGenerated, RunId, Event, StepId
+// mirror: lib/queries.mjs stageDwell
+//
+// Minutes per step attempt, from the Spec Kit run log (.specify/workflows/runs/<run_id>/log.jsonl).
+// Retry-aware pairing: a gate rejected with `on_reject: retry` logs step_completed status=paused,
+// and resuming the run logs a fresh step_started — so each attempt is its own started/completed
+// pair. A start with no matching completion (a run still waiting) is excluded, not guessed.
+// For a gate, the attempt time IS the wait for a human decision.
+let changeAt = datetime(2026-09-15);
+SdlcStepLog_CL
+| where Event in ("step_started", "step_completed")
+| sort by RunId asc, StepId asc, TimeGenerated asc
+| extend PrevEvent = prev(Event), PrevRunId = prev(RunId), PrevStepId = prev(StepId), Started = prev(TimeGenerated)
+| where Event == "step_completed" and PrevEvent == "step_started" and PrevRunId == RunId and PrevStepId == StepId
+| extend Minutes = (TimeGenerated - Started) / 1m
+| summarize Attempts = count(), P50Minutes = round(percentile(Minutes, 50), 1)
+    by Window = iff(Started < changeAt, "baseline", "after"), StepId

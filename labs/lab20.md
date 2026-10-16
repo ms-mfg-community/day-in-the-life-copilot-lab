@@ -164,6 +164,6 @@ knowledge bases consistent across teams, not just within one repo.
 
 </details>
 
-**Lab series complete.** Return to the [README](../README.md) for the full
-lab index, or revisit [Lab 01](lab01.md) to start again from a fresh
-Codespace/devcontainer.
+**Modernization track complete.** Continue to [Lab 21](lab21.md) to start the
+enterprise agentic SDLC harness arc (Labs 21–26), or return to the
+[README](../README.md) for the full lab index.

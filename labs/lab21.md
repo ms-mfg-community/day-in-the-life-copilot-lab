@@ -16,6 +16,10 @@ centrally managed controls to the plugin marketplaces they may use. It extends
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 30 minutes
 
+**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — starts the arc. The
+funding decision, native-vs-DIY ledger and rollout order are in the
+[executive blueprint](../docs/enterprise-harness-blueprint.md).
+
 References:
 
 - [How Spec Kit Develops Spec Kit: An Agentic SDLC](https://github.github.com/spec-kit/guides/agentic-sdlc.html)
@@ -434,3 +438,5 @@ the operations they need from an explicit grant: managed `permissions.allow`
 rules, or `--allow-tool` passed through
 `SPECKIT_INTEGRATION_COPILOT_EXTRA_ARGS`. This holds until the unresolved
 `--yolo`/managed-policy interaction is verified in a controlled environment.
+
+**Next:** [Lab 22 — Centralized Spec Kit Templates & the Org Catalog](lab22.md)

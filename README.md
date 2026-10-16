@@ -581,10 +581,10 @@ erDiagram
 > Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
 > [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
 > enterprise scale and should be read after Lab 17. Labs 21 → 26 are the
-> self-paced **enterprise agentic SDLC harness** arc: governance and
-> marketplace lockdown → centralized specification assets → custom stages
-> and gates → executable tasks → telemetry → the Copilot App canvas
-> operator surface.
+> sequential **enterprise agentic SDLC harness** arc (~3.5 hours), framed by
+> the [executive blueprint](docs/enterprise-harness-blueprint.md). The arc is
+> **self-paced only** — it is not part of the 4-hour
+> [workshop curriculum](workshop/curriculum.md).
 
 ---
 
@@ -617,6 +617,15 @@ Version floors, model tiers, and MCP pins live in
 ---
 
 ## Useful Commands
+
+The [Tests workflow](.github/workflows/tests.yml) runs on every pull request and push to
+`main`, and can also be dispatched manually. Three independent Ubuntu checks run the
+complete root Vitest suite (including Bash, tmux and registry-pinned gh-aw checks), Node
+unit/integration and Chromium E2E tests, and .NET unit/integration and Chromium E2E tests.
+Results appear in the PR **Checks** tab; JUnit/TRX reports, browser traces and the .NET
+application log are uploaded as artifacts even when tests fail. Browser tests still run
+after a unit-test failure. No path filters or failure suppression hide failing suites.
+The heavyweight, offline prepared-image verification remains a separate manual workflow.
 
 | Task | Command |
 |------|---------|
