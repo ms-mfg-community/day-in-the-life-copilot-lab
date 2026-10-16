@@ -3,7 +3,7 @@ title: "MCP Server Configuration"
 lab_number: 5
 pace:
   presenter_minutes: 3
-  self_paced_minutes: 15
+  self_paced_minutes: 50
 registry: docs/_meta/registry.yaml
 ---
 
@@ -11,11 +11,13 @@ registry: docs/_meta/registry.yaml
 
 In this lab you will explore and configure Model Context Protocol (MCP) servers.
 
-> ⏱️ Presenter pace: 3 minutes | Self-paced: 15 minutes
+> ⏱️ Presenter pace: 3 minutes | Self-paced: 50 minutes
+
+**Prerequisite:** finish [Setup](setup.md), [Lab 01](lab01.md) and [Lab 02](lab02.md) first — `copilot --version` prints a version number, you are signed in to GitHub Copilot, and Node.js is installed, because `npx` starts the local MCP servers in this lab.
 
 References:
 - [MCP specification changelog (2026-07-28)](https://modelcontextprotocol.io/specification/2026-07-28/changelog)
-- [Using MCP servers with Copilot](https://docs.github.com/en/copilot/using-github-copilot/using-mcp-servers-with-copilot)
+- [Adding MCP servers for GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)
 
 > 🧭 **Track appendices** — track-specific MCP server picks live in
 > [`labs/appendices/dotnet/lab05.md`](appendices/dotnet/lab05.md) and
@@ -41,9 +43,9 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling an MCP-bundling plugin from a private or public registry. |
 | **Parallel subagents** | `/fleet` | Querying multiple MCP servers in parallel (e.g. `context7` + `microsoft-learn`). |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | Plan mode when wiring a new MCP server; autopilot mode when re-running well-known MCP queries. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry when the answer is already in MCP-retrieved context. |
-| **Local tool discovery** | `extensions_manage` operation `list` | Seeing which MCP-backed tools are loaded right now. |
+| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode vs `/autopilot` to toggle autopilot mode | Plan mode when wiring a new MCP server; autopilot mode when re-running well-known MCP queries. Autopilot is a toggle you switch on — it is not the default. |
+| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto`; `/model auto efficiency`, `/model auto balance` or `/model auto intelligence` to pick an Auto tier) | Pick an id from the registry's `models.cheap` when the answer is already in MCP-retrieved context. `cheap`, `standard` and `premium` are registry keys, not `/model` arguments. |
+| **Local tool discovery** | `/mcp list` for configured MCP servers; `/mcp show SERVER-NAME` for one server's status and tools; `extensions_manage` operation `list` for extensions (a model-side tool call, **not** a slash command) | Use `/mcp list` and `/mcp show` to see which MCP servers and tools are loaded right now. `extensions_manage` lists Copilot CLI extensions, not MCP servers or tools. |
 
 ## 5.1 Examine Existing MCP Configuration
 
@@ -63,8 +65,16 @@ cat ~/.copilot/mcp-config.json
 Get-Content ~/.copilot/mcp-config.json
 ```
 
-2. This repository ships with 6 MCP servers (kept in sync with
-   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) `mcp_servers:`):
+> 💡 **"No such file or directory"?** A fresh install has no user-level `mcp-config.json` yet — you create it in §5.4. To read a working example now, run `cat .copilot/mcp-config.json` (bash) or `Get-Content .copilot/mcp-config.json` (PowerShell) from the repo root — that is this repo's own copy.
+
+2. The table below lists the MCP servers this workshop works with. The
+   authoritative list — including each server's pinned version — lives in
+   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) under `mcp_servers:`;
+   read a pin there rather than copying a version number from this page. (The
+   registry also lists `filesystem`, which is reserved for the prepared-core
+   environment and not used in this lab, so it has no row here.) This repo's
+   own `.copilot/mcp-config.json` configures `context7`, `sequential-thinking`,
+   `workiq` and `microsoft-learn`; the remaining rows are not in that file.
 
 | Server | Type | Purpose |
 |--------|------|---------|
@@ -81,19 +91,23 @@ Get-Content ~/.copilot/mcp-config.json
 
 ```json
 {
-  "context7": {
-    "type": "local",
-    "command": "npx",
-    "args": ["-y", "@upstash/context7-mcp"],
-    "tools": ["*"]
-  },
-  "microsoft-learn": {
-    "type": "http",
-    "url": "https://learn.microsoft.com/api/mcp",
-    "tools": ["*"]
+  "mcpServers": {
+    "context7": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@2.2.1"],
+      "tools": ["*"]
+    },
+    "microsoft-learn": {
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "tools": ["*"]
+    }
   }
 }
 ```
+
+> 💡 This is an excerpt: a real file can hold more servers inside the same top-level `mcpServers` object. `@2.2.1` is the `context7` pin recorded in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) under `mcp_servers:` — take pins from there rather than from memory. (This repo's own `.copilot/mcp-config.json` still leaves `context7` unpinned.)
 
 > 💡 **`tools: ["*"]`** means all tools from the server are available. You can restrict this to specific tools for security.
 
@@ -161,7 +175,7 @@ Get-ChildItem .copilot/lessons
 Get-Content .copilot/lessons/index.md | Select-Object -First 20
 ```
 
-2. In Copilot CLI, ask the agent to record a project fact as a lesson:
+2. In Copilot CLI, ask the agent to record a project fact as a lesson. This writes to a git-tracked file in your checkout — §5.6 shows how to undo it:
 ```
 Append a lesson to .copilot/lessons/log.md: ContosoUniversity uses
 Entity Framework Core 8 with SQL Server and follows the repository
@@ -195,50 +209,49 @@ wrote to itself, committed alongside the code.
 > 💡 **Why markdown, not a server?** Files are diffable, reviewable,
 > revertable, and ship with the repo. Lab 10 walks through the full
 > three-layer model (raw sources → wiki → schema) and the
-> `/consolidate-lessons` command that promotes durable lessons.
+> [`consolidate-lessons` prompt file](../.github/prompts/consolidate-lessons.prompt.md)
+> that promotes durable lessons. It is a prompt file, not a CLI slash command:
+> in Copilot CLI you ask the agent in plain English to follow it (see
+> [Lab 10](lab10.md) §10.4).
 
 ## 5.4 Add a New MCP Server
 
-Let's add a new MCP server to the configuration. We'll add a filesystem server for enhanced file operations.
+Let's add a new MCP server to the configuration. We'll add a fetch server that retrieves web content.
 
 🖥️ **In your terminal:**
 
-1. Open the MCP configuration:
+1. Open the user-level MCP configuration in any editor. In VS Code, this command works in both bash and PowerShell; if the file does not exist yet, saving creates it:
 ```bash
-code ~/.copilot/mcp-config.json
+code "$HOME/.copilot/mcp-config.json"
 ```
 
-2. Add a new server entry. For example, to add a fetch server for web content:
+2. Add a new server entry. The `fetch` entry below, including its `@1.6.2` pin, is taken from the `fetch` entry in [`mcp-configs/copilot-cli/CATALOG.json`](../mcp-configs/copilot-cli/CATALOG.json). If your file has no `mcpServers` object yet, paste the whole snippet; if it already has one, add only the `"fetch"` entry inside it (mind the commas):
 
 ```json
 {
   "mcpServers": {
-    "context7": { ... },
-    "sequential-thinking": { ... },
-    "workiq": { ... },
-    "microsoft-learn": { ... },
     "fetch": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@kazuph/mcp-fetch"],
+      "args": ["-y", "@kazuph/mcp-fetch@1.6.2"],
       "tools": ["*"]
     }
   }
 }
 ```
 
-3. The fetch server provides a `fetch` tool that can retrieve web pages, API responses, and other HTTP content.
+3. The `fetch` server provides an `imageFetch` tool that fetches a web page and returns it as markdown; images are off by default. Before v1.2.0 of the package this tool was called `fetch`; the current package rejects that name. The package's README says it is "designed for macOS only due to its dependency on macOS-specific clipboard operations". This exercise fetches plain text with images off, but if `fetch` does not start on your machine, `/mcp show fetch` shows its status and you can still finish the configuration steps.
 
-4. After saving, restart your Copilot session for the new server to load.
+4. After saving, restart your Copilot session for the new server to load: `/exit`, then start `copilot` again.
 
 5. Test the new server:
 ```
-Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/README.md
+Using the fetch MCP server's imageFetch tool, fetch https://raw.githubusercontent.com/dotnet/aspnetcore/main/README.md and summarize it in two sentences.
 ```
 
 > ⚠️ **Security note**: Be careful with MCP servers that have broad access. The `tools: ["*"]` setting exposes all tools. In production, restrict to only the tools you need.
 
-> 💡 **Verify the server loaded:** After restarting your Copilot session, test with a query the new server should handle. If it responds with relevant data, the server is working.
+> 💡 **Verify the server loaded:** After restarting your Copilot session, `/mcp list` should show `fetch` along with its status, and `/mcp show fetch` should list its `imageFetch` tool. Then run the test prompt above. It names `imageFetch` on purpose: a vaguer "fetch this page" request can be answered by Copilot's built-in web access without ever touching the new server. If it responds with relevant data, the server is working. §5.6 shows how to remove it.
 
 ## 5.5 Final
 
@@ -252,7 +265,7 @@ Fetch the README from https://raw.githubusercontent.com/dotnet/aspnetcore/main/R
 | **Tool filtering** | `"tools": ["*"]` for all, or list specific tool names |
 | **Agent access** | Use `mcp-servers` in agent frontmatter to grant server access |
 
-**Available MCP servers in this repo:**
+**The workshop's MCP server catalogue** — not an inventory of what is currently running. `memory` and `fabric` are catalogue entries this repo's `.copilot/mcp-config.json` does not configure; see §5.1.
 
 | Server | Tools | Use Case |
 |--------|-------|----------|
@@ -278,3 +291,18 @@ See [`solutions/lab05-mcp-config/.mcp.json`](../solutions/lab05-mcp-config/.mcp.
 </details>
 
 **Next:** [Lab 06 — Hooks](lab06.md)
+
+## 5.6 Cleanup
+
+This lab changes two files. Undo both when you are done.
+
+1. If you ran the §5.3 step 2 prompt, revert the lesson it appended. `.copilot/lessons/log.md` is tracked by git, so, from the repository root, restore it from `HEAD`:
+
+```bash
+git restore --source=HEAD --staged --worktree .copilot/lessons/log.md
+git status --short
+```
+
+This puts the file back to its last committed state, so it removes the exercise entry and any other uncommitted edit you made to that file. `git status --short` should no longer list `.copilot/lessons/log.md`; if it lists another file under `.copilot/lessons/`, restore that file the same way. If you already committed the entry, remove it by hand or `git revert` that commit.
+
+2. Remove the `fetch` entry you added to `~/.copilot/mcp-config.json` in §5.4 — only that entry, not the whole `mcpServers` object. If `fetch` was the last entry, also delete the comma after the entry before it so the JSON stays valid. Restart Copilot CLI, then run `/mcp list` to confirm `fetch` is gone.

@@ -3,6 +3,7 @@ import { existsSync, statSync, mkdtempSync, writeFileSync, readFileSync, rmSync 
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { execScript, hasCommand, isCommittedExecutable } from '../helpers/platform';
 
 const ROOT = process.cwd();
 const HOOK = join(ROOT, 'scripts/hooks/pre-commit-strip-notebook-outputs.sh');
@@ -62,11 +63,11 @@ describe('hooks: pre-commit-strip-notebook-outputs.sh', () => {
   });
 
   it('script is executable', () => {
-    const mode = statSync(HOOK).mode;
-    // Owner execute bit must be set (0o100).
+    // Git's recorded mode, not the local filesystem's: NTFS has no exec bit,
+    // so a checkout can never satisfy this even when the commit is correct.
     expect(
-      (mode & 0o111) !== 0,
-      `expected ${HOOK} to be executable (mode bits 0o111)`,
+      isCommittedExecutable(HOOK),
+      `expected ${HOOK} to be committed with mode 100755`,
     ).toBe(true);
   });
 
@@ -75,12 +76,12 @@ describe('hooks: pre-commit-strip-notebook-outputs.sh', () => {
     expect(first).toMatch(/^#!.*\b(bash|sh)\b/);
   });
 
-  it('strips outputs[] and clears execution_count from a fixture .ipynb', () => {
+  it.skipIf(!hasCommand('jq'))('strips outputs[] and clears execution_count from a fixture .ipynb', () => {
     const nbPath = join(workdir, 'fixture.ipynb');
     writeFileSync(nbPath, JSON.stringify(FIXTURE_NB, null, 2));
 
     // Hook must accept a notebook path argument and rewrite it in place.
-    execFileSync(HOOK, [nbPath], { stdio: 'pipe' });
+    execScript(HOOK, [nbPath]);
 
     const cleaned = JSON.parse(readFileSync(nbPath, 'utf8'));
     for (const cell of cleaned.cells) {
@@ -92,13 +93,13 @@ describe('hooks: pre-commit-strip-notebook-outputs.sh', () => {
     expect(JSON.stringify(cleaned)).not.toContain('secret-result');
   });
 
-  it('is idempotent — running twice produces the same content', () => {
+  it.skipIf(!hasCommand('jq'))('is idempotent — running twice produces the same content', () => {
     const nbPath = join(workdir, 'fixture-idem.ipynb');
     writeFileSync(nbPath, JSON.stringify(FIXTURE_NB, null, 2));
 
-    execFileSync(HOOK, [nbPath], { stdio: 'pipe' });
+    execScript(HOOK, [nbPath]);
     const first = readFileSync(nbPath, 'utf8');
-    execFileSync(HOOK, [nbPath], { stdio: 'pipe' });
+    execScript(HOOK, [nbPath]);
     const second = readFileSync(nbPath, 'utf8');
 
     expect(second).toBe(first);

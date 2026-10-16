@@ -4,8 +4,10 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import matter from 'gray-matter';
+import { bashExe, isCommittedExecutable } from '../helpers/platform';
 
 const ROOT = process.cwd();
+const BASH = bashExe()!;
 const SCRIPT = join(ROOT, 'scripts/orchestrator/handoff.sh');
 
 const REQUIRED_SECTIONS = [
@@ -29,15 +31,16 @@ afterAll(() => {
 describe('orchestrator: handoff.sh writes spec-compliant docs', () => {
   it('script exists and is executable', () => {
     expect(existsSync(SCRIPT), `expected ${SCRIPT}`).toBe(true);
-    const mode = statSync(SCRIPT).mode;
-    expect((mode & 0o111) !== 0, 'handoff.sh must be executable').toBe(true);
+    // Git's recorded mode, not the local filesystem's: NTFS has no exec bit.
+    expect(isCommittedExecutable(SCRIPT), 'handoff.sh must be committed 100755').toBe(true);
   });
 
   it('emits a handoff document at a deterministic path with required schema', () => {
     const phase = '6b-toy';
     const out = execFileSync(
-      SCRIPT,
+      BASH,
       [
+        SCRIPT,
         phase,
         '--out-dir',
         workdir,
@@ -85,7 +88,7 @@ describe('orchestrator: handoff.sh writes spec-compliant docs', () => {
   it('rejects invocations without a phase argument', () => {
     let threw = false;
     try {
-      execFileSync(SCRIPT, [], {
+      execFileSync(BASH, [SCRIPT], {
         cwd: ROOT,
         stdio: 'pipe',
         env: { ...process.env, HANDOFF_OUT_DIR: workdir },

@@ -1,0 +1,34 @@
+{
+  "$schema": "../../schema/dataset.schema.json",
+  "id": "token-cost-model",
+  "label": "Token and cost model",
+  "provenance": {
+    "kind": "illustrative",
+    "note": "Synthetic coefficients that exercise the parameter-chart contract. They are not vendor prices and must not be presented as such."
+  },
+  "parameters": [
+    { "id": "inputTokens", "label": "Input tokens", "unit": "tokens", "min": 0, "max": 200000, "step": 1000, "default": 8000 },
+    { "id": "outputTokens", "label": "Output tokens", "unit": "tokens", "min": 0, "max": 32000, "step": 500, "default": 1000 }
+  ],
+  "outputs": [
+    {
+      "id": "totalTokens",
+      "label": "Total tokens",
+      "unit": "tokens",
+      "terms": [
+        { "parameter": "inputTokens", "coefficient": 1 },
+        { "parameter": "outputTokens", "coefficient": 1 }
+      ]
+    },
+    {
+      "id": "relativeCost",
+      "label": "Relative cost",
+      "unit": "cost units",
+      "constant": 0,
+      "terms": [
+        { "parameter": "inputTokens", "coefficient": 0.001 },
+        { "parameter": "outputTokens", "coefficient": 0.004 }
+      ]
+    }
+  ]
+}

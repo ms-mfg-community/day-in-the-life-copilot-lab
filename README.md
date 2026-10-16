@@ -38,10 +38,10 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 
 | FAIL | Fix |
 |------|-----|
-| `copilot not found` | `npm install -g @github/copilot` (Node 18+ required) |
+| `copilot not found` | `npm install -g @github/copilot` (Node 22+ required) |
 | `gh not found` | [Install GitHub CLI](https://cli.github.com/) then `gh auth login` |
 | `git not found` | [Install git](https://git-scm.com/downloads) |
-| `node not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org/) |
+| `node not found` | Install Node.js 22+ from [nodejs.org](https://nodejs.org/) |
 | `tmux not found` (with `--lab14`) | Linux: `sudo apt-get install -y tmux` · macOS: `brew install tmux` · Windows: run the workshop inside WSL2 |
 | `os` is `wsl1` | Upgrade: `wsl --set-version <distro> 2` |
 | `os` is `windows` (with `--lab14`) | Switch to WSL2 or GitHub Codespaces — Lab 14's tmux-orchestrator pattern is not supported on Windows PowerShell. See the [compatibility matrix](labs/lab14.md#compatibility-matrix). |
@@ -74,7 +74,7 @@ A comprehensive, hands-on lab teaching the **full GitHub Copilot agentic develop
 | All labs | **Copilot CLI** — [Install guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli): `npm install -g @github/copilot` — verify with `copilot --version` |
 | Manual Setup only | **.NET 8 SDK** — [Download](https://dotnet.microsoft.com/download/dotnet/8.0) — verify with `dotnet --version` — **devcontainer users: already included in the container** |
 | Labs 08–09 | **gh-aw extension** — `gh extension install github/gh-aw` — verify with `gh aw version` |
-| Manual Setup only (all labs for Copilot CLI install; also used in Labs 08–09) | **Node.js** (v18+) — [Download](https://nodejs.org/) — verify with `node --version` |
+| Manual Setup only (all labs for Copilot CLI install; also used in Labs 08–09) | **Node.js** (v22+) — [Download](https://nodejs.org/) — verify with `node --version` |
 
 ### Permissions & Licensing
 
@@ -199,7 +199,7 @@ The container includes: .NET 8 + 9 SDKs, Node.js, GitHub CLI, Copilot CLI, gh-aw
    ```
 9. ➜ **[Jump to Verify Copilot CLI](#verify-copilot-cli)**
 
-> **Podman troubleshooting:** If the container fails to start, verify the Podman socket path matches what VS Code expects. On Linux, set `"dev.containers.dockerSocketPath": "/run/user/1000/podman/podman.sock"` (adjust the UID if yours differs). On macOS/Windows, `podman machine start` handles this automatically. Your organizaiton may require you to download a CA certification into the Podman Vitual Maching, please visit: https://github.com/containers/podman/blob/main/docs/tutorials/podman-install-certificate-authority.md
+> **Podman troubleshooting:** If the container fails to start, verify the Podman socket path matches what VS Code expects. On Linux, set `"dev.containers.dockerSocketPath": "/run/user/1000/podman/podman.sock"` (adjust the UID if yours differs). On macOS/Windows, `podman machine start` handles this automatically. Your organization may require you to download a CA certificate into the Podman Virtual Machine, please visit: https://github.com/containers/podman/blob/main/docs/tutorials/podman-install-certificate-authority.md
 
 ---
 
@@ -551,7 +551,7 @@ erDiagram
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
-| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three Karpathy layers (Raw sources → Wiki → Schema), `/consolidate-lessons`, `.copilot/lessons/` |
+| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three memory layers (Raw sources → Wiki → Schema), the `consolidate-lessons` prompt file, `.copilot/lessons/` |
 | [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
@@ -688,7 +688,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource | Description |
 |----------|-------------|
 | [Setup](#choose-your-path) | Fork, prerequisites, environment setup |
-| [Lab Modules](labs/) | 14 hands-on labs — start here |
+| [Lab Modules](labs/) | 20 hands-on labs — start here |
 | [Reference Solutions](solutions/) | Completed solutions for each lab |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes |
 | [AGENTS.md](AGENTS.md) | Full project context document |
@@ -699,7 +699,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 
 | Problem | Fix |
 |---------|-----|
-| Copilot CLI not authenticated | Run `gh auth login` and follow prompts |
+| Copilot CLI not authenticated | Run `copilot login` and follow prompts |
 | MCP servers not loading | Copy `.copilot/mcp-config.json` to `~/.copilot/`, restart VS Code |
 | `dotnet build` fails | Verify .NET 8 SDK: `dotnet --version` — [download](https://dotnet.microsoft.com/download/dotnet/8.0) |
 | Skills not activating | Reference the skill explicitly in your prompt, or check `SKILL.md` frontmatter |

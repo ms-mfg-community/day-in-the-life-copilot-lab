@@ -40,8 +40,13 @@ Defaulting to `auto` is fine 80% of the time — it routes routine work
 to a cheap model and escalates only when the request is hard. The
 remaining 20% is where you save (or burn) the most tokens.
 
-The `task` tool currently accepts the following model IDs. Each entry
-below tells you when to reach for it.
+The tiers below mirror the `models:` block of
+[docs/_meta/registry.yaml](_meta/registry.yaml), which is the single
+place this repo names a model id. If this page and the registry ever
+disagree, **the registry wins** — and the fix belongs there, not here.
+Run `/model` (or check the `task` tool's own `model` enum) to see what
+your account can actually serve today; per the availability note above,
+that list can be wider than these curated tiers.
 
 ### Default
 
@@ -64,9 +69,6 @@ read, scaffolding a test stub.
 - **`gpt-5.4-mini`** — current GPT mini line; same niche as `gpt-5-mini`
   but on the newer training. Prefer it when you need slightly stronger
   reasoning than `gpt-5-mini` while staying in the cheap tier.
-- **`gpt-4.1`** — older but still very cheap. Reach for it on
-  high-volume, low-stakes batch jobs where you just need a competent
-  text transformer.
 
 ### Standard (the workhorse middle)
 
@@ -74,21 +76,11 @@ These are the models `auto` will most often pick for normal coding
 work. Use them explicitly when you want to avoid escalation but `mini`
 is too weak.
 
-- **`claude-sonnet-4.6`** — current Sonnet default. Strong all-rounder.
-- **`claude-sonnet-5`** — newer Sonnet generation now in the registry's
-  `standard` tier alongside `claude-sonnet-4.6`. Prefer it for new work;
-  keep `claude-sonnet-4.6` pinned only where you've already validated a
-  workflow against it.
-- **`claude-sonnet-4.5`** — previous Sonnet generation; pin to it if a
-  workflow regressed on 4.6.
-- **`claude-sonnet-4`** — the original Sonnet 4. Useful as a stable
-  fallback for older labs and reproducibility tests.
-- **`gpt-5.4`** — current GPT standard tier.
-- **`gpt-5.2`** — previous GPT standard tier; pin for reproducibility
-  when you've already validated a workflow against it.
-- **`goldeneye`** — internal GitHub model (preview / staff use).
-  Mention only — most learners will never pick this directly. If you
-  see it in `--model` output, treat it as a standard-tier model.
+- **`claude-sonnet-5`** — the registry's Sonnet entry in the `standard`
+  tier, and the default Claude pick for normal coding work. Strong
+  all-rounder.
+- **`gpt-5.4`** — the registry's GPT entry in the `standard` tier. Reach
+  for it when you want a non-Anthropic second opinion at this level.
 
 ### Premium (deep reasoning, large refactors, planning)
 
@@ -97,42 +89,51 @@ of the task: multi-file refactors, architecture planning, debugging
 across modules, designing the orchestrator rubric for a new phase.
 Premium calls cost roughly 5–10× a cheap call — measure twice.
 
-- **`claude-opus-4.7`** — newest Opus. Default premium pick when you
-  need the strongest reasoning available.
-- **`claude-opus-5`** — newer Opus generation, now in the registry's
-  `premium` tier alongside `claude-opus-4.7`. Prefer it for new
-  hard-reasoning work; keep `claude-opus-4.7` pinned where you've
-  already validated a workflow against it.
-- **`claude-opus-4.6`** — previous Opus generation. **This is what the
-  repo's `copilot-instructions.md` tells you to set on `task` tool
-  sub-agent dispatches** — it's the right balance of quality and cost
-  for sub-agent work.
-- **`claude-opus-4.6-1m`** — the 1M-context Opus 4.6 variant. Use only
-  when you genuinely need the long context (e.g., reading an entire
-  large lab plus its appendices in one turn). Otherwise it's wasted
-  spend on the same intelligence as `claude-opus-4.6`.
-- **`claude-opus-4.5`** — older Opus; keep available for reproducibility
-  on prior phases that were graded with it.
+- **`claude-opus-5`** — the registry's Opus entry in the `premium` tier,
+  and the default pick when you need the strongest reasoning available.
 - **`gpt-5.3-codex`** — GPT premium-codex. The right choice for
   code-heavy reasoning (large refactors, multi-file diffs, complex
   test generation) when you want a non-Anthropic second opinion.
-- **`gpt-5.2-codex`** — previous Codex generation; same niche, pinned
-  for reproducibility.
-- **`grok-4.6`** — newest premium tier entrant (added to the registry's
-  `premium` list). Useful as a third independent opinion alongside the
-  Claude/GPT premium pair on hard reasoning or architecture-planning
-  tasks.
+- **`grok-4.6`** — the registry's third `premium` entry. Useful as an
+  independent opinion alongside the Claude/GPT premium pair on hard
+  reasoning or architecture-planning tasks.
+
+Per [`AGENTS.md`](../AGENTS.md) "Token discipline", `task`-tool sub-agent
+dispatches are the other place a `models.premium` entry is justified —
+quality matters more than speed there, because the sub-agent has none of
+your context and a weak answer costs a whole round-trip to detect.
 
 ### Decision shortcut
+
+Pick a **tier**, then read the concrete id out of
+[docs/_meta/registry.yaml](_meta/registry.yaml).
 
 | Situation | Pick |
 |-----------|------|
 | Most chats / unsure | `auto` |
-| Tight loop of small tool calls, low stakes | `claude-haiku-4.5` or `gpt-5-mini` |
-| Normal coding, you want predictability | `claude-sonnet-4.6` or `gpt-5.4` |
-| Repo conventions on sub-agents | `claude-opus-4.6` |
-| Hard reasoning / multi-file refactor | `claude-opus-4.7` or `gpt-5.3-codex` |
-| Need >200k context window in one turn | `claude-opus-4.6-1m` |
+| Tight loop of small tool calls, low stakes | `models.cheap` |
+| Normal coding, you want predictability | `models.standard` |
+| Repo conventions on `task`-tool sub-agents | `models.premium` |
+| Hard reasoning / multi-file refactor | `models.premium` |
+| Need an unusually large context window in one turn | Check the `models.premium` entries' context limits in `/model` — this repo no longer pins a dedicated long-context id |
+
+### Retired — do not pin
+
+These ids appear in older labs, scripts and session logs. The installed
+CLI **no longer serves them**, and they are deliberately absent from the
+registry's `models:` block — pinning one sends you to a model you cannot
+select. They are listed here only so you can recognise an old pin and
+replace it with the tier beside it. Everything above this heading is
+guarded by `tests/docs/token-guide-covers-all-models.test.ts`, which
+fails if a retired id drifts back up into a tier list.
+
+| Retired id | Replace with |
+|------------|--------------|
+| `claude-sonnet-4.6`, `claude-sonnet-4.5`, `claude-sonnet-4` | `models.standard` |
+| `gpt-5.2`, `gpt-4.1`, `goldeneye` | `models.standard` (or `models.cheap` for `gpt-4.1`'s batch niche) |
+| `claude-opus-4.7`, `claude-opus-4.6`, `claude-opus-4.5` | `models.premium` |
+| `claude-opus-4.6-1m` | `models.premium` — check the current entry's context window before assuming you still need a long-context variant |
+| `gpt-5.2-codex` | `gpt-5.3-codex` |
 
 ---
 
@@ -140,9 +141,9 @@ Premium calls cost roughly 5–10× a cheap call — measure twice.
 
 The single biggest token leak in Copilot CLI sessions is **chatty
 turns** — calling the same tool five times in a row when one batched
-call would do. The repo's `copilot-instructions.md` already mandates
-this; the rule is repeated here so it's discoverable from a learner's
-first day.
+call would do. The repo's [`AGENTS.md`](../AGENTS.md) already mandates
+this under "Token discipline"; the rule is repeated here so it's
+discoverable from a learner's first day.
 
 Rules of thumb:
 
@@ -254,7 +255,7 @@ doing. Run it once per phase as a habit.
 ## Cross-references
 
 - [Lab 07 — Multi-Agent Orchestration](../labs/lab07.md) — Cost Budget sidebar shows orchestrator footprint.
-- [Lab 10 — Context, Memory & Learning](../labs/lab10.md) — Cost Budget sidebar shows the four-layer memory cost trade-offs.
+- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](../labs/lab10.md) — Cost Budget sidebar shows the three-layer memory cost trade-offs.
 - [Lab 13 — A2A / ACP Concepts](../labs/lab13.md) — Cost Budget sidebar shows two-agent loop footprint.
 - [Lab 14 — Orchestrator + tmux Pattern](../labs/lab14.md) — Cost Budget sidebar shows multi-phase orchestrator footprint and is the canonical home for `/clear` discipline.
 - `strategic-compact` skill — when and how to compact mid-phase.
