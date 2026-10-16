@@ -1,5 +1,5 @@
 import { segments } from 'virtual:spa-content';
-import { installHashRewrite } from './content/hash-rewrite';
+import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
 import { createAnnouncer } from './shell/live-region';
 import { hashFor, parseHash } from './shell/router';
 import { createState } from './shell/state';
@@ -79,6 +79,28 @@ function focusMain(): void {
   main.focus?.({ preventScroll: true });
 }
 
+// "#main" is the shell's own skip target, so the content rewrite must never see it: a sanitized heading titled "Main" has
+// the id `user-content-main`, and the rewrite would queue a scroll to it that lands after focusMain and carries the reader
+// off the main landmark. A browser resolves the percent-encoded spelling (#%6Dain) to <main id="main"> too, so the fragment
+// is compared decoded. Case matters: #MAIN names no element, so it stays a content anchor for the rewrite.
+function isShellHash(hash: string): boolean {
+  try {
+    return decodeURIComponent(hash.slice(1)) === 'main';
+  } catch {
+    return false; // not valid percent-encoding, so it names nothing
+  }
+}
+
+// The window as the content rewrite sees it: the real one, except that the shell's own hash reads as empty.
+const contentWindow: HashWindow = {
+  get location() {
+    const { hash, href } = window.location;
+    return { hash: isShellHash(hash) ? '' : hash, href };
+  },
+  addEventListener: (type, listener) => window.addEventListener(type, listener),
+  removeEventListener: (type, listener) => window.removeEventListener(type, listener),
+};
+
 // The skip link and an in-page anchor must not leave "#main" or "#some-heading" in the address: a reload, a bookmark or a
 // shared link would then lose the segment and open the first one. The skip link is handled in place, so the address never
 // changes. For an anchor the browser has already changed it, so it goes back to the open segment once the scroll to the
@@ -94,9 +116,14 @@ function onSkipLinkClick(event: MouseEvent): void {
 function settleAnchor(): void {
   const hash = window.location.hash;
   if (parseHash(hash, ids).kind !== 'anchor') return;
-  if (hash === '#main') focusMain();
+  if (isShellHash(hash)) focusMain();
   replaceHash(hashFor(store.get().currentId)); // a segment hash is never an anchor, so this cannot repeat
 }
+
+// A browser restores the scroll offset of the entry it travels to (Back, Forward) after the hashchange handlers have run,
+// which would undo the scroll to the top that openAtTop made for the segment that opened. The shell scrolls explicitly, so
+// it takes that over: every segment opens at its top, whichever way the reader arrived.
+if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
 
 // Boot order is load-bearing. The initial route is resolved and its segment rendered once, before anything subscribes,
 // so a deep link opens on its own segment instead of painting the first one and announcing a move nobody made.
@@ -125,7 +152,7 @@ window.addEventListener('hashchange', route);
 document.addEventListener('click', onSkipLinkClick);
 // After the route, so an in-page anchor in the initial hash finds the heading it names: the rewrite looks for it as soon as
 // it is installed.
-installHashRewrite(window, document);
+installHashRewrite(contentWindow, document);
 // Last, and in this order on every hashchange: the route ignores an anchor, the rewrite arranges the scroll to the heading
 // it names (it reads the hash, so that must still be the anchor), and only then does the address go back to the segment.
 settleAnchor();

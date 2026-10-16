@@ -154,12 +154,20 @@ function setupShellDom(initialHash = '') {
   const normalizeHash = (next: string): string => (next === '' || next.startsWith('#') ? next : `#${next}`);
   const historyEntries: string[] = [initialHash];
   let position = 0;
+  // Scroll model. `scrollY` is the window's offset; `savedScroll[i]` is the offset a browser stored for entry `i` when it
+  // left that entry. `history.scrollRestoration` is the page's switch for what a browser does once it has travelled.
+  let scrollY = 0;
+  const savedScroll: number[] = [0];
+  const history: { scrollRestoration: 'auto' | 'manual' } = { scrollRestoration: 'auto' };
   const fireHashChange = (): void => {
     for (const listener of [...hashListeners]) listener();
   };
   const pushEntry = (hash: string): void => {
+    savedScroll[position] = scrollY;
     historyEntries.splice(position + 1);
+    savedScroll.splice(position + 1);
     historyEntries.push(hash);
+    savedScroll.push(scrollY);
     position = historyEntries.length - 1;
   };
 
@@ -188,7 +196,14 @@ function setupShellDom(initialHash = '') {
 
   const win = {
     location,
-    scrollTo: vi.fn(),
+    history,
+    get scrollY() {
+      return scrollY;
+    },
+    // The offset the page asks for. A reader scrolling does not come through here: see `userScrollTo`.
+    scrollTo: vi.fn((_x: number, y: number) => {
+      scrollY = y;
+    }),
     teachingSpa: undefined as
       | undefined
       | {
@@ -237,8 +252,12 @@ function setupShellDom(initialHash = '') {
     const target = position + delta;
     if (target < 0 || target >= historyEntries.length) return;
     const before = historyEntries[position];
+    savedScroll[position] = scrollY;
     position = target;
     if (historyEntries[position] !== before) fireHashChange();
+    // After the hashchange handlers have run, a browser puts the entry's saved offset back unless the page opted out.
+    // That is what undoes a scroll to the top made synchronously inside a handler.
+    if (history.scrollRestoration !== 'manual') scrollY = savedScroll[position];
   }
 
   function clickNavLink(segmentId: string): void {
@@ -261,6 +280,10 @@ function setupShellDom(initialHash = '') {
     historyEntries,
     navigateToHash,
     clickNavLink,
+    // The reader scrolls: the offset changes without the page having asked, so `win.scrollTo` is not called.
+    userScrollTo: (y: number): void => {
+      scrollY = y;
+    },
     back: () => travel(-1),
     forward: () => travel(1),
   };
@@ -274,6 +297,9 @@ interface FakeClick {
   defaultPrevented: boolean;
   button?: number;
   ctrlKey?: boolean;
+  metaKey?: boolean;
+  shiftKey?: boolean;
+  altKey?: boolean;
   preventDefault(): void;
 }
 
@@ -290,7 +316,7 @@ function makeLink(dom: ShellDom, href: string, attributes: Record<string, string
 function click(
   dom: ShellDom,
   link: FakeElement,
-  init: Partial<Pick<FakeClick, 'button' | 'ctrlKey' | 'defaultPrevented'>> = {},
+  init: Partial<Pick<FakeClick, 'button' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'defaultPrevented'>> = {},
 ): FakeClick {
   const event: FakeClick = {
     target: link,
@@ -821,6 +847,22 @@ describe('QA shell runtime (main.ts)', () => {
     expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
   });
 
+  it('preserves the document path and query when replacing an unknown route', async () => {
+    const dom = await bootMain('#/m2-mcp');
+    const base = 'https://spa.test/nested/teaching/index.html?deck=qa';
+    Object.defineProperty(dom.win.location, 'href', {
+      get: () => base + dom.win.location.hash,
+    });
+    const replace = vi.spyOn(dom.win.location, 'replace');
+
+    dom.navigateToHash('#/%E0%A4%A');
+
+    expect(replace).toHaveBeenCalledOnce();
+    expect(replace).toHaveBeenCalledWith(`${base}#/m2-mcp`);
+    expect(dom.historyEntries).toEqual(['#/m2-mcp', '#/m2-mcp']);
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+  });
+
   it('builds the nav links once and moves aria-current in place across segment changes', async () => {
     const dom = await bootMain('');
     const links = [...dom.nav.children];
@@ -897,6 +939,63 @@ describe('QA shell runtime (main.ts)', () => {
     }
   });
 
+  it.each(['#absent-heading', '#%', '#%FF', '#x%22%5D%20a'])(
+    'settles malformed and absent content anchors without remounting or announcing: %s',
+    async (hash) => {
+      vi.useFakeTimers();
+      try {
+        const dom = await bootMain('#/m2-mcp');
+        const mountedBody = dom.main.children[1];
+
+        dom.navigateToHash(hash);
+        vi.advanceTimersByTime(100);
+
+        expect(dom.win.location.hash).toBe('#/m2-mcp');
+        expect(dom.historyEntries).toEqual(['#/m2-mcp', '#/m2-mcp']);
+        expect(dom.main.children[1]).toBe(mountedBody);
+        expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+        expect(dom.win.scrollTo).not.toHaveBeenCalled();
+        expect(dom.main.focus).not.toHaveBeenCalled();
+        expect(dom.liveRegion.textContent).toBe('');
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('restores the route after each repeated content-link activation and preserves Back and Forward', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#/m1-extensibility-architecture');
+      dom.navigateToHash('#/m2-mcp');
+      vi.advanceTimersByTime(100);
+      const mountedBody = dom.main.children[1];
+      const target = dom.dynamicById.get('user-content-three-layers')!;
+      const link = makeLink(dom, '#three-layers');
+
+      for (let activation = 0; activation < 2; activation += 1) {
+        const event = click(dom, link);
+        if (!event.defaultPrevented) dom.navigateToHash(new URL(link.href).hash);
+        vi.advanceTimersByTime(10);
+        expect(dom.win.location.hash).toBe('#/m2-mcp');
+        expect(dom.main.children[1]).toBe(mountedBody);
+      }
+      expect(target.scrollIntoView).toHaveBeenCalledTimes(2);
+
+      dom.back();
+      dom.back();
+      dom.back();
+      expect(dom.win.teachingSpa?.store.get().currentId).toBe('m1-extensibility-architecture');
+      dom.forward();
+      dom.forward();
+      dom.forward();
+      expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+      expect(dom.win.location.hash).toBe('#/m2-mcp');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('handles the skip link by focusing main without touching the segment route', async () => {
     const dom = await bootMain('#/m2-mcp');
     const skip = makeLink(dom, '#main', { 'data-skip': '' });
@@ -909,6 +1008,36 @@ describe('QA shell runtime (main.ts)', () => {
     expect(dom.main.focus).toHaveBeenCalled();
     expect(dom.doc.activeElement).toBe(dom.main);
     expect(dom.win.location.hash).toBe('#/m2-mcp');
+    expect(dom.historyEntries).toEqual(['#/m2-mcp']);
+  });
+
+  it.each([
+    ['#main', {}],
+    ['#some-other-target', { 'data-skip': '' }],
+  ] as const)('handles an unmarked #main or data-skip link through a nested click target: %s', async (href, attrs) => {
+    const dom = await bootMain('#/m2-mcp');
+    const link = makeLink(dom, href, attrs);
+    const nested = makeElement('span');
+    nested.closest = (selector) => (selector === 'a[href]' ? link : null);
+
+    const event = click(dom, nested);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(dom.doc.activeElement).toBe(dom.main);
+    expect(dom.main.scrollIntoView).toHaveBeenCalledOnce();
+    expect(dom.win.location.hash).toBe('#/m2-mcp');
+    expect(dom.historyEntries).toEqual(['#/m2-mcp']);
+  });
+
+  it.each(['metaKey', 'shiftKey', 'altKey'] as const)('does not hijack modified skip activations: %s', async (modifier) => {
+    const dom = await bootMain('#/m2-mcp');
+    const link = makeLink(dom, '#main', { 'data-skip': '' });
+
+    const event = click(dom, link, { [modifier]: true });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(dom.main.focus).not.toHaveBeenCalled();
+    expect(dom.main.scrollIntoView).not.toHaveBeenCalled();
     expect(dom.historyEntries).toEqual(['#/m2-mcp']);
   });
 
@@ -950,6 +1079,100 @@ describe('QA shell runtime (main.ts)', () => {
 
       expect(dom.dynamicById.get('user-content-the-advanced-problem')?.scrollIntoView).toHaveBeenCalledOnce();
       expect(dom.win.location.hash).toBe('#/m1-extensibility-architecture');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Round 2 findings from real Chrome. After the hashchange handlers have run, a browser restores the scroll offset of
+  // the entry it travelled to, which undoes the scroll to the top made inside the handler. And the generic content-hash
+  // rewrite must not also claim "#main", the shell's own skip target, when the content has a heading titled "Main".
+
+  it('native scroll restoration: is switched off by the shell at boot', async () => {
+    const dom = await bootMain('#/m1-extensibility-architecture');
+
+    expect(dom.win.history.scrollRestoration).toBe('manual');
+  });
+
+  it('native scroll restoration: Back opens the earlier segment at its top instead of the offset it was left at', async () => {
+    const dom = await bootMain('#/m1-extensibility-architecture');
+    dom.userScrollTo(900);
+    dom.navigateToHash('#/m2-mcp');
+    expect(dom.win.scrollY).toBe(0);
+    dom.userScrollTo(1300);
+
+    dom.back();
+
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m1-extensibility-architecture');
+    expect(dom.win.scrollY).toBe(0);
+  });
+
+  it('native scroll restoration: Forward opens the later segment at its top instead of the offset it was left at', async () => {
+    const dom = await bootMain('#/m1-extensibility-architecture');
+    dom.userScrollTo(900);
+    dom.navigateToHash('#/m2-mcp');
+    dom.userScrollTo(1300);
+    dom.back();
+
+    dom.forward();
+
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+    expect(dom.win.scrollY).toBe(0);
+  });
+
+  // The same segments, each with a sanitized heading titled "Main": its id is `user-content-main`.
+  const withMainHeading = (): LoadedSegment[] =>
+    sampleSegments.map((segment) => ({ ...segment, html: `${segment.html}<h2 id="user-content-main">Main</h2>` }));
+
+  it.each(['#main', '#%6Dain'])(
+    'shell-reserved #main: a hashchange to %s focuses main and leaves a sanitized Main heading alone',
+    async (hash) => {
+      vi.useFakeTimers();
+      try {
+        const dom = await bootMain('#/m2-mcp', withMainHeading());
+        const heading = dom.dynamicById.get('user-content-main')!;
+
+        dom.navigateToHash(hash);
+        vi.advanceTimersByTime(100);
+
+        expect(dom.main.scrollIntoView).toHaveBeenCalledOnce();
+        expect(dom.doc.activeElement).toBe(dom.main);
+        expect(heading.scrollIntoView).not.toHaveBeenCalled();
+        expect(dom.win.location.hash).toBe('#/m2-mcp');
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('shell-reserved #main: booting on #main focuses main and leaves a sanitized Main heading alone', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#main', withMainHeading());
+      vi.advanceTimersByTime(100);
+
+      expect(dom.main.scrollIntoView).toHaveBeenCalledOnce();
+      expect(dom.doc.activeElement).toBe(dom.main);
+      expect(dom.dynamicById.get('user-content-main')?.scrollIntoView).not.toHaveBeenCalled();
+      expect(dom.win.location.hash).toBe('#/m1-extensibility-architecture');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shell-reserved #main: only the exact fragment is reserved, so #MAIN still reaches a heading titled Main', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#/m2-mcp', withMainHeading());
+      const heading = dom.dynamicById.get('user-content-main')!;
+
+      dom.navigateToHash('#MAIN');
+      vi.advanceTimersByTime(100);
+
+      expect(heading.scrollIntoView).toHaveBeenCalledOnce();
+      expect(dom.main.scrollIntoView).not.toHaveBeenCalled();
+      expect(dom.main.focus).not.toHaveBeenCalled();
+      expect(dom.win.location.hash).toBe('#/m2-mcp');
     } finally {
       vi.useRealTimers();
     }

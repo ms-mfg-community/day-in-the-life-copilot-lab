@@ -131,6 +131,68 @@ try {
   run('status-landmark-removed', [qa], 'executes the built dist', 1, (root) => {
     replace(root, 'workshop/spa/index.html', 'role="status"', 'role="none"');
   });
+  run('corrections-push-instead-of-replace', [qa],
+    'replaces the current history entry|keeps the segment route in the address', 2, (root) => {
+      replace(root, main, 'location.replace(base + hash);', 'location.hash = hash;');
+    });
+  run('replacement-drops-document-path-and-query', [qa], 'preserves the document path and query', 1, (root) => {
+    replace(root, main,
+      "const base = typeof location.href === 'string' ? location.href.split('#')[0] : '';",
+      "const base = '';");
+  });
+  run('nav-is-rebuilt-on-every-transition', [qa], 'builds the nav links once|keeps keyboard focus', 2, (root) => {
+    replace(root, main, 'if (nav.children.length !== segments.length) {', 'if (true) {');
+  });
+  run('segment-transition-does-not-reset-scroll', [qa], 'opens a new segment at the top', 1, (root) => {
+    replace(root, main, 'window.scrollTo?.(0, 0);', '');
+  });
+  run('segment-transition-does-not-restore-content-focus', [qa], 'opens a new segment at the top', 1, (root) => {
+    replace(root, main,
+      'if (!active || !nav.contains?.(active)) main.focus?.({ preventScroll: true });', '');
+  });
+  run('segment-transition-steals-nav-focus', [qa], 'keeps keyboard focus', 1, (root) => {
+    replace(root, main,
+      'if (!active || !nav.contains?.(active)) main.focus?.({ preventScroll: true });',
+      'main.focus?.({ preventScroll: true });');
+  });
+  run('anchor-route-settlement-omitted', [qa],
+    'keeps the segment route in the address|restores the segment route after|settles malformed and absent|restores the route after each repeated',
+    8, (root) => {
+      replace(root, main,
+        'replaceHash(hashFor(store.get().currentId)); // a segment hash is never an anchor, so this cannot repeat', '');
+    });
+  run('skip-click-handler-not-installed', [qa], 'handles the skip link|handles an unmarked', 3, (root) => {
+    replace(root, main, "document.addEventListener('click', onSkipLinkClick);", '');
+  });
+  run('skip-click-handler-ignores-key-modifiers', [qa], 'does not hijack modified skip', 3, (root) => {
+    replace(root, main, ' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey', '');
+  });
+  run('skip-link-does-not-scroll-main', [qa], 'handles the skip link|handles an unmarked|restores the segment route after a hashchange', 4, (root) => {
+    replace(root, main, 'main.scrollIntoView?.();', '');
+  });
+  run('minimal-location-fallback-omitted', [qa], 'assigns the hash when the location cannot replace', 1, (root) => {
+    replace(root, main, 'else location.hash = hash;', 'else void hash;');
+  });
+  // Round 2 findings from real Chrome: native history scroll restoration, and the reserved "#main" skip target.
+  run('scroll-restoration-left-native', [qa], 'native scroll restoration', 3, (root) => {
+    replace(root, main,
+      "if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';", '');
+  });
+  run('reserved-main-visible-to-content-rewrite', [qa], 'shell-reserved #main', 3, (root) => {
+    replace(root, main, 'installHashRewrite(contentWindow, document);', 'installHashRewrite(window, document);');
+  });
+  run('reserved-main-mask-compares-undecoded', [qa], 'shell-reserved #main', 1, (root) => {
+    replace(root, main,
+      "return { hash: isShellHash(hash) ? '' : hash, href };", "return { hash: hash === '#main' ? '' : hash, href };");
+  });
+  run('reserved-main-focus-compares-undecoded', [qa], 'shell-reserved #main', 1, (root) => {
+    replace(root, main, 'if (isShellHash(hash)) focusMain();', "if (hash === '#main') focusMain();");
+  });
+  run('reserved-main-matches-case-insensitively', [qa], 'shell-reserved #main', 1, (root) => {
+    replace(root, main,
+      "return decodeURIComponent(hash.slice(1)) === 'main';",
+      "return decodeURIComponent(hash.slice(1)).toLowerCase() === 'main';");
+  });
   // Positive controls: repair only the owned fixtures, not product or curriculum sources.
   // This proves the new assertions can be green and do not merely fail because the harness cannot boot.
   run('fixture-positive-controls', [qa, contract], '', 0, (root) => {
@@ -170,7 +232,7 @@ try {
       'if (modules.length > 0 && sources.has(file)) return [];\n      if (!sources.has(file)) return undefined;');
   });
   run('round-2-positive-controls', [r2], '', 0, () => {});
-  console.log('\nPASS: all 28 isolated controls produced their expected real assertion results.');
+  console.log('\nPASS: all 44 isolated controls produced their expected real assertion results.');
 } finally {
   rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }
