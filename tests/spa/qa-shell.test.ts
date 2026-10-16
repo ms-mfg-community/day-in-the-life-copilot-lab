@@ -365,6 +365,9 @@ describe('QA vite-content-plugin and loadSegments', () => {
     return dir;
   }
 
+  // First test in this file to import the content plugin, so it alone pays the cold ESM import of vite and the unified tree
+  // plus the first render of every real slide: about 1 s on its own but about 9 s inside a full `npm test`, and it has timed
+  // out at the 20 s default on a loaded machine. It carries its own budget, as the slow build tests in this folder do.
   it('loads every real curriculum segment in manifest order with sanitized HTML and front-matter titles', async () => {
     const { loadSegments } = await importContentPlugin();
     const deck = JSON.parse(readFileSync(path.join(ROOT, 'workshop/spa/content/deck.json'), 'utf8')) as {
@@ -385,7 +388,7 @@ describe('QA vite-content-plugin and loadSegments', () => {
       expect(headingIds(seg.html).length).toBeGreaterThan(0);
       expect(seg.html).not.toContain('anchor_labs:');
     }
-  });
+  }, 60_000);
 
   it('falls back to segment.id when front-matter title is missing, blank, or non-string', async () => {
     const { loadSegments } = await importContentPlugin();
