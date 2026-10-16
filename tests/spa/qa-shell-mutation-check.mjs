@@ -9,8 +9,10 @@ const scratch = mkdtempSync(path.join(ROOT, 'tests/spa/.qa-shell-mutants-'));
 const viteTest = path.join(ROOT, 'node_modules/vitest/vitest.mjs');
 const qa = 'tests/spa/qa-shell.test.ts';
 const contract = 'tests/spa/qa-shell-contract.test.ts';
+const r2 = 'tests/spa/qa-shell-r2.test.ts';
 const shell = 'tests/spa/shell.test.ts';
 const plugin = 'workshop/spa/vite-content-plugin.ts';
+const markdown = 'workshop/spa/src/content/markdown.ts';
 const main = 'workshop/spa/src/main.ts';
 const state = 'workshop/spa/src/shell/state.ts';
 const router = 'workshop/spa/src/shell/router.ts';
@@ -22,7 +24,7 @@ function seed(name) {
   for (const rel of [
     'workshop/spa/src', 'workshop/spa/content', 'workshop/slides', 'workshop/speaker-scripts',
     'workshop/spa/index.html', 'workshop/spa/vite.config.ts', plugin,
-    'package.json', 'tsconfig.json', 'vitest.config.ts', qa, contract, shell, 'tests/spa/helpers/html-scan.ts',
+    'package.json', 'tsconfig.json', 'vitest.config.ts', qa, contract, r2, shell, 'tests/spa/helpers/html-scan.ts',
   ]) {
     const dest = path.join(root, rel);
     mkdirSync(path.dirname(dest), { recursive: true });
@@ -139,7 +141,36 @@ try {
     replace(root, 'workshop/slides/60-module-6.md',
       '](55-module-5b-gh-extensions.md)', '](#/m5b-gh-extensions)');
   });
-  console.log('\nPASS: all 19 isolated controls produced their expected real assertion results.');
+  run('round-1-findings-before-the-fix', [qa, contract], 'watches the manifest|keeps the real curriculum link', 3, (root) => {
+    writeFileSync(path.join(root, plugin),
+      execFileSync('git', ['show', `3b203ff:${plugin}`], { cwd: ROOT, encoding: 'utf8' }), 'utf8');
+  });
+  run('renderer-drops-frontmatter-data', [r2], 'preserves front-matter data', 1, (root) => {
+    replace(root, markdown, 'return { data, html: String(processor.processSync(content)) };',
+      'return { data: {}, html: String(processor.processSync(content)) };');
+  });
+  run('renderer-does-not-forward-plugins', [r2], 'forwards both plugin kinds|keeps independent route contexts', 2, (root) => {
+    replace(root, markdown, 'const processor = createProcessor(options);', 'const processor = createProcessor();');
+  });
+  run('renderer-accepts-javascript-frontmatter', [r2], 'refuses .* front matter', 2, (root) => {
+    replace(root, markdown, 'matter(raw, MATTER_OPTIONS)', 'matter(raw)');
+  });
+  run('renderer-skips-final-sanitizer', [r2], 'forwards both plugin kinds', 1, (root) => {
+    replace(root, markdown, '.use(rehypeSanitize)', '.use(() => () => undefined)');
+  });
+  run('build-reuses-another-slide-directory', [r2], 'binds the build rewrite', 1, (root) => {
+    replace(root, plugin, 'slideSource: segment.slideSource, slides: deck',
+      "slideSource: 'workshop/slides/left/start.md', slides: deck");
+  });
+  run('failed-load-reload-suppressed', [r2], 'recovers after exactly one repair', 2, (root) => {
+    replace(root, plugin, "server.hot.send({ type: 'full-reload', path: '*' });", '// suppressed in this owned fixture');
+  });
+  run('mapped-module-updates-swallowed', [r2], 'still recovers after a successful load', 1, (root) => {
+    replace(root, plugin, 'if (modules.length > 0 || !sources.has(file)) return undefined;',
+      'if (modules.length > 0 && sources.has(file)) return [];\n      if (!sources.has(file)) return undefined;');
+  });
+  run('round-2-positive-controls', [r2], '', 0, () => {});
+  console.log('\nPASS: all 28 isolated controls produced their expected real assertion results.');
 } finally {
   rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }

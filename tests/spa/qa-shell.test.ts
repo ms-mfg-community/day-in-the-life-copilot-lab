@@ -37,6 +37,12 @@ async function importContentPlugin(): Promise<ContentPluginModule> {
   return (await import(pluginSpecifier)) as ContentPluginModule;
 }
 
+// The element that has keyboard focus, shared by every element of one fake document (`document.activeElement`). `null`
+// stands for <body>: nothing is focused.
+interface FocusState {
+  active: FakeElement | null;
+}
+
 interface FakeElement {
   tagName: string;
   id: string;
@@ -46,13 +52,16 @@ interface FakeElement {
   attributes: Map<string, string>;
   children: FakeElement[];
   scrollIntoView: ReturnType<typeof vi.fn>;
+  focus: ReturnType<typeof vi.fn>;
   setAttribute(name: string, value: string): void;
   getAttribute(name: string): string | null;
+  removeAttribute(name: string): void;
   replaceChildren(...nodes: FakeElement[]): void;
+  contains(node: FakeElement | null): boolean;
   closest(selector: string): FakeElement | null;
 }
 
-function makeElement(tagName: string, id = ''): FakeElement {
+function makeElement(tagName: string, id = '', focusState?: FocusState): FakeElement {
   const attributes = new Map<string, string>();
   if (id) attributes.set('id', id);
   const el: FakeElement = {
@@ -64,6 +73,9 @@ function makeElement(tagName: string, id = ''): FakeElement {
     attributes,
     children: [],
     scrollIntoView: vi.fn(),
+    focus: vi.fn(() => {
+      if (focusState) focusState.active = el;
+    }),
     setAttribute(name: string, value: string) {
       attributes.set(name, value);
       if (name === 'id') el.id = value;
@@ -72,8 +84,19 @@ function makeElement(tagName: string, id = ''): FakeElement {
     getAttribute(name: string) {
       return attributes.get(name) ?? null;
     },
+    removeAttribute(name: string) {
+      attributes.delete(name);
+      if (name === 'id') el.id = '';
+      if (name === 'href') el.href = '';
+    },
     replaceChildren(...nodes: FakeElement[]) {
+      // As in a browser, taking the focused element out of the tree drops focus to <body>.
+      const active = focusState?.active ?? null;
+      if (focusState && active && el.children.some((child) => child.contains(active))) focusState.active = null;
       el.children = [...nodes];
+    },
+    contains(node: FakeElement | null) {
+      return node === el || (node !== null && el.children.some((child) => child.contains(node)));
     },
     closest(selector: string) {
       if (selector === 'a[href]' && el.tagName === 'a' && el.href !== '') return el;
@@ -84,16 +107,17 @@ function makeElement(tagName: string, id = ''): FakeElement {
 }
 
 function setupShellDom(initialHash = '') {
-  const nav = makeElement('nav', 'segment-nav');
-  const main = makeElement('main', 'main');
-  const liveRegion = makeElement('div', 'live-region');
+  const focusState: FocusState = { active: null };
+  const nav = makeElement('nav', 'segment-nav', focusState);
+  const main = makeElement('main', 'main', focusState);
+  const liveRegion = makeElement('div', 'live-region', focusState);
   const dynamicById = new Map<string, FakeElement>();
   const hashListeners = new Set<() => void>();
   const clickListeners = new Set<(event: { target: unknown; defaultPrevented: boolean }) => void>();
 
   // Track innerHTML assignments on child divs inside <main> so getElementById finds rendered heading ids.
   const createElement = vi.fn((tagName: string) => {
-    const el = makeElement(tagName);
+    const el = makeElement(tagName, '', focusState);
     let rawHtml = '';
     Object.defineProperty(el, 'innerHTML', {
       get: () => rawHtml,
@@ -124,21 +148,47 @@ function setupShellDom(initialHash = '') {
     mainReplace(...nodes);
   };
 
-  let currentHash = initialHash;
+  // Session history of the fake window. `historyEntries[position]` is the current entry's fragment. Assigning
+  // `location.hash` pushes an entry and drops the forward entries, as a browser does; `location.replace` rewrites the
+  // current entry in place; `back`/`forward` move along the entries and fire `hashchange` only when the fragment differs.
+  const normalizeHash = (next: string): string => (next === '' || next.startsWith('#') ? next : `#${next}`);
+  const historyEntries: string[] = [initialHash];
+  let position = 0;
+  const fireHashChange = (): void => {
+    for (const listener of [...hashListeners]) listener();
+  };
+  const pushEntry = (hash: string): void => {
+    historyEntries.splice(position + 1);
+    historyEntries.push(hash);
+    position = historyEntries.length - 1;
+  };
+
   const location = {
     get hash() {
-      return currentHash;
+      return historyEntries[position];
     },
     set hash(next: string) {
-      currentHash = next === '' || next.startsWith('#') ? next : `#${next}`;
+      // Unlike a browser, this double does not fire `hashchange` for an assignment; a test drives it with navigateToHash.
+      const normalized = normalizeHash(next);
+      if (normalized !== historyEntries[position]) pushEntry(normalized);
     },
     get href() {
-      return `https://spa.test/${currentHash}`;
+      return `https://spa.test/${historyEntries[position]}`;
+    },
+    // A fragment-only replace: same document, current history entry rewritten in place, `hashchange` when it differs.
+    // Fired synchronously (a browser queues it), which also exercises re-entrancy from inside a hashchange handler.
+    replace(url: string): void {
+      const index = url.indexOf('#');
+      const fragment = index === -1 ? '' : url.slice(index);
+      if (fragment === historyEntries[position]) return;
+      historyEntries[position] = fragment;
+      fireHashChange();
     },
   };
 
   const win = {
     location,
+    scrollTo: vi.fn(),
     teachingSpa: undefined as
       | undefined
       | {
@@ -156,6 +206,9 @@ function setupShellDom(initialHash = '') {
 
   const doc = {
     title: 'Teaching SPA',
+    get activeElement(): FakeElement | null {
+      return focusState.active;
+    },
     getElementById: vi.fn((id: string) => {
       if (id === 'segment-nav') return nav;
       if (id === 'main') return main;
@@ -174,10 +227,18 @@ function setupShellDom(initialHash = '') {
   };
 
   function navigateToHash(newHash: string): void {
-    const normalized = newHash === '' || newHash.startsWith('#') ? newHash : `#${newHash}`;
-    if (normalized === currentHash) return; // Real browsers do not fire hashchange when hash is unchanged.
-    currentHash = normalized;
-    for (const listener of [...hashListeners]) listener();
+    const normalized = normalizeHash(newHash);
+    if (normalized === historyEntries[position]) return; // Real browsers do not fire hashchange when hash is unchanged.
+    pushEntry(normalized);
+    fireHashChange();
+  }
+
+  function travel(delta: number): void {
+    const target = position + delta;
+    if (target < 0 || target >= historyEntries.length) return;
+    const before = historyEntries[position];
+    position = target;
+    if (historyEntries[position] !== before) fireHashChange();
   }
 
   function clickNavLink(segmentId: string): void {
@@ -197,9 +258,50 @@ function setupShellDom(initialHash = '') {
     renderHistory,
     hashListeners,
     clickListeners,
+    historyEntries,
     navigateToHash,
     clickNavLink,
+    back: () => travel(-1),
+    forward: () => travel(1),
   };
+}
+
+type ShellDom = ReturnType<typeof setupShellDom>;
+
+// A click event as the document's click listeners see it.
+interface FakeClick {
+  target: FakeElement;
+  defaultPrevented: boolean;
+  button?: number;
+  ctrlKey?: boolean;
+  preventDefault(): void;
+}
+
+// An `<a>` the way a browser exposes it: the `href` attribute as written, the `href` property resolved to a full URL.
+function makeLink(dom: ShellDom, href: string, attributes: Record<string, string> = {}): FakeElement {
+  const link = dom.doc.createElement('a');
+  link.setAttribute('href', href);
+  for (const [name, value] of Object.entries(attributes)) link.setAttribute(name, value);
+  link.href = new URL(href, dom.win.location.href).href;
+  return link;
+}
+
+// Dispatches one click on `link` to every click listener the application registered on the document.
+function click(
+  dom: ShellDom,
+  link: FakeElement,
+  init: Partial<Pick<FakeClick, 'button' | 'ctrlKey' | 'defaultPrevented'>> = {},
+): FakeClick {
+  const event: FakeClick = {
+    target: link,
+    defaultPrevented: false,
+    preventDefault() {
+      event.defaultPrevented = true;
+    },
+    ...init,
+  };
+  for (const listener of dom.clickListeners) listener(event);
+  return event;
 }
 
 describe('QA vite-content-plugin and loadSegments', () => {
@@ -679,6 +781,178 @@ describe('QA shell runtime (main.ts)', () => {
     expect(leftApplication, `${label} navigates to an absent deployed page: ${destination.href}`).toBe(false);
     expect(dom.win.teachingSpa?.store.get().currentId).toBe(targetId);
     expect(dom.win.location.hash).toBe(hashFor(targetId));
+  });
+
+  // Round 2 judge defects: history after an unknown route, keyboard focus and scroll across segments, and the segment
+  // route in the address after an in-page anchor or the skip link.
+
+  it('replaces the current history entry when it corrects an unknown route, so Back reaches the earlier segment', async () => {
+    const dom = await bootMain('#/m1-extensibility-architecture');
+    dom.navigateToHash('#/m3-hostile-title');
+    dom.navigateToHash('#/nope');
+
+    // The correction takes the place of "#/nope". Nothing is pushed on top of it, so the forward history survives.
+    expect(dom.historyEntries).toEqual([
+      '#/m1-extensibility-architecture',
+      '#/m3-hostile-title',
+      '#/m3-hostile-title',
+    ]);
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m3-hostile-title');
+
+    dom.back(); // the entry before the corrected one: the segment the user came from
+    expect(dom.win.location.hash).toBe('#/m3-hostile-title');
+    dom.back(); // the next Back goes on to the earlier segment instead of being pushed forward again
+    expect(dom.win.location.hash).toBe('#/m1-extensibility-architecture');
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m1-extensibility-architecture');
+
+    dom.forward();
+    dom.forward();
+    expect(dom.win.location.hash).toBe('#/m3-hostile-title');
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m3-hostile-title');
+  });
+
+  it('assigns the hash when the location cannot replace a history entry', async () => {
+    const dom = await bootMain('#/m2-mcp');
+    delete (dom.win.location as { replace?: unknown }).replace; // a minimal location double
+
+    dom.navigateToHash('#/nope');
+
+    expect(dom.win.location.hash).toBe('#/m2-mcp');
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+  });
+
+  it('builds the nav links once and moves aria-current in place across segment changes', async () => {
+    const dom = await bootMain('');
+    const links = [...dom.nav.children];
+    const rebuild = vi.spyOn(dom.nav, 'replaceChildren');
+
+    dom.navigateToHash('#/m2-mcp');
+    expect(dom.nav.children.map((link) => link.getAttribute('aria-current'))).toEqual([null, 'page', null]);
+    dom.navigateToHash('#/m3-hostile-title');
+    expect(dom.nav.children.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'page']);
+
+    expect(rebuild).not.toHaveBeenCalled();
+    expect(dom.nav.children).toHaveLength(links.length);
+    dom.nav.children.forEach((link, index) => expect(link).toBe(links[index]));
+  });
+
+  it('keeps keyboard focus on an activated nav link', async () => {
+    const dom = await bootMain('');
+    const link = dom.nav.children[1];
+    link.focus();
+    expect(dom.doc.activeElement).toBe(link);
+
+    dom.clickNavLink('m2-mcp');
+
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+    expect(dom.doc.activeElement).toBe(link);
+    expect(dom.main.focus).not.toHaveBeenCalled();
+  });
+
+  it('opens a new segment at the top and moves focus to main when focus sat in the replaced content', async () => {
+    const dom = await bootMain('#/m1-extensibility-architecture');
+    // An in-slide link: it lives in the body that the next segment replaces.
+    const inSlide = makeLink(dom, '#/m2-mcp');
+    dom.main.children[1].children.push(inSlide);
+    inSlide.focus();
+    expect(dom.doc.activeElement).toBe(inSlide);
+
+    dom.navigateToHash('#/m2-mcp');
+
+    expect(dom.win.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(dom.main.focus).toHaveBeenCalled();
+    expect(dom.doc.activeElement).toBe(dom.main);
+  });
+
+  it('leaves scroll and focus alone at boot and when only parameters of the open segment change', async () => {
+    const dom = await bootMain('#/m2-mcp');
+    expect(dom.win.scrollTo).not.toHaveBeenCalled();
+    expect(dom.main.focus).not.toHaveBeenCalled();
+
+    dom.win.teachingSpa?.store.update('m2-mcp', (current) => ({
+      ...current, revealedSteps: 2, parameters: { budget: 42 },
+    }));
+
+    expect(dom.win.scrollTo).not.toHaveBeenCalled();
+    expect(dom.main.focus).not.toHaveBeenCalled();
+  });
+
+  it('keeps the segment route in the address after an in-page anchor, so a reload opens the same segment', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#/m2-mcp');
+      dom.navigateToHash('#three-layers');
+      vi.advanceTimersByTime(10);
+
+      // The heading is still scrolled into view, once ...
+      expect(dom.dynamicById.get('user-content-three-layers')?.scrollIntoView).toHaveBeenCalledOnce();
+      // ... but the address keeps naming the open segment, so a reload, a bookmark or a shared link opens it again.
+      expect(dom.win.location.hash).toBe('#/m2-mcp');
+      expect(dom.historyEntries).toEqual(['#/m2-mcp', '#/m2-mcp']);
+
+      const reloaded = await bootMain(dom.win.location.hash);
+      expect(reloaded.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('handles the skip link by focusing main without touching the segment route', async () => {
+    const dom = await bootMain('#/m2-mcp');
+    const skip = makeLink(dom, '#main', { 'data-skip': '' });
+
+    const event = click(dom, skip);
+
+    // Handled in place: the browser's own navigation to "#main" never happens, so the address keeps the segment route.
+    expect(event.defaultPrevented).toBe(true);
+    expect(dom.main.scrollIntoView).toHaveBeenCalled();
+    expect(dom.main.focus).toHaveBeenCalled();
+    expect(dom.doc.activeElement).toBe(dom.main);
+    expect(dom.win.location.hash).toBe('#/m2-mcp');
+    expect(dom.historyEntries).toEqual(['#/m2-mcp']);
+  });
+
+  it('leaves segment links, content anchors and modified or already handled clicks to the browser', async () => {
+    const dom = await bootMain('#/m2-mcp');
+    const route = makeLink(dom, '#/m1-extensibility-architecture');
+    const anchor = makeLink(dom, '#three-layers');
+    const skip = makeLink(dom, '#main', { 'data-skip': '' });
+
+    expect(click(dom, route).defaultPrevented).toBe(false);
+    expect(click(dom, anchor).defaultPrevented).toBe(false);
+    // Ctrl+click and a non-primary button open another tab or window; the skip link must not hijack them.
+    expect(click(dom, skip, { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(click(dom, skip, { button: 1 }).defaultPrevented).toBe(false);
+    // A click that another handler already took is left alone.
+    click(dom, skip, { defaultPrevented: true });
+
+    expect(dom.main.focus).not.toHaveBeenCalled();
+    expect(dom.main.scrollIntoView).not.toHaveBeenCalled();
+    expect(dom.win.location.hash).toBe('#/m2-mcp');
+  });
+
+  it('restores the segment route after a hashchange to #main', async () => {
+    const dom = await bootMain('#/m2-mcp');
+
+    dom.navigateToHash('#main');
+
+    expect(dom.main.scrollIntoView).toHaveBeenCalled();
+    expect(dom.main.focus).toHaveBeenCalled();
+    expect(dom.win.location.hash).toBe('#/m2-mcp');
+    expect(dom.win.teachingSpa?.store.get().currentId).toBe('m2-mcp');
+  });
+
+  it('restores the segment route after booting on an in-page anchor', async () => {
+    vi.useFakeTimers();
+    try {
+      const dom = await bootMain('#the-advanced-problem');
+      vi.advanceTimersByTime(10);
+
+      expect(dom.dynamicById.get('user-content-the-advanced-problem')?.scrollIntoView).toHaveBeenCalledOnce();
+      expect(dom.win.location.hash).toBe('#/m1-extensibility-architecture');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('executes the built dist/assets/*.js bundle and verifies dist/index.html structure and relative base (AC4, §2.9)', async () => {
