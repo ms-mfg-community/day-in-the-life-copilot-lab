@@ -10,11 +10,16 @@ export type Route =
   | { kind: 'anchor' }
   | { kind: 'unknown'; id: string };
 
-/** Classify a location hash against the known segment ids. An empty hash or `#/` is the first segment. */
+/**
+ * Classify a location hash against the known segment ids. An empty hash, `#` or `#/` is the first segment; with no
+ * segments at all there is no first segment to land on, so it is unknown rather than a segment with an undefined id.
+ */
 export function parseHash(hash: string, segmentIds: readonly string[]): Route {
   if (hash !== '' && hash !== '#' && !hash.startsWith(ROUTE_PREFIX)) return { kind: 'anchor' };
   const raw = hash.startsWith(ROUTE_PREFIX) ? hash.slice(ROUTE_PREFIX.length) : '';
-  if (raw === '') return { kind: 'segment', id: segmentIds[0] };
+  if (raw === '') {
+    return segmentIds.length > 0 ? { kind: 'segment', id: segmentIds[0] } : { kind: 'unknown', id: '' };
+  }
   let id: string;
   try {
     id = decodeURIComponent(raw);

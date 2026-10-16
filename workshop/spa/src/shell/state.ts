@@ -15,12 +15,15 @@ export interface ShellState {
 
 export type Listener = (next: ShellState, previous: ShellState) => void;
 
-const EMPTY_SEGMENT: SegmentState = { revealedSteps: 0, parameters: {} };
+/** A fresh state per segment: one shared object would let a change to one segment's parameters leak into every other. */
+function emptySegment(): SegmentState {
+  return { revealedSteps: 0, parameters: {} };
+}
 
 export function createState(segmentIds: readonly string[]) {
   let state: ShellState = {
     currentId: segmentIds[0],
-    segments: Object.fromEntries(segmentIds.map((id) => [id, EMPTY_SEGMENT])),
+    segments: Object.fromEntries(segmentIds.map((id) => [id, emptySegment()])),
   };
   const listeners = new Set<Listener>();
 
@@ -37,10 +40,13 @@ export function createState(segmentIds: readonly string[]) {
       if (id === state.currentId || !Object.hasOwn(state.segments, id)) return;
       set({ ...state, currentId: id });
     },
-    /** Replace one segment's state with the result of `change`. */
+    /** Replace one segment's state with the result of `change`. Handing back the current state is a no-op: no notification. */
     update(id: string, change: (current: SegmentState) => SegmentState): void {
       if (!Object.hasOwn(state.segments, id)) return;
-      set({ ...state, segments: { ...state.segments, [id]: change(state.segments[id]) } });
+      const current = state.segments[id];
+      const updated = change(current);
+      if (updated === current) return;
+      set({ ...state, segments: { ...state.segments, [id]: updated } });
     },
     subscribe(listener: Listener): () => void {
       listeners.add(listener);

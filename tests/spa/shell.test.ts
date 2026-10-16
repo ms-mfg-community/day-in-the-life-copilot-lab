@@ -2,9 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createAnnouncer } from '../../workshop/spa/src/shell/live-region.ts';
-import { hashFor, parseHash } from '../../workshop/spa/src/shell/router.ts';
-import { createState } from '../../workshop/spa/src/shell/state.ts';
+import { createAnnouncer } from '../../workshop/spa/src/shell/live-region';
+import { hashFor, parseHash } from '../../workshop/spa/src/shell/router';
+import { createState } from '../../workshop/spa/src/shell/state';
 
 const IDS = ['a', 'b', 'c'];
 
@@ -64,7 +64,15 @@ describe('live region', () => {
 
 describe('spa:build (AC4)', () => {
   it('exits 0 and writes dist/index.html carrying every manifest segment', () => {
-    execFileSync('npm', ['run', 'spa:build'], { shell: true, stdio: 'pipe' });
+    // This is `npm run spa:build`, run through node directly: npm needs a shell to spawn on Windows, and a shell plus
+    // arguments is Node's DEP0190. The guard keeps the two commands from drifting apart.
+    const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
+    expect(scripts['spa:build']).toBe('vite build --config workshop/spa/vite.config.ts');
+    execFileSync(
+      process.execPath,
+      [path.resolve('node_modules/vite/bin/vite.js'), 'build', '--config', 'workshop/spa/vite.config.ts'],
+      { stdio: 'pipe' },
+    );
     const dist = path.resolve('workshop/spa/dist');
     expect(existsSync(path.join(dist, 'index.html'))).toBe(true);
     const assets = readdirSync(path.join(dist, 'assets')).filter((f) => f.endsWith('.js'));
