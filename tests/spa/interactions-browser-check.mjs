@@ -289,6 +289,27 @@ for (const engine of ENGINES) {
       });
     });
 
+    test('QA regression: direct focus automatically activates a tab and persists its selection (F96)', async () => {
+      const entry = entryFor('tabs');
+      await withPage(engine, entry.segment, async (page) => {
+        const tabs = page.locator(`#${entry.id} [role="tab"]`);
+        const last = (await tabs.count()) - 1;
+        for (const index of [1, last, 0]) {
+          await tabs.nth(index).focus();
+          assert.equal(await isFocused(page, `#${entry.id} [role="tab"]`, index), true);
+          assert.equal(await tabs.nth(index).getAttribute('aria-selected'), 'true', 'automatic activation must follow focus itself');
+          const panel = await tabs.nth(index).getAttribute('aria-controls');
+          assert.equal(await page.locator(`#${panel}`).isVisible(), true);
+          assert.equal(
+            await page.evaluate(([segment, id]) => window.teachingSpa.store.get().segments[segment].parameters[id], [entry.segment, entry.id]),
+            index,
+          );
+        }
+        await roundTrip(page, entry.segment);
+        assert.equal(await tabs.first().getAttribute('aria-selected'), 'true');
+      });
+    });
+
     test('accordion: roles, Enter and Space, aria-disabled on the last open panel, Tab order and persistence', async () => {
       const entry = entryFor('accordion');
       await withPage(engine, entry.segment, async (page) => {
@@ -424,6 +445,51 @@ for (const engine of ENGINES) {
         await roundTrip(page, entry.segment);
         assert.equal(await inertCount(page), 0);
         assert.equal(await isOpen(), false, 'it is closed on return');
+      });
+    });
+
+    test('QA regression: an aria-modal dialog visually obscures background content (F103)', async () => {
+      const entry = entryFor('dialog');
+      await withPage(engine, entry.segment, async (page) => {
+        // Compare actual painting, not inert/ARIA flags: those do not visually obscure anything.
+        // Two independent background samples allow either a page-wide backdrop or a dimmed main surface.
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.evaluate(() => document.fonts.ready);
+        const samples = [];
+        for (const selector of ['#segment-nav', '#main > h1']) {
+          const clip = await page.locator(selector).boundingBox();
+          assert.ok(clip && clip.width > 0 && clip.height > 0);
+          const before = await page.screenshot({ clip, animations: 'disabled' });
+          assert.deepEqual(await page.screenshot({ clip, animations: 'disabled' }), before, 'the unchanged background sample must be stable');
+          samples.push({ clip, before });
+        }
+        await page.locator(`#${entry.id} button[aria-haspopup="dialog"]`).focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await page.getByRole('dialog', { name: entry.label }).getAttribute('aria-modal'), 'true');
+        assert.ok((await inertCount(page)) > 0);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await settle(page);
+        const obscured = [];
+        for (const { clip, before } of samples) {
+          obscured.push(!before.equals(await page.screenshot({ clip, animations: 'disabled' })));
+        }
+        assert.ok(obscured.some(Boolean), 'F103: aria-modal=true requires visual obscuring; both background samples remained pixel-identical');
+        // Control for the check after it closes: the same trial click is refused while the dialog covers the page.
+        await assert.rejects(
+          page.locator('#segment-nav a').first().click({ trial: true, timeout: 500 }),
+          /intercepts pointer events/,
+          'while it is open, a pointer does not reach the page behind it',
+        );
+
+        // And nothing is left over once it closes. Not a second pixel comparison: closing sends focus back to the trigger, which
+        // scrolls it into view, and Firefox replays that scroll after an explicit scrollTo, so the page does not hold still for one.
+        // What a leftover backdrop would break does not depend on the scroll position: the dialog is no longer exposed, nothing is
+        // inert, and a pointer reaches the page behind it again. A trial click runs the actionability hit test (it fails with
+        // "intercepts pointer events" if something sits on top of the target) without activating anything.
+        await page.keyboard.press('Escape');
+        assert.equal(await page.getByRole('dialog').count(), 0, 'a closed dialog is not exposed');
+        assert.equal(await inertCount(page), 0, 'closing the dialog gives the page behind it back');
+        await page.locator('#segment-nav a').first().click({ trial: true, timeout: 5000 });
       });
     });
 

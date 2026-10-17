@@ -70,6 +70,10 @@ describe('the inventory and section 2.4 (AC6)', () => {
     for (const pattern of PART_ONE) expect(declared, pattern).toContain(pattern);
   });
 
+  it('QA staging: contains only Part 1 patterns until SPA-05 adds Part 2', () => {
+    expect([...new Set(inventory.map((entry) => entry.pattern))].sort()).toEqual([...PART_ONE].sort());
+  });
+
   it('turns the status region on for a staged reveal, as the schema requires', () => {
     for (const entry of inventory.filter((candidate) => candidate.pattern === 'staged-reveal')) expect(entry.statusRegion, entry.id).toBe(true);
   });

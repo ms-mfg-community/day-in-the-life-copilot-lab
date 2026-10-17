@@ -5,6 +5,25 @@
 import { create, listen, tabbables } from './dom';
 import type { Mounted, Mounter } from './types';
 
+// aria-modal="true" is only true when the page behind the dialog is hidden from the eye as well as from the keyboard
+// (F103), so the dialog is its own backdrop: it covers the viewport and dims what is behind it, and what it says sits on
+// an opaque panel above that. The shell has no stylesheet yet, so the presentation travels with the elements. Neither
+// sets `display`: an author `display` would beat the rule behind the `hidden` attribute and leave a closed dialog on screen.
+const BACKDROP = 'position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; background: rgba(0, 0, 0, 0.7)';
+const PANEL = [
+  'box-sizing: border-box',
+  'width: calc(100% - 2rem)',
+  'max-width: 48rem',
+  'max-height: 90vh',
+  'margin: 5vh auto',
+  'padding: 1rem 1.5rem',
+  'overflow: auto',
+  'background: Canvas',
+  'color: CanvasText',
+  'border: 2px solid CanvasText',
+  'border-radius: 0.5rem',
+].join('; ');
+
 /**
  * Makes everything around `element` inert, on every level up to the body, and returns what it touched. A live region is
  * left alone so that announcements are still heard, and so is anything already inert, which is somebody else's to restore.
@@ -48,10 +67,8 @@ export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): M
   const dialog = create(
     doc,
     'div',
-    { id: dialogId, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId, hidden: '' },
-    create(doc, 'h2', { id: titleId }, entry.label),
-    closeButton,
-    copy,
+    { id: dialogId, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId, hidden: '', style: BACKDROP },
+    create(doc, 'div', { style: PANEL }, create(doc, 'h2', { id: titleId }, entry.label), closeButton, copy),
   );
   source.after(create(doc, 'div', { id: entry.id }, trigger, dialog));
 

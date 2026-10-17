@@ -57,20 +57,33 @@ export const mountTabs: Mounter = ({ entry, segment, root, document: doc, store 
   const tablist = create(doc, 'div', { role: 'tablist', 'aria-label': entry.label }, ...tabs);
   list.replaceWith(create(doc, 'div', { id: entry.id }, tablist, ...panels));
 
+  let current = -1;
   const show = (index: number): void => {
+    current = index;
     tabs.forEach((tab, position) => {
       tab.setAttribute('aria-selected', String(position === index));
       tab.setAttribute('tabindex', position === index ? '0' : '-1'); // roving: only the active tab is in the tab order
       panels[position].hidden = position !== index;
     });
   };
-  const choose = (index: number): void => {
+  /** Makes a tab the active one, and keeps it in the store. Nothing happens for the tab that already is. */
+  const activate = (index: number): void => {
+    if (index === current) return;
     show(index);
-    tabs[index].focus();
     writeParameter(store, segment.id, entry.id, index);
   };
+  /** Moves the focus to a tab. The focus listener below is what activates it; this covers the focus that is already there or is refused. */
+  const choose = (index: number): void => {
+    tabs[index].focus();
+    activate(index);
+  };
 
-  tabs.forEach((tab, index) => tab.addEventListener('click', () => choose(index)));
+  tabs.forEach((tab, index) => {
+    // Automatic activation follows the focus itself, whoever moves it: an arrow key here, a click, a screen reader's own
+    // navigation, a script. Activating only from the keys this widget handles would leave a focused tab under another's panel.
+    tab.addEventListener('focus', () => activate(index));
+    tab.addEventListener('click', () => choose(index)); // a click does not focus a button in every engine
+  });
   tablist.addEventListener('keydown', (event) => {
     if (hasModifier(event)) return;
     const from = tabs.indexOf(event.target as HTMLButtonElement);

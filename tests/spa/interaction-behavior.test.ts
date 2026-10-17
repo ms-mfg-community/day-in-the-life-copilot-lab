@@ -29,6 +29,23 @@ const squash = (value: string): string => value.replace(/\s+/g, ' ').trim();
 /** Text with every space removed: two renderings carry the same content when their characters agree, wherever they break. */
 const flat = (value: string): string => value.replace(/\s+/g, '');
 
+/** What an element's inline style declares, by property. The fake DOM has no layout, so a declaration is as far as it sees. */
+function declared(element: FakeElement | null): Record<string, string> {
+  const declarations: Record<string, string> = {};
+  for (const declaration of (element?.getAttribute('style') ?? '').split(';')) {
+    const colon = declaration.indexOf(':');
+    if (colon > 0) declarations[declaration.slice(0, colon).trim().toLowerCase()] = declaration.slice(colon + 1).trim();
+  }
+  return declarations;
+}
+
+/** How much of what lies behind a CSS color it hides: 0 is nothing, 1 all of it. A color this does not recognise counts as opaque. */
+function opacityOf(color: string | undefined): number {
+  if (color === undefined || color === 'transparent') return 0;
+  const alpha = /^rgba\(\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*([\d.]+)\s*\)$/.exec(color);
+  return alpha === null ? 1 : Number(alpha[1]);
+}
+
 function otherSegment(segmentId: string): string {
   const other = readDeckIds().find((id) => id !== segmentId);
   if (other === undefined) throw new Error('behaviour: the deck has only one segment');
@@ -191,6 +208,19 @@ describe.each(cases('tabs'))('tabs: %s', (_id, entry) => {
     expect(active(page())).toBe(list[2]);
     expect(panelOf(list[2]).hidden).toBe(false);
     expect(panelOf(list[0]).hidden).toBe(true);
+  });
+
+  it('QA regression: direct focus automatically activates a tab and persists its selection (F96)', () => {
+    const list = tabs();
+    // Focus may arrive from assistive technology, not just this widget's arrow handler or a click.
+    for (const index of [1, list.length - 1, 0]) {
+      list[index].focus();
+      expect(active(page())).toBe(list[index]);
+      expect(selected(), 'automatic activation must follow focus itself').toBe(index);
+      expect(panelOf(list[index]).hidden).toBe(false);
+      expect(list.map((tab) => tab.getAttribute('tabindex'))).toEqual(list.map((_tab, at) => (at === index ? '0' : '-1')));
+      expect(stored(page(), entry)).toBe(index);
+    }
   });
 
   it('gives the active panel tabindex 0 unless its first content can take focus itself', () => {
@@ -468,6 +498,26 @@ describe.each(cases('dialog'))('dialog: %s', (_id, entry) => {
     page().keyboard.press('Escape');
     expect(inertCount()).toBe(0);
     expect(tabOrder(page().document)).toContain(trigger());
+  });
+
+  it('regression: obscures the page behind it as well, which aria-modal="true" claims (F103): a dimming layer over the whole viewport, an opaque panel on top', () => {
+    openers[0][1]();
+    const layer = declared(dialog());
+    expect(layer.position, 'the dialog must be taken out of the page flow to cover the page').toBe('fixed');
+    for (const edge of ['top', 'right', 'bottom', 'left']) {
+      expect(Number.parseFloat(layer[edge]), `the dimming layer reaches the ${edge} edge of the viewport`).toBe(0);
+    }
+    expect(Number(layer['z-index']), 'the layer lies above the page').toBeGreaterThan(0);
+    expect(opacityOf(layer.background), 'the layer hides most of what lies behind it').toBeGreaterThanOrEqual(0.5);
+    const panel = closeButton().parentElement;
+    expect(panel, 'the controls sit in a panel of their own, inside the dialog').not.toBe(dialog());
+    expect(dialog().contains(panel)).toBe(true);
+    expect(opacityOf(declared(panel).background), 'the panel is opaque: the dialog stays readable over the dimmed page').toBe(1);
+  });
+
+  it('regression: declares no display of its own, so the hidden attribute still hides it while closed', () => {
+    expect(isOpen()).toBe(false);
+    expect(declared(dialog()).display, 'an author display beats the rule behind hidden').toBeUndefined();
   });
 
   it('still closes on Escape after a click on dead text inside it moved focus out of every control', () => {
