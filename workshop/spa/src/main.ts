@@ -1,5 +1,6 @@
 import { segments } from 'virtual:spa-content';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
+import { mountInteractions, type Mounted } from './interactions';
 import { createAnnouncer } from './shell/live-region';
 import { hashFor, parseHash } from './shell/router';
 import { createState } from './shell/state';
@@ -33,14 +34,20 @@ function renderNav(currentId: string): void {
   });
 }
 
+// The interactions of the segment on show. Each one may hold something outside the segment's own DOM (a listener on the
+// document, a timer, a store subscription, the inert marker of an open dialog), so they are undone before the segment goes.
+let interactions: Mounted | undefined;
+
 function renderSegment(id: string): void {
   const segment = segments.find((candidate) => candidate.id === id);
   if (!segment) return;
+  interactions?.dispose();
   const heading = document.createElement('h1');
   heading.textContent = segment.title;
   const body = document.createElement('div');
   body.innerHTML = segment.html; // sanitized by the SPA-02 pipeline at build time
   main.replaceChildren(heading, body);
+  interactions = mountInteractions({ segment, root: body, document, store, announce });
   renderNav(id);
   document.title = `${segment.title} — Teaching SPA`;
 }
