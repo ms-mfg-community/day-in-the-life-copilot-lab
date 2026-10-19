@@ -24,7 +24,8 @@
       "segment": "m1-extensibility-architecture",
       "label": "Segment pacing timer",
       "keys": ["Space", "Escape"],
-      "statusRegion": true
+      "statusRegion": true,
+      "longDescriptionId": "m1-segment-timer-description"
     },
     {
       "id": "m2-lab-walkthrough",
@@ -58,7 +59,8 @@
       "segment": "m5-marketplace",
       "label": "Enterprise controls",
       "keys": ["Tab", "Enter", "Space"],
-      "statusRegion": false
+      "statusRegion": false,
+      "longDescriptionId": "m5-controls-carousel-description"
     },
     {
       "id": "m5c-synergy-zoom",

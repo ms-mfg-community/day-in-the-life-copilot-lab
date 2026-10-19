@@ -1538,6 +1538,30 @@ describe.each(cases('carousel'))('carousel: %s', (_id, entry) => {
     expect(squash(ariaName(root, page().document))).toBe(entry.label);
   });
 
+  it('has a long description after its slides, outside the live wrapper, which the carousel is described by: how many slides, what they are called, and what moves between them', () => {
+    const id = entry.longDescriptionId as string;
+    const description = byId(page(), id);
+    expect(control().contains(description), 'it belongs to the carousel').toBe(true);
+    expect(wrapper().contains(description), 'it is not in the live wrapper, so a change of slide does not read it out again').toBe(false);
+    expect((control().getAttribute('aria-describedby') ?? '').split(/\s+/)).toContain(id);
+    const said = squash(description.textContent);
+    expect(said).toContain(`${count()} slides`);
+    slides().forEach((slide, index) => expect(said, `slide ${index + 1}`).toContain(squash(ariaName(slide, page().document))));
+    expect(said).toContain(squash(previous().textContent));
+    expect(said).toContain(squash(next().textContent));
+    expect(tabOrder(page().document), 'text is not a tab stop').not.toContain(description);
+    expect(description.hasAttribute('aria-live'), 'it is read when asked for, not out loud').toBe(false);
+  });
+
+  it('leaves its long description as it was when the slide changes', () => {
+    const description = byId(page(), entry.longDescriptionId as string);
+    const before = squash(description.textContent);
+    page().pointer.click(next());
+    page().pointer.click(next());
+    expect(byId(page(), entry.longDescriptionId as string)).toBe(description);
+    expect(squash(description.textContent)).toBe(before);
+  });
+
   it('has a slide for each item of the list it replaces, a named group of the slide role, holding all the text of the item', () => {
     const items = leadInLists(slideOf(entry.segment))[0].children;
     expect(count()).toBe(items.length);
@@ -1670,7 +1694,9 @@ describe.each(cases('segment-timer'))('segment-timer: %s', (_id, entry) => {
   const reset = (): FakeElement => button(/^reset/i);
   const readout = (): FakeElement => within(control(), '[role="timer"]')[0];
   const shown = (): string => squash(readout().textContent);
-  const caption = (): string => squash(control().textContent);
+  /** The caption beside the clock ("Ready", "Running"...): not the text of the whole group, which holds its long description too. */
+  const caption = (): string =>
+    squash(within(control(), 'span').find((node) => !node.hasAttribute('role'))?.textContent ?? '');
   const live = (): string => squash(page().liveRegion.textContent);
   /** The time left as a clock reads it: whole minutes, zero-padded seconds, and a second begun counted as left. */
   const clock = (leftMs: number): string => {
@@ -1715,6 +1741,19 @@ describe.each(cases('segment-timer'))('segment-timer: %s', (_id, entry) => {
     expect(squash(ariaName(readout(), page().document))).not.toBe('');
     expect(['polite', 'assertive']).not.toContain(readout().getAttribute('aria-live'));
     expect(within(control(), '[aria-live]')).toHaveLength(0);
+  });
+
+  it('has a long description in its group, which the group is described by: the minutes, what each control does, what is said', () => {
+    const id = entry.longDescriptionId as string;
+    const description = byId(page(), id);
+    expect(control().contains(description)).toBe(true);
+    expect((control().getAttribute('aria-describedby') ?? '').split(/\s+/)).toContain(id);
+    const said = squash(description.textContent);
+    expect(said).toContain(`${minutesOf(entry.segment)} minutes`);
+    for (const name of [start(), pause(), stop(), reset()].map((one) => squash(one.textContent))) expect(said, name).toContain(name);
+    expect(said, 'the five and the one minute at which it speaks').toMatch(/5 minutes and 1 minute/);
+    expect(tabOrder(page().document), 'text is not a tab stop').not.toContain(description);
+    expect(description.hasAttribute('aria-live'), 'what it says is read when asked for, not out loud').toBe(false);
   });
 
   it('sits right after the heading of the slide, leaving <main> as heading plus body', () => {
@@ -2041,6 +2080,72 @@ describe.each(cases('segment-timer'))('segment-timer: %s', (_id, entry) => {
     const left = secondsLeft();
     expect(left, 'it did not stop for the hour the clock went back').toBeLessThanOrEqual(total() / 1000 - 14);
     expect(left, 'it did not jump forward').toBeGreaterThanOrEqual(total() / 1000 - 16);
+  });
+
+  it('keeps what it counted when the clock was set back and the segment is left, on that visit and on the ones after', async () => {
+    run();
+    at(10);
+    vi.setSystemTime(Date.now() - 3_600_000);
+    vi.advanceTimersByTime(5000);
+    const counted = secondsLeft();
+    expect(counted, 'it went on counting from the ten seconds it had').toBeLessThan(total() / 1000 - 10);
+    await page().go(otherSegment(entry.segment));
+    await page().go(entry.segment);
+    expect(secondsLeft(), 'leaving does not give back what was counted').toBe(counted);
+    vi.advanceTimersByTime(5000);
+    expect(secondsLeft(), 'it goes on from there').toBe(counted - 5);
+    await page().go(otherSegment(entry.segment));
+    await page().go(entry.segment);
+    expect(secondsLeft(), 'nor does the next visit').toBe(counted - 5);
+  });
+
+  it('is not given the same few seconds again on each visit when the stored start lies in the future', async () => {
+    store(page(), entry, { state: 'running', elapsedMs: 5000, startedAt: Date.now() + 3_600_000 });
+    for (let visit = 0; visit < 3; visit += 1) {
+      await page().go(otherSegment(entry.segment));
+      await page().go(entry.segment);
+      vi.advanceTimersByTime(5000);
+    }
+    expect(shown(), 'the five seconds that were stored and the five of each of the three visits').toBe(clock(total() - 20_000));
+  });
+
+  it.each([270, 59, 45, 30, 1])('says the %i seconds that are left, and not the mark it went past, when a late tick finds the clock gone past a mark', (left) => {
+    run();
+    // The way a closed laptop, or a tab whose timers were held back, is seen by the page: the clock has moved on, and the interval fires once.
+    vi.setSystemTime(began + total() - (left + 1) * 1000);
+    vi.advanceTimersByTime(1000);
+    expect(shown()).toBe(clock(left * 1000));
+    flush();
+    expect(live(), 'what is said is what the clock shows').toBe(`${words(left * 1000)} left.`);
+  });
+
+  it('still says the one minute, on time, after a late tick went past the five minutes', () => {
+    const seconds = total() / 1000;
+    run();
+    vi.setSystemTime(began + total() - 271_000);
+    vi.advanceTimersByTime(1000);
+    flush();
+    expect(live()).toBe(`${words(270_000)} left.`);
+    at(seconds - 61);
+    expect(page().liveRegion.textContent, 'a minute and a second left: nothing is said').not.toBe('');
+    at(seconds - 60);
+    expect(page().liveRegion.textContent, 'a minute left: said at this tick').toBe('');
+    flush();
+    expect(live()).toBe(`${words(60_000)} left.`);
+  });
+
+  it('says it once when a late tick went past both marks, and says nothing of them after', () => {
+    const seconds = total() / 1000;
+    run();
+    vi.setSystemTime(began + total() - 46_000);
+    vi.advanceTimersByTime(1000);
+    expect(page().liveRegion.textContent, 'said at this tick').toBe('');
+    flush();
+    expect(live()).toBe(`${words(45_000)} left.`);
+    at(seconds - 44);
+    expect(page().liveRegion.textContent, 'not said again at the next tick').not.toBe('');
+    at(seconds - 1);
+    expect(live(), 'and nothing else before the end').toBe(`${words(45_000)} left.`);
   });
 
   it('leaves no timer behind when the segment changes while it is running', async () => {

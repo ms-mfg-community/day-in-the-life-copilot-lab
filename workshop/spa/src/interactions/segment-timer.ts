@@ -13,6 +13,8 @@ import type { Mounter } from './types';
 const BOX = 'margin:1rem 0;padding:0.75rem 1rem;border:1px solid CanvasText;display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;';
 const CLOCK = 'font-size:1.5rem;font-variant-numeric:tabular-nums;';
 const BUTTON = 'min-width:24px;min-height:24px;';
+// The long description takes a row of its own under the clock and the buttons.
+const NOTE = 'flex-basis:100%;margin:0;font-size:0.875rem;';
 
 type Phase = 'idle' | 'running' | 'paused' | 'done';
 type Count = { readonly phase: Phase; readonly elapsed: number };
@@ -34,6 +36,17 @@ function clock(ms: number): string {
 function words(ms: number): string {
   const seconds = Math.ceil(ms / 1000);
   return [unit(Math.floor(seconds / 60), 'minute'), unit(seconds % 60, 'second')].filter((part) => part !== '').join(' ');
+}
+
+/** The long description (F109): what is counted, what each control does and what is said, from the minutes of the segment and the marks above. */
+function describe(minutes: number): string {
+  return [
+    `Counts down the ${minutes} minutes of this segment, and only after Start is pressed.`,
+    'Start counts down from the whole time, or goes on from where Pause left it. Pause keeps the time that is left.',
+    'Stop goes back to the whole time with nothing counting. Reset goes back to it, counting or paused as it was.',
+    `The time left is said when the state changes, and when ${MARKS.map(words).join(' and ')} are left.`,
+    'At the end it says so and stops, and it never moves to another segment.',
+  ].join(' ');
 }
 
 /** The count as the store holds it, or a count that has not started when the store holds anything else (2.3). */
@@ -68,7 +81,7 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
   const widget = create(
     doc,
     'div',
-    { id: entry.id, role: 'group', 'aria-label': entry.label, style: BOX },
+    { id: entry.id, role: 'group', 'aria-label': entry.label, 'aria-describedby': entry.longDescriptionId, style: BOX },
     readout,
     ' ',
     status,
@@ -81,6 +94,8 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
     ' ',
     reset,
   );
+  // Text in the group, not a control: the group is described by it (F109), and Tab still visits the four buttons and nothing else.
+  if (entry.longDescriptionId !== undefined) widget.append(create(doc, 'p', { id: entry.longDescriptionId, style: NOTE }, describe(segment.minutes)));
   const lead = root.firstElementChild;
   if (lead !== null && lead.localName === 'h1') lead.after(widget);
   else root.prepend(widget);
@@ -99,15 +114,15 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
     put(readout, clock(left()));
     put(status, CAPTIONS[phase]);
   };
-  /** Keeps the state in the store, on a change of state and never on a tick, where only the time moves. */
+  /** Keeps the state in the store, on a change of state and when the segment is left, and never on a tick, where only the time moves. */
   const save = (): void => {
     writeParameter(store, segment.id, entry.id, { state: phase, elapsedMs: elapsed, startedAt: phase === 'running' ? last : null });
   };
   /**
    * Brings the count up to the wall clock, by the time since it was last brought up. A clock set back adds nothing, so a count
    * never runs backwards, and never stands still for the hour the clock went back.
-   * ghcp-was-here: while the timer is on the page that is all the clock does to it, but the start in the store is read against
-   * the wall clock when the segment is visited again, so a clock set back while the segment is away counts as no time passed.
+   * ghcp-was-here: a clock set back while the segment is away is read against the start that was kept when the segment was left,
+   * so it counts as no time passed: what was counted is never given back, but the time the clock hid cannot be known.
    */
   const catchUp = (): void => {
     const at = Date.now();
@@ -144,9 +159,11 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
       return;
     }
     render();
-    let reached = 0;
-    for (; mark < MARKS.length && left() <= MARKS[mark]; mark += 1) reached = MARKS[mark];
-    if (reached > 0) announce(`${words(reached)} left.`);
+    const before = mark;
+    while (mark < MARKS.length && left() <= MARKS[mark]) mark += 1;
+    // The time that is left is what is said, the one the clock shows: it is the mark itself when the tick was on time, and not
+    // the mark that a late tick, after a sleep or in a tab in the background, has already gone past.
+    if (mark > before) announce(`${words(left())} left.`);
   };
   const startTicking = (): void => {
     stopTicking();
@@ -218,5 +235,14 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
   render();
   resetMarks();
   if (phase === 'running') startTicking();
-  return { dispose: stopTicking };
+  return {
+    dispose(): void {
+      stopTicking();
+      if (phase !== 'running') return;
+      // The store holds the start the count began from, and a clock that was set back since then puts that start in the future,
+      // so the next visit would count less than this page has. What has been counted is kept as it stands, against the clock now.
+      catchUp();
+      save();
+    },
+  };
 };

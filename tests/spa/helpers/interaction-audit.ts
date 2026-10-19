@@ -58,8 +58,12 @@ function firstContentIsFocusable(panel: FakeElement): boolean {
   return first !== null && (NATIVELY_FOCUSABLE.has(first.localName) || first.hasAttribute('tabindex'));
 }
 
-/** The patterns whose table row in section 2.4 makes them a chart or a diagram: each needs a long description (AC19). */
-const VISUAL_PATTERNS = new Set(['parameter-chart', 'node-diagram']);
+/**
+ * The patterns whose entries must declare a long description (AC19): the chart and the diagram, which the table of section 2.4
+ * makes complex images, and the carousel and the timer, because child issue 5 of section 7 builds all four "each with a long
+ * description".
+ */
+const LONG_DESCRIPTION_PATTERNS = new Set(['parameter-chart', 'node-diagram', 'carousel', 'segment-timer']);
 
 const HIDING_STYLE = /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b/i;
 
@@ -98,7 +102,7 @@ export function auditLongDescription(doc: FakeDocument, entry: InventoryEntry): 
   if (name === '') fail('has no short description: it has no accessible name');
   const id = entry.longDescriptionId;
   if (id === undefined || id.trim() === '') {
-    fail('declares no longDescriptionId, and a chart or diagram must (AC19)');
+    fail('declares no longDescriptionId, and each of the chart, diagram, carousel and timer must (AC19, issue 5)');
     return problems;
   }
   const holders = doc.querySelectorAll(`[id="${id}"]`);
@@ -348,6 +352,6 @@ export function auditInteraction(doc: FakeDocument, entry: InventoryEntry): stri
     default:
       fail(`no audit exists for pattern "${entry.pattern}"`);
   }
-  if (VISUAL_PATTERNS.has(entry.pattern) || entry.longDescriptionId !== undefined) problems.push(...auditLongDescription(doc, entry));
+  if (LONG_DESCRIPTION_PATTERNS.has(entry.pattern) || entry.longDescriptionId !== undefined) problems.push(...auditLongDescription(doc, entry));
   return problems;
 }

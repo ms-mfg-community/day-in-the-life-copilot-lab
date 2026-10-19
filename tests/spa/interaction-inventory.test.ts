@@ -97,6 +97,14 @@ describe('the inventory and section 2.4 (AC6)', () => {
     }
   });
 
+  it('declares a long description for every carousel and segment timer as well, as issue 5 builds all four patterns of part 2 "each with a long description"', () => {
+    for (const pattern of ['carousel', 'segment-timer']) {
+      const entries = inventory.filter((candidate) => candidate.pattern === pattern);
+      expect(entries.length, pattern).toBeGreaterThan(0);
+      for (const entry of entries) expect(entry.longDescriptionId ?? '', entry.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    }
+  });
+
   it('names the dataset a parameter chart draws on', () => {
     for (const entry of inventory.filter((candidate) => candidate.pattern === 'parameter-chart')) {
       expect(entry.dataset ?? '', entry.id).not.toBe('');
@@ -276,6 +284,10 @@ const mutations: Mutation[] = [
   { name: 'the previous and next buttons are gone', pattern: 'carousel', apply: (root) => within(root, 'button').forEach((button) => button.remove()), expected: /previous and next buttons/ },
   { name: 'a slide control loses aria-controls', pattern: 'carousel', apply: (root) => first(root, 'button').removeAttribute('aria-controls'), expected: /no aria-controls pointing at the slide wrapper/ },
   { name: 'a slide control moves into the live wrapper', pattern: 'carousel', apply: (root) => wrapperOf(root).append(first(root, 'button')), expected: /inside the live slide wrapper/ },
+  { name: 'the long description loses its association', pattern: 'carousel', apply: (root) => root.removeAttribute('aria-describedby'), expected: /nothing associates/ },
+  { name: 'the long description is hidden', pattern: 'carousel', apply: (root) => descriptionOf(root).setAttribute('hidden', ''), expected: /not reachable: it is hidden/ },
+  { name: 'the long description id is gone', pattern: 'carousel', apply: (root) => descriptionOf(root).removeAttribute('id'), expected: /long description #\S+ is not in the DOM/ },
+  { name: 'the long description is empty', pattern: 'carousel', apply: (root) => void (descriptionOf(root).textContent = ''), expected: /long description #\S+ is empty/ },
 
   { name: 'the group loses its name', pattern: 'segment-timer', apply: unname, expected: /role=group named/ },
   { name: 'the start control is gone', pattern: 'segment-timer', apply: (root) => buttonStarting(root, 'start').remove(), expected: /no start control/ },
@@ -287,6 +299,10 @@ const mutations: Mutation[] = [
   { name: 'the clock loses its name', pattern: 'segment-timer', apply: (root) => unname(first(root, '[role="timer"]')), expected: /the clock has no accessible name/ },
   { name: 'the clock shows no time', pattern: 'segment-timer', apply: (root) => void (first(root, '[role="timer"]').textContent = ''), expected: /minutes:seconds/ },
   { name: 'the shell status region is not a status', pattern: 'segment-timer', apply: breakStatusRegion, expected: /no polite status region/ },
+  { name: 'the long description loses its association', pattern: 'segment-timer', apply: (root) => root.removeAttribute('aria-describedby'), expected: /nothing associates/ },
+  { name: 'the long description is hidden', pattern: 'segment-timer', apply: (root) => descriptionOf(root).setAttribute('hidden', ''), expected: /not reachable: it is hidden/ },
+  { name: 'the long description id is gone', pattern: 'segment-timer', apply: (root) => descriptionOf(root).removeAttribute('id'), expected: /long description #\S+ is not in the DOM/ },
+  { name: 'the long description is empty', pattern: 'segment-timer', apply: (root) => void (descriptionOf(root).textContent = ''), expected: /long description #\S+ is empty/ },
 ];
 
 describe('the AC6 audit can fail (negative controls)', () => {
@@ -307,6 +323,16 @@ describe('the AC6 audit can fail (negative controls)', () => {
     const problems = auditInteraction(page.document, entry);
     expect(problems.length, 'the audit did not notice').toBeGreaterThan(0);
     expect(problems.join('\n')).toMatch(mutation.expected);
+  });
+
+  it.each(PART_TWO)('%s: an entry that declares no long description fails the audit, as issue 5 gives each pattern of part 2 one', async (pattern) => {
+    const entry = inventory.find((candidate) => candidate.pattern === pattern) as InventoryEntry;
+    expect(entry, `the inventory has no ${pattern} entry`).toBeDefined();
+    page = await bootFromSource();
+    await page.go(entry.segment);
+    expect(auditInteraction(page.document, entry), 'the page must pass the audit before it is broken').toEqual([]);
+    const problems = auditInteraction(page.document, { ...entry, longDescriptionId: undefined });
+    expect(problems.join('\n')).toMatch(/declares no longDescriptionId/);
   });
 
   it('refuses a pattern it has no audit for rather than passing it', () => {

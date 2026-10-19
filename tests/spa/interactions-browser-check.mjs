@@ -809,10 +809,13 @@ for (const engine of ENGINES) {
     // -------------------------------------------------------------------------------------------------------------------
     // Part 2: parameter-chart, node-diagram, carousel, segment-timer
 
-    // AC19: what the built page does with every long description the inventory declares.
-    for (const entry of inventory.filter((candidate) => candidate.longDescriptionId !== undefined)) {
+    // Child issue 5 explicitly requires each of its four patterns to have a
+    // long description, as well as AC19 covering any other declared description.
+    const partTwoPatterns = ['parameter-chart', 'node-diagram', 'carousel', 'segment-timer'];
+    for (const entry of inventory.filter((candidate) => partTwoPatterns.includes(candidate.pattern) || candidate.longDescriptionId !== undefined)) {
       test(`AC19: ${entry.id} has its long description in the page, visible, and associated with it`, async () => {
         await withPage(engine, entry.segment, async (page) => {
+          assert.match(entry.longDescriptionId ?? '', /^[a-z0-9]+(-[a-z0-9]+)*$/, 'Child issue 5: each pattern declares its long description');
           const id = entry.longDescriptionId;
           const description = `[id="${id}"]`;
           assert.equal(await page.locator(description).count(), 1, `#${id} must be in the page exactly once`);
@@ -1453,11 +1456,12 @@ for (const engine of ENGINES) {
           assert.equal(await timer.readout(), timer.shows(1 + 600), 'ten minutes went by and ten minutes were counted, with one tick');
           await timer.pass(1);
           assert.equal(await timer.readout(), timer.shows(1 + 600 + 1));
-          // A jump over a mark says the mark the time left has reached, once: the five minutes it passed are not said as well.
+          // A jump over a mark says the time that is left, the one on the clock, and says it once: it is not the mark that was
+          // gone past ("1 minute left." over 0:30), and the five minutes it passed on the way are not said as well.
           await page.clock.fastForward((timer.total - 30 - 602) * 1000);
           assert.equal(await timer.readout(), '0:30');
           await timer.pass(1);
-          assert.deepEqual(await announcements(page), [`Started. ${timer.says(0)} left.`, '1 minute left.']);
+          assert.deepEqual(await announcements(page), [`Started. ${timer.says(0)} left.`, '30 seconds left.']);
           await page.clock.fastForward(5 * 60_000);
           assert.equal(await timer.readout(), '0:00', 'the count stops at the end, and does not go below it');
           assert.equal(await timer.caption(), 'Time is up');
@@ -1467,6 +1471,62 @@ for (const engine of ENGINES) {
         { clock: true },
       );
     });
+
+    test('QA SPA-05: a backwards clock adjustment does not give elapsed time back on navigation', async () => {
+      const entry = entryFor('segment-timer');
+      await withPage(
+        engine,
+        entry.segment,
+        async (page) => {
+          const timer = timerOf(page, entry);
+          await hold(page);
+          await timer.button('Start').focus();
+          await page.keyboard.press('Enter');
+          await timer.pass(10);
+          const at = await page.evaluate(() => Date.now());
+          await page.clock.setSystemTime(new Date(at - 3_600_000));
+          await timer.pass(5);
+          const before = await timer.readout();
+          assert.notEqual(before, timer.shows(0), 'the running timer has already consumed some time');
+
+          await visit(page, deckIds.find((id) => id !== entry.segment));
+          await visit(page, entry.segment);
+
+          assert.equal(await timer.readout(), before, 'navigation must not undo elapsed time already visible before leaving');
+        },
+        { clock: true },
+      );
+    });
+
+    for (const secondsLeft of [270, 30]) {
+      test(`QA SPA-05: a delayed tick announces the actual ${secondsLeft} seconds remaining`, async () => {
+        const entry = entryFor('segment-timer');
+        await withPage(
+          engine,
+          entry.segment,
+          async (page) => {
+            const timer = timerOf(page, entry);
+            await watchLiveRegion(page);
+            await hold(page);
+            await timer.button('Start').focus();
+            await page.keyboard.press('Space');
+            await timer.pass(1);
+            await timer.jump(timer.total - secondsLeft - 1);
+            await timer.speak();
+
+            const minutes = Math.floor(secondsLeft / 60);
+            const seconds = secondsLeft % 60;
+            const spoken = [
+              minutes ? `${minutes} minute${minutes === 1 ? '' : 's'}` : '',
+              seconds ? `${seconds} second${seconds === 1 ? '' : 's'}` : '',
+            ].filter(Boolean).join(' ');
+            assert.equal(await timer.readout(), `${minutes}:${String(seconds).padStart(2, '0')}`);
+            assert.equal((await announcements(page)).at(-1), `${spoken} left.`, 'live status must not overstate the actual remaining time');
+          },
+          { clock: true },
+        );
+      });
+    }
 
     test('segment-timer: a running, paused or finished count survives leaving the segment, and nothing is left counting behind', async () => {
       const entry = entryFor('segment-timer');

@@ -1,21 +1,24 @@
 // AC19 (specs/005-teaching-spa.md sections 2.4 and 5, issue 5; F109): a complex image needs a short description plus a long
 // description, a textual representation of the essential information the image conveys, structurally associated with it.
-// Here that means: every `parameter-chart` and `node-diagram` of the inventory, and every other entry that declares a
-// `longDescriptionId`, has
+// Here that means: every `parameter-chart` and `node-diagram` of the inventory, every `carousel` and `segment-timer` (issue
+// 5 of section 7 builds all four "each with a long description"), and every other entry that declares a `longDescriptionId`,
+// has
 //   - an accessible name (the short description),
 //   - a declared `longDescriptionId`,
 //   - one element in the DOM carrying exactly that id,
 //   - that says something (not empty, not just the name),
 //   - that a reader can reach (not hidden, inert, aria-hidden or styled out of the page), and
-//   - that the chart or diagram points at with aria-describedby.
+//   - that the entry points at with aria-describedby.
 // Nothing is skipped: the subjects are whatever the inventory declares, read from the shell as the dev server runs it
 // (source) and from the artifact `npm run spa:build` produces (bundle). A check that cannot fail proves nothing, so the
 // audit is also run against fixtures that break each requirement in turn, first on a minimal well-formed fixture (which
-// proves the audit can pass) and then on the real pages (which proves it can notice in the page that ships).
+// proves the audit can pass) and then on the real pages of all four patterns (which proves it can notice in the page that
+// ships).
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createBrowser, type FakeElement } from './helpers/fake-dom';
 import {
+  PART_TWO,
   ariaName,
   auditLongDescription,
   bootFromBundle,
@@ -29,14 +32,14 @@ import {
   type InventoryEntry,
 } from './helpers/interaction-harness';
 
-const VISUALS = ['parameter-chart', 'node-diagram'];
+const DESCRIBED: readonly string[] = PART_TWO;
 const inventory = readInventory();
-const subjects = inventory.filter((entry) => VISUALS.includes(entry.pattern) || entry.longDescriptionId !== undefined);
+const subjects = inventory.filter((entry) => DESCRIBED.includes(entry.pattern) || entry.longDescriptionId !== undefined);
 
 describe('what the inventory asks AC19 to check', () => {
-  it('holds at least one chart and one diagram, so the checks below cannot pass on an empty set', () => {
+  it('holds an entry of each of the four patterns of part 2, so the checks below cannot pass on an empty set', () => {
     const patterns = new Set(subjects.map((entry) => entry.pattern));
-    for (const pattern of VISUALS) expect(patterns, pattern).toContain(pattern);
+    for (const pattern of PART_TWO) expect(patterns, pattern).toContain(pattern);
   });
 
   it('includes every entry that declares a longDescriptionId, whatever its pattern', () => {
@@ -53,7 +56,7 @@ describe('what the inventory asks AC19 to check', () => {
   });
 });
 
-describe.each<Flavour>(['source', 'bundle'])('every chart, diagram and declared long description is in the built DOM (AC19, %s)', (flavour) => {
+describe.each<Flavour>(['source', 'bundle'])('every chart, diagram, carousel, timer and declared long description is in the built DOM (AC19, %s)', (flavour) => {
   let bundle: Bundle | undefined;
   let page: Booted;
 
@@ -128,7 +131,7 @@ describe('the AC19 audit can fail (a minimal fixture)', () => {
   });
 });
 
-/** The long description a chart or diagram points at with aria-describedby. */
+/** The long description an entry points at with aria-describedby. */
 const descriptionOf = (root: FakeElement): FakeElement => {
   const found = root.ownerDocument?.getElementById((root.getAttribute('aria-describedby') ?? '').split(/\s+/)[0]) ?? null;
   if (found === null) throw new Error('negative control: the long description is not reachable');
@@ -197,7 +200,7 @@ const breaks: Break[] = [
   },
 ];
 
-describe.each(VISUALS)('the AC19 audit can fail on the real %s', (pattern) => {
+describe.each(PART_TWO)('the AC19 audit can fail on the real %s', (pattern) => {
   let page: Booted | undefined;
 
   afterEach(() => {
