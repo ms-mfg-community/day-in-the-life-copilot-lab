@@ -139,6 +139,7 @@ export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): M
   const removers = [listen(trigger, 'click', open), listen(closeButton, 'click', close)];
 
   return {
+    dismiss: close, // what Escape does, for when the browser has spent the key: closed, and the focus back on the button that opened it
     dispose(): void {
       disposed = true;
       isOpen = false;

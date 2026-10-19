@@ -236,6 +236,11 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
   resetMarks();
   if (phase === 'running') startTicking();
   return {
+    // For when the browser has spent the Escape: pauses, as the key does, and only when the focus is in the timer, because the key
+    // only reaches the timer from there. A timer that is not running has nothing to put away.
+    dismiss(): void {
+      if (widget.contains(doc.activeElement)) hold();
+    },
     dispose(): void {
       stopTicking();
       if (phase !== 'running') return;

@@ -9,10 +9,15 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KEYBOARD_LOCK_CODES, mountPresentation, type Presentation } from '../../workshop/spa/src/shell/presentation';
+import {
+  KEYBOARD_LOCK_CODES,
+  mountPresentation,
+  type Presentation,
+  type PresentationOptions,
+} from '../../workshop/spa/src/shell/presentation';
 import { createState, type ShellStore } from '../../workshop/spa/src/shell/state';
 import { createBrowser, type Browser, type FakeElement } from './helpers/fake-dom';
-import { readDeckIds, ROOT, segmentsFromPipeline } from './helpers/interaction-harness';
+import { readDeckIds, ROOT, segmentsFromPipeline, within } from './helpers/interaction-harness';
 import { installDoubles, type Doubles, type DoublesOptions } from './helpers/presentation-doubles';
 
 const INDEX_HTML = readFileSync(path.join(ROOT, 'workshop/spa/index.html'), 'utf8');
@@ -31,7 +36,7 @@ interface Page {
   announced: string[];
 }
 
-function mount(options: DoublesOptions = {}): Page {
+function mount(options: DoublesOptions = {}, hooks: Pick<PresentationOptions, 'onEndedByBrowser'> = {}): Page {
   const browser = createBrowser(INDEX_HTML);
   const doubles = installDoubles(browser, options);
   const store = createState([...SEGMENTS]);
@@ -43,6 +48,7 @@ function mount(options: DoublesOptions = {}): Page {
     store,
     announce: (message: string) => void announced.push(message),
     describeSegment: (id: string) => `segment ${SEGMENTS.indexOf(id) + 1} of ${SEGMENTS.length}`,
+    ...hooks,
   } as never);
   if (presentation === undefined) throw new Error('presentation mode did not mount on the shipped shell');
   return { browser, doubles, store, presentation, announced };
@@ -610,6 +616,183 @@ describe('fullscreenchange (AC8)', () => {
   });
 });
 
+// Firefox and WebKit spend the Escape that leaves fullscreen: the page is told that fullscreen ended and is never handed the key,
+// so what that key would have put away in the window (an open dialog, a popover, a running timer) stays. The shell puts it away
+// through a hook it gives the controller. The controller calls it when fullscreen ended and the page did not ask, once the
+// window is back on its segment and has said so, and never on the way in, for a failed request, or for the Exit control.
+describe('fullscreen that ends without the page asking (onEndedByBrowser)', () => {
+  interface Seen {
+    windowed: boolean;
+    active: boolean;
+    said: string;
+  }
+
+  /** A page whose hook records what the controller looked like at the moment it was called. */
+  function hooked(options: DoublesOptions = {}): { page: Page; calls: Seen[] } {
+    const calls: Seen[] = [];
+    const page: Page = mount(options, {
+      onEndedByBrowser: () => {
+        calls.push({
+          windowed: page.doubles.root.getAttribute('data-presentation') === 'windowed',
+          active: page.presentation.active,
+          said: last(page),
+        });
+      },
+    });
+    return { page, calls };
+  }
+
+  it('is called once for the end AC8 simulates, after the window is back and has said so', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    expect(calls).toEqual([]); // not on the way in
+    page.doubles.fullscreenElement = null;
+    page.doubles.fire(page.browser.document, 'fullscreenchange');
+    await settle();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].windowed).toBe(true);
+    expect(calls[0].active).toBe(false);
+    expect(calls[0].said).toMatch(/presentation mode off/i);
+  });
+
+  it('is not called again for a fullscreenchange it already knows about', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    page.doubles.endFullscreen();
+    page.doubles.fire(page.browser.document, 'fullscreenchange');
+    page.doubles.fire(page.browser.document, 'fullscreenchange');
+    await settle();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('is called for each presentation the browser ends', async () => {
+    const { page, calls } = hooked();
+    for (let round = 1; round <= 2; round += 1) {
+      click(page, 'present-start');
+      await settle();
+      page.doubles.endFullscreen();
+      await settle();
+      expect(calls, `after the browser ended presentation ${round}`).toHaveLength(round);
+    }
+  });
+
+  it('is not called when the page asked: the Exit control', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    click(page, 'present-exit');
+    await settle();
+    expectWindowed(page);
+    expect(calls).toEqual([]);
+  });
+
+  it('is not called when the page asked and the browser answers a turn later: the promise settles before the element and the event', async () => {
+    const { page, calls } = hooked();
+    page.doubles.behaviour.exitIsAsync = true;
+    click(page, 'present-start');
+    await settle();
+    click(page, 'present-exit');
+    await settle();
+    expectWindowed(page);
+    expect(calls).toEqual([]);
+  });
+
+  it('is still called for an end the page did not ask after an Exit that the browser refused', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    page.doubles.behaviour.exitRejects = true;
+    click(page, 'present-exit');
+    await settle();
+    expectPresenting(page);
+    expect(calls).toEqual([]);
+    page.doubles.endFullscreen();
+    await settle();
+    expectWindowed(page);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('is called for an end the page did not ask, in a presentation after one that the page itself ended', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    click(page, 'present-exit');
+    await settle();
+    click(page, 'present-start');
+    await settle();
+    page.doubles.endFullscreen();
+    await settle();
+    expect(calls).toHaveLength(1);
+  });
+
+  it.each(['reject', 'error-event', 'reject-and-event', 'throw'] as const)(
+    'is not called for a request that failed (%s): nothing was presenting, so nothing ended',
+    async (outcome) => {
+      const { page, calls } = hooked();
+      page.doubles.outcome = outcome;
+      click(page, 'present-start');
+      await settle();
+      expectWindowed(page);
+      page.doubles.endFullscreen(); // a stray end of some other fullscreen
+      await settle();
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it('is not called when nothing was presenting', async () => {
+    const { page, calls } = hooked();
+    page.doubles.fire(page.browser.document, 'fullscreenchange');
+    page.doubles.endFullscreen();
+    await settle();
+    expect(calls).toEqual([]);
+  });
+
+  it('is not called when the controller is disposed while presenting', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    page.presentation.dispose();
+    page.doubles.endFullscreen();
+    await settle();
+    expect(calls).toEqual([]);
+  });
+
+  it('is reported, and changes nothing about the way back, when it throws', async () => {
+    const reported = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const page = mount({}, {
+        onEndedByBrowser: () => {
+          throw new Error('the hook failed');
+        },
+      });
+      check(page, 'present-keyboard-lock');
+      click(page, 'present-start');
+      await settle();
+      page.doubles.endFullscreen();
+      await settle();
+      expectWindowed(page);
+      expect(last(page)).toMatch(/presentation mode off/i);
+      expect(page.doubles.log).toContain('unlock');
+      expect(page.doubles.log).toContain('wakeLock.release');
+      expect(reported).toHaveBeenCalledTimes(1);
+    } finally {
+      reported.mockRestore();
+    }
+  });
+
+  it('is optional: the controller ends fullscreen as before without it', async () => {
+    const page = mount();
+    click(page, 'present-start');
+    await settle();
+    page.doubles.endFullscreen();
+    await settle();
+    expectWindowed(page);
+    expect(last(page)).toMatch(/presentation mode off/i);
+  });
+});
+
 // In fullscreen the presentation root, not the window, is what scrolls (workshop/spa/index.html), so the scroll to the top
 // that main.ts makes for a new segment (openAtTop) never reaches it. The controller carries that promise over to the root.
 describe('a segment that opens while presenting', () => {
@@ -929,6 +1112,49 @@ describe('dispose', () => {
     expect(page.announced).toHaveLength(before);
     expect(page.doubles.log).toEqual([]);
   });
+
+  // A request that is still out when its controller goes may be answered later. It belongs to a controller that is gone, so it
+  // cannot report a failure: the root and the controls it would put back to windowed may be a newer controller's, presenting.
+  it('is not undone by the request it left outstanding: a late rejection cannot roll a replacement on the same root back to windowed', async () => {
+    const page = mount();
+    let rejectOld!: (reason: unknown) => void;
+    const oldRequest = new Promise<void>((_, reject) => {
+      rejectOld = reject;
+    });
+    Object.assign(page.doubles.root, { requestFullscreen: () => oldRequest });
+    click(page, 'present-start'); // out, and not answered...
+    page.presentation.dispose(); // ...when this controller goes
+
+    const announced: string[] = [];
+    const replacement = mountPresentation({
+      document: page.browser.document,
+      window: page.browser.window,
+      navigator: page.doubles.navigator,
+      store: page.store,
+      announce: (message: string) => void announced.push(message),
+      describeSegment: () => 'the same segment',
+    } as never);
+    if (replacement === undefined) throw new Error('the replacement did not mount on the shipped shell');
+    Object.assign(page.doubles.root, {
+      requestFullscreen: async (): Promise<void> => {
+        page.doubles.fullscreenElement = page.doubles.root;
+        page.doubles.fire(page.browser.document, 'fullscreenchange');
+      },
+    });
+    click(page, 'present-start');
+    await settle();
+    expect(replacement.active).toBe(true);
+    const before = announced.length;
+
+    rejectOld(new TypeError('the request ended after its controller'));
+    await settle();
+    expect(replacement.active).toBe(true);
+    expect(page.doubles.root.getAttribute('data-presentation')).toBe('presenting');
+    expect(byId(page, 'present-exit').isRendered()).toBe(true);
+    expect(byId(page, 'present-start').isRendered()).toBe(false);
+    expect(announced).toHaveLength(before);
+    replacement.dispose();
+  });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1028,5 +1254,149 @@ describe('the shell (main.ts)', () => {
     expect(spa.presentation).toBeDefined();
     expect(browser.document.getElementById('present-start')?.disabled).toBe(true);
     expect(browser.document.getElementById('present-unavailable')?.isRendered()).toBe(true);
+  });
+
+  // Firefox and WebKit spend the Escape that leaves fullscreen, so the page is told only that fullscreen ended, and the Escape that
+  // would have closed a dialog, put away a popover or paused a timer (SPA-04 and SPA-05) never reaches them. The shell puts them
+  // away when fullscreen ends without the page asking, the way that Escape would have in the window, and only then.
+  describe('fullscreen that the browser ends', () => {
+    const boot = (segment: string) => bootShell({}, INDEX_HTML, `#/${segment}`);
+    const element = (browser: Browser, id: string): FakeElement => {
+      const found = browser.document.getElementById(id);
+      if (found === null) throw new Error(`#${id} is not on the page`);
+      return found;
+    };
+    const timerOf = (browser: Browser) => {
+      const widget = element(browser, 'm1-segment-timer');
+      return {
+        start: within(widget, 'button').find((candidate) => candidate.textContent.trim() === 'Start') as FakeElement,
+        readout: (): string => within(widget, '[role="timer"]')[0].textContent.trim(),
+        caption: (): string => within(widget, 'span').find((node) => !node.hasAttribute('role'))?.textContent.trim() ?? '',
+      };
+    };
+    const TIMER_SEGMENT = 'm1-extensibility-architecture';
+
+    it('closes an open dialog, lifts the inert from the page, and gives the focus back to the button that opened it', async () => {
+      const { browser, doubles, liveRegion, press } = await boot('m5c-copilot-cli-extensions');
+      press('present-start');
+      await wait();
+      const trigger = element(browser, 'm5c-synergy-zoom-trigger');
+      const dialog = element(browser, 'm5c-synergy-zoom-dialog');
+      browser.pointer.click(trigger);
+      expect(dialog.hidden).toBe(false);
+      expect(browser.document.querySelectorAll('[inert]').length).toBeGreaterThan(0);
+
+      doubles.endFullscreen(); // all that Firefox and WebKit show the page of an Escape that leaves fullscreen
+      await wait();
+      expect(dialog.hidden).toBe(true);
+      expect(browser.document.querySelectorAll('[inert]')).toHaveLength(0);
+      expect(browser.document.activeElement).toBe(trigger);
+      expect(liveRegion.textContent).toMatch(/presentation mode off/i);
+    });
+
+    it('leaves an open dialog alone while fullscreen goes on', async () => {
+      const { browser, doubles, press } = await boot('m5c-copilot-cli-extensions');
+      press('present-start');
+      await wait();
+      browser.pointer.click(element(browser, 'm5c-synergy-zoom-trigger'));
+      doubles.fire(browser.document, 'fullscreenchange'); // the root is still the fullscreen element
+      await wait();
+      expect(element(browser, 'm5c-synergy-zoom-dialog').hidden).toBe(false);
+    });
+
+    it('reaches the interactions of the segment that is open when fullscreen ends, not those of the segment it began on', async () => {
+      const { browser, doubles, spa, press } = await boot('m6-a2a-tmux');
+      press('present-start');
+      await wait();
+      spa.store.navigate('m5c-copilot-cli-extensions');
+      await wait();
+      const trigger = element(browser, 'm5c-synergy-zoom-trigger');
+      browser.pointer.click(trigger);
+      expect(element(browser, 'm5c-synergy-zoom-dialog').hidden).toBe(false);
+
+      doubles.endFullscreen();
+      await wait();
+      expect(element(browser, 'm5c-synergy-zoom-dialog').hidden).toBe(true);
+      expect(browser.document.activeElement).toBe(trigger);
+    });
+
+    it('puts away a popover that is showing, and keeps it away while the pointer rests on its button', async () => {
+      const { browser, doubles, press } = await boot('m6-a2a-tmux');
+      press('present-start');
+      await wait();
+      const trigger = within(element(browser, 'm6-segment-details'), 'button')[0];
+      const popover = element(browser, trigger.getAttribute('aria-controls') ?? '');
+      browser.pointer.moveTo(trigger);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(popover.hidden).toBe(false);
+
+      doubles.endFullscreen();
+      await wait();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(popover.hidden).toBe(true);
+      vi.advanceTimersByTime(2000); // the pointer is still on the button: after Escape the popover stays away until it has left
+      expect(popover.hidden).toBe(true);
+    });
+
+    it('leaves a popover that was not showing free to show when the pointer arrives after fullscreen has ended', async () => {
+      const { browser, doubles, press } = await boot('m6-a2a-tmux');
+      press('present-start');
+      await wait();
+      doubles.endFullscreen();
+      await wait();
+      const trigger = within(element(browser, 'm6-segment-details'), 'button')[0];
+      browser.pointer.moveTo(trigger);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('pauses a running timer that the focus is in, and keeps the time that is left', async () => {
+      const { browser, doubles, spa, press } = await boot(TIMER_SEGMENT);
+      press('present-start');
+      await wait();
+      const timer = timerOf(browser);
+      browser.pointer.click(timer.start); // a click puts the focus on the button: it is inside the timer
+      vi.advanceTimersByTime(3000);
+      expect(timer.caption()).toBe('Running');
+
+      doubles.endFullscreen();
+      await wait();
+      expect(timer.caption()).toBe('Paused');
+      const kept = timer.readout();
+      vi.advanceTimersByTime(10_000);
+      expect(timer.readout()).toBe(kept);
+      expect(spa.store.get().segments[TIMER_SEGMENT]?.parameters['m1-segment-timer']).toMatchObject({ state: 'paused' });
+    });
+
+    it('leaves a running timer running when the focus is not in it, as Escape does in the window', async () => {
+      const { browser, doubles, press } = await boot(TIMER_SEGMENT);
+      press('present-start');
+      await wait();
+      const timer = timerOf(browser);
+      browser.pointer.click(timer.start);
+      element(browser, 'main').focus(); // Escape elsewhere on the page does not pause the timer
+      vi.advanceTimersByTime(3000);
+      const before = timer.readout();
+
+      doubles.endFullscreen();
+      await wait();
+      expect(timer.caption()).toBe('Running');
+      vi.advanceTimersByTime(5000);
+      expect(timer.readout()).not.toBe(before);
+    });
+
+    it('leaves a running timer running when the page itself asked to leave fullscreen', async () => {
+      const { browser, doubles, spa, press } = await boot(TIMER_SEGMENT);
+      press('present-start');
+      await wait();
+      const timer = timerOf(browser);
+      browser.pointer.click(timer.start); // the focus stays in the timer: only the question of who asked can tell the two exits apart
+      vi.advanceTimersByTime(3000);
+
+      spa.presentation?.exit();
+      await wait();
+      expect(spa.presentation?.active).toBe(false);
+      expect(doubles.log).toContain('exitFullscreen');
+      expect(timer.caption()).toBe('Running');
+    });
   });
 });

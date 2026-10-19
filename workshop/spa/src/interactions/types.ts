@@ -23,9 +23,15 @@ export interface SegmentInfo {
   readonly labRefs: readonly string[];
 }
 
-/** A mounted interaction. `dispose` undoes whatever reaches outside the segment's own DOM: document listeners, timers, `inert`, store subscriptions. */
+/**
+ * A mounted interaction. `dispose` undoes whatever reaches outside the segment's own DOM: document listeners, timers, `inert`, store subscriptions.
+ * `dismiss` is for a pattern that Escape puts away something in (a dialog, a popover, a running timer): it puts that away the way Escape does,
+ * and does nothing when there is nothing to put away. The shell calls it when the browser spends the Escape that leaves fullscreen, because
+ * Firefox and WebKit never hand the page that key.
+ */
 export interface Mounted {
   dispose(): void;
+  dismiss?(): void;
 }
 
 export interface PatternContext {

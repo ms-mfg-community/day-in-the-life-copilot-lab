@@ -325,7 +325,6 @@ test('AC7: a real click on Present puts the one [data-spa-root="presentation"] e
     assert.equal(now.mode, 'presenting');
     assert.equal(now.present, false);
     assert.equal(now.exit, true);
-    assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'present-exit');
     assert.match(await liveRegion(page), /Esc/);
   });
 });
@@ -336,6 +335,7 @@ test('AC7 from the keyboard: Enter on Present enters fullscreen as well', async 
     await page.keyboard.press('Enter');
     await waitForFullscreen(page, true);
     assert.equal((await state(page)).mode, 'presenting');
+    assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'present-exit');
   });
 });
 
@@ -398,9 +398,11 @@ test('in fullscreen a segment taller than the screen scrolls inside the root, an
   });
 });
 
-test('entering fullscreen leaves the slide at its top with focus on Exit, and Exit and the Esc or F11 guidance in view', async () => {
+test('entering fullscreen from a focused Present leaves the slide at its top with focus on Exit, and Exit and the Esc or F11 guidance in view', async () => {
   await withPage({}, async (page) => {
-    await page.click('#present-start'); // Present sits below a long segment, so this click scrolled the window to it
+    // Pointer clicks do not focus buttons in WebKit. Verify the focus handoff from an actually focused control.
+    await page.focus('#present-start'); // Present sits below a long segment, so focusing it scrolled the window to it
+    await page.keyboard.press('Enter');
     await waitForFullscreen(page, true);
     await waitForLive(page, /Presentation mode on/);
     const facts = await page.evaluate(() => {
@@ -429,7 +431,7 @@ test('in fullscreen the controls never cover the element that has focus', async 
   await withPage({}, async (page) => {
     await page.click('#present-start');
     await waitForFullscreen(page, true);
-    const facts = await page.evaluate(() => {
+    const facts = await page.evaluate(async () => {
       const root = document.querySelector('[data-spa-root="presentation"]');
       const bar = document.getElementById('presentation-controls');
       const covered = [];
@@ -449,6 +451,7 @@ test('in fullscreen the controls never cover the element that has focus', async 
         if (Math.abs(target.getBoundingClientRect().bottom - (innerHeight - 10)) > 2) continue; // too near an end to park
         target.focus();
         if (document.activeElement !== target) continue; // not focusable (inside something collapsed)
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         tried += 1;
         const rect = target.getBoundingClientRect();
         const strip = bar.getBoundingClientRect();
@@ -458,6 +461,56 @@ test('in fullscreen the controls never cover the element that has focus', async 
     });
     assert.ok(facts.tried >= 3, `the check reached at least three focusable elements, or it proves nothing: ${facts.tried}`);
     assert.deepEqual(facts.covered, [], 'the controls bar sits on top of an element that has focus');
+  });
+});
+
+test('QA SPA-06: a focused slide link stays clear of the fullscreen toolbar', async () => {
+  await withPage({}, async (page) => {
+    await goTo(page, 'm6-a2a-tmux');
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    const target = await page.evaluate(() => {
+      const root = document.querySelector('[data-spa-root="presentation"]');
+      const bar = document.getElementById('presentation-controls');
+      const stops = [...root.querySelectorAll('a[href],button,input,select,[tabindex]')].filter(
+        (element) => element.tabIndex >= 0 && !element.disabled && !element.closest('[hidden],[inert]') && element.getClientRects().length,
+      );
+      // Use an actual slide link on a real segment; no spacer or extra content is inserted.
+      for (let index = 1; index < stops.length; index += 1) {
+        const control = stops[index];
+        if (!control.matches('#main a[href]')) continue;
+        const rectangle = control.getBoundingClientRect();
+        if (rectangle.top + root.scrollTop < innerHeight || rectangle.height > 60) continue;
+        root.scrollTop += control.getBoundingClientRect().bottom - (innerHeight - 10);
+        const parked = control.getBoundingClientRect();
+        if (parked.bottom <= bar.getBoundingClientRect().top || Math.abs(parked.bottom - (innerHeight - 10)) > 2) continue;
+        control.setAttribute('data-qa-tab-target', '');
+        return { text: control.textContent.trim().slice(0, 80), parkedBottom: parked.bottom };
+      }
+      throw new Error(`The real slide needs a focusable control that can be scrolled behind the toolbar: ${
+        JSON.stringify(stops.map((control) => ({ text: control.textContent.trim().slice(0, 40), top: control.getBoundingClientRect().top })))
+      }`);
+    });
+    // The application's keyboard handlers also move focus through HTMLElement.focus(). Do not use preventScroll.
+    await page.locator('[data-qa-tab-target]').focus();
+    await settled(page);
+    const result = await page.evaluate(() => {
+      const control = document.querySelector('[data-qa-tab-target]');
+      const rectangle = control.getBoundingClientRect();
+      const bar = document.getElementById('presentation-controls').getBoundingClientRect();
+      return {
+        focused: document.activeElement === control,
+        top: rectangle.top,
+        bottom: rectangle.bottom,
+        barTop: bar.top,
+        barBottom: bar.bottom,
+      };
+    });
+    assert.equal(result.focused, true, `Focus must actually reach the selected slide link: ${JSON.stringify(target)}`);
+    assert.ok(
+      result.bottom <= result.barTop || result.top >= result.barBottom,
+      `The newly focused control is covered by the toolbar: ${JSON.stringify({ target, result })}`,
+    );
   });
 });
 
@@ -572,6 +625,128 @@ test('the segment can change while presenting, and fullscreen ends on the segmen
     await waitForFullscreen(page, false);
     await waitForLive(page, /Presentation mode off/);
     assert.equal((await state(page)).id, SECOND);
+  });
+});
+
+test('QA SPA-06: Escape still dismisses an open dialog when the browser also leaves fullscreen', async () => {
+  await withPage({}, async (page) => {
+    await goTo(page, 'm5c-copilot-cli-extensions');
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await page.click('#m5c-synergy-zoom-trigger');
+    const dialog = page.getByRole('dialog');
+    assert.equal(await dialog.isVisible(), true, 'The existing interaction must actually be open');
+    await page.keyboard.press('Escape');
+    await settled(page);
+    await page.waitForTimeout(250); // also allow the native fullscreen-exit and layout tasks to finish
+    const facts = await page.evaluate(() => ({
+      fullscreen: document.fullscreenElement !== null,
+      mode: document.querySelector('[data-spa-root="presentation"]').getAttribute('data-presentation'),
+      hidden: document.getElementById('m5c-synergy-zoom-dialog').hidden,
+      inert: document.querySelectorAll('[inert]').length,
+      focus: document.activeElement?.id,
+    }));
+    assert.equal(facts.hidden, true, `One Escape must still dismiss the SPA-04 dialog: ${JSON.stringify(facts)}`);
+    assert.equal(facts.inert, 0, 'No modal isolation may remain after dismissal');
+    assert.equal(facts.focus, 'm5c-synergy-zoom-trigger', 'Focus returns to the invoker, not a hidden or inert control');
+  });
+});
+
+// Firefox and WebKit spend the Escape that leaves fullscreen: the page is told that fullscreen ended and is never handed the key,
+// so the Escape that would have put away a dialog, a popover or a running timer in the window does not reach them. What every
+// engine shares is the end of fullscreen itself, and `__realExitFullscreen` makes that end the same way in all of them (Chromium
+// keeps Escape for the page, so the key alone proves nothing there). The application is not the one that asked, so it puts away
+// what Escape would have.
+const waitForWindowed = (page) =>
+  page.waitForFunction(() => document.querySelector('[data-spa-root="presentation"]').getAttribute('data-presentation') === 'windowed');
+const TIMER = '#m1-segment-timer';
+const timerCaption = (page) => page.evaluate((selector) => document.querySelector(`${selector} > span:not([role])`).textContent.trim(), TIMER);
+const startTimer = async (page) => {
+  await page.click(`${TIMER} button:text-is("Start")`);
+  await page.waitForFunction((selector) => document.querySelector(`${selector} > span:not([role])`).textContent.trim() === 'Running', TIMER);
+  // Chromium and Firefox focus a button that is clicked, WebKit does not, and where the focus is decides whether Escape reaches the
+  // timer at all. So it is put where a keyboard user would have it, on a control of the timer, the same way in every engine.
+  await page.focus(`${TIMER} button:text-is("Pause")`);
+};
+
+test('when the browser ends fullscreen, an open dialog is closed, nothing stays inert, and the focus is on the button that opened it', async () => {
+  await withPage({}, async (page) => {
+    await goTo(page, 'm5c-copilot-cli-extensions');
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await page.click('#m5c-synergy-zoom-trigger');
+    assert.equal(await page.getByRole('dialog').isVisible(), true, 'the dialog is open before fullscreen ends');
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    const facts = await page.evaluate(() => ({
+      hidden: document.getElementById('m5c-synergy-zoom-dialog').hidden,
+      inert: document.querySelectorAll('[inert]').length,
+      focus: document.activeElement?.id,
+    }));
+    assert.deepEqual(facts, { hidden: true, inert: 0, focus: 'm5c-synergy-zoom-trigger' });
+    assert.ok(!(await log(page)).includes('exitFullscreen'), 'the application never asked to leave');
+  });
+});
+
+test('when the browser ends fullscreen, a popover that is showing is put away', async () => {
+  await withPage({}, async (page) => {
+    await goTo(page, 'm6-a2a-tmux');
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    const trigger = '#m6-segment-details button';
+    await page.hover(trigger);
+    await page.waitForFunction((selector) => document.querySelector(selector).getAttribute('aria-expanded') === 'true', trigger);
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    // right away, not after the pause a pointer that has gone is given: it is what the application did that is under test
+    const facts = await page.evaluate((selector) => {
+      const button = document.querySelector(selector);
+      return { expanded: button.getAttribute('aria-expanded'), hidden: document.getElementById(button.getAttribute('aria-controls')).hidden };
+    }, trigger);
+    assert.deepEqual(facts, { expanded: 'false', hidden: true });
+  });
+});
+
+test('when the browser ends fullscreen, a running timer that the focus is in is paused', async () => {
+  await withPage({}, async (page) => {
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await startTimer(page);
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    assert.equal(await timerCaption(page), 'Paused');
+    const kept = await page.evaluate((selector) => document.querySelector(`${selector} [role="timer"]`).textContent, TIMER);
+    await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate((selector) => document.querySelector(`${selector} [role="timer"]`).textContent, TIMER), kept, 'a paused timer keeps its time');
+  });
+});
+
+test('when the browser ends fullscreen, a running timer that the focus is not in keeps running', async () => {
+  await withPage({}, async (page) => {
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await startTimer(page);
+    await page.evaluate(() => document.getElementById('main').focus()); // Escape elsewhere on the page does not pause the timer
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    assert.equal(await timerCaption(page), 'Running');
+  });
+});
+
+test('when the application itself asks to leave fullscreen, a running timer keeps running: nothing is put away', async () => {
+  await withPage({}, async (page) => {
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await startTimer(page);
+    await page.evaluate(() => window.teachingSpa.presentation.exit()); // the focus stays in the timer: only who asked tells the exits apart
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    assert.ok((await log(page)).includes('exitFullscreen'), 'the application asked to leave');
+    assert.equal(await timerCaption(page), 'Running');
   });
 });
 

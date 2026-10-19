@@ -184,5 +184,8 @@ const presentation = mountPresentation({
     const segment = segments.find((candidate) => candidate.id === id);
     return `segment ${ids.indexOf(id) + 1} of ${ids.length}${segment ? `: ${segment.title}` : ''}`;
   },
+  // Firefox and WebKit end fullscreen with the Escape and never hand it to the page, so what Escape closes, hides or pauses
+  // (SPA-04/05) would stay as it was: the interactions of the segment that is on show put it away.
+  onEndedByBrowser: () => interactions?.dismiss?.(),
 });
 if (presentation) Object.assign((window as unknown as { teachingSpa: object }).teachingSpa, { presentation });

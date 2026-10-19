@@ -16,7 +16,8 @@
 // Requires Playwright (local or in npm's cache) and its browsers; nothing is installed. As in the other browser checks,
 // SPA_QA_PLAYWRIGHT_MODULE can name playwright/index.mjs. SPA_QA_BROWSER_TYPE restricts the run to one engine (by default
 // chromium and firefox both run), SPA_QA_BROWSER_CHANNEL selects chrome or msedge for chromium, and SPA_QA_DIST serves
-// another build.
+// another build. SPA_QA_PRESENT=1 enters presentation mode before each scenario, reusing the real interaction checks
+// against the fullscreen presentation root rather than only against the windowed shell.
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import http from 'node:http';
@@ -149,6 +150,25 @@ async function withPage(engine, segmentId, run, { clock = false } = {}) {
     await page.addScriptTag({ content: auditSource });
     await page.bringToFront();
     await settle(page);
+    if (process.env.SPA_QA_PRESENT === '1') {
+      await page.click('#present-start');
+      await page.waitForFunction(() => document.fullscreenElement === document.querySelector('[data-spa-root="presentation"]'));
+      await page.waitForFunction(() => window.teachingSpa.presentation.active);
+      await settle(page);
+      // Chromium hands Escape to the page and stays fullscreen. Firefox and WebKit spend it on leaving fullscreen: the page is told
+      // at the next rendering update, not as the key goes down, so a check that runs the moment press() returns races that report.
+      // A press of Escape therefore waits until the page has left presentation mode, or, when the key did not end fullscreen, until
+      // the wait is over. It is timed here, in Node, because a scenario may hold the page's own clock. It changes what a scenario
+      // waits for, never what it asserts.
+      const press = page.keyboard.press.bind(page.keyboard);
+      page.keyboard.press = async (key, options) => {
+        await press(key, options);
+        if (key !== 'Escape') return;
+        for (const until = Date.now() + 400; Date.now() < until; await page.waitForTimeout(20)) {
+          if (!(await page.evaluate(() => window.teachingSpa.presentation.active))) return;
+        }
+      };
+    }
     await run(page);
     assert.deepEqual(problems, [], 'the page must neither throw nor log an error');
   } finally {
@@ -175,6 +195,13 @@ const attributeOf = (page, selector, name, index = 0) =>
   page.evaluate(([css, attribute, at]) => document.querySelectorAll(css)[at]?.getAttribute(attribute) ?? null, [selector, name, index]);
 
 const inertCount = (page) => page.evaluate(() => document.querySelectorAll('[inert]').length);
+/**
+ * Whether the page, run in presentation mode (SPA_QA_PRESENT=1), has left it: the browser ended fullscreen on a key. The layout
+ * is then a different one (a window that scrolls in place of the root, the margin the body has outside fullscreen), so a position
+ * measured before the key is no longer the one to compare with. Never true in a windowed run, or where the key left fullscreen alone.
+ */
+const leftPresentation = async (page) =>
+  process.env.SPA_QA_PRESENT === '1' && !(await page.evaluate(() => window.teachingSpa.presentation.active));
 const liveRegion = (page) => page.evaluate(() => document.getElementById('live-region').textContent);
 const revealedSteps = (page, segmentId) => page.evaluate((id) => window.teachingSpa.store.get().segments[id].revealedSteps, segmentId);
 
@@ -745,9 +772,11 @@ for (const engine of ENGINES) {
         const box = await trigger.boundingBox();
         await page.keyboard.press('Escape');
         assert.equal(await expanded(), 'false');
+        // What must not move is the button under the dismissal, so from the layout the page is in once the key has done its work.
+        const from = (await leftPresentation(page)) ? await trigger.boundingBox() : box;
         await page.waitForTimeout(600);
         assert.equal(await expanded(), 'false', 'it stays dismissed while the pointer rests on the button');
-        assert.deepEqual(await trigger.boundingBox(), box, 'nothing moved');
+        assert.deepEqual(await trigger.boundingBox(), from, 'nothing moved');
 
         // A new hover reveals it again once the pointer has left.
         await page.mouse.move(5, 700);

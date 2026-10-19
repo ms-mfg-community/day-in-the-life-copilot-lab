@@ -92,6 +92,12 @@ export interface PresentationOptions {
   readonly announce: Announcer;
   /** Names a segment for the messages that say where the window is. */
   readonly describeSegment?: (id: string) => string;
+  /**
+   * Called when fullscreen ends and the page did not ask for it: the window is back, and has said so. Firefox and WebKit spend
+   * the Escape that leaves fullscreen and never hand the page the key, so this is the page's only sign that it was pressed, and
+   * the place to put away what Escape would have put away. Not called for Exit, for a request that failed, or after dispose.
+   */
+  readonly onEndedByBrowser?: () => void;
 }
 
 export interface Presentation {
@@ -180,6 +186,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
   // idle: windowed. requesting: the request is out and the browser has not answered. presenting: the root is fullscreen.
   let phase: 'idle' | 'requesting' | 'presenting' = 'idle';
   let activation = 0; // which activation an answer belongs to: a late answer to an earlier one is ignored
+  let exiting = false; // the page has asked to leave fullscreen and the browser has not answered: what ends it next is its doing
   let locked = false;
   let sentinel: PresentationWakeLockSentinel | undefined;
   let wakePending = false;
@@ -301,6 +308,8 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
 
   function leave(): void {
     const exitHadFocus = doc.activeElement === exitButton;
+    const asked = exiting;
+    exiting = false;
     phase = 'idle';
     releaseWakeLock();
     releaseKeyboard();
@@ -310,11 +319,23 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     base = ended(currentSegment());
     render();
     speak();
+    // Last, so that nothing it does can keep the window from being back and having said so. The window speaks before the
+    // widgets do on purpose: one that speaks as it puts something away (a timer that pauses) is then what the live region ends on.
+    if (!asked) endedByBrowser();
   }
 
-  // Idempotent by its phase gate: the event, the rejection, or both, report the failure once.
+  function endedByBrowser(): void {
+    try {
+      options.onEndedByBrowser?.();
+    } catch (error) {
+      console.error('Putting away what fullscreen was showing failed', error);
+    }
+  }
+
+  // Idempotent by its phase gate: the event, the rejection, or both, report the failure once. A disposed controller reports
+  // nothing: the root and the controls it would put back to windowed may belong to a newer controller that is presenting.
   function fail(): void {
-    if (phase !== 'requesting') return;
+    if (disposed || phase !== 'requesting') return;
     phase = 'idle';
     releaseKeyboard();
     notes = notes.script ? { script: notes.script } : {};
@@ -326,6 +347,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
 
   function exitFailed(): void {
     if (disposed || phase !== 'presenting') return;
+    exiting = false; // the browser refused: that exit is over, and the reader is still presenting
     base = EXIT_FAILED;
     speak();
   }
@@ -414,6 +436,8 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
   // still working (the lock never held Escape), so the lock stays released: a held key cannot trap anyone (SC 2.1.2).
   function exit(): void {
     if (disposed || phase !== 'presenting') return;
+    // Before the call: the browser reports the end from inside exitFullscreen() when it has nothing to wait for.
+    exiting = true;
     if (doc.fullscreenElement === null) {
       reconcile();
       return;
