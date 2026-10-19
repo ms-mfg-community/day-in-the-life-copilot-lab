@@ -434,6 +434,12 @@ test('in fullscreen the controls never cover the element that has focus', async 
       const bar = document.getElementById('presentation-controls');
       const covered = [];
       let tried = 0;
+      // A screen's height of nothing above the slide, so that every element of it can be scrolled down into the strip the
+      // bar covers whatever the height of the screen is (720px in Chromium, 768px in Firefox) and not only those that
+      // already sit lower than that.
+      const spacer = document.createElement('div');
+      spacer.style.height = `${innerHeight}px`;
+      root.insertBefore(spacer, root.firstChild);
       for (const target of document.querySelectorAll('#main a[href], #main button')) {
         if (!target.getClientRects().length || target.getBoundingClientRect().height > 80) continue;
         // Park the element in the strip of the screen the controls bar covers, where a browser that thinks the whole screen
