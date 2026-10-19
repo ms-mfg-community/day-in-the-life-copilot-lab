@@ -1498,6 +1498,137 @@ for (const engine of ENGINES) {
       );
     });
 
+    test('QA SPA-05 round 2: a recovered future start keeps accruing across repeated visits without changing a sibling interaction', async () => {
+      const entry = entryFor('segment-timer');
+      const diagram = inventory.find((candidate) => candidate.pattern === 'node-diagram' && candidate.segment === entry.segment);
+      assert.ok(diagram, 'exercise the actual diagram sharing the timer segment');
+      const away = deckIds.find((id) => id !== entry.segment);
+      await withPage(
+        engine,
+        entry.segment,
+        async (page) => {
+          const timer = timerOf(page, entry);
+          await hold(page);
+          await countIntervals(page);
+          await page.locator(`#${diagram.id} button`).nth(1).focus();
+          await page.keyboard.press('Enter');
+          assert.equal(await stored(page, diagram.segment, diagram.id), 1);
+          await page.evaluate((one) => {
+            window.teachingSpa.store.update(one.segment, (state) => ({
+              ...state,
+              parameters: {
+                ...state.parameters,
+                [one.id]: { state: 'running', elapsedMs: 5000, startedAt: Date.now() + 3_600_000 },
+              },
+            }));
+          }, entry);
+
+          let consumed = 5;
+          for (let visitNumber = 0; visitNumber < 3; visitNumber++) {
+            await visit(page, away);
+            assert.equal(await intervals(page), 0, 'no interval survives disposal');
+            await visit(page, entry.segment);
+            assert.equal(await timer.readout(), timer.shows(consumed), `visit ${visitNumber + 1} must not return elapsed time`);
+            assert.equal(await intervals(page), 1, 'one interval, never an extra one per visit');
+            await timer.pass(5);
+            consumed += 5;
+            assert.equal(await timer.readout(), timer.shows(consumed));
+            assert.equal(await stored(page, diagram.segment, diagram.id), 1, 'checkpointing the timer preserves its sibling');
+          }
+          await visit(page, away);
+          assert.equal((await stored(page, entry.segment, entry.id)).elapsedMs, consumed * 1000);
+          await visit(page, entry.segment);
+          await timer.button('Pause').focus();
+          await page.keyboard.press('Space');
+          await timer.pass(10);
+          assert.equal(await timer.readout(), timer.shows(consumed), 'pausing after recovery still freezes the countdown');
+          assert.equal(await intervals(page), 0);
+        },
+        { clock: true },
+      );
+    });
+
+    for (const remainingMs of [270_250, 30_400, 400]) {
+      test(`QA SPA-05 round 2: delayed status rounds the actual ${remainingMs} milliseconds left exactly like the visible clock`, async () => {
+        const entry = entryFor('segment-timer');
+        await withPage(
+          engine,
+          entry.segment,
+          async (page) => {
+            const timer = timerOf(page, entry);
+            await hold(page);
+            await watchLiveRegion(page);
+            await timer.button('Start').focus();
+            await page.keyboard.press('Enter');
+            await timer.pass(1);
+            await page.clock.fastForward((timer.total - 1) * 1000 - remainingMs);
+            await timer.speak();
+
+            const secondsLeft = Math.ceil(remainingMs / 1000);
+            const minutes = Math.floor(secondsLeft / 60);
+            const seconds = secondsLeft % 60;
+            const spoken = [
+              minutes ? `${minutes} minute${minutes === 1 ? '' : 's'}` : '',
+              seconds ? `${seconds} second${seconds === 1 ? '' : 's'}` : '',
+            ].filter(Boolean).join(' ');
+            assert.equal(await timer.readout(), `${minutes}:${String(seconds).padStart(2, '0')}`);
+            assert.equal((await announcements(page)).at(-1), `${spoken} left.`);
+            assert.equal((await announcements(page)).length, 2, 'one state change and one caught-up status, not one per crossed threshold');
+          },
+          { clock: true },
+        );
+      });
+    }
+
+    for (const pattern of ['carousel', 'segment-timer']) {
+      test(`QA SPA-05 round 2: the ${pattern} description remains reachable and outside live output after operation and navigation`, async () => {
+        const entry = entryFor(pattern);
+        await withPage(
+          engine,
+          entry.segment,
+          async (page) => {
+            const root = page.getByRole('group', { name: entry.label, exact: true });
+            const description = page.locator(`[id="${entry.longDescriptionId}"]`);
+            assert.equal(await description.count(), 1, 'the exact declared description must exist');
+            const original = await description.textContent();
+            assert.ok(original.trim(), 'the description carries information');
+            const assertDescription = async () => {
+              assert.equal(await description.isVisible(), true, 'hiding another slide must not hide the description');
+              assert.equal(await description.textContent(), original, 'changing live output must not rewrite the instructions');
+              assert.ok((await root.getAttribute('aria-describedby')).split(/\s+/).includes(entry.longDescriptionId));
+              assert.equal(
+                await description.evaluate((node) => node.closest('[aria-live], [role="status"], [role="timer"]') === null),
+                true,
+                'instructions are not repeated as live output',
+              );
+            };
+            if (pattern === 'carousel') {
+              const slides = root.locator('[aria-roledescription="slide"]');
+              for (let index = 0; index <= await slides.count(); index++) {
+                await root.getByRole('button', { name: 'Next slide', exact: true }).focus();
+                await page.keyboard.press(index % 2 === 0 ? 'Enter' : 'Space');
+                await assertDescription();
+              }
+              await roundTrip(page, entry.segment);
+            } else {
+              const timer = timerOf(page, entry);
+              await hold(page);
+              for (const name of ['Start', 'Pause', 'Reset', 'Start', 'Stop']) {
+                await timer.button(name).focus();
+                await page.keyboard.press('Space');
+                await timer.pass(2);
+                await assertDescription();
+              }
+              await visit(page, deckIds.find((id) => id !== entry.segment));
+              await visit(page, entry.segment);
+            }
+            await assertDescription();
+          },
+          { clock: pattern === 'segment-timer' },
+        );
+      });
+    }
+
     for (const secondsLeft of [270, 30]) {
       test(`QA SPA-05: a delayed tick announces the actual ${secondsLeft} seconds remaining`, async () => {
         const entry = entryFor('segment-timer');
