@@ -2,6 +2,12 @@ import { segments } from 'virtual:spa-content';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
 import { mountInteractions, type Mounted } from './interactions';
 import { createAnnouncer } from './shell/live-region';
+import {
+  mountPresentation,
+  type PresentationDocument,
+  type PresentationNavigator,
+  type PresentationWindow,
+} from './shell/presentation';
 import { hashFor, parseHash } from './shell/router';
 import { createState } from './shell/state';
 
@@ -164,3 +170,19 @@ installHashRewrite(contentWindow, document);
 // it names (it reads the hash, so that must still be the anchor), and only then does the address go back to the segment.
 settleAnchor();
 window.addEventListener('hashchange', settleAnchor);
+
+// Presentation mode (spec 2.5). Last, once the segment is on screen, so nothing here can keep it from rendering. A shell
+// without the controls, or a document with no selector support, mounts nothing and boots as it did before.
+const presentation = mountPresentation({
+  document: document as unknown as PresentationDocument,
+  window: window as unknown as PresentationWindow,
+  navigator: (typeof navigator === 'undefined' ? undefined : navigator) as unknown as PresentationNavigator | undefined,
+  store,
+  announce,
+  // Reads inside a sentence ("the window is showing segment 2 of 9: Title"), and says where the reader is when fullscreen ends.
+  describeSegment: (id) => {
+    const segment = segments.find((candidate) => candidate.id === id);
+    return `segment ${ids.indexOf(id) + 1} of ${ids.length}${segment ? `: ${segment.title}` : ''}`;
+  },
+});
+if (presentation) Object.assign((window as unknown as { teachingSpa: object }).teachingSpa, { presentation });
