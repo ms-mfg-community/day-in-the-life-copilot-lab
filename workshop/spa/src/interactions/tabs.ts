@@ -2,42 +2,17 @@
 // whose every item opens with bold text becomes the tablist, the bold lead-in names its tab, and the rest of the item is
 // the panel. Which tab is active is kept in the store, so it outlives navigation (2.3).
 
-import { NOTHING, create, elementsOf, firstContent, hasModifier, takesFocusItself, textOf } from './dom';
-import { readParameter, writeParameter } from './persist';
+import { NOTHING, create, firstContent, hasModifier, leadInLists, takesFocusItself, textOf } from './dom';
+import { readParameter, storedIndex, writeParameter } from './persist';
 import type { Mounter } from './types';
 
-interface Surfaces {
-  readonly list: HTMLElement;
-  readonly items: HTMLElement[];
-  /** The bold lead-in of each item, in order. */
-  readonly names: string[];
-}
-
-function findSurfaces(root: HTMLElement): Surfaces | null {
-  for (const list of Array.from(root.querySelectorAll<HTMLElement>('ul'))) {
-    const items = elementsOf(list);
-    const names: string[] = [];
-    for (const item of items) {
-      const leadIn = item.localName === 'li' ? firstContent(item) : null;
-      if (leadIn?.localName !== 'strong') break;
-      names.push(textOf(leadIn));
-    }
-    if (items.length >= 2 && names.length === items.length) return { list, items, names };
-  }
-  return null;
-}
-
-/** The stored tab, or the first when the store holds anything that is not the index of a tab. */
-function storedTab(value: unknown, count: number): number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < count ? value : 0;
-}
-
 export const mountTabs: Mounter = ({ entry, segment, root, document: doc, store }) => {
-  const surfaces = findSurfaces(root);
-  if (surfaces === null) {
+  const surfaces = leadInLists(root)[0];
+  if (surfaces === undefined) {
     throw new Error(`tabs ${entry.id}: segment ${segment.id} has no list whose items all open with bold text`);
   }
-  const { list, items, names } = surfaces;
+  const { list, items } = surfaces;
+  const names = surfaces.leadIns.map(textOf);
 
   const tabs = names.map((name, index) =>
     create(
@@ -110,6 +85,6 @@ export const mountTabs: Mounter = ({ entry, segment, root, document: doc, store 
     choose(to);
   });
 
-  show(storedTab(readParameter(store, segment.id, entry.id), tabs.length));
+  show(storedIndex(readParameter(store, segment.id, entry.id), tabs.length));
   return NOTHING;
 };

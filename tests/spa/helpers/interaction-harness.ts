@@ -48,8 +48,11 @@ export function readSpecPatterns(): string[] {
   });
 }
 
-/** The five patterns this part of the inventory (issue 4) builds. */
+/** The five patterns issue 4 (SPA-04) built. */
 export const PART_ONE = ['tabs', 'accordion', 'dialog', 'staged-reveal', 'disclosure-popover'] as const;
+
+/** The four patterns issue 5 (SPA-05) builds. Together with PART_ONE they are the nine patterns of section 2.4. */
+export const PART_TWO = ['parameter-chart', 'node-diagram', 'carousel', 'segment-timer'] as const;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Booting the shell
@@ -185,5 +188,5 @@ export type Flavour = 'source' | 'bundle';
 // The audit itself (and the helpers that read names and find elements) lives in interaction-audit.ts, a pure module, so that
 // interactions-browser-check.mjs can run the very same code in real browsers. The tests keep importing it from here.
 
-export { ariaName, auditInteraction, contentName, within, type InventoryEntry } from './interaction-audit';
+export { ariaName, auditInteraction, auditLongDescription, contentName, within, type InventoryEntry } from './interaction-audit';
 
