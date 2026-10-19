@@ -10,6 +10,24 @@
       "statusRegion": false
     },
     {
+      "id": "m1-extensibility-map",
+      "pattern": "node-diagram",
+      "segment": "m1-extensibility-architecture",
+      "label": "Extensibility architecture map",
+      "keys": ["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter"],
+      "statusRegion": false,
+      "longDescriptionId": "m1-extensibility-map-description"
+    },
+    {
+      "id": "m1-segment-timer",
+      "pattern": "segment-timer",
+      "segment": "m1-extensibility-architecture",
+      "label": "Segment pacing timer",
+      "keys": ["Space", "Escape"],
+      "statusRegion": true,
+      "longDescriptionId": "m1-segment-timer-description"
+    },
+    {
       "id": "m2-lab-walkthrough",
       "pattern": "accordion",
       "segment": "m2-mcp",
@@ -18,12 +36,31 @@
       "statusRegion": false
     },
     {
+      "id": "m3-token-cost-chart",
+      "pattern": "parameter-chart",
+      "segment": "m3-multi-agent",
+      "label": "Token and cost model",
+      "keys": ["Tab", "ArrowLeft", "ArrowRight", "Home", "End"],
+      "statusRegion": true,
+      "longDescriptionId": "m3-token-cost-description",
+      "dataset": "token-cost-model"
+    },
+    {
       "id": "m4-build-up",
       "pattern": "staged-reveal",
       "segment": "m4-gh-aw",
       "label": "Progressive build-up",
       "keys": ["ArrowRight", "ArrowLeft"],
       "statusRegion": true
+    },
+    {
+      "id": "m5-controls-carousel",
+      "pattern": "carousel",
+      "segment": "m5-marketplace",
+      "label": "Enterprise controls",
+      "keys": ["Tab", "Enter", "Space"],
+      "statusRegion": false,
+      "longDescriptionId": "m5-controls-carousel-description"
     },
     {
       "id": "m5c-synergy-zoom",

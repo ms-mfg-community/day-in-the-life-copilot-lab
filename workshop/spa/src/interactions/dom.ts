@@ -55,6 +55,30 @@ export function firstContent(parent: Element): HTMLElement | null {
   return null;
 }
 
+/** A list whose every item opens with bold text: the bold text names the item, and the rest of the item is what it says. */
+export interface LeadInList {
+  readonly list: HTMLElement;
+  readonly items: HTMLElement[];
+  /** The bold lead-in of each item, in order. */
+  readonly leadIns: HTMLElement[];
+}
+
+/** The lists of a slide with two or more items, each opening with bold text, in the order a reader meets them. */
+export function leadInLists(root: Element): LeadInList[] {
+  const found: LeadInList[] = [];
+  for (const list of Array.from(root.querySelectorAll<HTMLElement>('ul'))) {
+    const items = elementsOf(list);
+    const leadIns: HTMLElement[] = [];
+    for (const item of items) {
+      const leadIn = item.localName === 'li' ? firstContent(item) : null;
+      if (leadIn?.localName !== 'strong') break;
+      leadIns.push(leadIn);
+    }
+    if (items.length >= 2 && leadIns.length === items.length) found.push({ list, items, leadIns });
+  }
+  return found;
+}
+
 const FOCUSABLE_BY_DEFAULT = new Set(['a', 'button', 'input', 'select', 'textarea']);
 
 /** Whether an element can take focus without a tabindex of its own. */

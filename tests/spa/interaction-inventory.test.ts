@@ -1,6 +1,7 @@
-// AC6 (specs/005-teaching-spa.md section 2, issue 4): every `id` in workshop/spa/content/interactions.json is present in
-// the built DOM carrying the ARIA role set its declared `pattern` requires, and every declared `pattern` is one of the
-// patterns section 2.4 names. There is no filter and no skip list: whatever the inventory declares is checked.
+// AC6 (specs/005-teaching-spa.md section 2, issues 4 and 5): every `id` in workshop/spa/content/interactions.json is
+// present in the built DOM carrying the ARIA role set its declared `pattern` requires, and every declared `pattern` is one
+// of the patterns section 2.4 names. There is no filter and no skip list: whatever the inventory declares is checked, and
+// the inventory declares all nine patterns (issue 4 built five, issue 5 the other four).
 //
 // "Built DOM" is read two ways, and both must pass: the shell as the dev server runs it (source) and the artifact
 // `npm run spa:build` produces, executed from a fresh build. The fake DOM they run in is checked against real Chromium and
@@ -12,6 +13,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createBrowser, type FakeElement } from './helpers/fake-dom';
 import {
   PART_ONE,
+  PART_TWO,
   ROOT,
   auditInteraction,
   bootFromBundle,
@@ -70,12 +72,43 @@ describe('the inventory and section 2.4 (AC6)', () => {
     for (const pattern of PART_ONE) expect(declared, pattern).toContain(pattern);
   });
 
-  it('QA staging: contains only Part 1 patterns until SPA-05 adds Part 2', () => {
-    expect([...new Set(inventory.map((entry) => entry.pattern))].sort()).toEqual([...PART_ONE].sort());
+  it('declares all four patterns of part 2 (parameter-chart, node-diagram, carousel, segment-timer)', () => {
+    const declared = new Set(inventory.map((entry) => entry.pattern));
+    for (const pattern of PART_TWO) expect(declared, pattern).toContain(pattern);
   });
 
-  it('turns the status region on for a staged reveal, as the schema requires', () => {
-    for (const entry of inventory.filter((candidate) => candidate.pattern === 'staged-reveal')) expect(entry.statusRegion, entry.id).toBe(true);
+  it('declares each of the nine patterns of section 2.4, and no other', () => {
+    const declared = [...new Set(inventory.map((entry) => entry.pattern))].sort();
+    expect(declared).toEqual([...specPatterns].sort());
+    expect(declared).toEqual([...PART_ONE, ...PART_TWO].sort());
+  });
+
+  it('turns the status region on where the schema requires it: a staged reveal, a parameter chart and a segment timer', () => {
+    for (const pattern of ['staged-reveal', 'parameter-chart', 'segment-timer']) {
+      for (const entry of inventory.filter((candidate) => candidate.pattern === pattern)) expect(entry.statusRegion, entry.id).toBe(true);
+    }
+  });
+
+  it('declares a long description for every chart and diagram, as the schema requires (AC19)', () => {
+    for (const pattern of ['parameter-chart', 'node-diagram']) {
+      for (const entry of inventory.filter((candidate) => candidate.pattern === pattern)) {
+        expect(entry.longDescriptionId ?? '', entry.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+      }
+    }
+  });
+
+  it('declares a long description for every carousel and segment timer as well, as issue 5 builds all four patterns of part 2 "each with a long description"', () => {
+    for (const pattern of ['carousel', 'segment-timer']) {
+      const entries = inventory.filter((candidate) => candidate.pattern === pattern);
+      expect(entries.length, pattern).toBeGreaterThan(0);
+      for (const entry of entries) expect(entry.longDescriptionId ?? '', entry.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    }
+  });
+
+  it('names the dataset a parameter chart draws on', () => {
+    for (const entry of inventory.filter((candidate) => candidate.pattern === 'parameter-chart')) {
+      expect(entry.dataset ?? '', entry.id).not.toBe('');
+    }
   });
 });
 
@@ -142,13 +175,44 @@ const element = (root: FakeElement, tag: string): FakeElement => {
   return root.ownerDocument.createElement(tag);
 };
 
-/** The popover a disclosure trigger controls, wherever it currently sits. */
-const popoverOf = (root: FakeElement): FakeElement => {
+/** The element the first button of an interaction controls (a popover, a diagram's details), wherever it currently sits. */
+const controlledBy = (root: FakeElement): FakeElement => {
   const id = first(root, 'button').getAttribute('aria-controls');
   const found = id === null ? null : (root.ownerDocument?.getElementById(id) ?? null);
-  if (found === null) throw new Error('negative control: the popover is not reachable');
+  if (found === null) throw new Error('negative control: the controlled element is not reachable');
   return found;
 };
+
+/** The long description a chart or diagram points at with aria-describedby, wherever it currently sits. */
+const descriptionOf = (root: FakeElement): FakeElement => {
+  const id = (root.getAttribute('aria-describedby') ?? '').split(/\s+/)[0];
+  const found = root.ownerDocument?.getElementById(id) ?? null;
+  if (found === null) throw new Error('negative control: the long description is not reachable');
+  return found;
+};
+
+/** The element that holds the slides of a carousel. */
+const wrapperOf = (root: FakeElement): FakeElement => {
+  const parent = first(root, '[aria-roledescription="slide"]').parentElement;
+  if (parent === null) throw new Error('negative control: the slides have no wrapper');
+  return parent;
+};
+
+/** The first button whose caption starts with a word. */
+const buttonStarting = (root: FakeElement, word: string): FakeElement => {
+  const found = within(root, 'button').find((button) => button.textContent.trim().toLowerCase().startsWith(word));
+  if (found === undefined) throw new Error(`negative control: no ${word} button`);
+  return found;
+};
+
+/** Takes away both ways an author names an element. */
+const unname = (el: FakeElement): void => {
+  el.removeAttribute('aria-label');
+  el.removeAttribute('aria-labelledby');
+};
+
+/** Breaks the shell's status region, which an entry with statusRegion=true announces to. */
+const breakStatusRegion = (root: FakeElement): void => root.ownerDocument?.getElementById('live-region')?.removeAttribute('role');
 
 const mutations: Mutation[] = [
   { name: 'the id is gone', pattern: 'tabs', apply: (root) => root.remove(), expected: /not in the DOM/ },
@@ -182,8 +246,63 @@ const mutations: Mutation[] = [
 
   { name: 'the trigger loses aria-expanded', pattern: 'disclosure-popover', apply: (root) => first(root, 'button').removeAttribute('aria-expanded'), expected: /expected one trigger button with aria-expanded/ },
   { name: 'the trigger loses aria-controls', pattern: 'disclosure-popover', apply: (root) => first(root, 'button').removeAttribute('aria-controls'), expected: /no aria-controls pointing at the popover/ },
-  { name: 'the popover leaves the interaction', pattern: 'disclosure-popover', apply: (root) => root.after(popoverOf(root)), expected: /not inside the interaction/ },
+  { name: 'the popover leaves the interaction', pattern: 'disclosure-popover', apply: (root) => root.after(controlledBy(root)), expected: /not inside the interaction/ },
   { name: 'aria-expanded says open while the popover is hidden', pattern: 'disclosure-popover', apply: (root) => first(root, 'button').setAttribute('aria-expanded', 'true'), expected: /disagrees with aria-expanded/ },
+
+  { name: 'the group loses its name', pattern: 'parameter-chart', apply: unname, expected: /role=group named/ },
+  { name: 'a slider loses its name', pattern: 'parameter-chart', apply: (root) => unname(first(root, '[role="slider"]')), expected: /no accessible name/ },
+  { name: 'a slider leaves the tab order', pattern: 'parameter-chart', apply: (root) => first(root, '[role="slider"]').removeAttribute('tabindex'), expected: /not in the tab order/ },
+  { name: 'aria-valuenow leaves its range', pattern: 'parameter-chart', apply: (root) => first(root, '[role="slider"]').setAttribute('aria-valuenow', '-1'), expected: /outside/ },
+  { name: 'aria-valuenow is not a number', pattern: 'parameter-chart', apply: (root) => first(root, '[role="slider"]').setAttribute('aria-valuenow', 'lots'), expected: /numeric/ },
+  { name: 'no parameter has the slider role', pattern: 'parameter-chart', apply: (root) => within(root, '[role="slider"]').forEach((slider) => slider.removeAttribute('role')), expected: /no parameter can be set/ },
+  { name: 'the step buttons are gone', pattern: 'parameter-chart', apply: (root) => within(root, 'button').forEach((button) => button.remove()), expected: /no single-pointer way/ },
+  { name: 'the long description loses its association', pattern: 'parameter-chart', apply: (root) => root.removeAttribute('aria-describedby'), expected: /nothing associates/ },
+  { name: 'the long description is hidden', pattern: 'parameter-chart', apply: (root) => descriptionOf(root).setAttribute('hidden', ''), expected: /not reachable: it is hidden/ },
+  { name: 'the shell status region is not a status', pattern: 'parameter-chart', apply: breakStatusRegion, expected: /no polite status region/ },
+
+  { name: 'the diagram loses its name', pattern: 'node-diagram', apply: unname, expected: /role=group named/ },
+  { name: 'two nodes are selected', pattern: 'node-diagram', apply: (root) => within(root, 'button')[1].setAttribute('aria-pressed', 'true'), expected: /exactly one selected node/ },
+  { name: 'no node is selected', pattern: 'node-diagram', apply: (root) => within(root, 'button').forEach((node) => node.setAttribute('aria-pressed', 'false')), expected: /exactly one selected node/ },
+  { name: 'aria-pressed is not true or false', pattern: 'node-diagram', apply: (root) => within(root, 'button')[1].setAttribute('aria-pressed', 'maybe'), expected: /aria-pressed true\/false/ },
+  { name: 'a node loses aria-pressed', pattern: 'node-diagram', apply: (root) => within(root, 'button')[1].removeAttribute('aria-pressed'), expected: /aria-pressed true\/false/ },
+  { name: 'two nodes are in the tab order', pattern: 'node-diagram', apply: (root) => within(root, 'button')[1].setAttribute('tabindex', '0'), expected: /exactly one node in the tab order/ },
+  { name: 'a node loses aria-controls', pattern: 'node-diagram', apply: (root) => within(root, 'button')[1].removeAttribute('aria-controls'), expected: /no aria-controls pointing at the details/ },
+  { name: 'the details are hidden', pattern: 'node-diagram', apply: (root) => controlledBy(root).setAttribute('hidden', ''), expected: /are not visible: it is hidden/ },
+  { name: 'the details are empty', pattern: 'node-diagram', apply: (root) => void (controlledBy(root).textContent = ''), expected: /details .* are empty/ },
+  { name: 'a node has no name', pattern: 'node-diagram', apply: (root) => void (within(root, 'button')[1].textContent = ''), expected: /has no name/ },
+  { name: 'the long description id is gone', pattern: 'node-diagram', apply: (root) => descriptionOf(root).removeAttribute('id'), expected: /long description #\S+ is not in the DOM/ },
+  { name: 'the long description is empty', pattern: 'node-diagram', apply: (root) => void (descriptionOf(root).textContent = ''), expected: /long description #\S+ is empty/ },
+
+  { name: 'the container loses aria-roledescription', pattern: 'carousel', apply: (root) => root.removeAttribute('aria-roledescription'), expected: /aria-roledescription="carousel"/ },
+  { name: 'the container takes another role', pattern: 'carousel', apply: (root) => root.setAttribute('role', 'list'), expected: /role=region or role=group/ },
+  { name: 'the container loses its name', pattern: 'carousel', apply: unname, expected: /the carousel is named ""/ },
+  { name: 'a slide loses its name', pattern: 'carousel', apply: (root) => unname(first(root, '[aria-roledescription="slide"]')), expected: /no accessible name/ },
+  { name: 'a slide loses its role description', pattern: 'carousel', apply: (root) => first(root, '[aria-roledescription="slide"]').removeAttribute('aria-roledescription'), expected: /that is not a slide/ },
+  { name: 'a slide is not a group', pattern: 'carousel', apply: (root) => first(root, '[aria-roledescription="slide"]').removeAttribute('role'), expected: /not a role=group/ },
+  { name: 'the slide wrapper stops being polite', pattern: 'carousel', apply: (root) => wrapperOf(root).setAttribute('aria-live', 'off'), expected: /must be polite/ },
+  { name: 'every slide is shown', pattern: 'carousel', apply: (root) => within(root, '[aria-roledescription="slide"]').forEach((slide) => slide.removeAttribute('hidden')), expected: /exactly one slide shown/ },
+  { name: 'the previous and next buttons are gone', pattern: 'carousel', apply: (root) => within(root, 'button').forEach((button) => button.remove()), expected: /previous and next buttons/ },
+  { name: 'a slide control loses aria-controls', pattern: 'carousel', apply: (root) => first(root, 'button').removeAttribute('aria-controls'), expected: /no aria-controls pointing at the slide wrapper/ },
+  { name: 'a slide control moves into the live wrapper', pattern: 'carousel', apply: (root) => wrapperOf(root).append(first(root, 'button')), expected: /inside the live slide wrapper/ },
+  { name: 'the long description loses its association', pattern: 'carousel', apply: (root) => root.removeAttribute('aria-describedby'), expected: /nothing associates/ },
+  { name: 'the long description is hidden', pattern: 'carousel', apply: (root) => descriptionOf(root).setAttribute('hidden', ''), expected: /not reachable: it is hidden/ },
+  { name: 'the long description id is gone', pattern: 'carousel', apply: (root) => descriptionOf(root).removeAttribute('id'), expected: /long description #\S+ is not in the DOM/ },
+  { name: 'the long description is empty', pattern: 'carousel', apply: (root) => void (descriptionOf(root).textContent = ''), expected: /long description #\S+ is empty/ },
+
+  { name: 'the group loses its name', pattern: 'segment-timer', apply: unname, expected: /role=group named/ },
+  { name: 'the start control is gone', pattern: 'segment-timer', apply: (root) => buttonStarting(root, 'start').remove(), expected: /no start control/ },
+  { name: 'the pause control is gone', pattern: 'segment-timer', apply: (root) => buttonStarting(root, 'pause').remove(), expected: /no pause control/ },
+  { name: 'the stop control is gone', pattern: 'segment-timer', apply: (root) => buttonStarting(root, 'stop').remove(), expected: /no stop control/ },
+  { name: 'the reset control is gone', pattern: 'segment-timer', apply: (root) => buttonStarting(root, 'reset').remove(), expected: /no reset control/ },
+  { name: 'a control has no name', pattern: 'segment-timer', apply: (root) => void (first(root, 'button').textContent = ''), expected: /a timer control has no name/ },
+  { name: 'the clock loses its role', pattern: 'segment-timer', apply: (root) => first(root, '[role="timer"]').removeAttribute('role'), expected: /expected one role=timer/ },
+  { name: 'the clock loses its name', pattern: 'segment-timer', apply: (root) => unname(first(root, '[role="timer"]')), expected: /the clock has no accessible name/ },
+  { name: 'the clock shows no time', pattern: 'segment-timer', apply: (root) => void (first(root, '[role="timer"]').textContent = ''), expected: /minutes:seconds/ },
+  { name: 'the shell status region is not a status', pattern: 'segment-timer', apply: breakStatusRegion, expected: /no polite status region/ },
+  { name: 'the long description loses its association', pattern: 'segment-timer', apply: (root) => root.removeAttribute('aria-describedby'), expected: /nothing associates/ },
+  { name: 'the long description is hidden', pattern: 'segment-timer', apply: (root) => descriptionOf(root).setAttribute('hidden', ''), expected: /not reachable: it is hidden/ },
+  { name: 'the long description id is gone', pattern: 'segment-timer', apply: (root) => descriptionOf(root).removeAttribute('id'), expected: /long description #\S+ is not in the DOM/ },
+  { name: 'the long description is empty', pattern: 'segment-timer', apply: (root) => void (descriptionOf(root).textContent = ''), expected: /long description #\S+ is empty/ },
 ];
 
 describe('the AC6 audit can fail (negative controls)', () => {
@@ -206,11 +325,21 @@ describe('the AC6 audit can fail (negative controls)', () => {
     expect(problems.join('\n')).toMatch(mutation.expected);
   });
 
+  it.each(PART_TWO)('%s: an entry that declares no long description fails the audit, as issue 5 gives each pattern of part 2 one', async (pattern) => {
+    const entry = inventory.find((candidate) => candidate.pattern === pattern) as InventoryEntry;
+    expect(entry, `the inventory has no ${pattern} entry`).toBeDefined();
+    page = await bootFromSource();
+    await page.go(entry.segment);
+    expect(auditInteraction(page.document, entry), 'the page must pass the audit before it is broken').toEqual([]);
+    const problems = auditInteraction(page.document, { ...entry, longDescriptionId: undefined });
+    expect(problems.join('\n')).toMatch(/declares no longDescriptionId/);
+  });
+
   it('refuses a pattern it has no audit for rather than passing it', () => {
     const browser = createBrowser('<div id="x"></div>');
     const problems = auditInteraction(browser.document, {
       id: 'x',
-      pattern: 'carousel',
+      pattern: 'synthetic-unknown-pattern',
       segment: 'm1-extensibility-architecture',
       label: 'x',
       keys: ['Tab'],
@@ -237,9 +366,9 @@ describe('the interaction sources carry no curriculum prose', () => {
 
   const normalise = (value: string): string => value.replace(/\s+/g, ' ').trim().toLowerCase();
 
-  it('has a source file for each pattern of part 1', () => {
+  it('has a source file for each of the nine patterns', () => {
     const files = readdirSync(sourceDir).filter((name) => name.endsWith('.ts'));
-    for (const pattern of PART_ONE) expect(files, pattern).toContain(`${pattern}.ts`);
+    for (const pattern of [...PART_ONE, ...PART_TWO]) expect(files, pattern).toContain(`${pattern}.ts`);
   });
 
   it('copies no sentence of a slide into a string literal', () => {

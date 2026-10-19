@@ -6,22 +6,30 @@ import inventory from '../../content/interactions.json';
 import type { Announcer } from '../shell/live-region';
 import type { ShellStore } from '../shell/state';
 import { mountAccordion } from './accordion';
+import { mountCarousel } from './carousel';
 import { mountDialog } from './dialog';
 import { mountDisclosurePopover } from './disclosure-popover';
 import { NOTHING } from './dom';
+import { mountNodeDiagram } from './node-diagram';
+import { mountParameterChart } from './parameter-chart';
+import { mountSegmentTimer } from './segment-timer';
 import { mountStagedReveal } from './staged-reveal';
 import { mountTabs } from './tabs';
 import type { Mounted, Mounter, SegmentInfo } from './types';
 
 export type { Mounted, SegmentInfo };
 
-/** The patterns that are built. An inventory entry of any other pattern has nothing to mount yet, and is left out. */
+/** The patterns that are built. An inventory entry of a pattern that is not in this table has nothing to mount, and is left out. */
 const MOUNTERS: Readonly<Record<string, Mounter>> = {
   tabs: mountTabs,
   accordion: mountAccordion,
   dialog: mountDialog,
   'staged-reveal': mountStagedReveal,
   'disclosure-popover': mountDisclosurePopover,
+  'parameter-chart': mountParameterChart,
+  'node-diagram': mountNodeDiagram,
+  carousel: mountCarousel,
+  'segment-timer': mountSegmentTimer,
 };
 
 export interface MountRequest {

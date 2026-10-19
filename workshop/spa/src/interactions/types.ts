@@ -9,6 +9,10 @@ export interface InventoryEntry {
   readonly label: string;
   readonly keys: readonly string[];
   readonly statusRegion: boolean;
+  /** The id of the element that holds the long description of a chart or a diagram (AC19). */
+  readonly longDescriptionId?: string;
+  /** The id of the dataset a parameter-chart is computed from (workshop/spa/content/datasets). */
+  readonly dataset?: string;
 }
 
 /** What a pattern may read about the segment it sits in: the metadata the content pipeline derives from front matter. */

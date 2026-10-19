@@ -1,11 +1,13 @@
 // The AC6 audit (specs/005-teaching-spa.md section 2.4): the role set and states each interaction pattern requires, read
 // from the DOM the way assistive technology would, as a list of what is wrong. An empty list means the inventory id is
-// present in the DOM and carries them.
+// present in the DOM and carries them. Beside it sits the AC19 audit of the long description a chart or diagram declares
+// (section 2.4, "Complex visuals", F109), which auditInteraction applies to every entry that needs one.
 //
 // This module is pure. It touches the DOM only through the narrow surface the fake DOM (helpers/fake-dom.ts) and a real
 // browser have in common (getElementById, getAttribute, hasAttribute, hidden, matches, querySelector(All), contains,
-// textContent, childNodes, firstElementChild, localName), and it imports the fake DOM for its types alone. That is what
-// lets interactions-browser-check.mjs bundle this file and run the very same audit in Chromium and Firefox.
+// textContent, childNodes, children, firstElementChild, parentElement, localName), and it imports the fake DOM for its
+// types alone. That is what lets interactions-browser-check.mjs bundle this file and run the very same audit in
+// Chromium and Firefox.
 
 import type { FakeDocument, FakeElement } from './fake-dom';
 
@@ -54,6 +56,71 @@ export function within(root: FakeElement, selector: string): FakeElement[] {
 function firstContentIsFocusable(panel: FakeElement): boolean {
   const first = panel.firstElementChild;
   return first !== null && (NATIVELY_FOCUSABLE.has(first.localName) || first.hasAttribute('tabindex'));
+}
+
+/**
+ * The patterns whose entries must declare a long description (AC19): the chart and the diagram, which the table of section 2.4
+ * makes complex images, and the carousel and the timer, because child issue 5 of section 7 builds all four "each with a long
+ * description".
+ */
+const LONG_DESCRIPTION_PATTERNS = new Set(['parameter-chart', 'node-diagram', 'carousel', 'segment-timer']);
+
+const HIDING_STYLE = /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b/i;
+
+/** What takes an element out of reach of a reader (`hidden`, `inert`, `aria-hidden`, an inline display:none or visibility:hidden), on it or on an ancestor. */
+function unreachableBecause(el: FakeElement): string | null {
+  for (let node: FakeElement | null = el; node !== null; node = node.parentElement) {
+    const where = node === el ? 'it' : `its ancestor <${node.localName}>`;
+    if (node.hidden) return `${where} is hidden`;
+    if (node.hasAttribute('inert')) return `${where} is inert`;
+    if (node.getAttribute('aria-hidden') === 'true') return `${where} is aria-hidden`;
+    if (HIDING_STYLE.test(node.getAttribute('style') ?? '')) return `${where} is styled out of the page`;
+  }
+  return null;
+}
+
+function numeric(el: FakeElement, attribute: string): number {
+  const raw = el.getAttribute(attribute);
+  return raw === null || raw.trim() === '' ? Number.NaN : Number(raw);
+}
+
+/**
+ * AC19, F109: a complex image needs a short description (here the accessible name) plus a long description, the textual
+ * representation of what the image conveys, structurally associated with it (F109 allows one adjacent to the image). For
+ * one inventory entry that means: the entry declares the id, one element with exactly that id is in the DOM, it says
+ * something that is not just the name, a reader can reach it and the chart or diagram points at it with aria-describedby.
+ */
+export function auditLongDescription(doc: FakeDocument, entry: InventoryEntry): string[] {
+  const problems: string[] = [];
+  const fail = (message: string): void => void problems.push(`#${entry.id} (${entry.pattern}): ${message}`);
+  const root = doc.getElementById(entry.id);
+  if (root === null) {
+    fail('the id is not in the DOM');
+    return problems;
+  }
+  const name = ariaName(root, doc);
+  if (name === '') fail('has no short description: it has no accessible name');
+  const id = entry.longDescriptionId;
+  if (id === undefined || id.trim() === '') {
+    fail('declares no longDescriptionId, and each of the chart, diagram, carousel and timer must (AC19, issue 5)');
+    return problems;
+  }
+  const holders = doc.querySelectorAll(`[id="${id}"]`);
+  if (holders.length === 0) {
+    fail(`the long description #${id} is not in the DOM`);
+    return problems;
+  }
+  if (holders.length > 1) fail(`the id ${id} is on ${holders.length} elements, so the long description is ambiguous`);
+  const description = holders[0];
+  const words = text(description);
+  if (words === '') fail(`the long description #${id} is empty`);
+  else if (words.toLowerCase() === name.toLowerCase()) fail(`the long description #${id} only repeats the short description`);
+  const unreachable = unreachableBecause(description);
+  if (unreachable !== null) fail(`the long description #${id} is not reachable: ${unreachable}`);
+  if (!(root.getAttribute('aria-describedby') ?? '').split(/\s+/).includes(id)) {
+    fail(`it is not aria-describedby #${id}, so nothing associates the long description with it`);
+  }
+  return problems;
 }
 
 export function auditInteraction(doc: FakeDocument, entry: InventoryEntry): string[] {
@@ -195,8 +262,96 @@ export function auditInteraction(doc: FakeDocument, entry: InventoryEntry): stri
       break;
     }
 
+    case 'parameter-chart': {
+      if (root.getAttribute('role') !== 'group' || ariaName(root, doc) !== entry.label) {
+        fail(`the root is not a role=group named "${entry.label}"`);
+      }
+      const sliders = all('[role="slider"]');
+      if (sliders.length === 0) fail('no parameter can be set: expected a role=slider for each parameter (F83)');
+      for (const slider of sliders) {
+        const who = slider.id || 'a slider';
+        if (ariaName(slider, doc) === '') fail(`${who} has no accessible name (a slider takes its name from the author)`);
+        if (slider.getAttribute('tabindex') !== '0') fail(`${who} is not in the tab order (tabindex=0), so the keyboard cannot reach it (F83)`);
+        const [low, high, now] = ['aria-valuemin', 'aria-valuemax', 'aria-valuenow'].map((attribute) => numeric(slider, attribute));
+        if (![low, high, now].every(Number.isFinite)) fail(`${who} lacks a numeric aria-valuemin, aria-valuemax and aria-valuenow`);
+        else if (!(low < high) || now < low || now > high) fail(`${who} has aria-valuenow ${now} outside ${low}..${high}`);
+        const steppers = all('button').filter((button) => button.getAttribute('aria-controls') === slider.id);
+        if (steppers.length < 2) fail(`${who} has no single-pointer way to set it: expected a decrease and an increase button with aria-controls="${slider.id}" (F88)`);
+        for (const stepper of steppers) if (contentName(stepper, doc) === '') fail(`a step button of ${who} has no name`);
+      }
+      break;
+    }
+
+    case 'node-diagram': {
+      if (root.getAttribute('role') !== 'group' || ariaName(root, doc) !== entry.label) {
+        fail(`the root is not a role=group named "${entry.label}"`);
+      }
+      const nodes = all('button');
+      if (nodes.length < 2) fail(`expected at least two diagram nodes, found ${nodes.length}`);
+      const selected = nodes.filter((node) => node.getAttribute('aria-pressed') === 'true');
+      if (selected.length !== 1) fail(`expected exactly one selected node (aria-pressed=true), found ${selected.length}`);
+      const inTabOrder = nodes.filter((node) => node.getAttribute('tabindex') !== '-1');
+      if (inTabOrder.length !== 1) fail(`expected exactly one node in the tab order (roving tabindex), found ${inTabOrder.length}`);
+      for (const node of nodes) {
+        if (!isBoolean(node, 'aria-pressed')) fail(`${node.id || 'a node'} does not expose its selected state with aria-pressed true/false (F91)`);
+        if (contentName(node, doc) === '') fail(`${node.id || 'a node'} has no name`);
+        const details = target(node, 'aria-controls');
+        if (details === null) fail(`${node.id || 'a node'} has no aria-controls pointing at the details it shows`);
+        else if (unreachableBecause(details) !== null) fail(`the details ${details.id} are not visible: ${unreachableBecause(details)}`);
+        else if (text(details) === '') fail(`the details ${details.id} are empty`);
+      }
+      break;
+    }
+
+    case 'carousel': {
+      if (!['region', 'group'].includes(root.getAttribute('role') ?? '') || root.getAttribute('aria-roledescription') !== 'carousel') {
+        fail('the container is not a role=region or role=group with aria-roledescription="carousel" (F100)');
+      }
+      if (ariaName(root, doc) !== entry.label) fail(`the carousel is named "${ariaName(root, doc)}", not "${entry.label}"`);
+      const slides = all('[aria-roledescription="slide"]');
+      if (slides.length < 2) fail(`expected at least two slides, found ${slides.length}`);
+      const wrapper = slides.length === 0 ? null : slides[0].parentElement;
+      for (const slide of slides) {
+        if (slide.getAttribute('role') !== 'group') fail('a slide is not a role=group');
+        if (ariaName(slide, doc) === '') fail('a slide has no accessible name (a form such as "3 of 10" will do)');
+        if (slide.parentElement !== wrapper) fail('the slides do not share one wrapper');
+      }
+      if (wrapper !== null) {
+        for (const child of [...wrapper.children]) if (child.getAttribute('aria-roledescription') !== 'slide') fail(`the slide wrapper holds a <${child.localName}> that is not a slide`);
+        if (wrapper.getAttribute('aria-live') !== 'polite') fail(`the slide wrapper is aria-live="${wrapper.getAttribute('aria-live')}": nothing rotates it, so it must be polite (F100)`);
+        if (slides.filter((slide) => !slide.hidden).length !== 1) fail('expected exactly one slide shown at a time');
+        const buttons = all('button');
+        if (buttons.length < 2) fail(`expected previous and next buttons, found ${buttons.length} (F99)`);
+        for (const button of buttons) {
+          if (contentName(button, doc) === '') fail('a slide control has no name');
+          if (button.getAttribute('aria-controls') !== wrapper.id || wrapper.id === '') fail(`a slide control has no aria-controls pointing at the slide wrapper`);
+        }
+        if (buttons.some((button) => wrapper.contains(button))) fail('a slide control sits inside the live slide wrapper, so its caption would be announced');
+      }
+      break;
+    }
+
+    case 'segment-timer': {
+      if (root.getAttribute('role') !== 'group' || ariaName(root, doc) !== entry.label) {
+        fail(`the root is not a role=group named "${entry.label}"`);
+      }
+      const buttons = all('button');
+      for (const button of buttons) if (contentName(button, doc) === '') fail('a timer control has no name');
+      for (const control of ['start', 'pause', 'stop', 'reset']) {
+        if (!buttons.some((button) => contentName(button, doc).toLowerCase().startsWith(control))) fail(`no ${control} control (F108)`);
+      }
+      const clocks = all('[role="timer"]');
+      if (clocks.length !== 1) fail(`expected one role=timer, found ${clocks.length}`);
+      else {
+        if (ariaName(clocks[0], doc) === '') fail('the clock has no accessible name');
+        if (!/\b\d+:\d{2}\b/.test(text(clocks[0]))) fail('the clock does not show the time as minutes:seconds');
+      }
+      break;
+    }
+
     default:
       fail(`no audit exists for pattern "${entry.pattern}"`);
   }
+  if (LONG_DESCRIPTION_PATTERNS.has(entry.pattern) || entry.longDescriptionId !== undefined) problems.push(...auditLongDescription(doc, entry));
   return problems;
 }
