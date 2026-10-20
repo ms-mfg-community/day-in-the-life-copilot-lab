@@ -245,13 +245,19 @@ export class Lab {
     return win;
   }
 
-  /** The handle `viewer` holds for `target`: the same object every time for a pair, as a WindowProxy is. */
+  /**
+   * The handle `viewer` holds for `target`: the same object every time for a pair, as a WindowProxy is. Through the handle of a window
+   * of the same origin, what that window has can be read (`window.opener.anything`); through one of another origin, which no opaque
+   * origin is the same as, nothing but `closed` and `postMessage` can. A browser throws a SecurityError for the rest; here it reads as
+   * not there, so that an assertion library that looks at a handle is not thrown by it, and a test that wants the throw hands over a
+   * handle of its own that has one.
+   */
   proxy(viewer: LabWindow, target: LabWindow): WindowHandle {
     let held = this.handles.get(viewer);
     if (held === undefined) this.handles.set(viewer, (held = new Map()));
     let handle = held.get(target);
     if (handle === undefined) {
-      handle = {
+      const own: WindowHandle = {
         get closed(): boolean {
           return target.closed;
         },
@@ -261,6 +267,13 @@ export class Lab {
           this.deliverMessage(viewer, target, data, targetOrigin);
         },
       };
+      const sameOrigin = (): boolean => !viewer.opaque && !target.opaque && viewer.trueOrigin === target.trueOrigin;
+      handle = new Proxy(own, {
+        get: (handleOwn, key): unknown => {
+          if (Reflect.has(handleOwn, key)) return Reflect.get(handleOwn, key) as unknown;
+          return sameOrigin() ? (Reflect.get(target, key) as unknown) : undefined;
+        },
+      });
       held.set(target, handle);
     }
     return handle;

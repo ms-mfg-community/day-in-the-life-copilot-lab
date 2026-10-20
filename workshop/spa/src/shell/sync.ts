@@ -15,6 +15,13 @@
 // `not-synchronized` (AC10), which is a state of its own and not a failure of the page: the surface shows it and has its own
 // navigation. The presenter is the one that holds the state; the speaker follows it, one way, unless two-way was asked for.
 //
+// Pairing. BroadcastChannel and `storage` reach every window of the origin, so a second presentation that is open (a rehearsal tab,
+// an older one) hears every hello as well as the one that opened the script window, and would answer it. A presentation puts its
+// name on its own window (`PRESENTER_KEY`); the script window reads it through `window.opener`, which a browser allows between
+// windows of one origin and refuses in any other case, and says whom its hello is for (`to`). A presentation answers a hello that
+// names it or names no one, and nothing else; the speaker takes the ack of the presentation it named, and of no other. What it asks
+// the presentation to do (`navigate`) names that presentation in the same way, so one that answered it for want of a name is not moved.
+//
 // What goes over a transport is presentation state and nothing else (a segment, a reveal count, the timer), in envelopes of
 // `{ app, v, type, from, ... }`. Every number that orders them is a counter that only goes up: a state is applied only if its
 // counter is greater than the last one applied, so a stale or a duplicate one does nothing. Everything that arrives is
@@ -25,8 +32,10 @@
 // window is opened with a URL that is only a fragment, which resolves against the page that opens it, so it inherits the query
 // string of the presentation and the URL reaches both windows.
 //
-// Known limit: nothing polls once synchronized (no heartbeat), so a presenter that is reloaded is a new presenter: the speaker
-// stays with the one it shook hands with, and is brought back by reloading it.
+// Known limits: nothing polls once synchronized (no heartbeat), so a presenter that is reloaded is a new presenter: the speaker
+// stays with the one it shook hands with, and is brought back by reloading it. A script window whose opener cannot be read (one
+// opened by hand, which has none, or one in an opaque origin, which cannot read it) has no one to name and cannot tell the
+// presentation that is meant from another of the origin: it follows the first that answers, and asks that one alone to move.
 
 import type { ShellState } from './state';
 
@@ -38,6 +47,12 @@ export const PROTOCOL = 'teaching-spa-sync';
 export const VERSION = 1;
 export const CHANNEL_NAME = 'teaching-spa-sync';
 export const STORAGE_KEYS = { toSpeaker: 'teaching-spa-sync:to-speaker', toPresenter: 'teaching-spa-sync:to-presenter' } as const;
+/**
+ * The property of its own window under which a presenter says who it is (the `presenterId` of its messages). A script window reads it
+ * through `window.opener` to learn which presentation opened it. Only a window of the same origin can be read through a handle, which
+ * is the window that is meant; from any other the read throws, and is taken as not knowing.
+ */
+export const PRESENTER_KEY = 'teachingSpaSyncPresenter';
 
 /** The most steps of a reveal a state may claim: far past any slide, so a number made up to be large is refused. */
 const MAX_REVEALED = 1000;
@@ -276,6 +291,21 @@ function usableHandle(handle: unknown): handle is HandleLike {
   return safe(() => typeof handle === 'object' && handle !== null && typeof (handle as HandleLike).postMessage === 'function' && (handle as HandleLike).closed !== true, false);
 }
 
+/**
+ * Who the window that opened this one says it is: the name its presentation gave itself (`PRESENTER_KEY`), or null. It is read when it
+ * is needed, and not assumed: a window of another origin, an opaque one included, throws a SecurityError for anything but `postMessage`
+ * and `closed`, a window that is gone says nothing, and a window with no presentation on it has no name. None of them is a failure; each
+ * is a window that has no one to name.
+ */
+function openerPresenter(win: SyncWindow): string | null {
+  return safe(() => {
+    const handle: unknown = win.opener;
+    if (typeof handle !== 'object' || handle === null) return null;
+    const name = (handle as Record<string, unknown>)[PRESENTER_KEY];
+    return isName(name) ? name : null;
+  }, null);
+}
+
 /** A BroadcastChannel, or null when there is none to be had: the engine lacks it, or says no to it. */
 function openBroadcast(win: SyncWindow, onData: (data: unknown) => void): Port | null {
   const Channel = safe(() => win.BroadcastChannel, undefined);
@@ -433,6 +463,12 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
   let last: SyncState | null = null;
   let disposed = false;
 
+  /** Says who this presentation is, on its window, for the script window that it opens to read through `window.opener`. */
+  const named = safe(() => Reflect.defineProperty(win, PRESENTER_KEY, { value: id, configurable: true }), false);
+
+  /** Whether what a speaker said is for this presentation: it names it, or names no one, as a script window that nothing opened cannot. */
+  const forMe = (message: Envelope): boolean => message.to === undefined || message.to === id;
+
   const sessionsOf = (name: TransportName): Map<string, number> => answered.get(name) ?? new Map<string, number>();
   const active = (): TransportName[] => TRANSPORTS.filter((name) => sessionsOf(name).size > 0);
 
@@ -490,7 +526,7 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
     (data: unknown): void => {
       if (disposed) return;
       const message = readEnvelope(data);
-      if (message === null || message.from !== 'speaker') return;
+      if (message === null || message.from !== 'speaker' || !forMe(message)) return; // a hello or a request that names another presentation is not ours to answer
       if (message.type === 'hello') answer(name, message);
       else if (message.type === 'navigate') move(name, message);
     };
@@ -526,6 +562,8 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
       ports.clear();
       for (const sessions of answered.values()) sessions.clear();
       popup = null;
+      // only its own name comes off the window: a presentation that was started there since has put its own
+      if (named) safe(() => Reflect.get(win, PRESENTER_KEY) === id && Reflect.deleteProperty(win, PRESENTER_KEY), false);
     },
   };
 }
@@ -557,7 +595,8 @@ export interface SpeakerSync {
 
 /**
  * The speaker script's side. `start()` tries BroadcastChannel, then postMessage, then localStorage, and stays on the first one whose
- * presenter answers the hello. A transport that is forced to fail, or that is not there (no BroadcastChannel, no usable opener, no
+ * presenter answers the hello: the presentation that opened this window where the window can tell which that is (see "Pairing" above),
+ * and otherwise the first that answers. A transport that is forced to fail, or that is not there (no BroadcastChannel, no usable opener, no
  * storage), is passed over at once and costs no time; one that is there and says nothing costs the timeout. When none answers, it
  * says `not-synchronized` and holds nothing open.
  */
@@ -566,8 +605,13 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   const session = options.sessionId ?? randomId();
   const targetOrigin = targetOriginFor(win);
   const peerOrigin = peerOriginFor(targetOrigin);
-  /** The transport that is being probed, or is the one it settled on. */
-  let held: { readonly name: TransportName; readonly port: Port; timer: ReturnType<typeof setTimeout> | undefined } | null = null;
+  /** The transport that is being probed, or is the one it settled on, and the presentation that was named in its hello (null: it named none). */
+  let held: {
+    readonly name: TransportName;
+    readonly port: Port;
+    readonly expects: string | null;
+    timer: ReturnType<typeof setTimeout> | undefined;
+  } | null = null;
   let status: SyncStatus = { state: 'connecting', transport: null, attempts: [] };
   let started = false;
   let disposed = false;
@@ -604,9 +648,10 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
         record(name, 'unavailable');
         continue;
       }
-      const attempt = { name, port, timer: undefined as ReturnType<typeof setTimeout> | undefined };
+      const attempt = { name, port, expects: openerPresenter(win), timer: undefined as ReturnType<typeof setTimeout> | undefined };
       held = attempt;
-      if (!port.send(envelope({ type: 'hello', from: 'speaker', session }))) {
+      const hello = envelope({ type: 'hello', from: 'speaker', session, ...(attempt.expects === null ? {} : { to: attempt.expects }) });
+      if (!port.send(hello)) {
         held = null;
         port.close();
         record(name, 'send-failed');
@@ -631,6 +676,7 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
       if (message.type !== 'ack' || message.session !== session) return; // an answer to some other hello is not an answer to this one
       const { presenter: from, seq } = message;
       if (!isName(from) || !isSeq(seq) || seq < 1) return;
+      if (held?.expects != null && from !== held.expects) return; // it asked the presentation that opened it, and takes the word of no other
       const state = readState(message.state, segmentIds);
       if (state === null) return;
       if (held?.timer !== undefined) clearTimeout(held.timer);
@@ -673,7 +719,7 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     navigate(segmentId) {
       if (disposed || !config.twoWay || status.state !== 'synchronized' || held === null || !segmentIds.includes(segmentId)) return false;
       requests += 1;
-      return held.port.send(envelope({ type: 'navigate', from: 'speaker', session, seq: requests, segmentId }));
+      return held.port.send(envelope({ type: 'navigate', from: 'speaker', session, seq: requests, segmentId, to: presenter }));
     },
     dispose() {
       if (disposed) return;

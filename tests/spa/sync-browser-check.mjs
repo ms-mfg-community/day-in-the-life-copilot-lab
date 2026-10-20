@@ -97,15 +97,20 @@ before(async () => {
         response.writeHead(404).end();
         return;
       }
+      // The body is read before the status line is written: a 200 cannot be taken back, so a file that is not there has to be found
+      // out while a 404 can still be sent (writing the headers first made the catch below throw ERR_HTTP_HEADERS_SENT).
+      const body = readFileSync(file);
       const extension = path.extname(file);
       response.writeHead(200, {
         'Content-Type': TYPES[extension] ?? 'application/octet-stream',
         'Access-Control-Allow-Origin': '*',
         ...(SURFACES[prefix][extension] ?? {}),
       });
-      response.end(readFileSync(file));
+      response.end(body);
     } catch {
-      response.writeHead(404).end();
+      // Whatever failed, the request ends here: with a 404 while nothing has been said, by dropping the connection once something has.
+      if (response.headersSent) response.destroy();
+      else response.writeHead(404).end();
     }
   });
   // 127.0.0.1 is a secure context, as http://localhost is (the specification measures on localhost, Q2).
@@ -915,4 +920,88 @@ test('lifecycle: a script window that was closed and opened again is brought to 
     assert.equal(shown.transport, 'broadcastchannel');
     await advanceTo(page, again, IDS[4]);
   });
+});
+
+// Independent regressions: an old presentation tab is a real browser peer, not a
+// forged message. State and navigation must remain paired with the opening tab.
+for (const row of TRANSPORT_ROWS.filter((one) => one.name !== 'postmessage')) {
+  test(`QA R1: AC9 over ${row.name} follows the opening tab rather than an older presentation`, async () => {
+    await withSession({}, async (context) => {
+      const unrelated = await openPresenter(context, row.query);
+      const owner = await openPresenter(context, row.query);
+      const popup = await openScript(owner);
+      await synchronized(popup);
+      assert.equal((await facts(popup)).transport, row.name);
+
+      const since = await go(owner, IDS[1]);
+      await sleep(BUDGET_MS);
+
+      assert.equal((await facts(popup)).index, '1', 'the opening tab advanced but its speaker stayed paired with the older tab');
+      assert.ok((await arrival(popup, 'data-segment-index', '1', since)) <= BUDGET_MS);
+      assert.equal(await current(unrelated), IDS[0]);
+    });
+  });
+
+  test(`QA R1: two-way ${row.name} navigation must leave an unrelated presentation tab unchanged`, async () => {
+    await withSession({}, async (context) => {
+      const query = withQuery(row.query, 'sync-two-way=1');
+      const unrelated = await openPresenter(context, query);
+      const owner = await openPresenter(context, query);
+      const popup = await openScript(owner);
+      await synchronized(popup);
+      assert.equal((await facts(popup)).transport, row.name);
+
+      await popup.click('#speaker-next');
+      await owner.waitForFunction((id) => window.teachingSpa.store.get().currentId === id, IDS[1]);
+      await waitFor(popup, () => document.getElementById('speaker-script').getAttribute('data-segment-index') === '1');
+
+      assert.equal(await current(unrelated), IDS[0], 'Next must move only the presentation that opened this speaker');
+    });
+  });
+}
+
+test('QA R1: revisiting an expired timer synchronizes the done phase, not Running at zero', async () => {
+  await withSession({}, async (context) => {
+    // STUB: a shared wall-clock offset accelerates the time spent on another
+    // segment. Controls, timer restoration, transport, and both DOMs are real.
+    await context.addInitScript(() => {
+      const now = Date.now.bind(Date);
+      window.__qaClockOffset = 0;
+      Date.now = () => now() + window.__qaClockOffset;
+    });
+    const { page, popup } = await present(context);
+    await synchronized(popup);
+    if ((await current(page)) !== TIMER.segment) await advanceTo(page, popup, TIMER.segment);
+    await press(page, `#${TIMER.id} button`, 'Start');
+    await waitFor(popup, () => document.getElementById('speaker-script').getAttribute('data-timer-state') === 'running');
+    const otherId = IDS.find((id) => id !== TIMER.segment);
+    await advanceTo(page, popup, otherId);
+    const offset = DECK.find((segment) => segment.id === TIMER.segment).minutes * 60_000 + 1000;
+    for (const one of [page, popup]) await one.evaluate((ms) => { window.__qaClockOffset = ms; }, offset);
+    await advanceTo(page, popup, TIMER.segment);
+
+    assert.match(await page.locator(`#${TIMER.id}`).innerText(), /Time is up/, 'the actual presentation timer has completed');
+    assert.equal((await facts(popup)).timer, 'done', 'the speaker must report the phase actually shown by the presentation');
+    assert.match((await facts(popup)).clock, /Time is up/);
+  });
+});
+
+test('QA R1: a missing local asset returns 404 without crashing the synchronization browser runner', async () => {
+  const response = await fetch(`${origin}/qa/nested/qa-r1-missing-asset.js`, { signal: AbortSignal.timeout(1000) });
+  assert.equal(response.status, 404);
+  await response.arrayBuffer();
+});
+
+// The same defect by every road that a read of the file can fail on, not the one file that is not there: a directory (EISDIR), a name
+// that is not a file at all, and a path that is not under either surface. Each is answered, with a 404, and the runner serves on.
+test('whatever the runner cannot read for a request is answered with a 404, and it goes on serving the pages', async () => {
+  const unreadable = ['/qa/nested/assets', '/qa/nested/assets/', '/qa/opaque/assets', '/qa/nested/%00', '/qa/nested/..%2f..%2fpackage.json', '/package.json', '/qa/'];
+  for (const where of unreadable) {
+    const response = await fetch(`${origin}${where}`, { signal: AbortSignal.timeout(1500) });
+    assert.equal(response.status, 404, `${where} has nothing to give`);
+    await response.arrayBuffer();
+  }
+  const page = await fetch(url('nested'), { signal: AbortSignal.timeout(1500) });
+  assert.equal(page.status, 200, 'and a page that is there is still served');
+  assert.match(await page.text(), /<div id="app"|<body/i);
 });

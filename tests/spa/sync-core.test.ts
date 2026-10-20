@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHANNEL_NAME,
   DEFAULT_TIMEOUT_MS,
+  PRESENTER_KEY,
   PROTOCOL,
   STORAGE_KEYS,
   VERSION,
@@ -32,7 +33,7 @@ import {
   type SyncWindow,
   type TransportName,
 } from '../../workshop/spa/src/shell/sync';
-import { Lab, drain, type LabWindowOptions } from './helpers/sync-doubles';
+import { Lab, drain, type LabWindow, type LabWindowOptions } from './helpers/sync-doubles';
 
 const IDS = ['alpha', 'beta', 'gamma'];
 const ORIGIN = 'https://spa.test';
@@ -693,7 +694,10 @@ describe('an opaque origin (a sandboxed document; a page from a file: URL where 
     expect(keys.get('hello')).toEqual(['app', 'from', 'session', 'type', 'v']);
     expect(keys.get('ack')).toEqual(['app', 'from', 'presenter', 'seq', 'session', 'state', 'type', 'v']);
     expect(keys.get('state')).toEqual(['app', 'from', 'presenter', 'seq', 'state', 'type', 'v']);
-    expect(keys.get('navigate')).toEqual(['app', 'from', 'segmentId', 'seq', 'session', 'type', 'v']);
+    expect(keys.get('navigate')).toEqual(['app', 'from', 'segmentId', 'seq', 'session', 'to', 'type', 'v']);
+    // `to` is the name of the presentation that the speaker follows, which the presentation has said about itself in every ack: no more than that
+    const sent = r.lab.traffic.map((t) => t.data as Record<string, unknown>);
+    expect(sent.find((data) => data.type === 'navigate')?.to).toBe(sent.find((data) => data.type === 'ack')?.presenter);
     expect(JSON.stringify(r.lab.traffic.map((t) => t.data))).not.toMatch(/cookie|token|password|secret|authorization|credential|href|url/i);
   });
 
@@ -955,5 +959,443 @@ describe('lifecycle (a window that is closed leaves nothing behind)', () => {
       await r.show(at(1));
       expect(r.states.at(-1)).toEqual(at(1));
     }
+  });
+});
+
+describe('QA round 1: simultaneous presentations on the same origin', () => {
+  function competingPresenters(via: 'broadcastchannel' | 'storage', twoWay = false) {
+    const lab = new Lab();
+    const unrelatedWin = lab.window('unrelated-presentation');
+    const ownerWin = lab.window('opening-presentation');
+    const popup = lab.popup(ownerWin, 'owned-speaker');
+    const config = parseSyncConfig('', { fail: ONLY[via], twoWay });
+    const ownerState = { value: at(0) };
+    const ownerMoves: string[] = [];
+    const unrelatedMoves: string[] = [];
+    const states: SyncState[] = [];
+
+    // Open the unrelated presentation first, as happens when an older rehearsal tab
+    // remains open. Both instances use the real transport and its real handshake.
+    const unrelated = createPresenterSync({
+      window: unrelatedWin,
+      config,
+      segmentIds: IDS,
+      snapshot: () => at(0),
+      navigate: (id) => void unrelatedMoves.push(id),
+      presenterId: 'unrelated-presenter',
+    });
+    const owner = createPresenterSync({
+      window: ownerWin,
+      config,
+      segmentIds: IDS,
+      snapshot: () => ownerState.value,
+      navigate: (id) => void ownerMoves.push(id),
+      presenterId: 'opening-presenter',
+    });
+    owner.setPopup(popup.handle);
+    const speaker = createSpeakerSync({
+      window: popup.window,
+      config,
+      segmentIds: IDS,
+      onStatus: () => undefined,
+      onState: (state) => void states.push(state),
+      sessionId: 'owned-speaker-session',
+    });
+    rigs.push({ speaker, presenter: owner }, { speaker, presenter: unrelated });
+    return { speaker, owner, ownerState, states, ownerMoves, unrelatedMoves };
+  }
+
+  it.each(['broadcastchannel', 'storage'] as const)(
+    'QA R1: advancing the opening presentation still reaches its speaker over %s when another presentation is open',
+    async (via) => {
+      const r = competingPresenters(via);
+      r.speaker.start();
+      await drain();
+      expect(r.speaker.status.state).toBe('synchronized');
+
+      r.ownerState.value = at(1);
+      r.owner.publish();
+      await drain();
+
+      expect(r.states.at(-1)).toEqual(at(1));
+    },
+  );
+
+  it.each(['broadcastchannel', 'storage'] as const)(
+    'QA R1: opt-in two-way navigation over %s does not move an unrelated presentation',
+    async (via) => {
+      const r = competingPresenters(via, true);
+      r.speaker.start();
+      await drain();
+      expect(r.speaker.navigate('beta')).toBe(true);
+      await drain();
+
+      expect(r.ownerMoves).toEqual(['beta']);
+      expect(r.unrelatedMoves).toEqual([]);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The class behind QA round 1, F1. BroadcastChannel and `storage` reach EVERY window of the origin, so what pairs a script window
+// with the presentation that opened it cannot be the medium. The speaker reads who its opener is (through `window.opener`, which
+// only a window of the same origin lets it do) and says so in its hello; a presentation answers a hello that names it, or names
+// no one, and nothing else. These walk each way the two can meet: which presentation is the older, one script window or two, a
+// hello that is forged, a speaker that has nothing to name, and what the name leaves on the window.
+describe('pairing: a speaker follows the presentation that opened it, and no other of the origin', () => {
+  type Shared = 'broadcastchannel' | 'storage';
+  const SHARED: readonly Shared[] = ['broadcastchannel', 'storage'];
+  const MATRIX = [
+    ['broadcastchannel', 'an older'],
+    ['broadcastchannel', 'a newer'],
+    ['storage', 'an older'],
+    ['storage', 'a newer'],
+  ] as const;
+
+  interface Presentation {
+    readonly id: string;
+    readonly win: LabWindow;
+    readonly sync: PresenterSync;
+    readonly moves: string[];
+    show(next: SyncState): void;
+  }
+
+  const held: Array<{ dispose(): void }> = [];
+  afterEach(() => {
+    for (const each of held.splice(0)) each.dispose();
+  });
+
+  /**
+   * Presentations of one origin and the script windows they open, as when a rehearsal tab is left open beside the one that is
+   * presented. Only the transport under test stands: postMessage, and the shared transport that is not under test, are forced to fail.
+   */
+  function origin(via: Shared, twoWay = false) {
+    const lab = new Lab();
+    const config = parseSyncConfig('', { fail: ONLY[via], twoWay });
+
+    function present(id: string): Presentation {
+      const win = lab.window(id);
+      const shown = { value: at(0) };
+      const moves: string[] = [];
+      const sync = createPresenterSync({
+        window: win,
+        config,
+        segmentIds: IDS,
+        snapshot: () => shown.value,
+        navigate: (segment) => void moves.push(segment),
+        presenterId: id,
+      });
+      held.push(sync);
+      return {
+        id,
+        win,
+        sync,
+        moves,
+        show(next) {
+          shown.value = next;
+          sync.publish();
+        },
+      };
+    }
+
+    /** A speaker on a window that is there already. */
+    function listen(win: LabWindow, session: string) {
+      const states: SyncState[] = [];
+      const speaker = createSpeakerSync({
+        window: win,
+        config,
+        segmentIds: IDS,
+        onStatus: () => undefined,
+        onState: (state) => void states.push(state),
+        sessionId: session,
+      });
+      held.push(speaker);
+      return { speaker, states, win };
+    }
+
+    /** The script window of a presentation; or, with none, one that nothing opened: a tab of the user's own, which has no opener. */
+    function script(session: string, opener?: Presentation) {
+      if (opener === undefined) return listen(lab.window(`${session}-by-hand`), session);
+      const popup = lab.popup(opener.win, `${session}-window`);
+      opener.sync.setPopup(popup.handle);
+      return listen(popup.window, session);
+    }
+
+    return { lab, present, script, listen };
+  }
+
+  /** What a window of the origin that is none of the presentations puts on a shared transport, toward the presentations. */
+  async function say(lab: Lab, via: Shared, message: Record<string, unknown>): Promise<void> {
+    const stranger = lab.window(`stranger-${lab.windows.length}`);
+    if (via === 'broadcastchannel') {
+      const channel = new (stranger.BroadcastChannel as unknown as BroadcastChannelLike)(CHANNEL_NAME);
+      channel.postMessage(message);
+      channel.close();
+    } else {
+      stranger.localStorage?.setItem(STORAGE_KEYS.toPresenter, JSON.stringify(message));
+    }
+    await drain();
+  }
+  const helloOf = (fields: Record<string, unknown> = {}): Record<string, unknown> => wire({ type: 'hello', from: 'speaker', session: 'S-X', ...fields });
+  const everything = (lab: Lab): Array<Record<string, unknown>> => lab.traffic.map((entry) => entry.data as Record<string, unknown>);
+  const acks = (lab: Lab): Array<Record<string, unknown>> => everything(lab).filter((message) => message.type === 'ack');
+  const whoSpoke = (lab: Lab): string[] =>
+    [...new Set(everything(lab).filter((message) => message.from === 'presenter').map((message) => String(message.presenter)))].sort();
+
+  it.each(MATRIX)('over %s, a speaker follows the presentation that opened it, with %s presentation open beside it', async (via, which) => {
+    const o = origin(via);
+    const early = which === 'an older' ? o.present('rehearsal') : null;
+    const live = o.present('live');
+    const rehearsal = early ?? o.present('rehearsal');
+    const s = o.script('S-live', live);
+    s.speaker.start();
+    await drain();
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+
+    live.show(at(1));
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(1));
+    rehearsal.show(at(2)); // what the other presentation shows is none of this script window's business
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(1));
+
+    expect(live.sync.active).toEqual([via]);
+    expect(rehearsal.sync.active).toEqual([]);
+    expect(whoSpoke(o.lab)).toEqual(['live']); // nothing came from the other: not an acknowledgement, not a state
+  });
+
+  it.each(MATRIX)('over %s, with two-way on, a request to move reaches the presentation that opened the speaker and not %s presentation beside it', async (via, which) => {
+    const o = origin(via, true);
+    const early = which === 'an older' ? o.present('rehearsal') : null;
+    const live = o.present('live');
+    const rehearsal = early ?? o.present('rehearsal');
+    const s = o.script('S-live', live);
+    s.speaker.start();
+    await drain();
+
+    expect(s.speaker.navigate('beta')).toBe(true);
+    await drain();
+    expect(live.moves).toEqual(['beta']);
+    expect(rehearsal.moves).toEqual([]);
+  });
+
+  it.each(SHARED)('over %s, presentations that each opened a script window each keep their own', async (via) => {
+    const o = origin(via, true);
+    const a = o.present('A');
+    const b = o.present('B');
+    const sa = o.script('S-A', a);
+    const sb = o.script('S-B', b);
+    sa.speaker.start();
+    sb.speaker.start();
+    await drain();
+    expect(sa.speaker.status.state).toBe('synchronized');
+    expect(sb.speaker.status.state).toBe('synchronized');
+
+    a.show(at(1));
+    await drain();
+    expect(sa.states.at(-1)).toEqual(at(1));
+    expect(sb.states.at(-1)).toEqual(at(0));
+    b.show(at(2));
+    await drain();
+    expect(sb.states.at(-1)).toEqual(at(2));
+    expect(sa.states.at(-1)).toEqual(at(1));
+
+    expect(sb.speaker.navigate('gamma')).toBe(true);
+    await drain();
+    expect(b.moves).toEqual(['gamma']);
+    expect(a.moves).toEqual([]);
+  });
+
+  describe('what a hello says', () => {
+    it.each(SHARED)('over %s, a presentation that it does not name does not answer it, and tells its sender nothing afterwards', async (via) => {
+      const o = origin(via);
+      const live = o.present('live');
+      await say(o.lab, via, helloOf({ to: 'another-presentation' }));
+      expect(acks(o.lab)).toEqual([]);
+      expect(live.sync.active).toEqual([]);
+      live.show(at(1));
+      await drain();
+      expect(everything(o.lab).filter((message) => message.from === 'presenter')).toEqual([]);
+    });
+
+    it.each(SHARED)('over %s, the presentation that it names answers it', async (via) => {
+      const o = origin(via);
+      const live = o.present('live');
+      await say(o.lab, via, helloOf({ to: 'live' }));
+      expect(acks(o.lab)).toMatchObject([{ presenter: 'live', session: 'S-X' }]);
+      expect(live.sync.active).toEqual([via]);
+    });
+
+    it.each(SHARED)('over %s, a hello that names no one is answered by every presentation: a script window opened by hand has no one to name', async (via) => {
+      const o = origin(via);
+      o.present('rehearsal');
+      o.present('live');
+      await say(o.lab, via, helloOf());
+      expect(acks(o.lab).map((ack) => ack.presenter).sort()).toEqual(['live', 'rehearsal']);
+    });
+
+    it.each(SHARED)('over %s, a name that is not a name is not taken for no name at all', async (via) => {
+      const o = origin(via);
+      const live = o.present('live');
+      for (const to of ['', 5, null, ['live'], { id: 'live' }, 'live'.repeat(100)]) await say(o.lab, via, helloOf({ to }));
+      expect(acks(o.lab)).toEqual([]);
+      expect(live.sync.active).toEqual([]);
+    });
+  });
+
+  describe('what a request to move says', () => {
+    it.each(SHARED)('over %s, a request that names another presentation is not acted on, and one that names this one, or no one, is', async (via) => {
+      const o = origin(via, true);
+      const live = o.present('live');
+      await say(o.lab, via, helloOf()); // answered: the session is one it keeps
+      expect(live.sync.active).toEqual([via]);
+      const ask = (fields: Record<string, unknown>): Record<string, unknown> => wire({ type: 'navigate', from: 'speaker', session: 'S-X', segmentId: 'beta', ...fields });
+
+      await say(o.lab, via, ask({ seq: 1, to: 'another-presentation' }));
+      await say(o.lab, via, ask({ seq: 2, to: 5 }));
+      await say(o.lab, via, ask({ seq: 3, to: null }));
+      expect(live.moves).toEqual([]);
+      await say(o.lab, via, ask({ seq: 4, to: 'live' }));
+      await say(o.lab, via, ask({ seq: 5, segmentId: 'gamma' }));
+      expect(live.moves).toEqual(['beta', 'gamma']); // and the ones that were not for it did not use up its counters
+    });
+  });
+
+  describe('what a speaker says, and whom it listens to', () => {
+    it.each(SHARED)('over %s, its hello names the presentation that opened it', async (via) => {
+      const o = origin(via);
+      const s = o.script('S-live', o.present('live'));
+      s.speaker.start();
+      await drain();
+      expect(o.lab.sent(via).find((message) => message.type === 'hello')).toEqual(wire({ type: 'hello', from: 'speaker', session: 'S-live', to: 'live' }));
+    });
+
+    it.each(SHARED)('over %s, its hello names no one when it cannot tell who opened it', async (via) => {
+      const o = origin(via);
+      // a tab of the user's own: no opener
+      o.script('S-hand').speaker.start();
+      // a window that a page opened that has no presentation on it
+      o.listen(o.lab.popup(o.lab.window('some-page'), 'S-page-window').window, 'S-page').speaker.start();
+      // an opener that cannot be read, as a window of another origin cannot: every property but the two a handle always has throws
+      const refusing = new Proxy({ closed: false, postMessage: (): void => undefined } as Record<string | symbol, unknown>, {
+        get(target, key) {
+          if (key === 'closed' || key === 'postMessage') return target[key];
+          throw new DOMException('Blocked a frame from accessing a cross-origin frame.', 'SecurityError');
+        },
+      });
+      const odd = o.lab.window('S-odd-window');
+      odd.opener = refusing;
+      o.listen(odd, 'S-odd').speaker.start();
+      // an opener whose name is not a name: a number, nothing, a list, one too long to be taken
+      const sessions = ['S-hand', 'S-odd', 'S-page'];
+      for (const [index, name] of [5, '', null, ['live'], 'live'.repeat(100)].entries()) {
+        const win = o.lab.window(`S-name-${index}-window`);
+        win.opener = { closed: false, postMessage: (): void => undefined, [PRESENTER_KEY]: name };
+        o.listen(win, `S-name-${index}`).speaker.start();
+        sessions.push(`S-name-${index}`);
+      }
+      await drain();
+
+      const hellos = o.lab.sent(via).filter((message) => message.type === 'hello');
+      expect(hellos.map((message) => message.session).sort()).toEqual(sessions.sort());
+      for (const hello of hellos) expect(Object.keys(hello)).not.toContain('to');
+    });
+
+    it.each(SHARED)('over %s, takes the acknowledgement of the presentation that opened it and not that of another', async (via) => {
+      const r = rig({ withPresenter: false, options: { fail: ONLY[via], timeoutMs: 100 } });
+      Object.defineProperty(r.presenterWin, PRESENTER_KEY, { value: 'P-1', configurable: true }); // its opener says who it is, and does not answer
+      await r.start();
+      const ack = (presenter: string, state: SyncState): Record<string, unknown> =>
+        wire({ type: 'ack', from: 'presenter', presenter, session: 'S-1', seq: 1, state });
+
+      await FORGE[via](r, ack('P-2', at(2)));
+      expect(r.states).toEqual([]);
+      expect(r.speaker.status.state).toBe('connecting');
+
+      await FORGE[via](r, ack('P-1', at(1)));
+      expect(r.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+      expect(r.states).toEqual([at(1)]);
+
+      await FORGE[via](r, stateMessage(2, at(2), 'P-2')); // and it stays with the one it took
+      expect(r.states).toEqual([at(1)]);
+    });
+
+    it.each(SHARED)('over %s, a script window that nothing opened follows the first presentation that answers it, and asks that one alone to move', async (via) => {
+      const o = origin(via, true);
+      const rehearsal = o.present('rehearsal');
+      const live = o.present('live');
+      const s = o.script('S-hand'); // a tab of the user's own: no opener, so no one to name
+      s.speaker.start();
+      await drain();
+      expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+      expect(rehearsal.sync.active).toEqual([via]); // the hello named no one, so both answered it
+      expect(live.sync.active).toEqual([via]);
+
+      rehearsal.show(at(1));
+      live.show(at(2));
+      await drain();
+      const last = s.states.at(-1)?.segmentIndex;
+      expect([1, 2]).toContain(last); // it follows one of them, and not both
+      const followed = last === 1 ? rehearsal : live;
+      const other = followed === rehearsal ? live : rehearsal;
+
+      expect(s.speaker.navigate('beta')).toBe(true);
+      await drain();
+      expect(followed.moves).toEqual(['beta']);
+      expect(other.moves).toEqual([]); // it answered, and registered the session, and is still not the one that was asked
+    });
+
+    it.each(SHARED)('over %s, takes the first acknowledgement there is when nothing says who opened it', async (via) => {
+      const r = rig({ withPresenter: false, options: { fail: ONLY[via], timeoutMs: 100 } });
+      r.speakerWin.opener = null; // a tab of the user's own
+      await r.start();
+      await FORGE[via](r, wire({ type: 'ack', from: 'presenter', presenter: 'P-2', session: 'S-1', seq: 1, state: at(2) }));
+      expect(r.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+      expect(r.states).toEqual([at(2)]);
+    });
+  });
+
+  describe('the name a presentation gives itself', () => {
+    const named = (win: LabWindow): unknown => Reflect.get(win, PRESENTER_KEY);
+    const make = (win: LabWindow, presenterId: string): PresenterSync =>
+      createPresenterSync({ window: win, config: parseSyncConfig(''), segmentIds: IDS, snapshot: () => at(0), presenterId });
+
+    it('is on its window while it runs, and is taken away when it is disposed', () => {
+      const win = new Lab().window('presentation');
+      const sync = make(win, 'live');
+      expect(named(win)).toBe('live');
+      sync.dispose();
+      expect(Object.hasOwn(win, PRESENTER_KEY)).toBe(false);
+    });
+
+    it('is not taken away by a presentation that it is no longer the name of', () => {
+      const win = new Lab().window('presentation');
+      const older = make(win, 'older');
+      const newer = make(win, 'newer');
+      expect(named(win)).toBe('newer');
+      older.dispose();
+      expect(named(win)).toBe('newer');
+      newer.dispose();
+      expect(Object.hasOwn(win, PRESENTER_KEY)).toBe(false);
+    });
+
+    it('is a convenience to the script window and no more: a window that will not take it does not stop the presentation from answering', async () => {
+      const lab = new Lab();
+      const win = lab.window('presentation');
+      Object.preventExtensions(win); // a property cannot be added to it
+      const config = parseSyncConfig('', { fail: ['postmessage', 'storage'] });
+      const presenter = createPresenterSync({ window: win, config, segmentIds: IDS, snapshot: () => at(1), presenterId: 'live' });
+      held.push(presenter);
+      expect(Object.hasOwn(win, PRESENTER_KEY)).toBe(false);
+
+      const states: SyncState[] = [];
+      const speaker = createSpeakerSync({ window: lab.window('script-by-hand'), config, segmentIds: IDS, onStatus: () => undefined, onState: (state) => void states.push(state), sessionId: 'S-1' });
+      held.push(speaker);
+      speaker.start();
+      await drain();
+      expect(speaker.status).toMatchObject({ state: 'synchronized', transport: 'broadcastchannel' });
+      expect(states).toEqual([at(1)]);
+      expect(() => presenter.dispose()).not.toThrow();
+    });
   });
 });

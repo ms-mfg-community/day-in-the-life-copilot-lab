@@ -402,6 +402,135 @@ describe('the shell as the presentation', () => {
     expect(surfaceAttr(popup.window, 'data-revealed-steps')).toBe('1');
   });
 
+  it('QA R1: returning to an expired running timer reports the same done phase on both surfaces', async () => {
+    const inventory = JSON.parse(readFileSync(path.join(ROOT, 'workshop/spa/content/interactions.json'), 'utf8')) as {
+      interactions: Array<{ id: string; pattern: string; segment: string }>;
+    };
+    const timer = must(inventory.interactions.find((entry) => entry.pattern === 'segment-timer'), 'the inventory timer');
+    const timed = must(SEGMENTS.find((segment) => segment.id === timer.segment), 'the timed segment');
+    const otherId = must(IDS.find((id) => id !== timed.id), 'a different segment');
+    const { shell, popup } = await presenterShell();
+    await present(shell);
+    openSurface(popup.window);
+    await drain();
+    shell.spa.store.navigate(timed.id);
+    const start = must(shell.el(timer.id).querySelectorAll('button').find((button) => button.textContent.trim() === 'Start'), 'Start');
+    shell.pointer.click(start);
+    await settle();
+    expect(surfaceAttr(popup.window, 'data-timer-state')).toBe('running');
+
+    shell.spa.store.navigate(otherId);
+    await settle();
+    // No timer is mounted while this segment is away. Move the wall clock, not
+    // a product field, so re-entry exercises the real timer restoration path.
+    vi.setSystemTime(Date.now() + timed.minutes * MINUTE + 1000);
+    shell.spa.store.navigate(timed.id);
+    await settle();
+
+    expect(shell.el(timer.id).textContent).toContain('Time is up');
+    expect(surfaceAttr(popup.window, 'data-timer-state')).toBe('done');
+    expect(shell.el(timer.id).textContent).not.toContain('Running');
+  });
+
+  // The class behind the finding above: what the speaker is told is what the store holds, and the timer of the segment gives the
+  // store the phase it shows (as finish() does when the time runs out in front of the reader) whenever the wall clock, and not a
+  // press, moved it. These walk each way the store can disagree with the timer that mounts from it.
+  describe('what the timer restores is what the speaker is told', () => {
+    /** The segment with a timer, from the inventory of the build, so that no id of the deck is written here. */
+    function timedSegment() {
+      const inventory = JSON.parse(readFileSync(path.join(ROOT, 'workshop/spa/content/interactions.json'), 'utf8')) as {
+        interactions: Array<{ id: string; pattern: string; segment: string }>;
+      };
+      const timer = must(inventory.interactions.find((entry) => entry.pattern === 'segment-timer'), 'the inventory timer');
+      const timed = must(SEGMENTS.find((segment) => segment.id === timer.segment), 'the timed segment');
+      return { timer, timed, otherId: must(IDS.find((id) => id !== timed.id), 'a different segment'), totalMs: timed.minutes * MINUTE };
+    }
+
+    /** A presentation with its speaker following it, standing on a segment that is not the timed one. */
+    async function followed(timedId: string, otherId: string) {
+      const { shell, popup } = await presenterShell();
+      await present(shell);
+      openSurface(popup.window);
+      await drain();
+      shell.spa.store.navigate(otherId);
+      await settle();
+      expect(shell.spa.store.get().currentId).not.toBe(timedId);
+      return { shell, popup };
+    }
+
+    const kept = (shell: Shell, segmentId: string, timerId: string): unknown => shell.spa.store.get().segments[segmentId].parameters[timerId];
+
+    it('leaves the store holding done, with the whole time, when the clock ran the time out while the segment was away', async () => {
+      const { timer, timed, otherId, totalMs } = timedSegment();
+      const { shell, popup } = await followed(timed.id, otherId);
+      shell.spa.store.navigate(timed.id);
+      shell.pointer.click(must(shell.el(timer.id).querySelectorAll('button').find((button) => button.textContent.trim() === 'Start'), 'Start'));
+      await settle();
+      expect(kept(shell, timed.id, timer.id)).toMatchObject({ state: 'running' });
+
+      shell.spa.store.navigate(otherId);
+      await settle();
+      vi.setSystemTime(Date.now() + totalMs + 1000);
+      shell.spa.store.navigate(timed.id);
+      await settle();
+
+      expect(kept(shell, timed.id, timer.id)).toEqual({ state: 'done', elapsedMs: totalMs, startedAt: null });
+      expect(surfaceAttr(popup.window, 'data-timer-state')).toBe('done');
+      expect(must(popup.window.document.getElementById('speaker-timer'), '#speaker-timer').textContent).toContain('Time is up');
+    });
+
+    it('says nothing of it in the live region of the presentation: it is the way back that is announced', async () => {
+      const { timer, timed, otherId, totalMs } = timedSegment();
+      const { shell } = await followed(timed.id, otherId);
+      shell.spa.store.navigate(timed.id);
+      shell.pointer.click(must(shell.el(timer.id).querySelectorAll('button').find((button) => button.textContent.trim() === 'Start'), 'Start'));
+      await settle();
+      shell.spa.store.navigate(otherId);
+      await settle();
+      vi.setSystemTime(Date.now() + totalMs + 1000);
+      shell.spa.store.navigate(timed.id);
+      await settle();
+      await idle(); // the announcer writes the region a moment after it was told
+
+      expect(shell.liveRegion.textContent).toMatch(/Segment \d+ of \d+/);
+      expect(shell.liveRegion.textContent).not.toMatch(/time is up/i);
+    });
+
+    it('reports done for a paused timer whose stored time is already past the end', async () => {
+      const { timer, timed, otherId, totalMs } = timedSegment();
+      const { shell, popup } = await followed(timed.id, otherId);
+      shell.spa.store.update(timed.id, (segment) => ({
+        ...segment,
+        parameters: { ...segment.parameters, [timer.id]: { state: 'paused', elapsedMs: totalMs + 5000, startedAt: null } },
+      }));
+      shell.spa.store.navigate(timed.id);
+      await settle();
+
+      expect(shell.el(timer.id).textContent).toContain('Time is up');
+      expect(surfaceAttr(popup.window, 'data-timer-state')).toBe('done');
+      expect(kept(shell, timed.id, timer.id)).toEqual({ state: 'done', elapsedMs: totalMs, startedAt: null });
+    });
+
+    it('does not write the timer again when the way back finds the phase it was left in, and the speaker has it counting', async () => {
+      const { timer, timed, otherId } = timedSegment();
+      const { shell, popup } = await followed(timed.id, otherId);
+      shell.spa.store.navigate(timed.id);
+      shell.pointer.click(must(shell.el(timer.id).querySelectorAll('button').find((button) => button.textContent.trim() === 'Start'), 'Start'));
+      await settle();
+      shell.spa.store.navigate(otherId);
+      await settle();
+      const left = kept(shell, timed.id, timer.id);
+      expect(left).toMatchObject({ state: 'running' });
+
+      vi.setSystemTime(Date.now() + 5000);
+      shell.spa.store.navigate(timed.id);
+      await settle();
+
+      expect(kept(shell, timed.id, timer.id)).toBe(left); // the same object: nothing was written
+      expect(surfaceAttr(popup.window, 'data-timer-state')).toBe('running');
+    });
+  });
+
   it.each([
     ['null', (): object | null => null],
     ['undefined', (): object | null => undefined as unknown as null],

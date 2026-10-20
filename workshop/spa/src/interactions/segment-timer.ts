@@ -101,7 +101,8 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
   else root.prepend(widget);
 
   const now = Date.now();
-  let { phase, elapsed } = restore(readParameter(store, segment.id, entry.id), total, now);
+  const kept = readParameter(store, segment.id, entry.id);
+  let { phase, elapsed } = restore(kept, total, now);
   let last = now; // when `elapsed` was last brought up to the wall clock
   let mark = 0; // which of MARKS is the next to be said
   let ticker: ReturnType<typeof setInterval> | undefined;
@@ -235,6 +236,11 @@ export const mountSegmentTimer: Mounter = ({ entry, segment, root, document: doc
   render();
   resetMarks();
   if (phase === 'running') startTicking();
+  // The wall clock can carry a count to its end while the segment is away, and then the store still says what it said when the
+  // segment was left: running, or paused with no time left. The store is what the presenter sync carries (2.7), so it is told what the
+  // page shows, as finish() tells it when the time runs out in front of the reader, and a speaker is never shown a count that is
+  // still running where the page says the time is up. It is told and nothing is said: the way back is what is announced, not the time.
+  if (phase === 'done' && !(isRecord(kept) && kept.state === 'done')) save();
   return {
     // For when the browser has spent the Escape: pauses, as the key does, and only when the focus is in the timer, because the key
     // only reaches the timer from there. A timer that is not running has nothing to put away.
