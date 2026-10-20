@@ -724,6 +724,70 @@ test('when the browser ends fullscreen, a running timer that the focus is in is 
   });
 });
 
+test('QA round 2: AC8 fullscreen-ended text reaches the live region when browser exit also pauses the timer', async () => {
+  await withPage({}, async (page) => {
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await startTimer(page);
+    await waitForLive(page, /Started/);
+    await page.evaluate(() => {
+      const region = document.getElementById('live-region');
+      window.__exitAnnouncements = [];
+      window.__exitObserver = new MutationObserver(() => {
+        if (region.textContent) window.__exitAnnouncements.push(region.textContent);
+      });
+      window.__exitObserver.observe(region, { childList: true, subtree: true, characterData: true });
+    });
+
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+    await page.waitForTimeout(150); // both deferred live-region writes have had time to run
+    assert.equal(await timerCaption(page), 'Paused');
+    assert.equal((await state(page)).id, FIRST);
+    const written = await page.evaluate(() => {
+      window.__exitObserver.disconnect();
+      return window.__exitAnnouncements;
+    });
+    assert.ok(
+      written.some((message) => /presentation mode off.*segment 1 of/i.test(message)),
+      `AC8 requires a real status-region write, not a discarded announce() call. Observed: ${JSON.stringify(written)}`,
+    );
+  });
+});
+
+test('QA round 2: a stale exit rejection cannot dismiss a newer application-exited timer (exit promises stubbed)', async () => {
+  await withPage({}, async (page) => {
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await page.evaluate(() => {
+      window.__pendingExits = [];
+      document.exitFullscreen = () =>
+        new Promise((resolve, reject) => window.__pendingExits.push({ resolve, reject }));
+      window.teachingSpa.presentation.exit();
+    });
+    await page.evaluate(() => window.__realExitFullscreen());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+
+    await page.click('#present-start');
+    await waitForFullscreen(page, true);
+    await startTimer(page);
+    await page.evaluate(async () => {
+      window.teachingSpa.presentation.exit();
+      window.__pendingExits[0].reject(new TypeError('The previous session is no longer fullscreen'));
+      await Promise.resolve();
+    });
+    await page.evaluate(() => window.__realExitFullscreen());
+    await page.evaluate(() => window.__pendingExits[1].resolve());
+    await waitForFullscreen(page, false);
+    await waitForWindowed(page);
+
+    assert.equal((await state(page)).id, FIRST);
+    assert.equal(await timerCaption(page), 'Running', 'the delayed rejection must not turn an application exit into a browser dismissal');
+  });
+});
+
 test('when the browser ends fullscreen, a running timer that the focus is not in keeps running', async () => {
   await withPage({}, async (page) => {
     await page.click('#present-start');
