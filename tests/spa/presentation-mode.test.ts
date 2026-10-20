@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAnnouncer, type Announcer } from '../../workshop/spa/src/shell/live-region';
 import {
   KEYBOARD_LOCK_CODES,
   mountPresentation,
@@ -68,6 +69,22 @@ const last = (page: Page): string => page.announced.at(-1) ?? '';
 /** Lets every promise the controller started run to the end (the doubles settle within a few microtask turns). */
 async function settle(): Promise<void> {
   for (let turn = 0; turn < 20; turn += 1) await Promise.resolve();
+}
+
+/** An answer from the browser that has not come yet: it settles when the test says so. */
+function deferred() {
+  let resolve!: () => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<void>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+
+/** From now on `document.exitFullscreen()` returns `answer` and does nothing else: the browser is slow to say what became of it. */
+function exitAnswers(page: Page, answer: Promise<void>): void {
+  Object.defineProperty(page.browser.document, 'exitFullscreen', { configurable: true, value: () => answer });
 }
 
 function expectWindowed(page: Page): void {
@@ -614,6 +631,66 @@ describe('fullscreenchange (AC8)', () => {
     expect(last(page)).toMatch(/could not leave fullscreen/i);
     expect(last(page)).toMatch(/\bEsc\b/);
   });
+
+  // The Present control is the last thing on a long page, a long way below the slide. Focusing it scrolls it into view unless the call says
+  // not to, and the window would jump to the foot of the page as the reader comes back to the slide they were reading.
+  it.each([
+    ['the Exit control', (page: Page) => click(page, 'present-exit')],
+    ['the browser, unasked', (page: Page) => page.doubles.endFullscreen()],
+  ] as const)('gives the focus back to the Present control without scrolling when %s ends fullscreen', async (_how, leave) => {
+    const page = mount();
+    const focus = vi.spyOn(byId(page, 'present-start'), 'focus');
+    click(page, 'present-start');
+    await settle();
+    expect(page.browser.document.activeElement).toBe(byId(page, 'present-exit'));
+    focus.mockClear(); // a click may focus what it presses: only the way out is under test
+
+    leave(page);
+    await settle();
+    expectWindowed(page);
+    expect(focus).toHaveBeenCalled();
+    for (const call of focus.mock.calls) expect(call).toEqual([{ preventScroll: true }]);
+    expect(page.browser.document.activeElement).toBe(byId(page, 'present-start'));
+  });
+
+  it('does not move the focus at all when it was not on the Exit control, as before', async () => {
+    const page = mount();
+    const focus = vi.spyOn(byId(page, 'present-start'), 'focus');
+    click(page, 'present-start');
+    await settle();
+    const main = byId(page, 'main');
+    main.focus();
+    focus.mockClear();
+    page.doubles.endFullscreen();
+    await settle();
+    expectWindowed(page);
+    expect(focus).not.toHaveBeenCalled();
+    expect(page.browser.document.activeElement).toBe(main);
+  });
+
+  // An answer from the browser belongs to the exit it was asked for. An earlier presentation's exit that is refused late is not
+  // this presentation's, and must neither report a failed exit nor end an exit this one has asked.
+  it('says nothing about an exit that was refused late, in a presentation that has not asked to leave', async () => {
+    const page = mount();
+    click(page, 'present-start');
+    await settle();
+    const early = deferred();
+    exitAnswers(page, early.promise);
+    page.presentation.exit(); // asked, and the browser has not answered
+    page.doubles.endFullscreen(); // the browser ends that presentation first
+    await settle();
+    expectWindowed(page);
+
+    click(page, 'present-start');
+    await settle();
+    expectPresenting(page);
+    const said = page.announced.length;
+    early.reject(new TypeError('The earlier document was no longer fullscreen'));
+    await settle();
+    expectPresenting(page);
+    expect(page.announced).toHaveLength(said);
+    expect(last(page)).toMatch(/presentation mode on/i);
+  });
 });
 
 // Firefox and WebKit spend the Escape that leaves fullscreen: the page is told that fullscreen ended and is never handed the key,
@@ -727,6 +804,58 @@ describe('fullscreen that ends without the page asking (onEndedByBrowser)', () =
     expect(calls).toHaveLength(1);
   });
 
+  // Who asked is told by a mark the page sets when it asks. The browser's answer to an earlier presentation's exit may arrive at any
+  // time, and it must not clear the mark of the exit that the presentation now running has asked for.
+  it('is not called for an exit that the page asked, whatever became of the exit an earlier presentation asked for', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    const early = deferred();
+    exitAnswers(page, early.promise);
+    page.presentation.exit(); // asked, and the browser has not answered
+    page.doubles.endFullscreen(); // the browser ends that presentation first
+    await settle();
+    expectWindowed(page);
+    expect(calls).toEqual([]);
+
+    click(page, 'present-start');
+    await settle();
+    const late = deferred();
+    exitAnswers(page, late.promise);
+    page.presentation.exit(); // this presentation asks to leave as well
+    early.reject(new TypeError('The earlier document was no longer fullscreen')); // the answer to the earlier exit comes late
+    await settle();
+    page.doubles.endFullscreen();
+    late.resolve();
+    await settle();
+    expectWindowed(page);
+    expect(calls).toEqual([]);
+  });
+
+  // Within one presentation too: asking again before the browser has answered makes the second exit the one that counts, and the
+  // refusal of the first may arrive while the second is still waiting.
+  it('is not called for the last exit that the page asked, when an earlier exit of the same presentation is refused while it waits', async () => {
+    const { page, calls } = hooked();
+    click(page, 'present-start');
+    await settle();
+    const first = deferred();
+    exitAnswers(page, first.promise);
+    page.presentation.exit(); // asked, and the browser has not answered
+    const second = deferred();
+    exitAnswers(page, second.promise);
+    page.presentation.exit(); // asked again, and the browser has not answered that either
+    const said = page.announced.length;
+    first.reject(new TypeError('The first exit was refused'));
+    await settle();
+    expectPresenting(page); // the second exit is still waiting: nothing has ended
+    expect(page.announced).toHaveLength(said); // and the refusal of the first is not the answer to it
+    page.doubles.endFullscreen();
+    second.resolve();
+    await settle();
+    expectWindowed(page);
+    expect(calls).toEqual([]);
+  });
+
   it.each(['reject', 'error-event', 'reject-and-event', 'throw'] as const)(
     'is not called for a request that failed (%s): nothing was presenting, so nothing ended',
     async (outcome) => {
@@ -790,6 +919,217 @@ describe('fullscreen that ends without the page asking (onEndedByBrowser)', () =
     await settle();
     expectWindowed(page);
     expect(last(page)).toMatch(/presentation mode off/i);
+  });
+});
+
+// AC8: the end of fullscreen is written into the live region. `createAnnouncer` writes only the latest message of a turn, and what the
+// hook puts away can speak as it goes (a timer that pauses says so), so a hook that spoke after the window did would leave the region
+// without the end of fullscreen: the one thing AC8 asks of it. These tests use the announcer the shell ships and look at what the live
+// region is given, not at what was passed to announce().
+describe('what the live region is given when fullscreen ends and the hook puts something away (AC8)', () => {
+  const ENDED = 'Presentation mode off. Fullscreen ended and the window is showing segment 1 of 3.';
+
+  /** A controller on the shipped shell and the shipped announcer, whose region records every value it is given. */
+  function mountWithRegion(hook?: (say: Announcer, doubles: Doubles) => void) {
+    const browser = createBrowser(INDEX_HTML);
+    const doubles = installDoubles(browser);
+    const store = createState([...SEGMENTS]);
+    const writes: string[] = [];
+    let text: string | null = '';
+    const region = {
+      get textContent(): string | null {
+        return text;
+      },
+      set textContent(value: string | null) {
+        text = value;
+        writes.push(value ?? '');
+      },
+    };
+    const pending: Array<() => void> = [];
+    const announce = createAnnouncer(region, (work) => void pending.push(work));
+    const presentation = mountPresentation({
+      document: browser.document,
+      window: browser.window,
+      navigator: doubles.navigator,
+      store,
+      announce,
+      describeSegment: (id: string) => `segment ${SEGMENTS.indexOf(id) + 1} of ${SEGMENTS.length}`,
+      ...(hook ? { onEndedByBrowser: () => hook(announce, doubles) } : {}),
+    } as never);
+    if (presentation === undefined) throw new Error('presentation mode did not mount on the shipped shell');
+    const page: Page = { browser, doubles, store, presentation, announced: [] };
+    let from = 0; // the first write `said()` looks at: moved forward by `mark()`
+    return {
+      page,
+      announce,
+      /** What the announcer has still to write, a turn later. */
+      pending,
+      /** The writes that were made after `mark()`, with the clearing that precedes each announcement left out. */
+      said: (): string[] => writes.slice(from).filter((value) => value !== ''),
+      mark: (): void => void (from = writes.length),
+      flush: (): void => void pending.splice(0).forEach((work) => work()),
+      region: (): string | null => text,
+    };
+  }
+
+  /** Presents, lets the announcement of that be written, and starts counting from there. */
+  async function present(session: ReturnType<typeof mountWithRegion>): Promise<void> {
+    click(session.page, 'present-start');
+    await settle();
+    session.flush();
+    session.mark();
+  }
+
+  it('writes the end of fullscreen and what the hook said as one message, in that order, when the hook speaks as it puts something away', async () => {
+    let windowedWhenCalled = false;
+    const session = mountWithRegion((say, doubles) => {
+      windowedWhenCalled = doubles.root.getAttribute('data-presentation') === 'windowed';
+      say('Paused. 35 minutes left.');
+    });
+    await present(session);
+    session.page.doubles.endFullscreen();
+    await settle();
+    session.flush();
+    expect(windowedWhenCalled).toBe(true);
+    expect(session.said()).toEqual([`${ENDED} Paused. 35 minutes left.`]);
+    expect(session.region()).toBe(`${ENDED} Paused. 35 minutes left.`);
+    expect(session.page.store.get().currentId).toBe('alpha');
+  });
+
+  it('writes what several pieces of work said, in the order they said it', async () => {
+    const session = mountWithRegion((say) => {
+      say('Paused. 35 minutes left.');
+      say('Details are hidden.');
+    });
+    await present(session);
+    session.page.doubles.endFullscreen();
+    await settle();
+    session.flush();
+    expect(session.said()).toEqual([`${ENDED} Paused. 35 minutes left. Details are hidden.`]);
+  });
+
+  it('says the end of fullscreen once, and nothing more, when the hook puts something away silently', async () => {
+    const session = mountWithRegion(() => undefined);
+    await present(session);
+    session.page.doubles.endFullscreen();
+    await settle();
+    expect(session.pending).toHaveLength(1); // one announcement was made, so no second write is on its way
+    session.flush();
+    expect(session.said()).toEqual([ENDED]);
+  });
+
+  it('still says what the hook said before it failed, and reports the failure', async () => {
+    const reported = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const session = mountWithRegion((say) => {
+        say('Paused. 35 minutes left.');
+        throw new Error('the hook failed');
+      });
+      await present(session);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.flush();
+      expectWindowed(session.page);
+      expect(session.said()).toEqual([`${ENDED} Paused. 35 minutes left.`]);
+      expect(reported).toHaveBeenCalledTimes(1);
+    } finally {
+      reported.mockRestore();
+    }
+  });
+
+  it('says only the end of fullscreen when the page asked for it: nothing is put away, so there is nothing to add', async () => {
+    const session = mountWithRegion((say) => say('Paused. 35 minutes left.'));
+    await present(session);
+    click(session.page, 'present-exit');
+    await settle();
+    session.flush();
+    expect(session.said()).toEqual([ENDED]);
+  });
+
+  it('goes on announcing as it did once the end of fullscreen has been said', async () => {
+    const session = mountWithRegion((say) => say('Paused. 35 minutes left.'));
+    await present(session);
+    session.page.doubles.endFullscreen();
+    await settle();
+    session.flush();
+    session.mark();
+    session.announce('Segment 2 of 3');
+    expect(session.region()).toBe(''); // cleared at once, written on the next turn
+    session.flush();
+    expect(session.said()).toEqual(['Segment 2 of 3']);
+  });
+});
+
+// What the controller relies on: an announcer can be told to hold what a piece of work announces and hand it back, so that the work
+// neither writes to the live region nor takes back what was announced before it.
+describe('the announcer: capture', () => {
+  function announcer() {
+    const region = { textContent: 'old' as string | null };
+    const pending: Array<() => void> = [];
+    const announce = createAnnouncer(region, (work) => void pending.push(work));
+    const capture = announce.capture;
+    if (capture === undefined) throw new Error('the announcer has no way to hold what a piece of work announces');
+    return { region, pending, announce, capture, flush: (): void => void pending.splice(0).forEach((work) => work()) };
+  }
+
+  it('hands back what the work announced, in order, and writes none of it, not even the clearing', () => {
+    const { region, pending, announce, capture } = announcer();
+    const caught = capture(() => {
+      announce('one');
+      announce('two');
+    });
+    expect(caught).toEqual(['one', 'two']);
+    expect(region.textContent).toBe('old');
+    expect(pending).toEqual([]);
+  });
+
+  it('does not take back what was announced before it, nor delay it', () => {
+    const { region, announce, capture, flush } = announcer();
+    announce('before');
+    capture(() => announce('inside'));
+    flush();
+    expect(region.textContent).toBe('before');
+  });
+
+  it('returns nothing when the work announced nothing', () => {
+    const { capture } = announcer();
+    expect(capture(() => undefined)).toEqual([]);
+  });
+
+  it('announces as before once the work is done', () => {
+    const { region, announce, capture, flush } = announcer();
+    capture(() => announce('inside'));
+    announce('after');
+    expect(region.textContent).toBe('');
+    flush();
+    expect(region.textContent).toBe('after');
+  });
+
+  it('announces as before once the work has failed, and lets the failure through', () => {
+    const { region, announce, capture, flush } = announcer();
+    expect(() =>
+      capture(() => {
+        announce('inside');
+        throw new Error('the work failed');
+      }),
+    ).toThrow('the work failed');
+    announce('after');
+    flush();
+    expect(region.textContent).toBe('after');
+  });
+
+  it('keeps what each of two nested scopes announced to that scope', () => {
+    const { region, pending, announce, capture } = announcer();
+    let inner: string[] = [];
+    const outer = capture(() => {
+      announce('outer 1');
+      inner = capture(() => announce('inner'));
+      announce('outer 2');
+    });
+    expect(inner).toEqual(['inner']);
+    expect(outer).toEqual(['outer 1', 'outer 2']);
+    expect(region.textContent).toBe('old');
+    expect(pending).toEqual([]);
   });
 });
 

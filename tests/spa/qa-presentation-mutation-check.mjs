@@ -191,10 +191,12 @@ try {
   check('browser-ended-fullscreen-is-never-reported', unit, ENDED, 10, (root) => {
     replace(root, controller, 'if (!asked) endedByBrowser();', '');
   });
-  check('an-exit-the-page-asked-for-is-reported-too', unit, ENDED, 4, (root) => {
+  // Two of the tests that follow hold the mark of an exit the page asked for: one against the late answer to an earlier presentation's
+  // exit, one against the refusal of an earlier exit of the same presentation. They stand on these two links as well, so six fail.
+  check('an-exit-the-page-asked-for-is-reported-too', unit, ENDED, 6, (root) => {
     replace(root, controller, 'if (!asked) endedByBrowser();', 'endedByBrowser();');
   });
-  check('exit-never-marks-itself-asked', unit, ENDED, 4, (root) => {
+  check('exit-never-marks-itself-asked', unit, ENDED, 6, (root) => {
     replace(root, controller,
       '    // Before the call: the browser reports the end from inside exitFullscreen() when it has nothing to wait for.\n    exiting = true;\n', '');
   });
@@ -227,6 +229,26 @@ try {
   });
   check('interactions-aggregate-dismisses-nothing', unit, ENDED, 4, (root) => {
     replace(root, `${interactionsDir}/index.ts`, 'for (const interaction of mounted) interaction.dismiss?.();', '');
+  });
+
+  // Fullscreen that the browser ends while what is put away speaks (one composed announcement, AC8), the answers to exits that come
+  // late, and the focus that goes back to Present without scrolling the window to the foot of the page. Each control cuts one line
+  // and expects exactly the tests that stand on it to fail; the whole unit file is run, so a test elsewhere that depends on it counts.
+  check('late-refusal-of-an-earlier-exit-is-believed', unit, '.', 3, (root) => {
+    replace(root, controller, 'if (mine === exitToken) exitFailed();', 'exitFailed();');
+  });
+  check('leaving-does-not-retire-the-exit-it-asked-for', unit, '.', 1, (root) => {
+    replace(root, controller,
+      "    exitToken += 1; // an exit the browser has not answered by now was asked in a presentation that is over: its answer is no one's\n", '');
+  });
+  check('asking-again-does-not-replace-the-exit-that-counts', unit, '.', 1, (root) => {
+    replace(root, controller, 'const mine = ++exitToken;', 'const mine = exitToken;');
+  });
+  check('exit-focus-scrolls-the-window-to-the-foot-of-the-page', unit, '.', 2, (root) => {
+    replace(root, controller, 'if (exitHadFocus) start.focus?.({ preventScroll: true });', 'if (exitHadFocus) start.focus?.();');
+  });
+  check('what-the-hook-says-replaces-the-end-of-fullscreen', unit, '.', 3, (root) => {
+    replace(root, controller, 'if (announce.capture) said = announce.capture(putAway);\n    else putAway();', 'putAway();');
   });
 
   // Browser mutations damage only a freshly built fixture, not workshop/spa/dist or any source file.

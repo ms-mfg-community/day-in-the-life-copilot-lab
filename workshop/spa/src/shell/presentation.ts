@@ -95,7 +95,9 @@ export interface PresentationOptions {
   /**
    * Called when fullscreen ends and the page did not ask for it: the window is back, and has said so. Firefox and WebKit spend
    * the Escape that leaves fullscreen and never hand the page the key, so this is the page's only sign that it was pressed, and
-   * the place to put away what Escape would have put away. Not called for Exit, for a request that failed, or after dispose.
+   * the place to put away what Escape would have put away. Whatever it announces as it does (a timer that pauses says so) is
+   * said together with the window's own message, in one announcement: the live region keeps only the latest, and AC8 asks that
+   * the end of fullscreen is written to it. Not called for Exit, for a request that failed, or after dispose.
    */
   readonly onEndedByBrowser?: () => void;
 }
@@ -187,6 +189,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
   let phase: 'idle' | 'requesting' | 'presenting' = 'idle';
   let activation = 0; // which activation an answer belongs to: a late answer to an earlier one is ignored
   let exiting = false; // the page has asked to leave fullscreen and the browser has not answered: what ends it next is its doing
+  let exitToken = 0; // which exit an answer belongs to: a late answer to an earlier exit, or to an earlier presentation's, is ignored
   let locked = false;
   let sentinel: PresentationWakeLockSentinel | undefined;
   let wakePending = false;
@@ -310,26 +313,42 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     const exitHadFocus = doc.activeElement === exitButton;
     const asked = exiting;
     exiting = false;
+    exitToken += 1; // an exit the browser has not answered by now was asked in a presentation that is over: its answer is no one's
     phase = 'idle';
     releaseWakeLock();
     releaseKeyboard();
     notes = {};
     showWindowed();
-    if (exitHadFocus) start.focus?.();
+    // Present is the last control on a long page, so focusing it without saying not to would scroll the window down to it: the reader
+    // comes back to the foot of the page and not to where they were.
+    if (exitHadFocus) start.focus?.({ preventScroll: true });
     base = ended(currentSegment());
     render();
     speak();
-    // Last, so that nothing it does can keep the window from being back and having said so. The window speaks before the
-    // widgets do on purpose: one that speaks as it puts something away (a timer that pauses) is then what the live region ends on.
+    // Last, so that nothing it does can keep the window from being back and having said so. What it announces as it puts something
+    // away is said with the window's message, in the same announcement: see endedByBrowser().
     if (!asked) endedByBrowser();
   }
 
+  // What the hook puts away may speak as it goes (a timer that pauses says so), and the announcer keeps only the latest message, so
+  // a hook that announced for itself would take the end of fullscreen back out of the live region, where AC8 asks for it. The
+  // announcer holds what the hook announces instead, and it is said after the window's message, as one announcement.
   function endedByBrowser(): void {
-    try {
-      options.onEndedByBrowser?.();
-    } catch (error) {
-      console.error('Putting away what fullscreen was showing failed', error);
-    }
+    const hook = options.onEndedByBrowser;
+    if (!hook) return;
+    const putAway = (): void => {
+      try {
+        hook();
+      } catch (error) {
+        console.error('Putting away what fullscreen was showing failed', error);
+      }
+    };
+    let said: string[] = [];
+    if (announce.capture) said = announce.capture(putAway);
+    else putAway();
+    if (said.length === 0) return; // it put away in silence: the window's message, already said, is all there is
+    base = [base, ...said].join(' ');
+    speak();
   }
 
   // Idempotent by its phase gate: the event, the rejection, or both, report the failure once. A disposed controller reports
@@ -438,6 +457,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     if (disposed || phase !== 'presenting') return;
     // Before the call: the browser reports the end from inside exitFullscreen() when it has nothing to wait for.
     exiting = true;
+    const mine = ++exitToken;
     if (doc.fullscreenElement === null) {
       reconcile();
       return;
@@ -451,7 +471,16 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
       return;
     }
     releaseKeyboard();
-    void Promise.resolve(answer).then(reconcile, exitFailed);
+    // The answer belongs to this exit. One that arrives after this exit was replaced, or after the presentation it was asked in was
+    // over, says nothing about the presentation that is running now, and must not end the mark that tells its own exit apart.
+    void Promise.resolve(answer).then(
+      () => {
+        if (mine === exitToken) reconcile();
+      },
+      () => {
+        if (mine === exitToken) exitFailed();
+      },
+    );
   }
 
   function onFullscreenError(event: PresentationEvent): void {

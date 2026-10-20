@@ -814,6 +814,36 @@ test('when the application itself asks to leave fullscreen, a running timer keep
   });
 });
 
+// The Present control is the last thing on a long page. Focusing it without saying not to scroll scrolls the window down to it, so the
+// reader comes back from fullscreen to the foot of the page and not to where they were. The way in is the keyboard, from the top of the
+// page: a click would not do, because Playwright scrolls its target into view before it clicks.
+for (const [way, leave] of [
+  ['the browser ends fullscreen', (page) => page.evaluate(() => window.__realExitFullscreen())],
+  ['the Exit control is activated from the keyboard', (page) => page.keyboard.press('Enter')],
+]) {
+  test(`when ${way}, the window stays where it was and the focus goes back to Present`, async () => {
+    await withPage({}, async (page) => {
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+        document.getElementById('present-start').focus({ preventScroll: true });
+      });
+      assert.equal(await page.evaluate(() => window.scrollY), 0);
+      await page.keyboard.press('Enter');
+      await waitForFullscreen(page, true);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'present-exit', 'the Exit control has the focus, so Enter on it is what leaves');
+      await leave(page);
+      await waitForFullscreen(page, false);
+      await waitForWindowed(page);
+      await settled(page);
+      await page.waitForTimeout(150); // a jump that was going to happen has happened
+      assert.deepEqual(await page.evaluate(() => ({ scrollY: window.scrollY, focus: document.activeElement.id })), {
+        scrollY: 0,
+        focus: 'present-start',
+      });
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Failure (AC7's other half: the presenter must never be stranded). The refusal is a STUB.
 

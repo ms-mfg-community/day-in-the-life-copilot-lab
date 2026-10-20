@@ -1355,7 +1355,16 @@ for (const engine of ENGINES) {
           assert.equal(await timer.caption(), 'Paused', 'Escape pauses a running timer');
           assert.equal(await isFocused(page, `#${entry.id} button`, 0), true, 'and the focus stays where it was');
           await timer.pass(1);
-          assert.equal((await announcements(page)).at(-1), `Paused. ${timer.says(35)} left.`);
+          const paused = `Paused. ${timer.says(35)} left.`;
+          const lastSaid = (await announcements(page)).at(-1);
+          if (await leftPresentation(page)) {
+            // The browser spent this Escape on leaving fullscreen. The window says so (AC8) and the timer says it paused, and the live
+            // region keeps only the latest announcement, so they are said as one: the end of fullscreen, then the pause.
+            assert.match(lastSaid, /^Presentation mode off\. Fullscreen ended and the window is showing segment \d+ of \d+: /);
+            assert.ok(lastSaid.endsWith(` ${paused}`), `the end of fullscreen is followed by what the timer says: ${lastSaid}`);
+          } else {
+            assert.equal(lastSaid, paused);
+          }
           await page.keyboard.press('Escape');
           await timer.pass(1);
           assert.equal((await announcements(page)).length, 4, 'Escape on a timer that is not counting does nothing and says nothing');
