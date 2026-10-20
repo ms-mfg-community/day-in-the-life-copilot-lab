@@ -1,5 +1,6 @@
-// Build-time content: reads deck.json (SPA-01) and renders each segment's slide markdown through the SPA-02 pipeline.
-// Runs in Node, so gray-matter's need for Buffer never reaches the browser, and no curriculum prose is copied into source.
+// Build-time content: reads deck.json (SPA-01) and renders each segment's slide markdown, and its speaker script, through the
+// SPA-02 pipeline. Runs in Node, so gray-matter's need for Buffer never reaches the browser, and no curriculum prose is copied
+// into source.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -33,6 +34,9 @@ function renderSegments(repoRoot: string, deck: readonly DeckSegment[]) {
     });
     const { data, html } = render(readFileSync(path.join(repoRoot, segment.slideSource), 'utf8'));
     const title = (data as { title?: unknown } | null)?.title;
+    // The speaker script goes through the same sanitising pipeline, after the slide so that a slide that is missing still fails
+    // first. It is not a slide: it has no links to other slides to rewrite, and its front matter is read and left out of the page.
+    const { html: scriptHtml } = createRenderer()(readFileSync(path.join(repoRoot, segment.scriptSource), 'utf8'));
     return {
       id: segment.id,
       minutes: segment.minutes,
@@ -40,6 +44,7 @@ function renderSegments(repoRoot: string, deck: readonly DeckSegment[]) {
       scriptSource: segment.scriptSource,
       title: typeof title === 'string' && title.trim() !== '' ? title : segment.id,
       html,
+      scriptHtml,
     };
   });
 }

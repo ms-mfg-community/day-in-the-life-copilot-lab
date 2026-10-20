@@ -6,5 +6,7 @@ declare module 'virtual:spa-content' {
     scriptSource: string;
     title: string;
     html: string;
+    /** The speaker script of the segment, rendered at build time through the same sanitising pipeline as `html`. */
+    scriptHtml: string;
   }>;
 }
