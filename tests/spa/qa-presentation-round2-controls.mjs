@@ -1,5 +1,6 @@
 // Run from the worktree: node tests/spa/qa-presentation-round2-controls.mjs
-// Counterfactual controls touch generated test fixtures only; none is a proposed production fix.
+// Counterfactual controls touch generated test fixtures only; none is a proposed production fix. Aimed at the fixed product: each
+// control puts one fix back in a generated copy and expects exactly the regression test that stands on it to fail.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
@@ -35,21 +36,17 @@ function replace(root, relative, before, after) {
   writeFileSync(file, source.replace(before, after));
 }
 
-function permitSupersededWrite(root) {
-  // Demonstrate that cancellation by the announcer, not a missing fullscreenchange, loses the status text.
-  // This deliberately relaxes the announcer's stale-write protection IN THE FIXTURE ONLY.
+function revertAnnouncementFix(root) {
+  // Before the fix, what the hook put away announced for itself and took the end of fullscreen back out of the live region.
+  // Two layers hold it now (the controller keeps its own message, and folds what the hook says into it), so both are put back.
+  replace(root, controller, 'if (announce.capture) said = announce.capture(putAway);\n    else putAway();', 'putAway();');
   replace(root, 'workshop/spa/src/shell/live-region.ts',
-    'if (ticket === latest) region.textContent = message;', 'region.textContent = message;');
+    'waiting = [...waiting.filter((one) => one.keep !== keep), { message, keep }];', 'waiting = [{ message, keep }];');
 }
 
-function ignorePreviousSessionExit(root) {
-  // Give the exit promise the same session identity as the entry promise, in this generated fixture only.
-  replace(root, controller, 'void Promise.resolve(answer).then(reconcile, exitFailed);',
-    `const exitActivation = activation;
-    void Promise.resolve(answer).then(
-      () => { if (exitActivation === activation) reconcile(); },
-      () => { if (exitActivation === activation) exitFailed(); },
-    );`);
+function revertExitToken(root) {
+  // Before the fix, the answer to any exit was believed, whichever presentation it was asked in.
+  replace(root, controller, 'if (mine === exitToken) exitFailed();', 'exitFailed();');
 }
 
 function unit(name, expectedFailures, mutate = () => {}) {
@@ -68,12 +65,12 @@ function unit(name, expectedFailures, mutate = () => {}) {
 }
 
 try {
-  unit('shipped-behavior', 2);
-  unit('status-write-control', 1, permitSupersededWrite);
-  unit('exit-session-control', 1, ignorePreviousSessionExit);
-  unit('both-causal-controls', 0, (root) => {
-    permitSupersededWrite(root);
-    ignorePreviousSessionExit(root);
+  unit('shipped-behavior', 0);
+  unit('announcement-fix-reverted', 1, revertAnnouncementFix);
+  unit('exit-token-reverted', 1, revertExitToken);
+  unit('both-fixes-reverted', 2, (root) => {
+    revertAnnouncementFix(root);
+    revertExitToken(root);
   });
 
   // Measure the optional WebKit matrix failures on the round-1 tree; do not assume every current failure pre-exists.

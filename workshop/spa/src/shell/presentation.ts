@@ -204,9 +204,12 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
   const keyboardAvailable = (): boolean => typeof nav?.keyboard?.lock === 'function';
   const noteTexts = (): string[] => [notes.script, notes.keyboard, notes.wakeLock].filter((text): text is string => !!text);
 
-  // `createAnnouncer` keeps only the latest message, so what a later event adds is said together with what came before.
+  // What the controller says about its own state is kept (see `keep`): the announcer writes only the latest message, so without it a
+  // timer that reaches its five-minute mark a moment later would take the end of fullscreen out of the live region (AC8), or the failure
+  // of a request (2.5), and nothing would have been said. The next `speak()` replaces this one, so what a later event adds is said
+  // together with what came before.
   function speak(): void {
-    announce([base, ...noteTexts()].filter(Boolean).join(' '));
+    announce([base, ...noteTexts()].filter(Boolean).join(' '), { keep: true });
   }
 
   function render(): void {
@@ -392,7 +395,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     }
     if (opened === null || opened === undefined) {
       notes.script = SCRIPT_BLOCKED;
-      announce(SCRIPT_BLOCKED);
+      announce(SCRIPT_BLOCKED, { keep: true }); // kept as speak() is: the speak() that follows carries this note too, and replaces it
     }
   }
 

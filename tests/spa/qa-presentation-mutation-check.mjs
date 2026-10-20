@@ -12,6 +12,7 @@ const scratch = mkdtempSync(path.join(ROOT, 'tests/spa/.qa-present-mutants-'));
 const controller = 'workshop/spa/src/shell/presentation.ts';
 const unit = 'tests/spa/presentation-mode.test.ts';
 const qa = 'tests/spa/qa-presentation.test.ts';
+const boundaries = 'tests/spa/qa-presentation-boundaries.test.ts';
 const vitest = path.join(ROOT, 'node_modules/vitest/vitest.mjs');
 let controls = 0;
 
@@ -37,7 +38,7 @@ function seed(name) {
     'workshop/spa/src', 'workshop/spa/content', 'workshop/spa/index.html',
     'workshop/spa/vite.config.ts', 'workshop/spa/vite-content-plugin.ts',
     'workshop/slides', 'workshop/speaker-scripts', 'specs/005-teaching-spa.md',
-    'package.json', 'tsconfig.json', 'vitest.config.ts', 'tests/spa/helpers', unit, qa,
+    'package.json', 'tsconfig.json', 'vitest.config.ts', 'tests/spa/helpers', unit, qa, boundaries,
   ]) {
     const destination = path.join(root, relative);
     mkdirSync(path.dirname(destination), { recursive: true });
@@ -154,7 +155,7 @@ try {
       "doc.getElementById('main')!.requestFullscreen(); // C1");
   });
   check('blocked-speaker-window-is-swallowed', unit, 'requests fullscreen even when the speaker window is blocked', 1, (root) => {
-    replace(root, controller, 'notes.script = SCRIPT_BLOCKED;\n      announce(SCRIPT_BLOCKED);', '');
+    replace(root, controller, 'notes.script = SCRIPT_BLOCKED;\n      announce(SCRIPT_BLOCKED, { keep: true });', '');
   });
   check('keyboard-unlocked-before-fullscreen-exit', unit, 'releases the lock after exitFullscreen', 1, (root) => {
     replace(root, controller, 'answer = doc.exitFullscreen();', 'releaseKeyboard();\n      answer = doc.exitFullscreen();');
@@ -247,8 +248,29 @@ try {
   check('exit-focus-scrolls-the-window-to-the-foot-of-the-page', unit, '.', 2, (root) => {
     replace(root, controller, 'if (exitHadFocus) start.focus?.({ preventScroll: true });', 'if (exitHadFocus) start.focus?.();');
   });
-  check('what-the-hook-says-replaces-the-end-of-fullscreen', unit, '.', 3, (root) => {
+  // The announcer keeps only the latest message, so a hook that announced for itself used to take the end of fullscreen back out of
+  // the live region. The controller's own messages are now kept by the announcer as well, which alone covers the plain case (the hook
+  // speaks once and nothing speaks after it): what still stands on capture() is the order in which several pieces of work speak.
+  check('what-the-hook-says-replaces-the-end-of-fullscreen', unit, '.', 2, (root) => {
     replace(root, controller, 'if (announce.capture) said = announce.capture(putAway);\n    else putAway();', 'putAway();');
+  });
+
+  // What the controller says about its own state is kept, so that a timer that reaches a mark a few milliseconds later cannot take
+  // the end of fullscreen (AC8) or the failure of a request (2.5) out of the live region. Each control undoes one half of that and
+  // expects exactly the tests that stand on it: the QA boundary file holds the seven that drive the real shell.
+  const liveRegion = 'workshop/spa/src/shell/live-region.ts';
+  const notKept = (root) =>
+    replace(root, controller, "announce([base, ...noteTexts()].filter(Boolean).join(' '), { keep: true });",
+      "announce([base, ...noteTexts()].filter(Boolean).join(' '));");
+  const takenBack = (root) =>
+    replace(root, liveRegion, 'waiting = [...waiting.filter((one) => one.keep !== keep), { message, keep }];',
+      'waiting = [{ message, keep }];');
+  check('what-the-controller-says-is-not-kept', unit, '.', 11, notKept);
+  check('what-the-controller-says-is-not-kept-at-the-boundaries', boundaries, '.', 7, notKept);
+  check('a-later-announcement-takes-back-what-was-kept', unit, '.', 16, takenBack);
+  check('a-later-announcement-takes-back-what-was-kept-at-the-boundaries', boundaries, '.', 7, takenBack);
+  check('what-was-kept-is-said-again-with-the-next-announcement', unit, '.', 3, (root) => {
+    replace(root, liveRegion, '      waiting = [];\n', '');
   });
 
   // Browser mutations damage only a freshly built fixture, not workshop/spa/dist or any source file.

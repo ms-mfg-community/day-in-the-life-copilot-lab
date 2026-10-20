@@ -215,7 +215,7 @@ const DEFAULTS = {
   screens: 'absent', // 'absent' | 'stub' | 'reject'
 };
 
-async function withPage(overrides, run) {
+async function withPage(overrides, run, { clock = false } = {}) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -223,6 +223,7 @@ async function withPage(overrides, run) {
   try {
     // All content is local; do not follow any external asset a curriculum document may reference.
     await page.route('**/*', (route) => (new URL(route.request().url()).origin === new URL(base).origin ? route.continue() : route.abort()));
+    if (clock) await page.clock.install({ time: new Date('2030-01-01T09:00:00Z') });
     await page.addInitScript(instrument, { ...DEFAULTS, ...overrides });
     await page.goto(`${base}#/${FIRST}`);
     await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation);
@@ -1075,3 +1076,56 @@ test('a screen chosen through getScreenDetails is passed to requestFullscreen, a
     assert.equal(requests[0].target, 'root');
   });
 });
+
+// A timer outside the focus is deliberately NOT paused by browser exit. Its automatic status can land after the
+// fullscreen announcement was requested but before the announcer writes it (50 ms). Record the DOM, not announce() calls.
+for (const scenario of ['browser-ended', 'request-refused']) {
+  test(`QA boundary: ${scenario} status reaches the live region before an unfocused timer can supersede it`, async () => {
+    await withPage({ fullscreen: scenario === 'request-refused' ? 'reject' : 'real' }, async (page) => {
+      if (scenario === 'browser-ended') {
+        await page.click('#present-start');
+        await waitForFullscreen(page, true);
+        await waitForLive(page, /Presentation mode on/);
+      }
+      await page.clock.pauseAt(new Date('2030-01-01T09:01:00Z'));
+      await startTimer(page);
+      await page.clock.runFor(60); // flush Start's 50 ms announcement while the clock is held
+      assert.match(await liveRegion(page), /Started/);
+      await page.focus('#main');
+      // As in the interaction matrix: skip the uninteresting stretch, run its final tick, then approach the next tick exactly.
+      await page.clock.fastForward(30 * 60_000 - 1000 - 60);
+      await page.clock.runFor(975);
+      assert.equal(await page.locator(`${TIMER} [role="timer"]`).textContent(), '5:01');
+      await page.evaluate(() => {
+        const region = document.getElementById('live-region');
+        window.__boundaryWrites = [];
+        window.__boundaryObserver = new MutationObserver(() => {
+          if (region.textContent) window.__boundaryWrites.push(region.textContent);
+        });
+        window.__boundaryObserver.observe(region, { childList: true, subtree: true, characterData: true });
+      });
+      await page.evaluate((kind) => {
+        if (kind === 'browser-ended') {
+          // AC8's explicitly permitted simulation: only fullscreenElement and the fullscreenchange are simulated.
+          Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => null });
+          document.dispatchEvent(new Event('fullscreenchange'));
+        } else {
+          window.teachingSpa.presentation.present();
+        }
+      }, scenario);
+      await page.clock.runFor(100);
+      const facts = await page.evaluate(() => ({
+        writes: window.__boundaryWrites,
+        id: window.teachingSpa.store.get().currentId,
+        mode: document.querySelector('[data-spa-root="presentation"]').getAttribute('data-presentation'),
+        timer: document.querySelector('#m1-segment-timer > span:not([role])').textContent.trim(),
+      }));
+      assert.equal(facts.id, FIRST);
+      assert.equal(facts.mode, 'windowed');
+      assert.equal(facts.timer, 'Running', 'an unfocused timer is not paused by leaving fullscreen or by a refused request');
+      assert.ok(facts.writes.some((text) => text.includes('5 minutes left.')), JSON.stringify(facts));
+      const expected = scenario === 'browser-ended' ? /Presentation mode off.*segment 1 of/i : /Fullscreen could not start.*segment 1 of/i;
+      assert.ok(facts.writes.some((text) => expected.test(text)), `Required fullscreen status was never written: ${JSON.stringify(facts)}`);
+    }, { clock: true });
+  });
+}

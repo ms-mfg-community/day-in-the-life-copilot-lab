@@ -1058,6 +1058,119 @@ describe('what the live region is given when fullscreen ends and the hook puts s
     session.flush();
     expect(session.said()).toEqual(['Segment 2 of 3']);
   });
+
+  // The announcer keeps only the latest message, and what it is given a few milliseconds after the page's own message would take that
+  // message back out of the live region: a timer that is still running, and was not focused so was not paused, reaches its five-minute
+  // mark. AC8 asks for the end of fullscreen to be written, and 2.5 for the failure of a request to be announced, so neither is taken
+  // back, and what the timer says is written too: the window's message is kept, and what was announced with it is written after it.
+  describe('when something else announces before the delay is over', () => {
+    const MARK = '5 minutes left.';
+    const ON = 'Presentation mode on. Press Esc or F11 to exit fullscreen.';
+    const COULD_NOT = 'Fullscreen could not start. The window is still showing segment 1 of 3.';
+
+    it('writes the end of fullscreen and what was announced after it, as one message, in that order', async () => {
+      const session = mountWithRegion();
+      await present(session);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.announce(MARK);
+      session.flush();
+      expectWindowed(session.page);
+      expect(session.said()).toEqual([`${ENDED} ${MARK}`]);
+      expect(session.page.store.get().currentId).toBe('alpha');
+    });
+
+    it('writes what was announced just before the end of fullscreen, and then the end of fullscreen, as one message', async () => {
+      const session = mountWithRegion();
+      await present(session);
+      session.announce(MARK);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.flush();
+      expect(session.said()).toEqual([`${MARK} ${ENDED}`]);
+    });
+
+    it('writes the end of fullscreen, what the hook said and what was announced after it, in that order', async () => {
+      const session = mountWithRegion((say) => say('Paused. 35 minutes left.'));
+      await present(session);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.announce('Segment 2 of 3');
+      session.flush();
+      expect(session.said()).toEqual([`${ENDED} Paused. 35 minutes left. Segment 2 of 3`]);
+    });
+
+    it('writes the end of fullscreen with only the latest of what was announced after it: those still replace one another', async () => {
+      const session = mountWithRegion();
+      await present(session);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.announce('Segment 2 of 3');
+      session.announce(MARK);
+      session.flush();
+      expect(session.said()).toEqual([`${ENDED} ${MARK}`]);
+    });
+
+    it('does not say the end of fullscreen a second time with the next announcement', async () => {
+      const session = mountWithRegion();
+      await present(session);
+      session.page.doubles.endFullscreen();
+      await settle();
+      session.announce(MARK);
+      session.flush();
+      session.mark();
+      session.announce('Segment 2 of 3');
+      session.flush();
+      expect(session.said()).toEqual(['Segment 2 of 3']);
+    });
+
+    it.each(['reject', 'error-event', 'reject-and-event', 'throw'] as const)(
+      'writes the failure of the request and what was announced after it, as one message, in that order (%s)',
+      async (outcome) => {
+        const session = mountWithRegion();
+        session.page.doubles.outcome = outcome;
+        click(session.page, 'present-start');
+        await settle();
+        session.announce(MARK);
+        session.flush();
+        expectWindowed(session.page);
+        expect(session.said()).toEqual([`${COULD_NOT} ${MARK}`]);
+      },
+    );
+
+    it('writes what was announced just before the failure of the request, and then the failure, as one message', async () => {
+      const session = mountWithRegion();
+      session.page.doubles.outcome = 'reject';
+      session.announce(MARK);
+      click(session.page, 'present-start');
+      await settle();
+      session.flush();
+      expect(session.said()).toEqual([`${MARK} ${COULD_NOT}`]);
+    });
+
+    it('writes that presentation mode is on, and what was announced after it, as one message, in that order', async () => {
+      const session = mountWithRegion();
+      click(session.page, 'present-start');
+      await settle();
+      session.announce(MARK);
+      session.flush();
+      expectPresenting(session.page);
+      expect(session.said()).toEqual([`${ON} ${MARK}`]);
+    });
+
+    it('says once that the speaker window was blocked, although what the page says about presenting carries that too', async () => {
+      const session = mountWithRegion();
+      session.page.doubles.behaviour.popupBlocked = true;
+      check(session.page, 'present-open-script');
+      click(session.page, 'present-start');
+      await settle();
+      session.flush();
+      const written = session.said();
+      expect(written).toHaveLength(1);
+      expect(written[0]).toMatch(/^Presentation mode on\./);
+      expect(written[0]?.match(/speaker script window was blocked/g)).toHaveLength(1);
+    });
+  });
 });
 
 // What the controller relies on: an announcer can be told to hold what a piece of work announces and hand it back, so that the work
@@ -1129,6 +1242,112 @@ describe('the announcer: capture', () => {
     expect(inner).toEqual(['inner']);
     expect(outer).toEqual(['outer 1', 'outer 2']);
     expect(region.textContent).toBe('old');
+    expect(pending).toEqual([]);
+  });
+});
+
+// What the controller relies on so that what it owes the reader is not taken back: an announcement can be kept. The announcer writes
+// only the latest announcement, so one that is superseded within its delay is never written. A kept one is not superseded by an
+// ordinary one: they are written together, as one announcement, in the order they were announced. Ordinary announcements still
+// replace one another, and a kept one replaces an earlier kept one: whoever keeps a message says all of it.
+describe('the announcer: keep', () => {
+  function announcer() {
+    let text: string | null = 'old';
+    const writes: string[] = [];
+    const region = {
+      get textContent(): string | null {
+        return text;
+      },
+      set textContent(value: string | null) {
+        text = value;
+        writes.push(value ?? '');
+      },
+    };
+    const pending: Array<() => void> = [];
+    const announce = createAnnouncer(region, (work) => void pending.push(work));
+    return {
+      announce,
+      pending,
+      region: (): string | null => text,
+      /** What was written, with the clearing that precedes each announcement left out. */
+      said: (): string[] => writes.filter((value) => value !== ''),
+      flush: (): void => void pending.splice(0).forEach((work) => work()),
+    };
+  }
+
+  it('clears the region at once and writes a kept message on the next turn, as it does any message', () => {
+    const { announce, region, flush } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    expect(region()).toBe('');
+    flush();
+    expect(region()).toBe('Presentation mode off.');
+  });
+
+  it('is not taken back by a message announced after it: both are written, as one message, in the order announced', () => {
+    const { announce, said, flush } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    announce('5 minutes left.');
+    flush();
+    expect(said()).toEqual(['Presentation mode off. 5 minutes left.']);
+  });
+
+  it('does not take back a message announced before it: both are written, as one message, in the order announced', () => {
+    const { announce, said, flush } = announcer();
+    announce('5 minutes left.');
+    announce('Presentation mode off.', { keep: true });
+    flush();
+    expect(said()).toEqual(['5 minutes left. Presentation mode off.']);
+  });
+
+  it('is replaced by a later kept message, which says all of it', () => {
+    const { announce, said, flush } = announcer();
+    announce('Presentation mode on.', { keep: true });
+    announce('Presentation mode on. Wake lock was not granted.', { keep: true });
+    flush();
+    expect(said()).toEqual(['Presentation mode on. Wake lock was not granted.']);
+  });
+
+  it('leaves ordinary messages replacing one another, and keeps the kept one', () => {
+    const { announce, said, flush } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    announce('one');
+    announce('two');
+    flush();
+    expect(said()).toEqual(['Presentation mode off. two']);
+  });
+
+  it('writes a kept message once: the next announcement does not carry it', () => {
+    const { announce, said, flush } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    announce('5 minutes left.');
+    flush();
+    announce('1 minute left.');
+    flush();
+    expect(said()).toEqual(['Presentation mode off. 5 minutes left.', '1 minute left.']);
+  });
+
+  it('ignores a deferred write that was superseded, even when it runs after the newest, and still writes what was kept', () => {
+    const { announce, pending, said } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    announce('5 minutes left.');
+    pending.splice(0).reverse().forEach((work) => work());
+    expect(said()).toEqual(['Presentation mode off. 5 minutes left.']);
+  });
+
+  it('adds nothing for an ordinary message that is empty', () => {
+    const { announce, region, flush } = announcer();
+    announce('Presentation mode off.', { keep: true });
+    announce('');
+    flush();
+    expect(region()).toBe('Presentation mode off.');
+  });
+
+  it('holds a kept message that work announces, as it holds any, and writes none of it', () => {
+    const { announce, pending, region } = announcer();
+    const capture = announce.capture;
+    if (capture === undefined) throw new Error('the announcer has no way to hold what a piece of work announces');
+    expect(capture(() => announce('inside', { keep: true }))).toEqual(['inside']);
+    expect(region()).toBe('old');
     expect(pending).toEqual([]);
   });
 });
