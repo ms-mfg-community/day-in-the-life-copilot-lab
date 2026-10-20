@@ -15,6 +15,7 @@
     "spa:dev": "vite --config workshop/spa/vite.config.ts",
     "spa:build": "vite build --config workshop/spa/vite.config.ts",
     "spa:validate": "node scripts/spa/validate.mjs",
+    "spa:test:present": "npm run spa:build && vitest run tests/spa/presentation-mode.test.ts && node --test tests/spa/presentation-browser-check.mjs",
     "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs"
   },
   "devDependencies": {

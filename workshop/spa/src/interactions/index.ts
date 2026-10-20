@@ -44,7 +44,8 @@ export interface MountRequest {
 /**
  * Mounts every interaction the inventory declares for `segment`. A pattern whose slide lacks the structure it derives from
  * is reported and left out, so the slide stays readable and the other interactions still work. The result undoes
- * whatever the interactions put outside the segment's own DOM; call it before the segment is replaced.
+ * whatever the interactions put outside the segment's own DOM; call it before the segment is replaced. `dismiss` puts away,
+ * the way Escape does, what Escape would put away in them (see `Mounted`).
  */
 export function mountInteractions(request: MountRequest): Mounted {
   const { segment, root, document: doc, store, announce } = request;
@@ -61,6 +62,9 @@ export function mountInteractions(request: MountRequest): Mounted {
     }
   }
   return {
+    dismiss(): void {
+      for (const interaction of mounted) interaction.dismiss?.();
+    },
     dispose(): void {
       for (const interaction of mounted.splice(0).reverse()) interaction.dispose();
     },

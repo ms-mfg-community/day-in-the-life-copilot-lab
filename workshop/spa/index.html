@@ -4,12 +4,62 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Teaching SPA</title>
+    <style>
+      /* The browser draws a fullscreen element over a black backdrop, fixed at the size of the screen, and styles nothing
+         else. Without these rules the text is black on black, a segment taller than the screen cannot be scrolled, and the
+         controls sit below it where nothing can reach them. The controls stay in view at the foot of the screen, and the
+         scroll padding keeps a focused element from being left underneath them. */
+      [data-spa-root="presentation"]:fullscreen {
+        overflow: auto;
+        background: Canvas;
+        color: CanvasText;
+        scroll-padding-bottom: 30vh;
+      }
+      [data-spa-root="presentation"]:fullscreen #presentation-controls {
+        position: sticky;
+        bottom: 0;
+        max-height: 30vh;
+        overflow-y: auto;
+        background: Canvas;
+        border-top: 1px solid CanvasText;
+      }
+    </style>
   </head>
   <body>
-    <a href="#main" class="skip-link" data-skip>Skip to content</a>
-    <nav id="segment-nav" aria-label="Segments"></nav>
-    <main id="main" tabindex="-1"></main>
-    <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
+    <div data-spa-root="presentation">
+      <a href="#main" class="skip-link" data-skip>Skip to content</a>
+      <nav id="segment-nav" aria-label="Segments"></nav>
+      <main id="main" tabindex="-1"></main>
+      <section id="presentation-controls" aria-label="Presentation">
+        <button type="button" id="present-start">Present</button>
+        <button type="button" id="present-exit" hidden>Exit presentation</button>
+        <div id="present-options">
+          <label>
+            <input type="checkbox" id="present-keyboard-lock" aria-describedby="present-keyboard-hint" />
+            Lock the keyboard while presenting (optional, Esc still exits)
+          </label>
+          <p id="present-keyboard-hint" hidden></p>
+          <label>
+            <input type="checkbox" id="present-open-script" />
+            Also open the speaker script window (optional)
+          </label>
+          <button type="button" id="present-choose-screen" hidden>Choose audience screen</button>
+          <div id="present-screen-field" hidden>
+            <label for="present-screen">Audience screen</label>
+            <select id="present-screen"></select>
+          </div>
+          <p id="present-screen-guidance">
+            To put the slides on the audience monitor, move this browser window onto the audience monitor, then activate Present.
+          </p>
+        </div>
+        <p id="present-guidance">While presenting, press Esc or F11 to exit fullscreen. The Exit presentation button does the same.</p>
+        <p id="present-unavailable" hidden>
+          Fullscreen is not available in this browser or window, so Present is turned off. The slides still work in the window.
+        </p>
+        <p id="present-notes"></p>
+      </section>
+      <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
+    </div>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

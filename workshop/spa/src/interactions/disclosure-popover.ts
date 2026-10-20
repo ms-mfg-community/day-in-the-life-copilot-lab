@@ -49,15 +49,20 @@ export const mountDisclosurePopover: Mounter = ({ entry, segment, root, document
     }
   };
 
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
+  /** What Escape does to a popover that is showing: it goes, and stays gone until the pointer and the focus have both left. */
+  function putAway(): void {
     // Only when the focus is inside the popover does it have to move, to the button that revealed it.
     const active = doc.activeElement;
     if (active !== null && popover.contains(active)) trigger.focus();
     pinned = false;
     dismissed = true;
     update();
+  }
+
+  function onKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    putAway();
   }
 
   /** A press outside lets go of an activation, so a popover opened by touch can be put away by tapping elsewhere. */
@@ -115,6 +120,11 @@ export const mountDisclosurePopover: Mounter = ({ entry, segment, root, document
   );
 
   return {
+    // For when the browser has spent the Escape: what it does to a popover that is showing. One that is not showing has nothing
+    // to put away and is left as it is.
+    dismiss(): void {
+      if (shown) putAway();
+    },
     dispose(): void {
       disposed = true;
       stopLeaving();
