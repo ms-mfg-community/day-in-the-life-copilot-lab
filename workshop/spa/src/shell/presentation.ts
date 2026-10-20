@@ -100,6 +100,12 @@ export interface PresentationOptions {
    * the end of fullscreen is written to it. Not called for Exit, for a request that failed, or after dispose.
    */
   readonly onEndedByBrowser?: () => void;
+  /**
+   * Called with the window the speaker script was opened in, exactly as `window.open` returned it, so that whoever keeps the two
+   * windows in step has the handle (spec 2.7: the opener is how postMessage reaches the script window, and `noopener` would
+   * throw the handle away). Not called when the window was blocked. A hook that throws does not stop the presentation.
+   */
+  readonly onScriptWindow?: (opened: unknown) => void;
 }
 
 export interface Presentation {
@@ -121,7 +127,8 @@ export interface Presentation {
 export const KEYBOARD_LOCK_CODES: readonly string[] = ['ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Space'];
 
 const ROOT_SELECTOR = '[data-spa-root="presentation"]';
-// The speaker script route belongs to the speaker window issue. A name, so a second activation reuses the window.
+// The speaker script is the `#/script` surface of this same document (speaker.ts); the controller only opens it. A name, so a
+// second activation reuses the window.
 const SCRIPT_URL = '#/script';
 const SCRIPT_WINDOW = 'teaching-spa-script';
 
@@ -396,6 +403,12 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     if (opened === null || opened === undefined) {
       notes.script = SCRIPT_BLOCKED;
       announce(SCRIPT_BLOCKED, { keep: true }); // kept as speak() is: the speak() that follows carries this note too, and replaces it
+      return;
+    }
+    try {
+      options.onScriptWindow?.(opened); // the handle is the page's to keep; a hook that fails is not a reason not to present
+    } catch {
+      // nothing to undo: the window is open and the presentation goes on
     }
   }
 
