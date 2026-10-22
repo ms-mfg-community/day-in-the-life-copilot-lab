@@ -1,8 +1,8 @@
 ---
+name: create-test
 description: "Generate unit tests for a .NET component using xUnit with Arrange-Act-Assert pattern and 80%+ coverage"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Create Test
 
 Generate comprehensive xUnit tests for a target .NET class or method.

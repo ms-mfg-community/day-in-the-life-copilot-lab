@@ -1,8 +1,8 @@
 ---
-agent: 'agent'
+name: handoff
 description: 'Generate session handoff documentation for work continuity'
+disable-model-invocation: true
 ---
-
 Create a comprehensive session handoff document for my current work.
 
 ## Context

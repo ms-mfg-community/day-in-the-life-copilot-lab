@@ -1,8 +1,8 @@
 ---
+name: update-codemaps
 description: "Analyze codebase structure and update architecture documentation with import/export dependency maps"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Update Codemaps
 
 Analyze the codebase structure and update architecture documentation:

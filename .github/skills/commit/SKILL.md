@@ -1,8 +1,8 @@
 ---
-agent: 'agent'
+name: commit
 description: 'Analyze uncommitted changes and organize into logical commits'
+disable-model-invocation: true
 ---
-
 Analyze all my uncommitted changes and organize them into logical, coherent commits.
 
 ## Context

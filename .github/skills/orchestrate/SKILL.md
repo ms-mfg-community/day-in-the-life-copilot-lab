@@ -1,9 +1,9 @@
 ---
+name: orchestrate
 description: "Sequential agent workflow for complex tasks: feature, bugfix, refactor, or security pipelines"
-agent: "agent"
+disable-model-invocation: true
 argument-hint: "feature|bugfix|refactor|security [task-description]"
 ---
-
 # Orchestrate Command
 
 Sequential agent workflow for complex tasks.

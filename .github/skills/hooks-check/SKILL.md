@@ -1,8 +1,8 @@
 ---
+name: hooks-check
 description: "Diagnose GitHub Copilot CLI hooks: config validation, script status, and log output"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Hooks Diagnostic Check
 
 Verify GitHub Copilot CLI hooks are configured and running in this project.

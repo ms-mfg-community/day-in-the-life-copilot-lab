@@ -1,8 +1,8 @@
 ---
+name: create-epic
 description: "Create a structured epic document with stories, tasks, and acceptance criteria"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Create Epic Command
 
 Generate a structured epic document for tracking multi-session work.

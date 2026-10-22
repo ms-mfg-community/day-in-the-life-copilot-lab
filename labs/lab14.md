@@ -78,7 +78,7 @@ without losing the plot.
 >   designed to keep per-turn context bounded.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
 >   to verify your footprint between phases. The repo's
->   `.github/prompts/cost-check.prompt.md` is an **IDE prompt file**:
+>   `.github/skills/cost-check/SKILL.md` is an **IDE prompt file**:
 >   run it as `/cost-check` from Copilot Chat in VS Code, Visual
 >   Studio, or JetBrains. The Copilot CLI has no `/cost-check`
 >   command, so in a CLI pane paste the file's contents into the
@@ -114,7 +114,7 @@ References:
 
 - [Lab 13 §13.4.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalises
 - [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki that preserves decisions across the `/clear` boundary (Lab 10)
-- [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md) — the judging rubric the orchestrator pane uses
+- [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md) — the judging rubric the orchestrator pane uses
 - [`scripts/orchestrator/`](../scripts/orchestrator/) — `tmux-start.sh`, `handoff.sh`, `clear-context.sh`
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the in-process orchestrator → dev → QA flow this lab generalises across panes
 - [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + consolidation primitives the orchestrator pane relies on
@@ -392,7 +392,7 @@ paste the rubric prompt:
 
 **Prompt — orchestrator session:**
 
-> Use [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md)
+> Use [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md)
 > as your judging contract for every hand-off you receive.
 
 Switch to the `work` window (`Ctrl-b n`). It opens on the `worker` pane
@@ -614,7 +614,7 @@ reviewer that hasn't read the rubric just invents its own bar. Replace
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-qa \
   --role orchestrator \
-  --input  "Judge against .github/prompts/orchestrator-rubric.prompt.md; read the dev hand-off at <printed-path> and the plan at <absolute-plan-path>" \
+  --input  "Judge against .github/skills/orchestrator-rubric/SKILL.md; read the dev hand-off at <printed-path> and the plan at <absolute-plan-path>" \
   --output "rubric verdict + spot-checked tests" \
   --question "_none_" \
   --accept "verdict recorded; carry-forwards logged" \
@@ -718,7 +718,7 @@ What you should now be able to do:
 - [ ] Explain why the orchestrator pane is never cleared and why
       worker panes always are.
 - [ ] Write a hand-off doc that passes the rubric in
-      `.github/prompts/orchestrator-rubric.prompt.md`.
+      `.github/skills/orchestrator-rubric/SKILL.md`.
 - [ ] Drive a phase end-to-end without losing the plan to
       context-window pressure.
 - [ ] Recognise the five stop-and-ask triggers in §14.7.

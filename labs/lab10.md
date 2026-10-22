@@ -125,7 +125,7 @@ References:
 - [Copilot CLI docs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli)
 - [`.copilot/lessons/README.md`](../.copilot/lessons/README.md) — the pattern, in-repo
 - [`.github/instructions/lessons.instructions.md`](../.github/instructions/lessons.instructions.md) — the schema
-- [`.github/prompts/consolidate-lessons.prompt.md`](../.github/prompts/consolidate-lessons.prompt.md) — the prompt file that promotes lessons
+- [`.github/skills/consolidate-lessons/SKILL.md`](../.github/skills/consolidate-lessons/SKILL.md) — the skill that promotes lessons
 
 ## 10.0 Copilot CLI surface check (2026 refresh)
 
@@ -531,7 +531,7 @@ stable file paths.
 
 > ⚠️ **A prompt file, not a CLI slash command.** `consolidate-lessons`
 > — like `checkpoint` and `handoff` in §10.5 — ships as a VS Code-style
-> prompt file in [`.github/prompts/`](../.github/prompts/). Copilot CLI's
+> prompt file in [`.github/skills/`](../.github/skills/). Copilot CLI's
 > built-in command list (`copilot help commands`) has no
 > `/consolidate-lessons`, `/checkpoint` or `/handoff`, and this repo adds
 > no CLI skill or wrapper that registers them. Do not rely on typing those
@@ -542,12 +542,12 @@ stable file paths.
 
 **WSL/Bash:**
 ```bash
-head -40 .github/prompts/consolidate-lessons.prompt.md
+head -40 .github/skills/consolidate-lessons/SKILL.md
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .github/prompts/consolidate-lessons.prompt.md | Select-Object -First 40
+Get-Content .github/skills/consolidate-lessons/SKILL.md | Select-Object -First 40
 ```
 
 ### 10.4a Dry run first
@@ -559,7 +559,7 @@ prompt** (not in your shell), naming the file and passing the options as
 plain text:
 
 ```text
-Follow .github/prompts/consolidate-lessons.prompt.md with --dry-run --scope project.
+Follow .github/skills/consolidate-lessons/SKILL.md with --dry-run --scope project.
 Do not write any files.
 ```
 
@@ -590,7 +590,7 @@ When the dry run looks right, run it for real — again **in the Copilot
 prompt**, not in your shell:
 
 ```text
-Follow .github/prompts/consolidate-lessons.prompt.md with --scope project.
+Follow .github/skills/consolidate-lessons/SKILL.md with --scope project.
 ```
 
 Expected result, given the seed wiki this repo ships:
@@ -681,7 +681,7 @@ Scheduler entry that launches a non-interactive Copilot session
 read, **not a step in this lab** — nothing here runs it:
 
 ```text
-copilot -p "Follow .github/prompts/consolidate-lessons.prompt.md with --scope project" --allow-all-tools
+copilot -p "Follow .github/skills/consolidate-lessons/SKILL.md with --scope project" --allow-all-tools
 ```
 
 `--prompt` carries ordinary prompt text, which is why the request names the
@@ -725,7 +725,7 @@ Your checklist for the next real task:
    `--dry-run` first (§10.4a); commit the live run when the diff is clean.
 
 > 🔖 **About `checkpoint` — a git-level safety net, not Layer 1.**
-> [`.github/prompts/checkpoint.prompt.md`](../.github/prompts/checkpoint.prompt.md)
+> [`.github/skills/checkpoint/SKILL.md`](../.github/skills/checkpoint/SKILL.md)
 > is the third prompt file, with `create`, `verify` and `list` actions.
 > `create` runs verification, makes a git stash or commit named for the
 > checkpoint, and appends one `date | name | short SHA` line to
@@ -742,13 +742,13 @@ Your checklist for the next real task:
 🖥️ **End-of-lab handoff drill:** a handoff is how one task outlives one
 conversation: a file a fresh conversation can pick up. In the Copilot
 prompt (not your shell), ask the agent to follow
-[`.github/prompts/handoff.prompt.md`](../.github/prompts/handoff.prompt.md).
+[`.github/skills/handoff/SKILL.md`](../.github/skills/handoff/SKILL.md).
 Its `${input:…}` placeholders are VS Code prompt-file syntax, and the file
 names no save location, so in the CLI put the three values *and* the
 location in the request itself:
 
 ```text
-Follow .github/prompts/handoff.prompt.md. Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
+Follow .github/skills/handoff/SKILL.md. Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
 ```
 
 Note the path it prints. Now **resume from it**: open a fresh conversation

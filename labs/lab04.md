@@ -73,19 +73,19 @@ Prompt files (`.prompt.md`) are **IDE-only**. GitHub's documentation says they a
 
 Prompts are reusable templates that you run by typing `/prompt-name`. The track-specific test-generator prompt body also lives in your track's appendix:
 
-- **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `/create-dotnet-test` prompt that emits xUnit test classes. As with the skill, `.github/prompts/create-dotnet-test.prompt.md` **already ships** in this repository, and the appendix's prompt block **overwrites** it.
+- **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `/create-dotnet-test` prompt that emits xUnit test classes. As with the skill, `.github/SKILLS/create-dotnet-test.SKILL.md` **already ships** in this repository, and the appendix's prompt block **overwrites** it.
 - **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) — `/create-node-test` prompt that emits Vitest test files. It does not ship in this repository, so you create it now: run **section B** of the appendix in the same Bash (WSL2) terminal you used in 4.2.
 
 To look at the .NET prompt that already ships:
 
 **WSL/Bash:**
 ```bash
-head -7 .github/prompts/create-dotnet-test.prompt.md
+head -7 .github/SKILLS/create-dotnet-test.SKILL.md
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .github/prompts/create-dotnet-test.prompt.md -Head 7
+Get-Content .github/SKILLS/create-dotnet-test.SKILL.md -Head 7
 ```
 
 For the Node prompt, once section B has created it, run the **second** line of the appendix's "C. Verify" block — the `head -7` check on the prompt file. It should print the prompt's frontmatter, including `name: create-node-test`.
@@ -143,7 +143,7 @@ How should I write unit tests for the student repository in node/infra/repos/stu
 
 Prompt files do not run in the CLI session above, so the last step happens in your IDE.
 
-1. Open this repository folder in your IDE, so Copilot Chat can find `.github/prompts/`.
+1. Open this repository folder in your IDE, so Copilot Chat can find `.github/SKILLS/`.
 2. In Copilot Chat, type your track's prompt name as a slash command, followed by what to test:
 
 **.NET track:**
@@ -155,7 +155,7 @@ Prompt files do not run in the CLI session above, so the last step happens in yo
 /create-node-test for node/infra/repos/course-repo.ts
 ```
 
-The .NET prompt should generate a complete test class for the CoursesController; the Node prompt should generate a Vitest file for the course repository. If Copilot Chat does not offer `/create-node-test`, check that `.github/prompts/create-node-test.prompt.md` exists (4.3) and that you opened the repository folder in step 1.
+The .NET prompt should generate a complete test class for the CoursesController; the Node prompt should generate a Vitest file for the course repository. If Copilot Chat does not offer `/create-node-test`, check that `.github/SKILLS/create-node-test.SKILL.md` exists (4.3) and that you opened the repository folder in step 1.
 
 > 💡 **Expected output:** On the .NET track, a complete xUnit test class with `[Fact]` methods following the naming convention. On the Node track, a Vitest file (for example `node/tests/unit/course-repo.test.ts`) with `describe` / `it` / `expect` cases that build an in-memory database with `createInMemoryDb()`. Depending on your chat mode and enabled tools, Copilot may only show the code or may also write the file and run the tests — read what it proposes before you accept any change.
 
