@@ -1,9 +1,9 @@
 ---
+name: verify
 description: "Run comprehensive verification: build, types, lint, tests, secret scan, and console.log audit"
-agent: "agent"
+disable-model-invocation: true
 argument-hint: "quick|full|pre-commit|pre-pr"
 ---
-
 # Verification Command
 
 Run comprehensive verification on current codebase state.

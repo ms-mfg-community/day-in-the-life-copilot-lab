@@ -1,8 +1,8 @@
 ---
+name: update-docs
 description: "Sync documentation from source-of-truth: package.json scripts, .env.example, and generate CONTRIB.md and RUNBOOK.md"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Update Documentation
 
 Sync documentation from source-of-truth:

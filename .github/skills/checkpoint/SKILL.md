@@ -1,9 +1,9 @@
 ---
+name: checkpoint
 description: "Create, verify, or list workflow checkpoints using git stash/commit markers"
-agent: "agent"
+disable-model-invocation: true
 argument-hint: "create|verify|list [name]"
 ---
-
 # Checkpoint Command
 
 Create or verify a checkpoint in your workflow.

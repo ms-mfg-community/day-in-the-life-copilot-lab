@@ -1,12 +1,8 @@
 ---
 name: orchestrator-rubric
-description: |
-  Rubric the orchestrator pane uses to judge each worker hand-off
-  before approving the next phase. Pair with `scripts/orchestrator/`
-  and Lab 14 (Orchestrator + tmux Pattern Deep-Dive).
-applies_to: ["orchestrator", "qa", "code-reviewer"]
+description: "Rubric the orchestrator pane uses to judge each worker hand-off\nbefore approving the next phase. Pair with `scripts/orchestrator/`\nand Lab 14 (Orchestrator + tmux Pattern Deep-Dive)."
+disable-model-invocation: true
 ---
-
 # Orchestrator Judging Rubric
 
 You are the **orchestrator pane** in the Lab 14 tmux pattern. A worker

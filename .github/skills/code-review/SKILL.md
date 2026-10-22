@@ -1,8 +1,8 @@
 ---
+name: code-review
 description: "Comprehensive security and quality review of uncommitted changes with severity categorization"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Code Review
 
 Comprehensive security and quality review of uncommitted changes:

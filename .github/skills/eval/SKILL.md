@@ -1,9 +1,9 @@
 ---
+name: eval
 description: "Manage eval-driven development: define, check, and report on capability and regression evals"
-agent: "agent"
+disable-model-invocation: true
 argument-hint: "define|check|report|list [feature-name]"
 ---
-
 # Eval Command
 
 Manage eval-driven development workflow.

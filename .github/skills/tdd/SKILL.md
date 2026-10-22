@@ -1,8 +1,8 @@
 ---
+name: tdd
 description: "Enforce test-driven development: scaffold interfaces, write tests FIRST, then implement minimal code. Ensure 80%+ coverage."
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # TDD Command
 
 Enforce test-driven development methodology.

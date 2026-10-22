@@ -1,13 +1,8 @@
 ---
 name: cost-check
-description: |
-  Estimate the current Copilot CLI session's token footprint, list the
-  top-3 compaction opportunities, and recommend a model switch if the
-  running mix looks expensive for the work in progress. Pair with
-  docs/token-and-model-guide.md.
-applies_to: ["dev", "qa", "orchestrator"]
+description: "Estimate the current Copilot CLI session's token footprint, list the\ntop-3 compaction opportunities, and recommend a model switch if the\nrunning mix looks expensive for the work in progress. Pair with\ndocs/token-and-model-guide.md."
+disable-model-invocation: true
 ---
-
 # /cost-check — Session Footprint & Compaction Advisor
 
 You are running mid-session and the user wants to know **what their

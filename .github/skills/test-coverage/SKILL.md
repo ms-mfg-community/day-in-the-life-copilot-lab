@@ -1,8 +1,8 @@
 ---
+name: test-coverage
 description: "Analyze test coverage, identify files below 80% threshold, and generate missing tests"
-agent: "agent"
+disable-model-invocation: true
 ---
-
 # Test Coverage
 
 Analyze test coverage and generate missing tests:

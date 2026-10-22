@@ -1,9 +1,9 @@
 ---
-agent: 'agent'
+name: consolidate-lessons
 description: 'Consolidate .copilot/lessons/ — merge duplicates, promote project lessons to global, flag contradictions'
+disable-model-invocation: true
 argument-hint: '[--dry-run] [--scope project|global|both]'
 ---
-
 # /consolidate-lessons
 
 Consolidate the markdown-lessons wiki introduced in [Lab 10](../../labs/lab10.md).

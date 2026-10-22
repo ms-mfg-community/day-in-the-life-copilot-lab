@@ -1,10 +1,9 @@
 ---
+name: skill-create
 description: "Analyze local git history to extract coding patterns and generate SKILL.md files for your team's practices"
-agent: "agent"
-tools: ["search/codebase"]
+disable-model-invocation: true
 argument-hint: "--commits <n> | --output <dir>"
 ---
-
 # Local Skill Generation
 
 Analyze your repository's git history to extract coding patterns and generate SKILL.md files.
