@@ -235,6 +235,12 @@ export class LabWindow extends FakeWindow {
 export class Lab {
   readonly traffic: Traffic[] = [];
   readonly windows: LabWindow[] = [];
+  /**
+   * What a read of a window of another origin (an opaque one included) does: through the handle of one, a browser throws a SecurityError
+   * for everything but the few properties a handle always has. Off, it reads as not there (see `proxy`). A test of what code does with a
+   * window it cannot read turns it on, and keeps those handles out of `expect`, which looks at what it is given.
+   */
+  throwOnCrossOrigin = false;
   private readonly channels = new Map<string, Set<LabChannel>>();
   private readonly stores = new Map<string, Map<string, string>>();
   private readonly handles = new Map<LabWindow, Map<LabWindow, WindowHandle>>();
@@ -249,8 +255,8 @@ export class Lab {
    * The handle `viewer` holds for `target`: the same object every time for a pair, as a WindowProxy is. Through the handle of a window
    * of the same origin, what that window has can be read (`window.opener.anything`); through one of another origin, which no opaque
    * origin is the same as, nothing but `closed` and `postMessage` can. A browser throws a SecurityError for the rest; here it reads as
-   * not there, so that an assertion library that looks at a handle is not thrown by it, and a test that wants the throw hands over a
-   * handle of its own that has one.
+   * not there, so that an assertion library that looks at a handle is not thrown by it, unless `throwOnCrossOrigin` is on, or a test
+   * hands over a handle of its own that has the throw.
    */
   proxy(viewer: LabWindow, target: LabWindow): WindowHandle {
     let held = this.handles.get(viewer);
@@ -271,7 +277,12 @@ export class Lab {
       handle = new Proxy(own, {
         get: (handleOwn, key): unknown => {
           if (Reflect.has(handleOwn, key)) return Reflect.get(handleOwn, key) as unknown;
-          return sameOrigin() ? (Reflect.get(target, key) as unknown) : undefined;
+          if (sameOrigin()) return Reflect.get(target, key) as unknown;
+          // as the platform does: a promise, a string conversion or an `instanceof` may look at any object, and none of them is refused
+          if (this.throwOnCrossOrigin && typeof key === 'string' && key !== 'then') {
+            throw new DOMException(`Blocked a frame with origin "${viewer.trueOrigin}" from accessing a cross-origin frame.`, 'SecurityError');
+          }
+          return undefined;
         },
       });
       held.set(target, handle);

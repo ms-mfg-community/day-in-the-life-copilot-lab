@@ -147,6 +147,11 @@ function instrument(config) {
     true,
   );
 
+  // A page that is gone does not always get to say goodbye. With `silentPagehide` the pagehide of the window is kept from everything
+  // that listens after this, the shell included: this is the first listener the window has, so that nothing is said and the other
+  // window has to find out for itself.
+  if (config.silentPagehide) window.addEventListener('pagehide', (event) => event.stopImmediatePropagation(), true);
+
   // An observer belongs to a document. A window that is opened empty and then sent to the page (the script window: window.open gives
   // it an about:blank first, and the page loads into that same window when the origins match) keeps its global object and its
   // listeners but gets a new document, and this script does not run again for it. So the observers are bound to the document the
@@ -882,18 +887,40 @@ test('lifecycle: a script window that goes to the back-forward cache keeps its c
   });
 });
 
-test('lifecycle: a presentation that is left lets go of its channels and stops publishing', async () => {
+test('lifecycle: a presentation that is left lets go of its channels, says goodbye, and the script window it leaves says it is no longer synchronized', async () => {
   await withSession({}, async (context) => {
     const { page, popup } = await present(context);
     await synchronized(popup);
     assert.deepEqual(await page.evaluate(() => window.teachingSpa.sync.active), ['broadcastchannel']);
-    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false })));
+    // The page stays alive, so that what the script window is told, and not only what it can no longer be told, is seen.
+    const since = await page.evaluate(() => {
+      const at = performance.timeOrigin + performance.now();
+      window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+      return at;
+    });
     assert.deepEqual(await counts(page), { opened: 1, closed: 1 });
     assert.deepEqual(await page.evaluate(() => window.teachingSpa.sync.active), []);
+
+    // A clean departure: the script window was told, so within the AC9 budget it no longer says synchronized, it says so out loud,
+    // and Previous and Next are its own. A stale index that merely stopped moving is not that.
+    const left = await arrival(popup, 'data-sync-state', 'not-synchronized', since);
+    assert.ok(left <= BUDGET_MS, `the script window took ${left.toFixed(1)} ms to stop claiming that it follows a presentation that said goodbye`);
+    const shown = await facts(popup);
+    assert.equal(shown.sync, 'not-synchronized');
+    assert.equal(shown.transport, 'none');
+    assert.match(shown.status, /not synchronized/i);
+    assert.equal(await popup.locator('#speaker-sync-status').isVisible(), true, 'the status can be seen');
+    assert.match(shown.note, /Previous and Next move it on their own/);
+    await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+    assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [true, false], 'Previous is off at the first segment; Next is on');
+
     await go(page, IDS[1]);
     await sleep(300);
     assert.equal(await current(page), IDS[1], 'the presentation itself is as it was');
-    assert.equal((await facts(popup)).index, '0', 'but it no longer says so to anyone');
+    assert.equal((await facts(popup)).index, '0', 'and the script window does not follow it');
+    await popup.click('#speaker-next');
+    await popup.waitForFunction(() => document.getElementById('speaker-script').getAttribute('data-segment-index') === '1');
+    assert.equal((await facts(popup)).sync, 'not-synchronized', 'the script window moves by hand, and does not say that it is synchronized again');
   });
 });
 
@@ -1004,4 +1031,215 @@ test('whatever the runner cannot read for a request is answered with a 404, and 
   const page = await fetch(url('nested'), { signal: AbortSignal.timeout(1500) });
   assert.equal(page.status, 200, 'and a page that is there is still served');
   assert.match(await page.text(), /<div id="app"|<body/i);
+});
+
+// A named target can already exist (C3). Open a second presentation through a
+// real link in the first so both presentations can address that existing target.
+// Advancing must follow the WindowProxy that the second Present actually kept,
+// whether the browser reused the named speaker or created a new one.
+async function reopenNamedSpeaker(context, query) {
+  const { page: first, popup } = await present(context, query);
+  await synchronized(popup);
+  await first.evaluate(async () => {
+    if (document.fullscreenElement !== null) await document.exitFullscreen();
+  });
+  await first.evaluate(() => {
+    const link = document.createElement('a');
+    link.id = 'qa-r2-another-presentation';
+    link.href = location.href;
+    link.target = 'qa-r2-second-presentation';
+    link.rel = 'opener';
+    link.textContent = 'Open another presentation';
+    document.body.prepend(link);
+  });
+  const [second] = await Promise.all([
+    first.waitForEvent('popup'),
+    first.click('#qa-r2-another-presentation'),
+  ]);
+  await second.waitForFunction(() => window.teachingSpa && window.teachingSpa.sync);
+  await second.check('#present-open-script');
+  await second.click('#present-start');
+  await second.waitForFunction(() => window.__opened && window.__opened.teachingSpa?.speaker);
+  assert.equal(await second.evaluate(() => window.__opened.opener === window), true, 'the browser paired the named target with the second opener');
+  return { first, second, popup };
+}
+
+for (const row of TRANSPORT_ROWS) {
+  test(`QA R2: AC9 over ${row.name} survives a second presenter opening the existing named speaker`, async () => {
+    await withSession({}, async (context) => {
+      const { first, second } = await reopenNamedSpeaker(context, row.query);
+
+      await go(second, IDS[1]);
+      await sleep(BUDGET_MS);
+      const opened = await second.evaluate(() => {
+        const surface = window.__opened.document.getElementById('speaker-script');
+        return {
+          index: surface.getAttribute('data-segment-index'),
+          sync: surface.getAttribute('data-sync-state'),
+        };
+      });
+
+      assert.equal(opened.sync, 'synchronized');
+      assert.equal(opened.index, '1', 'the returned speaker handle must follow the presentation that just opened it within 500 ms');
+      assert.equal(await current(first), IDS[0], 'reopening the named target must not navigate the old presentation');
+    });
+  });
+
+  test(`QA R2: two-way ${row.name} navigation after named-speaker reuse moves the new opener only`, async () => {
+    await withSession({}, async (context) => {
+      const { first, second } = await reopenNamedSpeaker(context, withQuery(row.query, 'sync-two-way=1'));
+      await second.evaluate(() => window.__opened.document.getElementById('speaker-next').click());
+      await sleep(BUDGET_MS);
+
+      const actual = { oldPresentation: await current(first), newPresentation: await current(second) };
+      assert.deepEqual(
+        actual,
+        { oldPresentation: IDS[0], newPresentation: IDS[1] },
+        'the speaker returned by the second Present must navigate its current opener, not the presentation it followed before reuse',
+      );
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// F1 of the independent review of SPA-07: the script window follows the presentation that owns it NOW. What it shook hands with is not
+// forever. Another presentation can take over the named window (the QA R2 cases above), a presentation can be reloaded in place or
+// presented again, and it can go away. In each case the script window pairs with whoever owns it within the AC9 budget, or says that
+// it is not synchronized, out loud, and leaves Previous and Next to the speaker. Real tabs, a real reload, a real close.
+
+/** A presentation page after a reload: the same tab, so the same window proxy for the script window to look at, and a new document. */
+async function reloaded(page) {
+  await page.evaluate(async () => {
+    if (document.fullscreenElement !== null) await document.exitFullscreen();
+  });
+  await page.reload();
+  await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
+  return observed(page);
+}
+
+/** The segment after the one that is on show: where a presenter goes next. */
+const segmentAfter = async (page) => IDS[IDS.indexOf(await current(page)) + 1];
+
+/** Every value the sync state of the script surface took, in order. */
+const syncStates = (page) => page.evaluate(() => window.__attrs.filter((one) => one.name === 'data-sync-state').map((one) => one.value));
+
+for (const row of TRANSPORT_ROWS) {
+  test(`F1: a presentation that is reloaded in place is followed again by the script window it opened, over ${row.name}`, async () => {
+    await withSession({}, async (context) => {
+      const { page, popup } = await present(context, withQuery(row.query, 'sync-two-way=1'));
+      await synchronized(popup);
+      await advanceTo(page, popup, IDS[1]);
+
+      await reloaded(page);
+      // Nothing is done to the script window, and it is not asked for anything: it is the window it was, with the tab that opened it,
+      // now showing a new presentation, which it is to find for itself. Advancing right away is the hardest case for the budget.
+      const next = await segmentAfter(page);
+      await advanceTo(page, popup, next);
+      const shown = await facts(popup);
+      assert.equal(shown.sync, 'synchronized');
+      assert.equal(shown.transport, row.name);
+
+      // Opted into two ways, Next asks the presentation that is there now, which is the reloaded one.
+      const asked = IDS[IDS.indexOf(next) + 1];
+      await popup.click('#speaker-next');
+      await page.waitForFunction((id) => window.teachingSpa.store.get().currentId === id, asked);
+      await waitFor(popup, (id) => document.getElementById('speaker-script').getAttribute('data-segment-id') === id, asked);
+    });
+  });
+
+  test(`F1: a presentation that is reloaded and presented again reuses the script window that is open, and the script follows it within the budget, over ${row.name}`, async () => {
+    await withSession({}, async (context) => {
+      const { page, popup } = await present(context, row.query);
+      await synchronized(popup);
+      await advanceTo(page, popup, IDS[1]);
+
+      await reloaded(page);
+      await page.check('#present-open-script');
+      await page.click('#present-start');
+      await page.waitForFunction(() => window.__opened && window.__opened.teachingSpa?.speaker);
+      assert.equal(context.pages().length, 2, 'the browser reused the named window, and did not make another');
+      assert.equal(await page.evaluate(() => window.__opened.opener === window), true, 'and the document that asked for it is its opener');
+
+      await advanceTo(page, popup, await segmentAfter(page));
+      const shown = await facts(popup);
+      assert.equal(shown.sync, 'synchronized');
+      assert.equal(shown.transport, row.name);
+    });
+  });
+
+  for (const goodbye of [true, false]) {
+    test(`F1: a presentation that is closed${goodbye ? '' : ' without a goodbye'} leaves the script window not synchronized, saying so, with Previous and Next its own, over ${row.name}`, async () => {
+      await withSession(goodbye ? {} : { silentPagehide: true }, async (context) => {
+        const { page, popup } = await present(context, row.query);
+        await synchronized(popup);
+        await advanceTo(page, popup, IDS[1]);
+        if (!goodbye) {
+          // The proof that nothing is said: the shell does not hear the page go, and has let go of nothing. Whatever the script window
+          // does next, it does because the opener it has been looking at is closed.
+          await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false })));
+          assert.deepEqual(await page.evaluate(() => window.teachingSpa.sync.active), [row.name], 'the shell never heard it');
+        }
+        const since = await popup.evaluate(() => performance.timeOrigin + performance.now());
+        await page.close();
+
+        const left = await arrival(popup, 'data-sync-state', 'not-synchronized', since);
+        assert.ok(left <= 1500, `the script window took ${left.toFixed(0)} ms to stop claiming that it follows a presentation that is closed`);
+        const shown = await facts(popup);
+        assert.equal(shown.sync, 'not-synchronized');
+        assert.equal(shown.transport, 'none');
+        assert.match(shown.status, /not synchronized/i);
+        assert.equal(await popup.locator('#speaker-sync-status').isVisible(), true, 'the status can be seen');
+        await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+        assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], 'Previous and Next are the speaker\'s own');
+
+        await popup.click('#speaker-next');
+        await popup.waitForFunction(() => document.getElementById('speaker-script').getAttribute('data-segment-index') === '2');
+        await sleep(1500);
+        const later = await facts(popup);
+        assert.equal(later.index, '2', 'it stays where the speaker put it');
+        const states = await syncStates(popup);
+        assert.deepEqual(
+          states.slice(states.lastIndexOf('synchronized') + 1).filter((one) => one !== 'not-synchronized'),
+          [],
+          `nobody is there, and from the moment it said so it did not say anything else: ${states.join(' ')}`,
+        );
+      });
+    });
+  }
+
+  test(`F1: a presentation that is there and idle is not given up on: the script window stays synchronized across a wait, over ${row.name}`, async () => {
+    await withSession({}, async (context) => {
+      const { page, popup } = await present(context, row.query);
+      await synchronized(popup);
+      await sleep(2500);
+      const states = await syncStates(popup);
+      assert.ok(!states.includes('not-synchronized'), `a presentation that has nothing to say is not a presentation that is gone: ${states.join(' ')}`);
+      assert.equal(states.at(-1), 'synchronized');
+      assert.equal((await facts(popup)).transport, row.name);
+      await advanceTo(page, popup, IDS[1]);
+    });
+  });
+
+  test(`F1: the presentation that lost the named script window goes away, and the script window stays with the one that took it, over ${row.name}`, async () => {
+    await withSession({}, async (context) => {
+      const { first, second, popup } = await reopenNamedSpeaker(context, row.query);
+      await advanceTo(second, popup, IDS[1]);
+      await first.close();
+      await sleep(700);
+      assert.equal((await facts(popup)).sync, 'synchronized', 'the one that went away did not take the script window with it');
+      assert.ok(!(await syncStates(popup)).includes('not-synchronized'));
+      await advanceTo(second, popup, IDS[2]);
+    });
+  });
+}
+
+test('F1: a script window opened by hand before any presentation is there pairs with the one that comes later, without being asked', async () => {
+  await withSession({}, async (context) => {
+    const speaker = await openByHand(context, 'sync-timeout=250');
+    await notSynchronized(speaker);
+    const page = await openPresenter(context);
+    await synchronized(speaker);
+    assert.equal((await facts(speaker)).transport, 'broadcastchannel');
+    await advanceTo(page, speaker, IDS[1]);
+  });
 });

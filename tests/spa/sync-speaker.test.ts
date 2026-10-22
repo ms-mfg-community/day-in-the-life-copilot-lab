@@ -7,9 +7,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountSpeaker } from '../../workshop/spa/src/shell/speaker';
 import { createState } from '../../workshop/spa/src/shell/state';
-import { parseSyncConfig, TRANSPORTS, type SyncTimer, type TransportName } from '../../workshop/spa/src/shell/sync';
+import { createPresenterSync, parseSyncConfig, TRANSPORTS, WATCH_MS, type PresenterSync, type SyncState, type SyncTimer, type TransportName } from '../../workshop/spa/src/shell/sync';
 import { clockOf, DECK, disposeScenes, scene, stateAt, type Scene, type SceneOptions } from './helpers/speaker-rig';
-import { drain, Lab } from './helpers/sync-doubles';
+import { drain, Lab, type LabWindow } from './helpers/sync-doubles';
 
 /** The hooks that make a transport the first one standing (the others before it are forced to fail). */
 const FIRST: Record<TransportName, TransportName[]> = {
@@ -194,15 +194,16 @@ describe('the timer', () => {
   });
 
   it('ticks only while the timer runs: a second timer is not left behind by a pause, a stop or a move', async () => {
+    const watch = 1; // not the clock of a timer: the look at the window that opened the script window, which is there whatever the timer does
     const s = scene({ state: { timer: timer('running', { elapsedMs: 0, startedAt: Date.now() }) } });
     await drain();
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    expect(vi.getTimerCount()).toBeGreaterThan(watch);
     await s.show(stateAt(s.ids, 0, { timer: timer('paused', { elapsedMs: 5000 }) }));
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(watch);
     await s.show(stateAt(s.ids, 0, { timer: timer('running', { elapsedMs: 5000, startedAt: Date.now() }) }));
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    expect(vi.getTimerCount()).toBeGreaterThan(watch);
     await s.show(stateAt(s.ids, 1, { timer: null }));
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(watch);
   });
 
   it('keeps one ticker, not one for each state it is told', async () => {
@@ -260,7 +261,7 @@ describe('following the presentation (AC9)', () => {
     await s.show(stateAt(s.ids, 2));
     expect(s.index()).toBe('2');
     expect(s.store.get().currentId).toBe('gamma');
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1); // what is left is the look at the window that opened it, which delivers nothing: the moves above waited for no clock
   });
 
   it('follows every move, in either direction, and returns to the start', async () => {
@@ -402,7 +403,7 @@ describe('when no handshake completes (AC10)', () => {
     expect(s.attr('data-sync-state')).toBe('connecting');
     await vi.advanceTimersByTimeAsync(1);
     asserts(s);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1); // the look that asks again from time to time (see "recover" in sync.ts): nothing is held open
     expect(s.lab.openChannels()).toBe(0);
   });
 
@@ -478,7 +479,7 @@ describe('when no handshake completes (AC10)', () => {
     expect(s.attr('data-timer-state')).toBe('none');
   });
 
-  it('does not follow a presentation that appears after it gave up', async () => {
+  it('does not follow a presentation that appears after it gave up, when every transport is forced to fail: nothing is tried, so there is nothing to look again with', async () => {
     const s = scene({ withPresenter: false, options: { fail: 'all' } });
     s.el('speaker-next').click();
     await drain();
@@ -575,5 +576,218 @@ describe('lifecycle', () => {
     s.el('speaker-next').click();
     expect(s.index()).toBe('0');
     expect(s.announced).toEqual([]);
+  });
+});
+
+describe('when the window changes hands, or the presentation it follows goes away (AC9, AC10)', () => {
+  const NOT_SYNCHRONIZED = /not synchronized/i;
+  /** What AC9 allows between a presentation moving and the script showing it. */
+  const BUDGET_MS = 500;
+  const extras: PresenterSync[] = [];
+
+  afterEach(() => {
+    for (const each of extras.splice(0)) each.dispose();
+  });
+
+  /** A presentation of its own on `win`: a page that was loaded there, or one that opens the script window by its name. */
+  const presentation = (s: Scene, win: LabWindow, id: string, shown: { value: SyncState }, o: { fail?: TransportName[]; twoWay?: boolean } = {}): PresenterSync => {
+    const made = createPresenterSync({
+      window: win,
+      config: parseSyncConfig('', { fail: o.fail ?? [], twoWay: o.twoWay === true }),
+      snapshot: () => shown.value,
+      segmentIds: s.ids,
+      navigate: (segment) => void s.navigated.push(segment),
+      presenterId: id,
+    });
+    extras.push(made);
+    return made;
+  };
+
+  /** The turns of the laboratory and the clock, 10 ms at a time, until `done` or until the 500 ms is up. How long that took. */
+  const within = async (done: () => boolean): Promise<number> => {
+    let elapsed = 0;
+    await drain();
+    while (!done() && elapsed < BUDGET_MS) {
+      await vi.advanceTimersByTimeAsync(10);
+      await drain();
+      elapsed += 10;
+    }
+    return elapsed;
+  };
+
+  /** Every value `data-sync-state` was given from now on, oldest first. */
+  const watchStates = (s: Scene): (() => string[]) => {
+    const spy = vi.spyOn(s.root(), 'setAttribute');
+    return () => spy.mock.calls.filter(([name]) => name === 'data-sync-state').map(([, value]) => String(value));
+  };
+
+  const notSynchronized = (s: Scene): void => {
+    expect(s.attr('data-sync-state')).toBe('not-synchronized');
+    expect(s.attr('data-sync-transport')).toBe('none');
+    expect(s.text('speaker-sync-status')).toMatch(NOT_SYNCHRONIZED);
+    expect(s.el('speaker-sync-status').hidden).toBe(false);
+    expect(s.attr('data-revealed-steps')).toBe('0'); // what the presentation last said is not shown as if it were true
+    expect(s.attr('data-timer-state')).toBe('none');
+    const said = s.announced.filter((entry) => NOT_SYNCHRONIZED.test(entry.message));
+    expect(said).toHaveLength(1);
+    expect(said[0].keep).toBe(true);
+  };
+
+  it.each(TRANSPORTS)('stops saying that it is synchronized when the presentation says goodbye, over %s, and its own controls take over', async (name) => {
+    const s = scene({ at: 1, options: { fail: FIRST[name] }, state: { revealedSteps: 2, timer: timer('running', { startedAt: Date.now() }) } });
+    await drain();
+    expect(s.attr('data-sync-state')).toBe('synchronized');
+    expect(s.attr('data-sync-transport')).toBe(name);
+    expect(s.attr('data-timer-state')).toBe('running');
+    expect(s.el('speaker-next').disabled).toBe(true); // the presentation moves the script
+    s.announced.length = 0;
+
+    s.presenter?.dispose(); // `pagehide` of a page that is not kept
+    await drain();
+    notSynchronized(s);
+    expect(s.el('speaker-next').disabled).toBe(false);
+    expect(s.el('speaker-prev').disabled).toBe(false);
+    const quiet = s.lab.traffic.length;
+    s.el('speaker-next').click();
+    expect(s.index()).toBe('2');
+    expect(s.store.get().currentId).toBe('gamma');
+    s.el('speaker-prev').click();
+    s.el('speaker-prev').click();
+    expect(s.index()).toBe('0');
+    expect(s.attr('data-sync-state')).toBe('not-synchronized'); // moving does not pretend that it is synchronized
+    expect(s.lab.traffic).toHaveLength(quiet); // and asks no one
+  });
+
+  it.each(TRANSPORTS)('stops saying it within a look when the window of the presentation is closed with no word, over %s', async (name) => {
+    const s = scene({ options: { fail: FIRST[name] } });
+    await drain();
+    s.announced.length = 0;
+    const quiet = s.lab.traffic.length;
+
+    s.presenterWin.closed = true;
+    await vi.advanceTimersByTimeAsync(2 * WATCH_MS);
+    await drain();
+    notSynchronized(s);
+    expect(s.el('speaker-next').disabled).toBe(false);
+    expect(s.lab.traffic).toHaveLength(quiet); // it found out by looking, and asked no one
+    s.el('speaker-next').click();
+    expect(s.index()).toBe('1');
+  });
+
+  it.each(TRANSPORTS)('follows a presentation that is reloaded in place, over %s, to what its new page shows, within the 500 ms of AC9', async (name) => {
+    const s = scene({ options: { fail: FIRST[name] } });
+    await drain();
+    expect(s.index()).toBe('0');
+    s.announced.length = 0;
+
+    const shown = { value: stateAt(s.ids, 2, { revealedSteps: 1 }) };
+    presentation(s, s.presenterWin, 'P-2', shown, { fail: FIRST[name] }); // the page that was there is gone and said nothing; a new one is on the window
+    const took = await within(() => s.index() === '2' && s.attr('data-sync-state') === 'synchronized');
+    expect(took).toBeLessThanOrEqual(BUDGET_MS);
+    expect(s.attr('data-sync-transport')).toBe(name);
+    expect(s.attr('data-revealed-steps')).toBe('1');
+    expect(s.announced).toContainEqual({ message: 'Synchronized with the presentation.', keep: true });
+
+    await s.show(stateAt(s.ids, 1)); // the page that is gone, if it were not
+    expect(s.index()).toBe('2');
+  });
+
+  it.each(TRANSPORTS)('follows the presentation that opens the window again by its name, over %s, at once, and says nothing but synchronized while it does', async (name) => {
+    const s = scene({ options: { fail: FIRST[name] } });
+    await drain();
+    const written = watchStates(s);
+    s.announced.length = 0;
+
+    const win = s.lab.window('presenter-2');
+    const shown = { value: stateAt(s.ids, 2, { revealedSteps: 3 }) };
+    const second = presentation(s, win, 'P-2', shown, { fail: FIRST[name] });
+    s.speakerWin.opener = s.lab.proxy(s.speakerWin, win); // the browser makes it the opener of the window it opens again by name
+    second.setPopup(s.lab.proxy(win, s.speakerWin));
+    await drain();
+    expect(s.index()).toBe('2'); // in the turns of the laboratory: no clock, so well inside the 500 ms
+    expect(s.attr('data-revealed-steps')).toBe('3');
+    expect(s.attr('data-sync-transport')).toBe(name);
+    expect(new Set(written())).toEqual(new Set(['synchronized']));
+    expect(s.announced.some((entry) => NOT_SYNCHRONIZED.test(entry.message))).toBe(false);
+
+    await s.show(stateAt(s.ids, 1)); // the presentation that had the window, still open, can no longer move it
+    expect(s.index()).toBe('2');
+    shown.value = stateAt(s.ids, 0);
+    second.publish();
+    await drain();
+    expect(s.index()).toBe('0'); // and the one that has it does
+    expect(new Set(written())).toEqual(new Set(['synchronized']));
+  });
+
+  it('asks the presentation to move that has the window now, and moves nothing, when two-way navigation is on', async () => {
+    const s = scene({ options: { twoWay: true } });
+    await drain();
+    const win = s.lab.window('presenter-2');
+    const shown = { value: stateAt(s.ids, 1) };
+    const second = presentation(s, win, 'P-2', shown, { twoWay: true });
+    s.speakerWin.opener = s.lab.proxy(s.speakerWin, win); // the browser makes it the opener of the window it opens again by name
+    second.setPopup(s.lab.proxy(win, s.speakerWin));
+    await drain();
+    expect(s.index()).toBe('1');
+
+    s.el('speaker-next').click();
+    await drain();
+    expect(s.navigated).toEqual(['gamma']); // the presentation that has the window moved, once, and the one before it was not asked
+    expect(s.index()).toBe('1'); // and the surface moves when that presentation shows it
+    shown.value = stateAt(s.ids, 2);
+    second.publish();
+    await drain();
+    expect(s.index()).toBe('2');
+  });
+
+  it('moves the script by itself when a click comes after the presentation went and before the window noticed, and asks no one', async () => {
+    const s = scene({ options: { twoWay: true } });
+    await drain();
+    expect(s.el('speaker-next').disabled).toBe(false); // two-way: the controls ask the presentation to move
+    s.announced.length = 0;
+    const quiet = s.lab.traffic.length;
+
+    s.presenterWin.closed = true; // gone, and not looked at yet
+    s.el('speaker-next').click();
+    expect(s.attr('data-sync-state')).toBe('not-synchronized');
+    expect(s.index()).toBe('1'); // the click was not lost: the script moved by itself
+    expect(s.navigated).toEqual([]);
+    expect(s.lab.traffic).toHaveLength(quiet);
+    const said = s.announced.filter((entry) => NOT_SYNCHRONIZED.test(entry.message));
+    expect(said).toHaveLength(1);
+    expect(said[0].keep).toBe(true);
+  });
+
+  it('does not stop saying that it is synchronized because the presentation is idle, however long it waits, and asks no one to find out', async () => {
+    const s = scene();
+    await drain();
+    const written = watchStates(s);
+    s.announced.length = 0;
+    const quiet = s.lab.traffic.length;
+
+    for (const wait of [500, 1000, 2500, 30_000]) {
+      await vi.advanceTimersByTimeAsync(wait);
+      await drain();
+    }
+    expect(written()).toEqual([]); // nothing was said: no status changed
+    expect(s.attr('data-sync-state')).toBe('synchronized');
+    expect(s.announced).toEqual([]);
+    expect(s.lab.traffic).toHaveLength(quiet); // and nothing was asked of the presentation to find out that it is there
+    await s.show(stateAt(s.ids, 2));
+    expect(s.index()).toBe('2'); // and it still follows, after all that time
+  });
+
+  it('follows a presentation that appears after it gave up, when nothing was forced: it looks again, quietly, and says so when one answers', async () => {
+    const s = scene({ withPresenter: false, options: { timeoutMs: 100 } });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(s.attr('data-sync-state')).toBe('not-synchronized');
+    s.announced.length = 0;
+
+    const shown = { value: stateAt(s.ids, 2) };
+    presentation(s, s.presenterWin, 'P-9', shown);
+    const took = await within(() => s.attr('data-sync-state') === 'synchronized');
+    expect(took).toBeLessThanOrEqual(BUDGET_MS);
+    expect(s.index()).toBe('2');
+    expect(s.announced).toContainEqual({ message: 'Synchronized with the presentation.', keep: true });
   });
 });

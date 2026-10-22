@@ -10,8 +10,8 @@ import { mountPresentation } from '../../workshop/spa/src/shell/presentation';
 import { hashFor } from '../../workshop/spa/src/shell/router';
 import { mountSpeaker, type Speaker } from '../../workshop/spa/src/shell/speaker';
 import { createState } from '../../workshop/spa/src/shell/state';
-import { createPresenterSync, createSpeakerSync, parseSyncConfig, type SyncOptions, type SyncState, type SyncStatus } from '../../workshop/spa/src/shell/sync';
-import { createBrowser, type FakeElement } from './helpers/fake-dom';
+import { createPresenterSync, createSpeakerSync, parseSyncConfig, PROTOCOL, VERSION, type SyncOptions, type SyncState, type SyncStatus } from '../../workshop/spa/src/shell/sync';
+import { createBrowser, FakeEvent, type FakeElement } from './helpers/fake-dom';
 import { ROOT, segmentsFromPipeline } from './helpers/interaction-harness';
 import { installDoubles, type Doubles, type DoublesOptions } from './helpers/presentation-doubles';
 import { bootShell, clockOf, INDEX_HTML, leave, leaveShells, settle, stateAt, type Announced, type Shell } from './helpers/speaker-rig';
@@ -561,14 +561,34 @@ describe('the shell as the presentation', () => {
     expect(surfaceAttr(byHand, 'data-segment-index')).toBe('2');
   });
 
-  it('does not answer postMessage when it holds no window: a blocked popup leaves nothing to be mistaken for one', async () => {
-    const { shell, popup } = await presenterShell({ search: '?sync-fail=broadcastchannel,storage' });
+  it('does not answer postMessage when it holds no window, except to a window that says that this presentation opened it: a blocked popup leaves nothing to be mistaken for one', async () => {
+    const { lab, win, shell } = await presenterShell({ search: '?sync-fail=broadcastchannel,storage' });
     shell.doubles.open.mockImplementation(() => null);
     await present(shell);
+    // Windows that say hello as a script window would, and are not the one this presentation opened: one that no presentation opened, and
+    // one that another presentation opened. Neither has this presentation for an opener, so neither is taken for its window.
+    const elsewhere = lab.window('elsewhere');
+    const other = createPresenterSync({ window: elsewhere, config: parseSyncConfig(''), snapshot: () => stateAt(IDS, 0), segmentIds: IDS, presenterId: 'P-2' });
+    const strangers = [lab.window('by-none'), lab.popup(elsewhere, 'by-another').window];
+    for (const stranger of strangers) {
+      const hello = { app: PROTOCOL, v: VERSION, type: 'hello', from: 'speaker', session: `S-${stranger.name}` };
+      lab.inject(win, { data: hello, origin: win.trueOrigin, source: lab.proxy(win, stranger) });
+    }
+    await drain();
+    expect(lab.sent('postmessage', 'presenter')).toEqual([]);
+    other.dispose();
+  });
+
+  it('answers postMessage over a window that says, by the name on its opener, that this presentation opened it, though it was never handed it: one reloaded in place', async () => {
+    const { shell, popup } = await presenterShell({ search: '?sync-fail=broadcastchannel,storage' });
+    // no Present: this page is not the one that opened the script window (popup), which has the window of this page for an opener all the same
     const peer = openCore(popup.window, '?sync-fail=broadcastchannel,storage&sync-timeout=100');
     peer.sync.start();
     await idle(100);
-    expect(peer.sync.status.state).toBe('not-synchronized');
+    expect(peer.sync.status).toMatchObject({ state: 'synchronized', transport: 'postmessage' });
+    shell.spa.store.navigate(IDS[2]);
+    await settle();
+    expect(peer.states.at(-1)?.segmentId).toBe(IDS[2]);
   });
 
   it('is not asked to open a window that the user did not ask for', async () => {
@@ -687,6 +707,110 @@ describe('lifecycle', () => {
     expect(lab.openChannels()).toBe(1);
     peer?.dispose();
     expect(lab.openChannels()).toBe(0);
+  });
+});
+
+// -- the window changes hands, or the presentation that owns it goes away ------------------------------------------------------------
+//
+// The script window follows the presentation that owns it now, and only while that presentation is there (AC9, AC10, spec 2.7). The core
+// is proven for each of those turns in sync-lifecycle.test.ts; this is the shell that takes them: main.ts as the presentation, which
+// says goodbye when its page goes, and claims the window it opens; and the script surface that mounts on the window it is given.
+
+describe('the script window, when the presentation that owns it changes or goes away (AC9, AC10)', () => {
+  const NOT_SYNCHRONIZED = 'Not synchronized with the presentation. Previous and Next move the script on their own.';
+  const control = (win: LabWindow, id: string): FakeElement => must(win.document.getElementById(id), id) as FakeElement;
+
+  it('a presentation whose page is closed says goodbye: the script window stops saying that it follows one, announces it, and moves by itself from Previous and Next', async () => {
+    const { shell, win, popup } = await presenterShell();
+    await present(shell);
+    const surface = openSurface(popup.window);
+    await drain();
+    expect(surfaceAttr(popup.window, 'data-sync-state')).toBe('synchronized');
+    expect(control(popup.window, 'speaker-next').disabled).toBe(true); // one way, and following: the controls have nothing to do
+    surface.announced.length = 0;
+
+    leave(win); // `pagehide`, and the page is not going into the cache: it is closed, or it goes somewhere else
+    await drain();
+    expect(surfaceAttr(popup.window, 'data-sync-state')).toBe('not-synchronized');
+    expect(surface.announced).toEqual([{ message: NOT_SYNCHRONIZED, keep: true }]);
+    expect(control(popup.window, 'speaker-prev').disabled).toBe(true); // at the first segment, there is nothing before
+    expect(control(popup.window, 'speaker-next').disabled).toBe(false);
+
+    control(popup.window, 'speaker-next').click();
+    expect(surfaceAttr(popup.window, 'data-segment-index')).toBe('1'); // by itself: nobody is there to follow
+    expect(surface.store.get().currentId).toBe(IDS[1]);
+    await idle(10_000);
+    expect(surfaceAttr(popup.window, 'data-sync-state')).toBe('not-synchronized'); // and it does not go back to a presentation that is gone
+    expect(surfaceAttr(popup.window, 'data-segment-index')).toBe('1');
+  });
+
+  it('a presentation whose page is only put into the back/forward cache has not gone: it says nothing, and the script window goes on following it', async () => {
+    const { shell, win, popup } = await presenterShell();
+    await present(shell);
+    const surface = openSurface(popup.window);
+    await drain();
+    surface.announced.length = 0;
+
+    win.dispatchEvent(Object.assign(new FakeEvent('pagehide'), { persisted: true }));
+    await drain();
+    await idle(1000);
+    expect(surfaceAttr(popup.window, 'data-sync-state')).toBe('synchronized');
+    shell.spa.store.navigate(IDS[1]);
+    await settle();
+    expect(surfaceAttr(popup.window, 'data-segment-index')).toBe('1'); // the presentation still moves it
+    expect(surfaceAttr(popup.window, 'data-sync-state')).toBe('synchronized');
+    expect(surface.announced.map((entry) => entry.message)).not.toContain(NOT_SYNCHRONIZED);
+  });
+
+  it('a presentation that asks for the window by name, while another has it, takes it: the script window follows this one at once, and no longer hears the one before', async () => {
+    const lab = new Lab();
+    const win = lab.window('presenter');
+    const before = lab.window('presenter-before');
+    const script = lab.popup(before, 'speaker'); // opened by a presentation that is still open, and followed
+    const earlier = { value: stateAt(IDS, 1) };
+    const peer = createPresenterSync({ window: before, config: parseSyncConfig(undefined), snapshot: () => earlier.value, segmentIds: IDS, presenterId: 'P-before' });
+    peer.setPopup(script.handle);
+    const surface = openSurface(script.window);
+    await drain();
+    for (const index of [2, 0, 2, 1]) {
+      earlier.value = stateAt(IDS, index); // it has said a good deal by now: more than the new presentation will have by the time it is asked about
+      peer.publish();
+      await drain();
+    }
+    expect(surfaceAttr(script.window, 'data-sync-state')).toBe('synchronized');
+    expect(surfaceAttr(script.window, 'data-segment-index')).toBe('1');
+    surface.announced.length = 0;
+
+    const shell = await bootShell(win);
+    shell.doubles.open.mockImplementation(() => {
+      shell.doubles.log.push('open');
+      // Given the name of a window that is open, the browser uses that window again, and makes the page that asked its opener.
+      script.window.opener = lab.proxy(script.window, win);
+      return lab.proxy(win, script.window);
+    });
+    await present(shell);
+    await drain();
+    expect(shell.doubles.open).toHaveBeenCalledTimes(1);
+    expect(surfaceAttr(script.window, 'data-sync-state')).toBe('synchronized');
+    expect(surfaceAttr(script.window, 'data-segment-index')).toBe('0'); // where the presentation that has the window now is
+
+    shell.spa.store.navigate(IDS[2]);
+    await settle();
+    expect(surfaceAttr(script.window, 'data-segment-index')).toBe('2');
+    expect(surface.store.get().currentId).toBe(IDS[2]);
+
+    earlier.value = stateAt(IDS, 1);
+    peer.publish(); // the one before goes on, and it is not heard
+    await drain();
+    expect(surfaceAttr(script.window, 'data-segment-index')).toBe('2');
+    peer.dispose(); // and its leaving does not take the window from the one that has it
+    await drain();
+    await idle(1000);
+    expect(surfaceAttr(script.window, 'data-sync-state')).toBe('synchronized');
+    shell.spa.store.navigate(IDS[0]);
+    await settle();
+    expect(surfaceAttr(script.window, 'data-segment-index')).toBe('0');
+    expect(surface.announced.map((entry) => entry.message)).not.toContain(NOT_SYNCHRONIZED);
   });
 });
 

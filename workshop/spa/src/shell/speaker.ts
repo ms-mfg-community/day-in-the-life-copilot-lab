@@ -7,9 +7,13 @@
 //   connecting        looking for the presentation; it shows the first segment, and its controls wait.
 //   synchronized      following it (AC9): the segment, the reveal and the timer are the presentation's. The controls are off, because
 //                     the presentation moves the script, unless two-way navigation was asked for: then they ask the presentation to move,
-//                     and the surface moves when it does.
-//   not-synchronized  nothing answered (AC10), or every transport was forced to fail. This is a state of its own, not a broken page: the
-//                     surface says so, announces it in the status region, and its controls move the script by themselves.
+//                     and the surface moves when it does. It says this only while the presentation it follows owns this window and is
+//                     there: when another presentation opens the window again, it follows that one, and moves to what it shows within
+//                     the 500 ms of AC9; when the presentation leaves (goodbye, closed, reloaded away), it stops saying it.
+//   not-synchronized  nothing answered (AC10), every transport was forced to fail, or the presentation it followed is gone. This is a
+//                     state of its own, not a broken page: the surface says so, announces it in the status region, and its controls move
+//                     the script by themselves. It looks for a presentation again, quietly, whenever the window has a new owner, and
+//                     after a while (sync.ts), and is synchronized again, and says so, when one answers.
 //
 // What the page exposes, besides `data-segment-index` (zero-based, the one the spec names): `data-surface="script"`,
 // `data-segment-id`, `data-sync-state`, `data-sync-transport` (the transport that answered, or `none`), `data-revealed-steps` and
@@ -259,7 +263,7 @@ export function mountSpeaker(options: MountSpeakerOptions): Speaker | null {
       const before = phase;
       phase = next.state;
       via = next.transport;
-      if (phase === 'not-synchronized') reported = null; // what the presentation last said is no longer known to be true
+      if (phase !== 'synchronized') reported = null; // what the presentation last said is no longer known to be true
       render();
       if (phase === before) return;
       if (phase === 'synchronized') announce('Synchronized with the presentation.', { keep: true });
@@ -272,8 +276,10 @@ export function mountSpeaker(options: MountSpeakerOptions): Speaker | null {
     if (disposed) return;
     const target = ids[indexNow() + offset];
     if (target === undefined) return;
-    if (phase === 'not-synchronized') store.navigate(target); // the actual segment moves, and the script with it (AC10)
-    else if (phase === 'synchronized' && config.twoWay) sync.navigate(target); // a request: the surface moves when the presentation does
+    // A request goes to the presentation that owns the window now. If it turns out there is none (it left since the last look), the
+    // speaker has just said so, and the click moves the script by itself, as it would have in the state it is in now (AC10).
+    if (phase === 'synchronized' && config.twoWay && sync.navigate(target)) return; // the surface moves when the presentation does
+    if (sync.status.state === 'not-synchronized') store.navigate(target); // the actual segment moves, and the script with it (AC10)
   };
   const onPrevious = step(-1);
   const onNext = step(1);

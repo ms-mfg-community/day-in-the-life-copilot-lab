@@ -32,10 +32,39 @@
 // window is opened with a URL that is only a fragment, which resolves against the page that opens it, so it inherits the query
 // string of the presentation and the URL reaches both windows.
 //
-// Known limits: nothing polls once synchronized (no heartbeat), so a presenter that is reloaded is a new presenter: the speaker
-// stays with the one it shook hands with, and is brought back by reloading it. A script window whose opener cannot be read (one
-// opened by hand, which has none, or one in an opaque origin, which cannot read it) has no one to name and cannot tell the
-// presentation that is meant from another of the origin: it follows the first that answers, and asks that one alone to move.
+// Who owns the script window, and for how long. The script window is opened with a name (`teaching-spa-script`) and so is reused by it,
+// and the presentation that opened it first is not the one that has it for good: a second presentation that opens it takes it and the
+// browser makes that presentation its `window.opener`; a presentation that is reloaded is a new one on the same window; one that is closed
+// has nothing left to follow. So the pairing is not made once, at the handshake. It is kept true, five ways:
+//
+//   claim    A presentation that is handed a script window that is already running (it reads `SPEAKER_KEY` through the handle) says so, with
+//            its state, on each transport that is not forced to fail. The script window takes a claim only from the window that is its
+//            opener NOW (postMessage: `event.source` and the origin; where the name on that opener can be read it is the presentation that
+//            claims), and only while it is paired. It follows that presentation from then on, forgets the counters of the one before and says
+//            hello to the new one, which is what makes it answer and publish. It never leaves `synchronized` for it.
+//   bye      A presentation that is closed or reloaded (`pagehide` of a page that is not kept for later) says goodbye on the transports it
+//            was answered on, and the script window that follows it becomes `not-synchronized` at once. A goodbye from any other presentation
+//            than the one that is followed does nothing, and neither does a state of one.
+//   watch    While paired, and with an opener it can look at, the script window looks at it every `WATCH_MS`: is it still there, not closed,
+//            the same window, and does it still carry the name of the presentation that is followed. That reads properties and sends
+//            nothing, so a presentation that is only idle is never given up on, and one that is closed without a word, reloaded in place
+//            without one, or replaced by another is found anyway: gone (closed, or a window that no presentation names) is `not-synchronized`,
+//            another presentation is a new handshake (the 500 ms of AC9). A request to move (two-way) looks first, so that it is never made
+//            of a presentation that has lost the window.
+//   recover  A script window that is not synchronized, for a reason that can pass (nobody answered; a presentation went away), looks again,
+//            silently, until it is: when its opener is another window or carries another name, and from time to time otherwise (`RETRY_MS`,
+//            doubling to `MAX_RETRY_MS`). Only the transports that are not forced to fail are tried, and where all are forced there is no timer.
+//            Where presentations name themselves, a hello always names one: a window with no name (a page that is loading) is waited on, and
+//            a hello that names no one is never sent to be answered by whatever presentation of the origin happens to hear it.
+//   adopt    A presentation that was reloaded in place was never handed the script window it opened, and cannot answer over postMessage
+//            without a handle to it. The hello of a window that proves, through its own opener (the name is on this window), that THIS
+//            presentation opened it gives it that window, once, from the origin of the page and no other. A presentation that was handed a
+//            window, or told there is none (`setPopup`), adopts none, and neither does one whose origin is opaque, where no name can be read.
+//
+// Known limits: a script window whose opener cannot be read (one opened by hand, which has none, or one in an opaque origin, which cannot read
+// it) has no one to name and cannot tell the presentation that is meant from another of the origin: it follows the first that answers, asks that
+// one alone to move, and has no watch, only the goodbye. A presentation that crashes without a goodbye is found out only where the opener can be
+// looked at. In an opaque origin a reloaded presentation reaches the script window by opening it again.
 
 import type { ShellState } from './state';
 
@@ -53,6 +82,20 @@ export const STORAGE_KEYS = { toSpeaker: 'teaching-spa-sync:to-speaker', toPrese
  * is the window that is meant; from any other the read throws, and is taken as not knowing.
  */
 export const PRESENTER_KEY = 'teachingSpaSyncPresenter';
+/**
+ * The property of its own window under which a script window says that one is running on it, for the presentation that is handed the window
+ * (the claim). Through the handle it reads three ways: there (a script is running there, which has to be told who owns it now), not there
+ * (a window that is still opening, which will say hello itself) and unreadable (another origin, an opaque one: it is told over postMessage
+ * alone, which checks who sent it).
+ */
+export const SPEAKER_KEY = 'teachingSpaSyncSpeaker';
+/** How often a script window that has a presentation to look at looks at it, in milliseconds: well inside the 500 ms that AC9 allows. */
+export const WATCH_MS = 100;
+/** How long a script window that is not synchronized waits before it asks again, and the longest it ever waits (it doubles in between). */
+export const RETRY_MS = 2000;
+export const MAX_RETRY_MS = 30_000;
+/** What reading the marker of a script window says when the platform refuses the read, as it does across origins. */
+const UNREADABLE = Symbol('unreadable');
 
 /** The most steps of a reveal a state may claim: far past any slide, so a number made up to be large is refused. */
 const MAX_REVEALED = 1000;
@@ -292,18 +335,22 @@ function usableHandle(handle: unknown): handle is HandleLike {
 }
 
 /**
- * Who the window that opened this one says it is: the name its presentation gave itself (`PRESENTER_KEY`), or null. It is read when it
+ * The name the presentation on a window gave itself (`PRESENTER_KEY`), read through a handle to that window, or null. It is read when it
  * is needed, and not assumed: a window of another origin, an opaque one included, throws a SecurityError for anything but `postMessage`
  * and `closed`, a window that is gone says nothing, and a window with no presentation on it has no name. None of them is a failure; each
  * is a window that has no one to name.
  */
-function openerPresenter(win: SyncWindow): string | null {
+function presenterOn(handle: unknown): string | null {
   return safe(() => {
-    const handle: unknown = win.opener;
     if (typeof handle !== 'object' || handle === null) return null;
     const name = (handle as Record<string, unknown>)[PRESENTER_KEY];
     return isName(name) ? name : null;
   }, null);
+}
+
+/** Who the window that opened this one says it is: see `presenterOn`. Read again each time, because what opened a window can change. */
+function openerPresenter(win: SyncWindow): string | null {
+  return presenterOn(safe(() => win.opener, null));
 }
 
 /** A BroadcastChannel, or null when there is none to be had: the engine lacks it, or says no to it. */
@@ -346,12 +393,20 @@ function openBroadcast(win: SyncWindow, onData: (data: unknown) => void): Port |
  * postMessage between two windows. `peer` is the window on the other end, read when it is needed and not before: the handle the
  * presenter keeps of its popup, or the opener of the speaker. A message is acted on only if its `event.source` IS that window,
  * and, where the origin of the document is known, only if it says that origin, so another window of the same origin, an
- * iframe or a script that posts to this one does not move anything (C2, F40-F42).
+ * iframe or a script that posts to this one does not move anything (C2, F40-F42). `adopt`, which only a presenter that was never
+ * given its popup passes, may take a message from another source for one from the window it should hold (see the presenter).
  */
-function openMessages(win: SyncWindow, peer: () => unknown, peerOrigin: string | null, targetOrigin: string, onData: (data: unknown) => void): Port {
+function openMessages(
+  win: SyncWindow,
+  peer: () => unknown,
+  peerOrigin: string | null,
+  targetOrigin: string,
+  onData: (data: unknown) => void,
+  adopt?: (event: { data?: unknown; source?: unknown; origin?: unknown }) => boolean,
+): Port {
   const listener = (event: { data?: unknown; source?: unknown; origin?: unknown }): void => {
     const handle = peer();
-    if (handle === null || handle === undefined || event.source !== handle) return;
+    if ((handle === null || handle === undefined || event.source !== handle) && adopt?.(event) !== true) return;
     if (peerOrigin !== null && event.origin !== peerOrigin) return;
     onData(event.data);
   };
@@ -435,20 +490,26 @@ export interface PresenterSyncOptions {
 }
 
 export interface PresenterSync {
-  /** The window that was opened for the speaker script, as `window.open` returned it, or null when it was blocked. */
+  /**
+   * The window that was opened for the speaker script, as `window.open` returned it, or null when it was blocked. A script window that is
+   * already running (one that was opened by another presentation, or by this one before it was reloaded) is told that this presentation
+   * has it now: see "claim" above.
+   */
   setPopup(handle: unknown): void;
   /** Tells every speaker that follows what the presentation shows now, if that changed. */
   publish(): void;
   /** The transports on which a speaker has been answered. */
   readonly active: readonly TransportName[];
   readonly targetOrigin: string;
+  /** Says goodbye to the speakers that follow, then lets go of everything. */
   dispose(): void;
 }
 
 /**
  * The presentation's side. It listens on every transport that is not forced to fail, answers a hello on the transport it came by, and
  * after that sends the state, on each transport that has been answered, whenever `publish()` sees it change. It says nothing to a
- * window that has not said hello.
+ * window that has not said hello, except to a script window that is running and has just been handed to it (the claim), and it says
+ * goodbye to the speakers it has answered when it goes.
  */
 export function createPresenterSync(options: PresenterSyncOptions): PresenterSync {
   const { window: win, config, segmentIds } = options;
@@ -459,12 +520,11 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
   /** For each transport, the sessions it has answered, with the counter of the last request to move that was applied for each. */
   const answered = new Map<TransportName, Map<string, number>>(TRANSPORTS.map((name) => [name, new Map<string, number>()]));
   let popup: unknown = null;
+  /** Whether it was ever given a script window, or told there was none: a presentation that never was has not lost it, it never had it (adopt). */
+  let told = false;
   let seq = 0;
   let last: SyncState | null = null;
   let disposed = false;
-
-  /** Says who this presentation is, on its window, for the script window that it opens to read through `window.opener`. */
-  const named = safe(() => Reflect.defineProperty(win, PRESENTER_KEY, { value: id, configurable: true }), false);
 
   /** Whether what a speaker said is for this presentation: it names it, or names no one, as a script window that nothing opened cannot. */
   const forMe = (message: Envelope): boolean => message.to === undefined || message.to === id;
@@ -490,6 +550,46 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
     last = state;
     const message = envelope({ type: 'state', from: 'presenter', presenter: id, seq: (seq += 1), state });
     for (const name of following) ports.get(name)?.send(message);
+  }
+
+  /**
+   * Tells a script window that is running, and was just handed to this presentation, that it is this one's now, with what it shows: the
+   * window follows it without a handshake that it would have to wait for. A window that has no script on it yet is still opening, and its
+   * hello is what pairs it. A window that cannot be read (another origin, an opaque one) is told over postMessage alone, because that is
+   * the one transport on which the receiver can tell who sent it, and it is the receiver that decides.
+   */
+  function claim(): void {
+    const handle = popup;
+    if (ports.size === 0 || !usableHandle(handle)) return;
+    const marker = safe<unknown>(() => Reflect.get(handle, SPEAKER_KEY), UNREADABLE);
+    if (marker === undefined) return;
+    const state = current();
+    if (state === null) return;
+    last = state;
+    const message = envelope({ type: 'claim', from: 'presenter', presenter: id, seq: (seq += 1), state });
+    for (const [name, port] of ports) {
+      if (marker === UNREADABLE && name !== 'postmessage') continue;
+      port.send(message);
+    }
+  }
+
+  /**
+   * A speaker that says, through its own opener, that this presentation opened it, is the window that this presentation should have had:
+   * it takes it, once, if it was never given one. Origin and source are checked as for any message, and the origin must be a real one
+   * (where it is opaque the name cannot be read, so nothing could be proved).
+   */
+  // ghcp-was-here: a deliberate, narrow exception to "act only on a message whose source is the window you hold" (F40-F42). Ceiling: a
+  // presentation that was never handed the script window (it was reloaded in place, or its popup was blocked) takes the first window that
+  // proves, by the name on its own opener, that this very presentation opened it, and says hello; once, and never where the origin is opaque
+  // (the name cannot be read there, so nothing could be proved). Upgrade path: have presentation.ts tell its caller when the popup was
+  // blocked, so that "handed no window" can be told from "never handed one" and the exception goes (a change to the onScriptWindow contract).
+  function adopt(event: { data?: unknown; source?: unknown; origin?: unknown }): boolean {
+    if (told || usableHandle(popup) || peerOrigin === null || peerOrigin === 'null' || event.origin !== peerOrigin) return false;
+    const message = readEnvelope(event.data);
+    if (message === null || message.from !== 'speaker' || message.type !== 'hello' || !forMe(message) || !usableHandle(event.source)) return false;
+    if (presenterOn(safe(() => (event.source as { opener?: unknown }).opener, null)) !== id) return false;
+    popup = event.source;
+    return true;
   }
 
   function answer(name: TransportName, hello: Envelope): void {
@@ -537,18 +637,27 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
       name === 'broadcastchannel'
         ? openBroadcast(win, receive(name))
         : name === 'postmessage'
-          ? openMessages(win, () => popup, peerOrigin, targetOrigin, receive(name))
+          ? openMessages(win, () => popup, peerOrigin, targetOrigin, receive(name), adopt)
           : openStorage(win, STORAGE_KEYS.toPresenter, STORAGE_KEYS.toSpeaker, receive(name));
     if (port !== null) ports.set(name, port);
   }
+
+  /**
+   * Says who this presentation is, on its window, for the script window that it opens to read through `window.opener`. Last, after what
+   * listens is listening: a script window that finds the name finds a presentation that can hear its hello.
+   */
+  const named = safe(() => Reflect.defineProperty(win, PRESENTER_KEY, { value: id, configurable: true }), false);
 
   return {
     setPopup(handle) {
       if (disposed) return;
       const next = handle ?? null;
-      if (next === popup) return;
-      popup = next;
-      sessionsOf('postmessage').clear(); // another window has not shaken hands: what was answered was said to the one before
+      told = true;
+      if (next !== popup) {
+        popup = next;
+        sessionsOf('postmessage').clear(); // another window has not shaken hands: what was answered was said to the one before
+      }
+      claim(); // also when it is the handle it had: a window that is opened again, by name, is its own again, whoever it was following
     },
     publish,
     get active() {
@@ -558,6 +667,10 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
     dispose() {
       if (disposed) return;
       disposed = true;
+      // goodbye, on each transport that has a speaker on it, before the ports go: best effort, because the page may be on its way out
+      // (`pagehide`), and the speaker does not rely on it, it also looks at the window (see the speaker)
+      const bye = envelope({ type: 'bye', from: 'presenter', presenter: id });
+      for (const name of active()) ports.get(name)?.send(bye);
       for (const port of ports.values()) port.close();
       ports.clear();
       for (const sessions of answered.values()) sessions.clear();
@@ -574,11 +687,14 @@ export interface SpeakerSyncOptions {
   readonly window: SyncWindow;
   readonly config: SyncConfig;
   readonly segmentIds: readonly string[];
-  /** Called when the speaker starts connecting, when it is synchronized, and when it is not (AC10): not for each attempt. */
+  /**
+   * Called when the speaker starts connecting, when it is synchronized, and when it is not (AC10): not for each attempt. It is called
+   * again whenever that changes later, because the presentation that owned the window left, or another one owns it now.
+   */
   readonly onStatus: (status: SyncStatus) => void;
   /** Called with the state of the presentation: once from the handshake, and again for every change after it. */
   readonly onState: (state: SyncState) => void;
-  /** Names this handshake on the wire. Default: a fresh random one. */
+  /** Names the first handshake on the wire. Default: a fresh random one. Each handshake after it adds its number. */
   readonly sessionId?: string;
 }
 
@@ -588,9 +704,20 @@ export interface SpeakerSync {
   /** Where the speaker stands now; `attempts` holds each transport as it is resolved. */
   readonly status: SyncStatus;
   readonly targetOrigin: string;
-  /** Asks the presentation to move to a segment. True if the request went out: only when two-way was asked for and the speaker is synchronized. */
+  /**
+   * Asks the presentation that owns this window to move to a segment. True if the request went out, or will go out as soon as the
+   * presentation that owns the window now has been found: only when two-way was asked for and the speaker is synchronized. False when
+   * it did not, including when the presentation turned out to be gone: the speaker is then not synchronized, and says so.
+   */
   navigate(segmentId: string): boolean;
+  /** Lets go of everything it holds: the transport, the watch and the marker on its window. */
   dispose(): void;
+}
+
+/** Who owns the script window, as far as this window can tell: the window that opened it, and the name its presentation gave itself (null: none that can be read). */
+interface Identity {
+  readonly handle: unknown;
+  readonly key: string | null;
 }
 
 /**
@@ -599,40 +726,93 @@ export interface SpeakerSync {
  * and otherwise the first that answers. A transport that is forced to fail, or that is not there (no BroadcastChannel, no usable opener, no
  * storage), is passed over at once and costs no time; one that is there and says nothing costs the timeout. When none answers, it
  * says `not-synchronized` and holds nothing open.
+ *
+ * It is `synchronized` for as long as the presentation it follows owns this window and is there, and no longer (see "Who owns the script
+ * window" above): a claim from the presentation that owns it now moves it over at once; a goodbye, a closed window or a presentation that is
+ * not the one it follows any more make it say so, and look for the one that is there; and a window that is not synchronized looks again
+ * when something changes, or after a while.
  */
 export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   const { window: win, config, segmentIds } = options;
-  const session = options.sessionId ?? randomId();
   const targetOrigin = targetOriginFor(win);
   const peerOrigin = peerOriginFor(targetOrigin);
-  /** The transport that is being probed, or is the one it settled on, and the presentation that was named in its hello (null: it named none). */
+  /** What it is doing: looking for a presentation (`probing`), following one (`paired`) or not synchronized, with nothing open (`idle`). */
+  let phase: 'probing' | 'paired' | 'idle' = 'probing';
+  /** The transport that is being probed, or is the one it settled on, and who owned the window when the hello went out (the name is what the ack must come from). */
   let held: {
     readonly name: TransportName;
     readonly port: Port;
-    readonly expects: string | null;
+    readonly identity: Identity;
     timer: ReturnType<typeof setTimeout> | undefined;
   } | null = null;
   let status: SyncStatus = { state: 'connecting', transport: null, attempts: [] };
   let started = false;
   let disposed = false;
+  let session = options.sessionId ?? randomId();
+  let handshakes = 1;
   let presenter = '';
   let lastSeq = 0;
   let requests = 0;
+  /** Who owned the window when it settled: the owner is compared with this, and a change is the end of that pairing. */
+  let pairing: Identity = { handle: null, key: null };
+  /** The attempts of the probe that is running, or ran last. Said to the surface only for a probe that the surface can see. */
+  let trail: Attempt[] = [];
+  /** A probe of a window that is not synchronized, which says nothing unless it finds the presentation: it does not turn a status into `connecting` and back. */
+  let silent = false;
+  /** A request to move that was made while the owner of the window changed: it goes to the owner that is found. */
+  let pendingMove: string | null = null;
+  /** The wait for the answer to the hello that follows a claim, and the one between two looks at the window. */
+  let verifying: ReturnType<typeof setTimeout> | undefined;
+  let watching: ReturnType<typeof setTimeout> | undefined;
+  /** Who owned the window when the hello last went out, and what has passed since, for a window that is not synchronized. */
+  let lastTried: Identity = { handle: null, key: null };
+  let tried: Identity | null = null;
+  let idleMs = 0;
+  let retryMs = RETRY_MS;
+  /**
+   * Whether the window that opened this one has been seen to carry the name of a presentation (and the last pairing was not with one that
+   * carries none). Where it has, a window that names no one is a page that is loading, or a window that is no presentation: nobody can be
+   * asked by name, and a hello that names no one is not sent (a presentation of the origin that is not the owner would answer it on
+   * BroadcastChannel or in storage).
+   */
+  let openerNames = false;
 
   const say = (next: SyncStatus): void => {
     status = next;
     options.onStatus(next);
   };
   const record = (transport: TransportName, outcome: AttemptOutcome): void => {
-    status = { ...status, attempts: [...status.attempts, { transport, outcome }] };
+    trail = [...trail, { transport, outcome }];
+    if (!silent) status = { ...status, attempts: trail };
   };
-  const opener = (): unknown => safe(() => win.opener, null);
+  const opener = (): unknown => safe(() => win.opener ?? null, null);
+  const identityNow = (): Identity => ({ handle: opener(), key: openerPresenter(win) });
+  const sameIdentity = (a: Identity, b: Identity): boolean => a.handle === b.handle && a.key === b.key;
+  const nextSession = (): string => {
+    handshakes += 1;
+    return options.sessionId === undefined ? randomId() : `${options.sessionId}-${handshakes}`;
+  };
 
   function open(name: TransportName): Port | null {
     const onData = receive(name);
     if (name === 'broadcastchannel') return openBroadcast(win, onData);
     if (name === 'postmessage') return usableHandle(opener()) ? openMessages(win, opener, peerOrigin, targetOrigin, onData) : null;
     return storageOf(win) === null ? null : openStorage(win, STORAGE_KEYS.toSpeaker, STORAGE_KEYS.toPresenter, onData);
+  }
+
+  /** Lets go of the transport it holds, and of the wait for an answer on it. */
+  function release(): void {
+    if (verifying !== undefined) clearTimeout(verifying);
+    verifying = undefined;
+    if (held === null) return;
+    if (held.timer !== undefined) clearTimeout(held.timer);
+    held.port.close();
+    held = null;
+  }
+
+  function stopWatch(): void {
+    if (watching !== undefined) clearTimeout(watching);
+    watching = undefined;
   }
 
   function probeFrom(first: number): void {
@@ -643,57 +823,153 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
         record(name, 'forced-failure');
         continue;
       }
+      // it asks the presentation that owns the window, by name, and takes the word of no other (a window that cannot say who: anyone's)
+      const identity = identityNow();
+      if (identity.key !== null) openerNames = true;
+      // the owner is between two pages (its name is off the window) where it had one: there is no one to ask by name, and a hello that names
+      // no one would be answered by any presentation of the origin that hears it
+      else if (openerNames) break;
       const port = open(name);
       if (port === null) {
         record(name, 'unavailable');
         continue;
       }
-      const attempt = { name, port, expects: openerPresenter(win), timer: undefined as ReturnType<typeof setTimeout> | undefined };
+      const attempt = { name, port, identity, timer: undefined as ReturnType<typeof setTimeout> | undefined };
       held = attempt;
-      const hello = envelope({ type: 'hello', from: 'speaker', session, ...(attempt.expects === null ? {} : { to: attempt.expects }) });
+      const hello = envelope({ type: 'hello', from: 'speaker', session, ...(identity.key === null ? {} : { to: identity.key }) });
       if (!port.send(hello)) {
         held = null;
         port.close();
         record(name, 'send-failed');
         continue;
       }
+      tried = identity;
       attempt.timer = setTimeout(() => timeOut(attempt), config.timeoutMs);
       return;
     }
-    say({ state: 'not-synchronized', transport: null, attempts: status.attempts });
+    gaveUp();
+  }
+
+  /** No transport answered: not synchronized, and nothing held open. A probe that was silent says nothing of it, and waits longer next time. */
+  function gaveUp(): void {
+    if (disposed) return;
+    phase = 'idle';
+    pendingMove = null;
+    lastTried = tried ?? identityNow();
+    tried = null;
+    idleMs = 0;
+    if (silent) retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
+    else say({ state: 'not-synchronized', transport: null, attempts: trail });
+    silent = false;
+    arm();
   }
 
   function timeOut(attempt: NonNullable<typeof held>): void {
-    if (disposed || held !== attempt || status.state !== 'connecting') return;
+    if (disposed || held !== attempt || phase !== 'probing') return;
     held = null;
     attempt.port.close();
     record(attempt.name, 'timeout');
     probeFrom(TRANSPORTS.indexOf(attempt.name) + 1);
   }
 
+  /** The presentation answered the hello: the speaker follows it, over the transport it answered on. */
+  function settle(attempt: NonNullable<typeof held>, from: string, seq: number, state: SyncState): void {
+    if (attempt.timer !== undefined) clearTimeout(attempt.timer);
+    attempt.timer = undefined;
+    presenter = from;
+    lastSeq = seq;
+    requests = 0;
+    pairing = attempt.identity;
+    openerNames = pairing.key !== null;
+    tried = null;
+    phase = 'paired';
+    record(attempt.name, 'synchronized');
+    silent = false;
+    say({ state: 'synchronized', transport: attempt.name, attempts: trail });
+    options.onState(state);
+    arm();
+    if (pendingMove === null) return;
+    const move = pendingMove;
+    pendingMove = null;
+    request(move);
+  }
+
+  function request(segmentId: string): boolean {
+    if (held === null) return false;
+    requests += 1;
+    return held.port.send(envelope({ type: 'navigate', from: 'speaker', session, seq: requests, segmentId, to: presenter }));
+  }
+
+  /** A state of the presentation it follows: the first one it has not had. */
+  function follow(message: Envelope): void {
+    const { seq } = message;
+    if (!isSeq(seq) || seq <= lastSeq) return; // stale, or one it has had already
+    const state = readState(message.state, segmentIds);
+    if (state === null) return;
+    lastSeq = seq;
+    options.onState(state);
+  }
+
+  /**
+   * A presentation says that this window is its own now, with what it shows. It is believed if it is what the window that opened this one
+   * says it is, which is read now: the name on that window where it can be read, and where it cannot (another origin, an opaque one), the
+   * window that posted it, which `openMessages` has checked to be that opener. A claim from the presentation it follows is a state; from
+   * another one, the speaker follows that one, starting from what the claim says (the counter starts again, and the one it followed can no
+   * longer move it), and shakes hands with it, to be answered on the transport it keeps.
+   */
+  function takeClaim(name: TransportName, claim: Envelope): void {
+    const { presenter: from, seq } = claim;
+    if (!isName(from) || !isSeq(seq) || seq < 1) return;
+    const state = readState(claim.state, segmentIds);
+    if (state === null) return;
+    const key = openerPresenter(win);
+    if (key === null ? name !== 'postmessage' : key !== from) return;
+    if (from === presenter) {
+      follow(claim);
+      return;
+    }
+    if (verifying !== undefined) clearTimeout(verifying);
+    verifying = undefined;
+    presenter = from;
+    lastSeq = seq;
+    requests = 0;
+    session = nextSession();
+    pairing = { handle: opener(), key };
+    openerNames = key !== null;
+    if (held === null || !held.port.send(envelope({ type: 'hello', from: 'speaker', session, to: from }))) {
+      repair();
+      return;
+    }
+    verifying = setTimeout(() => {
+      verifying = undefined;
+      if (!disposed && phase === 'paired') repair(); // the new owner does not answer on this transport
+    }, config.timeoutMs);
+    options.onState(state);
+  }
+
   function accept(name: TransportName, message: Envelope): void {
-    if (status.state === 'connecting') {
-      if (message.type !== 'ack' || message.session !== session) return; // an answer to some other hello is not an answer to this one
+    if (phase === 'probing') {
+      const attempt = held;
+      if (attempt === null || message.type !== 'ack' || message.session !== session) return; // an answer to some other hello is not an answer to this one
       const { presenter: from, seq } = message;
       if (!isName(from) || !isSeq(seq) || seq < 1) return;
-      if (held?.expects != null && from !== held.expects) return; // it asked the presentation that opened it, and takes the word of no other
+      if (attempt.identity.key !== null && from !== attempt.identity.key) return; // it asked the presentation that owns the window, and takes the word of no other
       const state = readState(message.state, segmentIds);
       if (state === null) return;
-      if (held?.timer !== undefined) clearTimeout(held.timer);
-      if (held !== null) held.timer = undefined;
-      presenter = from;
-      lastSeq = seq;
-      record(name, 'synchronized');
-      say({ state: 'synchronized', transport: name, attempts: status.attempts });
-      options.onState(state);
-    } else if (status.state === 'synchronized') {
-      if (message.type !== 'state' || message.presenter !== presenter) return; // the presenter it shook hands with, and no other
-      const { seq } = message;
-      if (!isSeq(seq) || seq <= lastSeq) return; // stale, or one it has had already
-      const state = readState(message.state, segmentIds);
-      if (state === null) return;
-      lastSeq = seq;
-      options.onState(state);
+      settle(attempt, from, seq, state);
+      return;
+    }
+    if (phase !== 'paired') return;
+    if (message.type === 'bye') {
+      if (message.presenter === presenter) degrade(); // the one it follows has gone; a goodbye of any other is nothing to it
+    } else if (message.type === 'claim') {
+      takeClaim(name, message);
+    } else if (message.presenter === presenter && (message.type === 'state' || (message.type === 'ack' && message.session === session))) {
+      if (message.type === 'ack' && verifying !== undefined) {
+        clearTimeout(verifying);
+        verifying = undefined;
+      }
+      follow(message); // the presenter it follows, and no other
     }
   }
 
@@ -705,10 +981,118 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     };
   }
 
+  /** The presentation it followed is gone: not synchronized, with nothing held open, and the manual controls on. It looks again when something changes. */
+  function degrade(): void {
+    release();
+    lastTried = pairing;
+    tried = null;
+    presenter = '';
+    lastSeq = 0;
+    requests = 0;
+    pendingMove = null;
+    phase = 'idle';
+    idleMs = 0;
+    retryMs = RETRY_MS;
+    say({ state: 'not-synchronized', transport: null, attempts: status.attempts });
+    arm();
+  }
+
+  /** The window has another owner, or the one it has does not answer: it looks again, in the open (connecting, then synchronized or not). */
+  function repair(): void {
+    release();
+    session = nextSession();
+    presenter = '';
+    lastSeq = 0;
+    requests = 0;
+    phase = 'probing';
+    silent = false;
+    trail = [];
+    tried = null;
+    idleMs = 0;
+    retryMs = RETRY_MS;
+    say({ state: 'connecting', transport: null, attempts: [] });
+    probeFrom(0);
+  }
+
+  /** The window that is not synchronized looks again, quietly: nothing is said unless a presentation answers. */
+  function recover(): void {
+    release();
+    session = nextSession();
+    phase = 'probing';
+    silent = true;
+    trail = [];
+    tried = null;
+    probeFrom(0);
+  }
+
+  /**
+   * Whether the presentation it is paired with is still there and still owns the window. `gone`: nothing owns the window that can be asked
+   * now: the window that opened this one is closed, or it carries no name where the last one that owned it had one (a page that is loading,
+   * or a window that is no presentation). `other`: this window has another opener, or the presentation on its opener is another one. Only
+   * what can be read is compared, so across origins, where nothing but `closed` and the handle itself can be read, those are all there is
+   * to see.
+   */
+  function inspect(): 'ok' | 'gone' | 'other' {
+    const handle = opener();
+    const moved = pairing.handle === null ? handle !== null : handle !== pairing.handle;
+    if (pairing.handle !== null && !usableHandle(handle)) return 'gone';
+    const key = openerPresenter(win);
+    if (key === null && openerNames && (moved || pairing.key !== null)) return 'gone'; // no one to ask by name: it waits for a name, and then asks that one
+    if (moved) return 'other';
+    if (pairing.key !== null ? key !== presenter : key !== null && key !== presenter) return 'other';
+    return 'ok';
+  }
+
+  /** The one watch: a look at the window while it follows a presentation it can look at, and while it is not synchronized and could look again. */
+  function arm(): void {
+    if (watching !== undefined || !started || disposed) return;
+    const watched = phase === 'paired' ? pairing.handle !== null || pairing.key !== null : phase === 'idle' && TRANSPORTS.some((name) => !config.fail.has(name));
+    if (watched) watching = setTimeout(tick, WATCH_MS);
+  }
+
+  function tick(): void {
+    watching = undefined;
+    if (disposed) return;
+    if (phase === 'paired') {
+      const seen = inspect();
+      if (seen === 'gone') {
+        degrade();
+        return;
+      }
+      if (seen === 'other') {
+        repair();
+        return;
+      }
+    } else if (phase === 'idle') {
+      look();
+    }
+    arm();
+  }
+
+  /**
+   * Whether it is time to look for a presentation again. A window that is not synchronized looks when the owner of the window is not the
+   * one it asked last (a presentation was reloaded, or opened, or reopened it), and otherwise after a wait that doubles each time nothing
+   * answers. It does not look where there is no one to ask: the window that opened it is closed, or has no name now, where one had it.
+   */
+  function look(): void {
+    const here = identityNow();
+    if (here.handle !== null && !usableHandle(here.handle)) return; // the window that opened it is closed
+    if (openerNames && here.key === null) return; // the presentation that named itself is loading, or gone: a hello that names no one is not sent now
+    if (sameIdentity(here, lastTried)) {
+      idleMs += WATCH_MS;
+      if (idleMs < retryMs) return;
+    } else {
+      retryMs = RETRY_MS;
+    }
+    recover();
+  }
+
   return {
     start() {
       if (started || disposed) return;
       started = true;
+      // says, on its window, that a script is running on it: a presentation that is handed the window reads this (see the presenter's claim)
+      safe(() => Reflect.defineProperty(win, SPEAKER_KEY, { value: true, configurable: true }), false);
       say(status);
       probeFrom(0);
     },
@@ -717,18 +1101,26 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     },
     targetOrigin,
     navigate(segmentId) {
-      if (disposed || !config.twoWay || status.state !== 'synchronized' || held === null || !segmentIds.includes(segmentId)) return false;
-      requests += 1;
-      return held.port.send(envelope({ type: 'navigate', from: 'speaker', session, seq: requests, segmentId, to: presenter }));
+      if (disposed || !config.twoWay || phase !== 'paired' || held === null || !segmentIds.includes(segmentId)) return false;
+      // a request goes to the presentation that owns the window now, and never to the one that did: the owner is looked at first
+      const seen = inspect();
+      if (seen === 'gone') {
+        degrade();
+        return false;
+      }
+      if (seen === 'other') {
+        pendingMove = segmentId;
+        repair();
+        return true;
+      }
+      return request(segmentId);
     },
     dispose() {
       if (disposed) return;
       disposed = true;
-      if (held !== null) {
-        if (held.timer !== undefined) clearTimeout(held.timer);
-        held.port.close();
-        held = null;
-      }
+      stopWatch();
+      release();
+      if (started) safe(() => Reflect.deleteProperty(win, SPEAKER_KEY), false);
     },
   };
 }

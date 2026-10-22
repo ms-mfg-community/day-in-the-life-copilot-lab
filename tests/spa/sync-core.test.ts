@@ -7,11 +7,16 @@
 //   - deterministic failure hooks for each transport and for all of them, in options and in the URL
 //   - the opener and the popup handle are checked when they are used, not assumed
 //   - postMessage: the target origin is the page's own, and "*" only where window.origin is "null"; the receiver acts
-//     only on a message whose event.source is the window it holds, and on nothing but presentation state
+//     only on a message whose event.source is the window it holds (for the script window, the one that opened it), and on
+//     nothing but presentation state
 //   - localStorage: every access guarded; the storage event never reaches the writer, so only a real peer completes it
 //   - a counter that only goes up: stale and duplicate states are ignored
 //   - one way by default, two way only when asked for
-//   - dispose leaves no channel, listener, timer or key behind
+//   - dispose leaves no channel, listener, timer or key behind; while paired, the only timer is the watch (WATCH_MS) that
+//     looks at who holds the script window
+//
+// What is NOT here: one pairing, from the handshake on. Who owns the script window after that (a presentation that takes it by
+// name, is reloaded in place, goes away; the claim, the goodbye, the watch, the recovery) is in sync-lifecycle.test.ts.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -282,7 +287,10 @@ describe('probing the transports in order, with a handshake each', () => {
       ],
     });
     expect(r.statuses.map((s) => s.state)).toEqual(['connecting', 'not-synchronized']);
-    expect(vi.getTimerCount()).toBe(0);
+    // Nothing is held open and nothing more is sent. The one timer left is the look at the window that opened it, which asks again
+    // from time to time (see "recover" in sync.ts) and says nothing unless a presentation answers.
+    expect(r.lab.openChannels()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1);
   });
 
   it('uses the default timeout when none is configured', async () => {
@@ -456,12 +464,13 @@ describe.each(TRANSPORTS)('state over %s', (via) => {
     for (let i = 1; i < seqs.length; i += 1) expect(seqs[i]).toBeGreaterThan(seqs[i - 1]);
   });
 
-  it('needs no timer to deliver a change, and holds none once synchronized (nothing polls)', async () => {
+  it('needs no timer to deliver a change, and holds only the look at its opener once synchronized (nothing polls for the state)', async () => {
     const r = rig({ options: hooks() });
     await r.start();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1); // the look at the window that opened it (WATCH_MS): it reads two properties and sends nothing
     await r.show(at(1)); // no clock advanced: a change is a message, not a wait
     expect(r.states.at(-1)).toEqual(at(1));
+    expect(vi.getTimerCount()).toBe(1);
   });
 
   it('sends a change once, and says nothing when nothing changed', async () => {
