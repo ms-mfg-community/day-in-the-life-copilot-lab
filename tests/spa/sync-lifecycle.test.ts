@@ -10,11 +10,17 @@
 //
 // What is pinned, over each transport where the transport matters:
 //   - claim:   a presentation that is handed a script window that is running says so, with its state. The script window takes it only from the
-//              window that is its opener now (on postMessage, `event.source` and the origin; elsewhere the name on that opener), only while it
-//              is paired, and not malformed. It forgets the counters of the owner before, shakes hands with the new one by name, and never says
-//              that it is anything but synchronized in between. The owner before it can neither move it nor let it go.
+//              window that is its opener now (on postMessage, `event.source` and the origin, and the name on that opener where it can be read: a
+//              window that can be read and carries none is no owner, which is not the same as one that cannot be read), only while it is paired,
+//              and not malformed. It forgets the counters of the owner before, shakes hands with the new one by name, and never says that it is
+//              anything but synchronized in between. The owner before it can neither move it nor let it go. BroadcastChannel and `storage` do not
+//              say who sent a claim, so there it is a hint to look at the window: what is shown is what the owner says to the hello, never what
+//              the claim said, and no number in it is kept.
 //   - bye and watch: a presentation that goes away says goodbye on the transports it was answered on; one that does not is found out by looking
 //              at its window (closed, its name gone, another opener). A presentation that is only idle is never given up on, and nothing is sent.
+//   - liveness: where the window cannot be looked at (an opaque origin, or no opener) the script window asks the presentation whether it is there,
+//              from time to time, and is not synchronized when it is not answered: a reload without a goodbye is found out, an idle presentation
+//              is never given up on, one that is heard from is not asked, and nothing but the answer of the presentation that is followed counts.
 //   - recover: a script window that is not synchronized looks again, quietly: when its window has a new owner, and from time to time otherwise
 //              (a wait that doubles to a limit). It asks nobody by name that it cannot name once it has been told a name, and it never opens
 //              or tries a transport that is forced to fail.
@@ -25,6 +31,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHANNEL_NAME,
+  LIVENESS_MS,
   MAX_RETRY_MS,
   PRESENTER_KEY,
   PROTOCOL,
@@ -191,6 +198,15 @@ function world(o: WorldOptions = {}) {
     return present(id, old.win);
   }
 
+  /**
+   * The page of `old` is gone and has said nothing, not even to a question put to it: the window stays, as the same window does when a page is
+   * replaced, and nothing that ran on it listens, answers or says goodbye any more. What `reload(..., { bye: false })` leaves behind is a page
+   * that still answers.
+   */
+  function vanish(old: Presentation): void {
+    old.win.unload();
+  }
+
   /** Steps the clock 10 ms at a time until `done`, or until `limit` has gone by. How long it took. */
   async function within(done: () => boolean, limit = BUDGET_MS): Promise<number> {
     let elapsed = 0;
@@ -225,7 +241,7 @@ function world(o: WorldOptions = {}) {
     await drain();
   }
 
-  return { lab, config, present, listen, open, bare, reopen, take, reload, within, hellos, forge };
+  return { lab, config, present, listen, open, bare, reopen, take, reload, vanish, within, hellos, forge };
 }
 
 /** Two presentations of one origin, A and B, and the script window that A opened, started: over `via`, the first transport standing. */
@@ -236,6 +252,28 @@ function paired(via: TransportName, o: { twoWay?: boolean } = {}) {
   const s = w.open(a, 'S');
   s.speaker.start();
   return { w, a, b, s };
+}
+
+/**
+ * A script window that follows a presentation it cannot look at because the window that opened it cannot be read: an opaque origin, where the one
+ * road is postMessage, between the two windows that hold each other's handle, and the name on the other window is refused.
+ */
+function sealed(o: { twoWay?: boolean } = {}) {
+  const w = world({ fail: ['broadcastchannel'], opaque: true, ...o });
+  const a = w.present('A');
+  const b = w.present('B');
+  const s = w.open(a, 'S');
+  s.speaker.start();
+  return { w, a, b, s };
+}
+
+/** A tab of the user's own, which no presentation opened: no opener to look at, and a shared road, `via`, to follow a presentation on. */
+function byHand(via: (typeof SHARED)[number]) {
+  const w = world({ fail: ONLY[via] });
+  const a = w.present('A');
+  const s = w.listen(w.lab.window('by-hand'), 'S');
+  s.speaker.start();
+  return { w, a, s };
 }
 
 // -- 1. the window is opened again, by name, by another presentation ------------------------------------------------------------
@@ -341,22 +379,29 @@ describe.each(TRANSPORTS)('a presentation that is handed the script window that 
     expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
   });
 
-  it('takes a claim from the owner it follows for a state: no handshake, and no word about it', async () => {
-    const { w, a, b, s } = paired(via);
-    await drain();
-    w.take(s, b);
-    await drain();
-    const said = s.statuses.length;
-    const asked = w.hellos(s).length;
+  it(
+    via === 'postmessage'
+      ? 'takes a claim from the owner it follows for a state, where the window that posted it is the window that owns the script window: no handshake, and no word about it'
+      : 'does not take a claim from the owner it follows for a state, where nothing says who sent it: it is in step already, and it asks no one and says nothing',
+    async () => {
+      const { w, a, b, s } = paired(via);
+      await drain();
+      w.take(s, b);
+      await drain();
+      const said = s.statuses.length;
+      const asked = w.hellos(s).length;
+      const had = s.states.length;
 
-    b.shown.value = at(2);
-    b.sync.setPopup(w.lab.proxy(b.win, s.win)); // the window is opened again, by name, from the same presentation
-    await drain();
-    expect(s.states.at(-1)).toEqual(at(2));
-    expect(w.hellos(s)).toHaveLength(asked);
-    expect(s.statuses).toHaveLength(said);
-    expect(a.moves).toEqual([]);
-  });
+      b.shown.value = at(2);
+      b.sync.setPopup(w.lab.proxy(b.win, s.win)); // the window is opened again, by name, from the same presentation
+      await drain();
+      if (via === 'postmessage') expect(s.states.at(-1)).toEqual(at(2));
+      else expect(s.states).toHaveLength(had); // nothing that came over a transport that does not say who sent it is shown
+      expect(w.hellos(s)).toHaveLength(asked);
+      expect(s.statuses).toHaveLength(said);
+      expect(a.moves).toEqual([]);
+    },
+  );
 
   it('goes back and forth: each presentation is followed when it has the window, with a handshake of its own each time', async () => {
     const { w, a, b, s } = paired(via);
@@ -503,6 +548,21 @@ describe.each(TRANSPORTS)('a claim that is not from the presentation that owns t
       await w.forge(via, s, claim('B', 1, at(2)));
       expect(s.states.at(-1)).toEqual(at(2));
       expect(w.hellos(s).at(-1)).toMatchObject({ session: 'S-2', to: 'B' });
+    });
+
+    it('is not taken from an opener whose name is gone: a window that can be read and has no presentation on it is not a window that cannot be read, and the script window says that it is not synchronized', async () => {
+      const { w, a, s } = paired(via);
+      await drain();
+      Reflect.deleteProperty(a.win, PRESENTER_KEY); // the page left the window (a page that is loading, or one that ended without a word); a read of it still works
+      const mark = before(s);
+      await w.forge(via, s, claim('ghost', 1, at(2))); // from the window that is its opener, naming a presentation that is not there
+      await unchanged(s, mark, w);
+      expect(s.speaker.status.state).toBe('synchronized'); // not taken, and not yet looked at
+
+      const took = await w.within(() => s.speaker.status.state === 'not-synchronized', 2 * WATCH_MS);
+      expect(took).toBeLessThanOrEqual(WATCH_MS);
+      expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
+      expect(s.states).toHaveLength(mark.states);
     });
   } else {
     it('is not taken when the name on the opener cannot be read: nothing says who sent a message on this transport, so nothing is believed', async () => {
@@ -705,16 +765,14 @@ describe.each(TRANSPORTS)('a presentation that goes away, over %s', (via) => {
 });
 
 describe.each(SHARED)('a script window that nothing opened (a tab of the user\'s own), over %s', (via) => {
-  it('has no window to look at, so it holds no timer while it follows, and the goodbye ends it all the same', async () => {
-    const w = world({ fail: ONLY[via] });
-    const a = w.present('A');
-    const s = w.listen(w.lab.window('by-hand'), 'S');
-    s.speaker.start();
+  it('has no window to look at, so it asks the presentation from time to time instead, and the goodbye ends it all the same', async () => {
+    const { a, s } = byHand(via);
     await drain();
     expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1); // the wait for the next question, and no look at an opener, which it has not
     await vi.advanceTimersByTimeAsync(30_000);
-    expect(s.speaker.status.state).toBe('synchronized');
+    await drain();
+    expect(s.speaker.status.state).toBe('synchronized'); // asked, and answered, all along
     a.show(at(1));
     await drain();
     expect(s.states.at(-1)).toEqual(at(1));
@@ -1234,5 +1292,336 @@ describe('a script window', () => {
     expect(vi.getTimerCount()).toBeGreaterThan(0); // not synchronized, with a window it could still look at: the look is what finds the next owner
     other.s.speaker.dispose();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+// -- 9. a presentation that goes without a word, where the window that follows it cannot look at its window ---------------------------------
+
+/**
+ * What a script window says to a presentation, put in front of that presentation over one transport: as the script window does (postMessage, from
+ * the window that the presentation holds, unless `from` says another) or as any window of the origin could (BroadcastChannel, storage).
+ */
+async function tell(
+  w: ReturnType<typeof world>,
+  via: TransportName,
+  a: Presentation,
+  s: Script,
+  data: unknown,
+  from: { source?: unknown; origin?: string } = {},
+): Promise<void> {
+  if (via === 'broadcastchannel') {
+    const stranger = w.lab.window(`stranger-${w.lab.windows.length}`);
+    const channel = new (stranger.BroadcastChannel as unknown as new (name: string) => { postMessage(data: unknown): void; close(): void })(CHANNEL_NAME);
+    channel.postMessage(data);
+    channel.close();
+  } else if (via === 'storage') {
+    w.lab.injectStorage(a.win, { key: STORAGE_KEYS.toPresenter, newValue: JSON.stringify(data) });
+  } else {
+    w.lab.inject(a.win, { data, origin: from.origin ?? ORIGIN, source: 'source' in from ? from.source : w.lab.proxy(a.win, s.win) });
+  }
+  await drain();
+}
+
+const ping = (fields: Envelope = {}): Envelope => wire({ type: 'ping', from: 'speaker', session: 'S', to: 'A', n: 7, ...fields });
+const pong = (fields: Envelope = {}): Envelope => wire({ type: 'pong', from: 'presenter', presenter: 'A', session: 'S', n: 1, ...fields });
+const questions = (w: ReturnType<typeof world>, via: TransportName, script: Script): Envelope[] => w.lab.sent(via, script.win.name).filter((message) => message.type === 'ping');
+
+describe('a script window that cannot look at the window of the presentation it follows (an opaque origin, where the name on it cannot be read)', () => {
+  it('asks the presentation from time to time, and says that it is not synchronized when nothing answers: the page was replaced and said nothing', async () => {
+    const { w, a, s } = sealed();
+    await drain();
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: 'postmessage' });
+    a.show(at(1));
+    await drain();
+
+    w.vanish(a); // reloaded in place with no goodbye: the window is the same one, and the page that was on it answers no one
+    const a2 = w.present('A2', a.win); // and a page with a name of its own is on it, which was never handed the script window
+    a2.show(at(2));
+    const limit = LIVENESS_MS + w.config.timeoutMs;
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', limit + BUDGET_MS);
+    expect(took).toBeGreaterThanOrEqual(LIVENESS_MS); // it does not guess: it asks first
+    expect(took).toBeLessThanOrEqual(limit);
+    expect(s.speaker.status).toMatchObject({ state: 'not-synchronized', transport: null });
+    expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
+    expect(s.states.at(-1)).toEqual(at(1)); // what it shows is what the presentation it followed said last: nothing of the page that is there now
+    expect(questions(w, 'postmessage', s)).toEqual([wire({ type: 'ping', from: 'speaker', session: 'S', to: 'A', n: 1 })]);
+
+    await vi.advanceTimersByTimeAsync(3_000);
+    await drain();
+    expect(s.speaker.status.state).toBe('not-synchronized'); // that page was never handed the window, and where nothing can be read nothing proves that it opened it
+    expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
+    expect(questions(w, 'postmessage', s)).toHaveLength(1); // and it asks no more: it is not following anyone
+  });
+
+  it('never flaps for a presentation that is only idle: it answers every question, however long the window waits', async () => {
+    const { w, a, s } = sealed();
+    await drain();
+    for (const wait of [500, 1000, 2500, 30_000]) {
+      await vi.advanceTimersByTimeAsync(wait);
+      await drain();
+      expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: 'postmessage' });
+    }
+    expect(s.kinds()).toEqual(['connecting', 'synchronized']);
+    const asked = questions(w, 'postmessage', s);
+    const answered = w.lab.sent('postmessage', 'A').filter((message) => message.type === 'pong');
+    expect(asked.length).toBeGreaterThanOrEqual(30); // a question a second, a small one, and no more than that
+    expect(asked.length).toBeLessThanOrEqual(35);
+    expect(answered).toHaveLength(asked.length);
+    expect(w.hellos(s)).toHaveLength(1);
+    expect(s.states).toHaveLength(1); // nothing was said that is a state: a question changes nothing
+    a.show(at(2));
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(2)); // and it still follows, after all that time
+  });
+
+  it('is asked nothing more, and does not wait for an answer, while the presentation says something at least once a second', async () => {
+    const { w, a, s } = sealed();
+    await drain();
+    for (let step = 0; step < 10; step += 1) {
+      await vi.advanceTimersByTimeAsync(LIVENESS_MS - 100);
+      a.show(at((step % 2) + 1));
+      await drain();
+    }
+    expect(questions(w, 'postmessage', s)).toEqual([]);
+    expect(s.speaker.status.state).toBe('synchronized');
+  });
+
+  it('asks the owner that the window has now, with the handshake of that owner, and finds that one gone as well, when it goes', async () => {
+    const { w, a, b, s } = sealed();
+    await drain();
+    w.take(s, b);
+    await drain();
+    await vi.advanceTimersByTimeAsync(3 * LIVENESS_MS + 100);
+    await drain();
+    const asked = questions(w, 'postmessage', s);
+    expect(asked.length).toBeGreaterThanOrEqual(3);
+    for (const message of asked) expect(message).toMatchObject({ to: 'B', session: 'S-2' });
+    expect(w.lab.sent('postmessage', 'A').filter((message) => message.type === 'pong')).toEqual([]); // the one before it is not asked, and answers nothing
+    expect(a.moves).toEqual([]);
+    expect(s.speaker.status.state).toBe('synchronized');
+
+    w.vanish(b);
+    const limit = LIVENESS_MS + w.config.timeoutMs;
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', limit + BUDGET_MS);
+    expect(took).toBeLessThanOrEqual(limit);
+    expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
+  });
+
+  it('is not synchronized within a look when the window of the presentation is closed, with no goodbye and nobody asked: `closed` can be read where nothing else can', async () => {
+    const { w, a, s } = sealed();
+    await drain();
+    a.win.closed = true;
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', 2 * WATCH_MS);
+    expect(took).toBeLessThanOrEqual(WATCH_MS);
+    expect(questions(w, 'postmessage', s)).toEqual([]);
+  });
+
+  it('holds nothing when it is disposed, wherever it is in asking: waiting to ask, or waiting for the answer', async () => {
+    const waiting = sealed();
+    await drain();
+    waiting.s.speaker.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+
+    const asking = sealed();
+    await drain();
+    asking.w.vanish(asking.a);
+    await vi.advanceTimersByTimeAsync(LIVENESS_MS); // the question is out, and nothing answers it
+    expect(questions(asking.w, 'postmessage', asking.s)).toHaveLength(1);
+    asking.s.speaker.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(asking.s.kinds()).toEqual(['connecting', 'synchronized']); // and it did not say that it was not, after it was gone
+  });
+
+  const NOT_ANSWERS: Array<[string, Envelope]> = [
+    ['one from another presentation', pong({ presenter: 'B' })],
+    ['one for another handshake', pong({ session: 'S-9' })],
+    ['one that answers another question', pong({ n: 2 })],
+    ['one that answers a question that was never asked', pong({ n: 0 })],
+    ['one with no counter', pong({ n: undefined })],
+    ['one that a script window said', pong({ from: 'speaker' })],
+    ['one from a protocol that is not ours', pong({ app: 'something-else' })],
+  ];
+  it.each(NOT_ANSWERS)('does not take %s for the answer to its question: it says that it is not synchronized when the time is up', async (_name, wrong) => {
+    const { w, a, s } = sealed();
+    await drain();
+    w.vanish(a);
+    await w.forge('postmessage', s, pong()); // an answer to a question that has not been asked yet: it answers nothing
+    await vi.advanceTimersByTimeAsync(LIVENESS_MS);
+    await drain();
+    expect(questions(w, 'postmessage', s)).toEqual([wire({ type: 'ping', from: 'speaker', session: 'S', to: 'A', n: 1 })]);
+
+    await w.forge('postmessage', s, wrong);
+    expect(s.speaker.status.state).toBe('synchronized'); // not told yet
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', w.config.timeoutMs + BUDGET_MS);
+    expect(took).toBeLessThanOrEqual(w.config.timeoutMs);
+  });
+
+  it('takes the answer to its question for the answer, once: a second one of the same does nothing', async () => {
+    const { w, a, s } = sealed();
+    await drain();
+    w.vanish(a); // nothing answers by itself: the answers here are made by hand
+    await vi.advanceTimersByTimeAsync(LIVENESS_MS);
+    await drain();
+    await w.forge('postmessage', s, pong({ n: 1 }));
+    await w.forge('postmessage', s, pong({ n: 1 })); // it was answered already
+    await vi.advanceTimersByTimeAsync(LIVENESS_MS - 10);
+    await drain();
+    expect(questions(w, 'postmessage', s)).toHaveLength(1); // the next one is a second after the answer
+    await vi.advanceTimersByTimeAsync(10);
+    await drain();
+    expect(questions(w, 'postmessage', s).map((message) => message.n)).toEqual([1, 2]);
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', w.config.timeoutMs + BUDGET_MS);
+    expect(took).toBeLessThanOrEqual(w.config.timeoutMs); // and the answer to the first question is not the answer to the second
+  });
+});
+
+describe.each(SHARED)('a script window that nothing opened, which follows a presentation by %s and cannot look at it', (via) => {
+  it('asks the presentation, and says that it is not synchronized when nothing answers: its window is gone, and nothing said so', async () => {
+    const { w, a, s } = byHand(via);
+    await drain();
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+    w.vanish(a);
+    const limit = LIVENESS_MS + w.config.timeoutMs;
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', limit + BUDGET_MS);
+    expect(took).toBeGreaterThanOrEqual(LIVENESS_MS);
+    expect(took).toBeLessThanOrEqual(limit);
+    expect(s.speaker.status).toMatchObject({ state: 'not-synchronized', transport: null });
+    expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
+    expect(questions(w, via, s)).toEqual([wire({ type: 'ping', from: 'speaker', session: 'S', to: 'A', n: 1 })]);
+  });
+
+  it('looks again when it is not synchronized, quietly, and follows the presentation that is there then', async () => {
+    const { w, a, s } = byHand(via);
+    await drain();
+    w.vanish(a);
+    await w.within(() => s.speaker.status.state === 'not-synchronized', LIVENESS_MS + w.config.timeoutMs + BUDGET_MS);
+    const a2 = w.present('A2', a.win);
+    a2.show(at(2));
+    const took = await w.within(() => s.speaker.status.state === 'synchronized', RETRY_MS + 2 * WATCH_MS);
+    expect(took).toBeLessThanOrEqual(RETRY_MS + 2 * WATCH_MS);
+    expect(s.states.at(-1)).toEqual(at(2));
+    expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized', 'synchronized']);
+    a2.show(at(0));
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(0));
+  });
+
+  it('is not kept synchronized by another presentation of the origin that is there: the question names the one that it follows', async () => {
+    const { w, a, s } = byHand(via);
+    await drain();
+    const rehearsal = w.present('R'); // open beside, after the window settled on A
+    await drain();
+    w.vanish(a);
+    const took = await w.within(() => s.speaker.status.state === 'not-synchronized', LIVENESS_MS + w.config.timeoutMs + BUDGET_MS);
+    expect(took).toBeLessThanOrEqual(LIVENESS_MS + w.config.timeoutMs);
+    expect(w.lab.sent(via, 'R').filter((message) => message.type === 'pong')).toEqual([]);
+    expect(rehearsal.sync.active).toEqual([]);
+  });
+});
+
+describe.each(TRANSPORTS)('a presentation that is asked whether it is there, over %s', (via) => {
+  const pongs = (w: ReturnType<typeof world>): Envelope[] => w.lab.sent(via, 'A').filter((message) => message.type === 'pong');
+
+  it('answers a script window that it has answered, once, with the question it was asked, and changes nothing else: no state, no counter, no request', async () => {
+    const { w, a, s } = paired(via, { twoWay: true });
+    await drain();
+    await tell(w, via, a, s, ping({ n: 7 }));
+    expect(pongs(w)).toEqual([wire({ type: 'pong', from: 'presenter', presenter: 'A', session: 'S', n: 7 })]);
+    expect(sorted(pongs(w)[0])).toEqual(['app', 'from', 'n', 'presenter', 'session', 'type', 'v']);
+    expect(a.moves).toEqual([]);
+
+    a.show(at(1));
+    await drain();
+    const states = w.lab.sent(via, 'A').filter((message) => message.type === 'state');
+    expect(states).toEqual([wire({ type: 'state', from: 'presenter', presenter: 'A', seq: 2, state: at(1) })]); // the acknowledgement had 1: a question took none
+  });
+
+  const UNANSWERED: Array<[string, Envelope]> = [
+    ['a question for another presentation', ping({ to: 'B' })],
+    ['a question that names no one', ping({ to: undefined })],
+    ['a question that names something that is not a name', ping({ to: 42 })],
+    ['a handshake that it has not answered', ping({ session: 'S-9' })],
+    ['an empty handshake', ping({ session: '' })],
+    ['a handshake that is not a name', ping({ session: 7 })],
+    ['a counter of 0', ping({ n: 0 })],
+    ['a negative counter', ping({ n: -1 })],
+    ['a counter that is not a whole number', ping({ n: 1.5 })],
+    ['a counter that is a string', ping({ n: '1' })],
+    ['no counter', ping({ n: undefined })],
+    ['a counter that is past what a number holds exactly', ping({ n: Number.MAX_SAFE_INTEGER + 1 })],
+    ['a question that a presentation said', ping({ from: 'presenter' })],
+    ['a protocol that is not ours', ping({ app: 'something-else' })],
+    ['a version that is not ours', ping({ v: 2 })],
+  ];
+  it.each(UNANSWERED)('says nothing to %s', async (_name, bad) => {
+    const { w, a, s } = paired(via);
+    await drain();
+    await tell(w, via, a, s, bad);
+    expect(pongs(w)).toEqual([]);
+    await tell(w, via, a, s, ping()); // the same question, well formed, is answered: it was refused for what it said, and for nothing else
+    expect(pongs(w)).toHaveLength(1);
+  });
+
+  it('says nothing to a question when it has not answered a hello on this transport, though the handshake is the one it answered on another', async () => {
+    const { w, a, s } = paired(via);
+    await drain();
+    const other = TRANSPORTS.find((name) => name !== via && !ONLY[via].includes(name));
+    if (other === undefined) return; // the transports before this one are forced to fail: there is no other to ask on
+    await tell(w, other, a, s, ping());
+    expect(w.lab.sent(other, 'A').filter((message) => message.type === 'pong')).toEqual([]);
+  });
+
+  if (via === 'postmessage') {
+    const PLACES: Array<[string, (w: ReturnType<typeof world>, s: Script, a: Presentation) => { source?: unknown; origin?: string }]> = [
+      ['no window at all', () => ({ source: null })],
+      ['a window that is none of its business', (w, _s, a) => ({ source: w.lab.proxy(a.win, w.lab.window('stranger')) })],
+      ['its own window', (w, _s, a) => ({ source: w.lab.proxy(a.win, a.win) })],
+      ['another origin', () => ({ origin: 'https://evil.test' })],
+    ];
+    it.each(PLACES)('says nothing to a question that was posted by %s', async (_name, place) => {
+      const { w, a, s } = paired(via);
+      await drain();
+      await tell(w, via, a, s, ping(), place(w, s, a));
+      expect(pongs(w)).toEqual([]);
+    });
+  }
+});
+
+// -- 10. a claim that does not say who sent it -----------------------------------------------------------------------------------------
+
+describe.each(SHARED)('a claim that comes over %s, which does not say who sent it', (via) => {
+  it('is not shown, and its counter is not kept, whoever it says it is from: the name of the owner is no proof that the owner sent it', async () => {
+    const { w, a, s } = paired(via);
+    await drain();
+    const had = s.states.length;
+    await w.forge(via, s, claim('A', Number.MAX_SAFE_INTEGER, at(2))); // the name of the presentation that owns the window, from a window that is not that presentation
+    expect(s.states).toHaveLength(had);
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: via });
+    expect(w.hellos(s)).toHaveLength(1);
+
+    a.show(at(1)); // what the owner shows next is shown: the counter of the claim was not kept
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(1));
+    a.show(at(2));
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(2));
+    expect(s.kinds()).toEqual(['connecting', 'synchronized']);
+  });
+
+  it('is a reason to ask the presentation that owns the window, and the window shows what that one says: not what the claim says', async () => {
+    const { w, b, s } = paired(via);
+    await drain();
+    b.shown.value = at(1);
+    w.reopen(s, b); // the browser made B the opener, and B has said nothing
+    await w.forge(via, s, claim('B', Number.MAX_SAFE_INTEGER, at(2))); // a state that B does not show, with a counter that would hold everything after it
+    expect(w.hellos(s).at(-1)).toEqual(wire({ type: 'hello', from: 'speaker', session: 'S-2', to: 'B' }));
+    expect(s.states.at(-1)).toEqual(at(1));
+    expect(s.states).not.toContainEqual(at(2));
+    expect(s.kinds()).toEqual(['connecting', 'synchronized']);
+
+    b.show(at(0));
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(0));
   });
 });

@@ -230,6 +230,16 @@ export class LabWindow extends FakeWindow {
   keysInStorage(): string[] {
     return [...this.lab.storeFor(this).keys()];
   }
+
+  /**
+   * The page that runs in this window is gone and has said nothing: it is replaced, as a reload replaces it, and the window itself, which is
+   * the same WindowProxy to every window that holds it, stays. Whatever ran there no longer listens, on the window or on a channel, and
+   * nothing it was going to say is said. Properties that it set on the window are not touched: a test for which a name must be gone from
+   * the window takes it off itself.
+   */
+  unload(): void {
+    this.lab.unload(this);
+  }
 }
 
 export class Lab {
@@ -348,6 +358,12 @@ export class Lab {
 
   leave(channel: LabChannel): void {
     this.channels.get(this.channelKey(channel))?.delete(channel);
+  }
+
+  /** The page of `win` is gone without a word (see `LabWindow.unload`): its channels are closed and its listeners are gone. */
+  unload(win: LabWindow): void {
+    for (const group of this.channels.values()) for (const channel of [...group]) if (channel.owner === win) channel.close();
+    win.removeAllListeners();
   }
 
   broadcast(from: LabChannel, data: unknown): void {

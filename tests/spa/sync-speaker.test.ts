@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountSpeaker } from '../../workshop/spa/src/shell/speaker';
 import { createState } from '../../workshop/spa/src/shell/state';
-import { createPresenterSync, parseSyncConfig, TRANSPORTS, WATCH_MS, type PresenterSync, type SyncState, type SyncTimer, type TransportName } from '../../workshop/spa/src/shell/sync';
+import { createPresenterSync, LIVENESS_MS, parseSyncConfig, TRANSPORTS, WATCH_MS, type PresenterSync, type SyncState, type SyncTimer, type TransportName } from '../../workshop/spa/src/shell/sync';
 import { clockOf, DECK, disposeScenes, scene, stateAt, type Scene, type SceneOptions } from './helpers/speaker-rig';
 import { drain, Lab, type LabWindow } from './helpers/sync-doubles';
 
@@ -789,5 +789,57 @@ describe('when the window changes hands, or the presentation it follows goes awa
     expect(took).toBeLessThanOrEqual(BUDGET_MS);
     expect(s.index()).toBe('2');
     expect(s.announced).toContainEqual({ message: 'Synchronized with the presentation.', keep: true });
+  });
+
+  describe('of an opaque origin, where the name on the window of the presentation cannot be read', () => {
+    /** A browser refuses the read of a window of another origin, and no window is of the same origin as an opaque one. */
+    const sealed = (o: { at?: number; timeoutMs?: number } = {}): Scene => {
+      const s = scene({ at: o.at ?? 0, presenter: { opaque: true }, options: { fail: ['broadcastchannel'], timeoutMs: o.timeoutMs ?? 500 } });
+      s.lab.throwOnCrossOrigin = true;
+      return s;
+    };
+
+    it('stops saying that it is synchronized when the page is replaced with no word, which the window cannot tell, and its own controls take over', async () => {
+      const s = sealed({ at: 1 });
+      await drain();
+      expect(s.attr('data-sync-state')).toBe('synchronized');
+      expect(s.attr('data-sync-transport')).toBe('postmessage');
+      expect(s.el('speaker-next').disabled).toBe(true); // the presentation moves the script
+      s.announced.length = 0;
+
+      s.lab.unload(s.presenterWin); // reloaded in place with no `pagehide` heard: the window is the same one, and the page that was on it is gone
+      presentation(s, s.presenterWin, 'P-2', { value: stateAt(s.ids, 2) }, { fail: ['broadcastchannel'] }); // and the page that is on it now was never handed the script window
+      await vi.advanceTimersByTimeAsync(LIVENESS_MS + 500 + WATCH_MS); // it asked, once, and nothing answered
+      await drain();
+      notSynchronized(s);
+      expect(s.el('speaker-next').disabled).toBe(false);
+      expect(s.el('speaker-prev').disabled).toBe(false);
+      expect(s.index()).toBe('1'); // what it showed is what the page before had said, and not what the page now on the window shows
+      s.el('speaker-next').click();
+      expect(s.index()).toBe('2');
+      expect(s.attr('data-sync-state')).toBe('not-synchronized'); // moving does not pretend that it is synchronized
+    });
+
+    it('does not stop saying that it is synchronized because the presentation is idle, however long it waits: it is asked from time to time, and answers', async () => {
+      const s = sealed();
+      await drain();
+      expect(s.attr('data-sync-state')).toBe('synchronized');
+      const written = watchStates(s);
+      s.announced.length = 0;
+
+      for (const wait of [500, 1000, 2500, 30_000]) {
+        await vi.advanceTimersByTimeAsync(wait);
+        await drain();
+      }
+      expect(written()).toEqual([]); // nothing was said: no status changed
+      expect(s.attr('data-sync-state')).toBe('synchronized');
+      expect(s.announced).toEqual([]);
+      const asked = s.lab.sent('postmessage', s.speakerWin.name).filter((message) => message.type === 'ping');
+      const answered = s.lab.sent('postmessage', s.presenterWin.name).filter((message) => message.type === 'pong');
+      expect(asked.length).toBeGreaterThanOrEqual(30); // about once a second, and no more than that
+      expect(answered).toHaveLength(asked.length);
+      await s.show(stateAt(s.ids, 2));
+      expect(s.index()).toBe('2'); // and it still follows, after all that time
+    });
   });
 });

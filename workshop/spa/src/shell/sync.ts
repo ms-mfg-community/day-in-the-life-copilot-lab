@@ -35,22 +35,35 @@
 // Who owns the script window, and for how long. The script window is opened with a name (`teaching-spa-script`) and so is reused by it,
 // and the presentation that opened it first is not the one that has it for good: a second presentation that opens it takes it and the
 // browser makes that presentation its `window.opener`; a presentation that is reloaded is a new one on the same window; one that is closed
-// has nothing left to follow. So the pairing is not made once, at the handshake. It is kept true, five ways:
+// has nothing left to follow. So the pairing is not made once, at the handshake. It is kept true, six ways:
 //
 //   claim    A presentation that is handed a script window that is already running (it reads `SPEAKER_KEY` through the handle) says so, with
-//            its state, on each transport that is not forced to fail. The script window takes a claim only from the window that is its
-//            opener NOW (postMessage: `event.source` and the origin; where the name on that opener can be read it is the presentation that
-//            claims), and only while it is paired. It follows that presentation from then on, forgets the counters of the one before and says
-//            hello to the new one, which is what makes it answer and publish. It never leaves `synchronized` for it.
+//            its state, on each transport that is not forced to fail. Who sent a claim is known over postMessage alone, so that is the one
+//            that is believed: the script window takes it only from the window that is its opener NOW (`event.source` and the origin), only
+//            while it is paired, and only if that window is what the claim says (where the name on it can be read it is the claimant's; a
+//            window that can be read and carries none is no owner; where it cannot be read, an opaque origin, the sender is the whole of
+//            the proof). It follows that presentation from then on, forgets the counters of the one before and says hello to the new one,
+//            which is what makes it answer and publish. It never leaves `synchronized` for it. Over BroadcastChannel and `storage`, where any
+//            window of the origin can write and none is known to have, a claim is believed in nothing it says and none of its numbers is
+//            kept: it is a hint to look at who owns this window, and if that is the presentation it names, the window is handed over to it,
+//            by hello, and shows what that presentation says to the hello, and never what the claim said.
 //   bye      A presentation that is closed or reloaded (`pagehide` of a page that is not kept for later) says goodbye on the transports it
 //            was answered on, and the script window that follows it becomes `not-synchronized` at once. A goodbye from any other presentation
-//            than the one that is followed does nothing, and neither does a state of one.
+//            than the one that is followed does nothing, and neither does a state of one. It is best effort: in an opaque origin a message
+//            that a page posts as it unloads reaches the other window with no `source` (Chromium), so it cannot be told from the message
+//            of any window and is not acted on, and there it is the question (see `liveness`) that finds the presentation gone.
 //   watch    While paired, and with an opener it can look at, the script window looks at it every `WATCH_MS`: is it still there, not closed,
 //            the same window, and does it still carry the name of the presentation that is followed. That reads properties and sends
 //            nothing, so a presentation that is only idle is never given up on, and one that is closed without a word, reloaded in place
 //            without one, or replaced by another is found anyway: gone (closed, or a window that no presentation names) is `not-synchronized`,
 //            another presentation is a new handshake (the 500 ms of AC9). A request to move (two-way) looks first, so that it is never made
 //            of a presentation that has lost the window.
+//   liveness Where the opener cannot be looked at (one opened by hand has none; one in an opaque origin cannot be read) there is no watch, so
+//            the script window asks. A presentation it follows that has said nothing for `LIVENESS_MS` is asked, by name and on the transport
+//            it answered on, whether it is there, and one that does not say so within the timeout of the handshake is gone: `not-synchronized`.
+//            Whatever the presentation says (a state, a claim, the answer) starts the wait again, so one that is being used is never asked
+//            and an idle one costs a small message a second and is never given up on. Only the presentation that is followed answers, for the
+//            session of this hello, so one that was reloaded in place (a new one, with no memory of the hello) is the one that does not.
 //   recover  A script window that is not synchronized, for a reason that can pass (nobody answered; a presentation went away), looks again,
 //            silently, until it is: when its opener is another window or carries another name, and from time to time otherwise (`RETRY_MS`,
 //            doubling to `MAX_RETRY_MS`). Only the transports that are not forced to fail are tried, and where all are forced there is no timer.
@@ -61,10 +74,15 @@
 //            presentation opened it gives it that window, once, from the origin of the page and no other. A presentation that was handed a
 //            window, or told there is none (`setPopup`), adopts none, and neither does one whose origin is opaque, where no name can be read.
 //
-// Known limits: a script window whose opener cannot be read (one opened by hand, which has none, or one in an opaque origin, which cannot read
-// it) has no one to name and cannot tell the presentation that is meant from another of the origin: it follows the first that answers, asks that
-// one alone to move, and has no watch, only the goodbye. A presentation that crashes without a goodbye is found out only where the opener can be
-// looked at. In an opaque origin a reloaded presentation reaches the script window by opening it again.
+// Known limits: a script window whose opener cannot be read has no one to name when it says hello, and takes the first presentation that
+// answers it, asking that one alone to move. In an opaque origin it still learns that the window was handed to another presentation, from a
+// claim over postMessage, whose sender it knows. One opened by hand has no opener, so no presentation can claim it: it follows the one it
+// found until that one says goodbye or does not answer the question (`liveness`), and then the next that answers. With no watch, and no
+// goodbye that can be attributed (an opaque origin), a presentation that is reloaded or crashes is found in about `LIVENESS_MS` plus the
+// timeout (two seconds by default, and not the 500 ms of a window that can be looked at), and from then on the window says it is not
+// synchronized and has its own navigation. BroadcastChannel and `storage` carry no sender, so a window of the origin that knows the name
+// of the presentation that is followed can still put a state, a goodbye or an answer on them; what is hardened is who may take the window
+// (see `nudge`). In an opaque origin a reloaded presentation reaches the script window by opening it again.
 
 import type { ShellState } from './state';
 
@@ -91,11 +109,20 @@ export const PRESENTER_KEY = 'teachingSpaSyncPresenter';
 export const SPEAKER_KEY = 'teachingSpaSyncSpeaker';
 /** How often a script window that has a presentation to look at looks at it, in milliseconds: well inside the 500 ms that AC9 allows. */
 export const WATCH_MS = 100;
+/**
+ * How long a script window that follows a presentation it cannot look at (nothing readable on the window that opened it: an opaque origin,
+ * or no opener at all) waits after it last heard from it, before it asks that presentation whether it is still there. The wait for the
+ * answer is the timeout of the handshake. Slow enough that an idle presentation costs one small message a second, and not a flap: an
+ * idle presentation answers at once, and one that does not is given up on only after the timeout.
+ */
+export const LIVENESS_MS = 1000;
 /** How long a script window that is not synchronized waits before it asks again, and the longest it ever waits (it doubles in between). */
 export const RETRY_MS = 2000;
 export const MAX_RETRY_MS = 30_000;
 /** What reading the marker of a script window says when the platform refuses the read, as it does across origins. */
 const UNREADABLE = Symbol('unreadable');
+/** What reading the name on a window says when the read is allowed and the window carries none: a page that is loading, or no presentation. */
+const ABSENT = Symbol('absent');
 
 /** The most steps of a reveal a state may claim: far past any slide, so a number made up to be large is refused. */
 const MAX_REVEALED = 1000;
@@ -341,11 +368,24 @@ function usableHandle(handle: unknown): handle is HandleLike {
  * is a window that has no one to name.
  */
 function presenterOn(handle: unknown): string | null {
-  return safe(() => {
-    if (typeof handle !== 'object' || handle === null) return null;
+  const name = markerOn(handle);
+  return typeof name === 'string' ? name : null;
+}
+
+/**
+ * The same read, told three ways that are three different things: the name; `ABSENT`, where the read is allowed and there is no name (a page
+ * that is loading, a window that is no presentation, a presentation that has gone from it); and `UNREADABLE`, where the platform refuses
+ * the read, as another origin or an opaque one does, which says nothing about who is there. A window that cannot be read is not a window
+ * that has no name, and what follows from the one must not be taken from the other.
+ */
+function markerOn(handle: unknown): string | typeof ABSENT | typeof UNREADABLE {
+  try {
+    if (typeof handle !== 'object' || handle === null) return ABSENT;
     const name = (handle as Record<string, unknown>)[PRESENTER_KEY];
-    return isName(name) ? name : null;
-  }, null);
+    return isName(name) ? name : ABSENT;
+  } catch {
+    return UNREADABLE;
+  }
 }
 
 /** Who the window that opened this one says it is: see `presenterOn`. Read again each time, because what opened a window can change. */
@@ -621,6 +661,19 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
     options.navigate?.(segmentId);
   }
 
+  /**
+   * A script window that cannot look at this window (an opaque origin, or no opener at all) asks from time to time whether this presentation
+   * is still there, and a page that was replaced without a word is told from one that is only idle by whether it answers. It answers a
+   * question that names it, for a handshake it has answered on this transport, with the number of the question, and does nothing else: it
+   * sends no state, and takes no counter (a question changes nothing that a speaker follows).
+   */
+  function confirm(name: TransportName, ping: Envelope): void {
+    const { session, n, to } = ping;
+    const port = ports.get(name);
+    if (port === undefined || to !== id || !isName(session) || !isSeq(n) || n < 1 || !sessionsOf(name).has(session)) return;
+    port.send(envelope({ type: 'pong', from: 'presenter', presenter: id, session, n }));
+  }
+
   const receive =
     (name: TransportName) =>
     (data: unknown): void => {
@@ -629,6 +682,7 @@ export function createPresenterSync(options: PresenterSyncOptions): PresenterSyn
       if (message === null || message.from !== 'speaker' || !forMe(message)) return; // a hello or a request that names another presentation is not ours to answer
       if (message.type === 'hello') answer(name, message);
       else if (message.type === 'navigate') move(name, message);
+      else if (message.type === 'ping') confirm(name, message);
     };
 
   for (const name of TRANSPORTS) {
@@ -728,9 +782,9 @@ interface Identity {
  * says `not-synchronized` and holds nothing open.
  *
  * It is `synchronized` for as long as the presentation it follows owns this window and is there, and no longer (see "Who owns the script
- * window" above): a claim from the presentation that owns it now moves it over at once; a goodbye, a closed window or a presentation that is
- * not the one it follows any more make it say so, and look for the one that is there; and a window that is not synchronized looks again
- * when something changes, or after a while.
+ * window" above): a claim from the presentation that owns it now moves it over at once; a goodbye, a closed window, a presentation that is
+ * not the one it follows any more, or one that cannot be looked at and does not say that it is there when it is asked (see `liveness`), make
+ * it say so, and look for the one that is there; and a window that is not synchronized looks again when something changes, or after a while.
  */
 export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   const { window: win, config, segmentIds } = options;
@@ -764,6 +818,14 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   /** The wait for the answer to the hello that follows a claim, and the one between two looks at the window. */
   let verifying: ReturnType<typeof setTimeout> | undefined;
   let watching: ReturnType<typeof setTimeout> | undefined;
+  /**
+   * For a presentation that cannot be looked at (see `heard`): the wait before it is asked whether it is there and, once it was asked, the
+   * wait for the answer. One timer, so never both. `asked` counts the questions and never goes down, so that no two of them are alike (a
+   * `storage` event fires for a value that changed); `waiting` is the number of the one that is out, or 0 where none is.
+   */
+  let alive: ReturnType<typeof setTimeout> | undefined;
+  let asked = 0;
+  let waiting = 0;
   /** Who owned the window when the hello last went out, and what has passed since, for a window that is not synchronized. */
   let lastTried: Identity = { handle: null, key: null };
   let tried: Identity | null = null;
@@ -800,10 +862,11 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     return storageOf(win) === null ? null : openStorage(win, STORAGE_KEYS.toSpeaker, STORAGE_KEYS.toPresenter, onData);
   }
 
-  /** Lets go of the transport it holds, and of the wait for an answer on it. */
+  /** Lets go of the transport it holds, and of the wait for an answer on it, and of the question that was out. */
   function release(): void {
     if (verifying !== undefined) clearTimeout(verifying);
     verifying = undefined;
+    stopAsking();
     if (held === null) return;
     if (held.timer !== undefined) clearTimeout(held.timer);
     held.port.close();
@@ -813,6 +876,49 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   function stopWatch(): void {
     if (watching !== undefined) clearTimeout(watching);
     watching = undefined;
+  }
+
+  /** Stops asking: the wait before the next question, or for the answer to the one that is out, which is not waited for any more. */
+  function stopAsking(): void {
+    if (alive !== undefined) clearTimeout(alive);
+    alive = undefined;
+    waiting = 0;
+  }
+
+  /**
+   * The presentation it follows was heard from (it answered, it said what it shows, it claimed the window): the wait before it is asked
+   * whether it is still there starts again. Only a presentation that cannot be looked at is asked, which is a window that no name can be read
+   * on (an opaque origin, or an opener that carries none) or that no presentation opened. Where the name can be read, the watch sees
+   * the presentation go, and replaced, and nothing is asked: the traffic of an idle presentation stays what it was.
+   */
+  function heard(): void {
+    stopAsking();
+    if (disposed || phase !== 'paired' || pairing.key !== null) return;
+    alive = setTimeout(ask, LIVENESS_MS);
+  }
+
+  /** Asks the presentation, by name and on the transport it keeps, whether it is there. Nothing it says is taken for anything but the answer to this. */
+  function ask(): void {
+    alive = undefined;
+    if (disposed || phase !== 'paired' || held === null) return;
+    asked += 1;
+    waiting = asked;
+    if (!held.port.send(envelope({ type: 'ping', from: 'speaker', session, to: presenter, n: asked }))) {
+      lost(); // nothing can be put to it any more: its window is closed, or its transport is gone
+      return;
+    }
+    alive = setTimeout(lost, config.timeoutMs);
+  }
+
+  /** The presentation was asked whether it is there and did not say so within the time of a handshake: whatever the window says, it is gone. */
+  function lost(): void {
+    alive = undefined;
+    if (!disposed && phase === 'paired') degrade();
+  }
+
+  /** The answer to the question that is out, and to no other: from the presentation that is followed, for this handshake. It is there. */
+  function answered(message: Envelope): void {
+    if (waiting !== 0 && message.session === session && message.n === waiting) heard();
   }
 
   function probeFrom(first: number): void {
@@ -887,6 +993,7 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     silent = false;
     say({ state: 'synchronized', transport: attempt.name, attempts: trail });
     options.onState(state);
+    heard();
     arm();
     if (pendingMove === null) return;
     const move = pendingMove;
@@ -900,36 +1007,27 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     return held.port.send(envelope({ type: 'navigate', from: 'speaker', session, seq: requests, segmentId, to: presenter }));
   }
 
-  /** A state of the presentation it follows: the first one it has not had. */
-  function follow(message: Envelope): void {
+  /** A state of the presentation it follows: the first one it has not had. Says what became of it (a stale one is a state, and is not shown). */
+  function follow(message: Envelope): 'applied' | 'stale' | 'invalid' {
     const { seq } = message;
-    if (!isSeq(seq) || seq <= lastSeq) return; // stale, or one it has had already
+    if (!isSeq(seq)) return 'invalid';
     const state = readState(message.state, segmentIds);
-    if (state === null) return;
+    if (state === null) return 'invalid';
+    if (seq <= lastSeq) return 'stale'; // one it has had already
     lastSeq = seq;
     options.onState(state);
+    return 'applied';
   }
 
   /**
-   * A presentation says that this window is its own now, with what it shows. It is believed if it is what the window that opened this one
-   * says it is, which is read now: the name on that window where it can be read, and where it cannot (another origin, an opaque one), the
-   * window that posted it, which `openMessages` has checked to be that opener. A claim from the presentation it follows is a state; from
-   * another one, the speaker follows that one, starting from what the claim says (the counter starts again, and the one it followed can no
-   * longer move it), and shakes hands with it, to be answered on the transport it keeps.
+   * The window has another owner: the speaker follows it from `seq` on (the counters of the owner before are not its counters, and that
+   * owner can no longer move the window) and shakes hands with it, by name, to be answered on the transport it keeps. It says nothing of it
+   * and never leaves `synchronized`, unless there is nothing to shake hands on, or the new owner does not answer: it looks again, in the open.
    */
-  function takeClaim(name: TransportName, claim: Envelope): void {
-    const { presenter: from, seq } = claim;
-    if (!isName(from) || !isSeq(seq) || seq < 1) return;
-    const state = readState(claim.state, segmentIds);
-    if (state === null) return;
-    const key = openerPresenter(win);
-    if (key === null ? name !== 'postmessage' : key !== from) return;
-    if (from === presenter) {
-      follow(claim);
-      return;
-    }
+  function handOver(from: string, key: string | null, seq: number): boolean {
     if (verifying !== undefined) clearTimeout(verifying);
     verifying = undefined;
+    stopAsking();
     presenter = from;
     lastSeq = seq;
     requests = 0;
@@ -938,13 +1036,59 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     openerNames = key !== null;
     if (held === null || !held.port.send(envelope({ type: 'hello', from: 'speaker', session, to: from }))) {
       repair();
-      return;
+      return false;
     }
     verifying = setTimeout(() => {
       verifying = undefined;
       if (!disposed && phase === 'paired') repair(); // the new owner does not answer on this transport
     }, config.timeoutMs);
+    return true;
+  }
+
+  /**
+   * A claim came over BroadcastChannel or `storage`, which say nothing of who sent it: any window of the origin can post to them, and one that
+   * knows the name of the presentation it follows can copy it. So the claim is not believed, whatever it says, and none of its numbers is
+   * kept; it is a reason to look at who owns this window now. If that is a presentation by the name the claim gives, and not the one that
+   * is followed, the window is handed over to it and that presentation is asked for its state, by name: what the window shows is what the
+   * owner says to its own hello, and never what a claim says.
+   */
+  // ghcp-was-here: a claim over BroadcastChannel or `storage` is a hint, and the owner is what the window says it is. Ceiling: no sender is
+  // known on those two transports, so a window of the origin that knows the name of the presentation that is followed can still put a
+  // `state`, a `bye` or a `pong` on them, as it could before; what is hardened is the transfer of the window from one presentation to
+  // another, which is the one that moved the speaker without the presentation. Upgrade path: a secret that the two windows agree on over
+  // postMessage, where the sender is known, and that every message on the other two carries (it cannot reach a window nothing opened).
+  function nudge(from: string): void {
+    const owner = markerOn(opener());
+    if (typeof owner !== 'string' || owner !== from || from === presenter) return;
+    handOver(owner, owner, 0);
+  }
+
+  /**
+   * A presentation says that this window is its own now, with what it shows. Over postMessage, `openMessages` has checked that the window
+   * that posted it is the window that opened this one, and its origin: it is believed if that window is what it says it is. Where the name on
+   * the opener can be read it must be the name the claim gives, and a window that can be read and carries none is no presentation, and no
+   * owner (a window that cannot be read, an opaque origin, says nothing of who is there: the window that posted is the whole of the proof).
+   * A claim from the presentation it follows is a state; from another one, the speaker follows that one, starting from what the claim says,
+   * and shakes hands with it. Over the other two transports a claim is no more than a hint (see `nudge`).
+   */
+  function takeClaim(name: TransportName, claim: Envelope): void {
+    const { presenter: from, seq } = claim;
+    if (!isName(from) || !isSeq(seq) || seq < 1) return;
+    const state = readState(claim.state, segmentIds);
+    if (state === null) return;
+    if (name !== 'postmessage') {
+      nudge(from);
+      return;
+    }
+    const marker = markerOn(opener());
+    if (marker === ABSENT || (typeof marker === 'string' && marker !== from)) return;
+    if (from === presenter) {
+      if (follow(claim) === 'applied') heard();
+      return;
+    }
+    if (!handOver(from, marker === UNREADABLE ? null : marker, seq)) return;
     options.onState(state);
+    heard();
   }
 
   function accept(name: TransportName, message: Envelope): void {
@@ -960,16 +1104,23 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
       return;
     }
     if (phase !== 'paired') return;
-    if (message.type === 'bye') {
-      if (message.presenter === presenter) degrade(); // the one it follows has gone; a goodbye of any other is nothing to it
-    } else if (message.type === 'claim') {
+    if (message.type === 'claim') {
       takeClaim(name, message);
-    } else if (message.presenter === presenter && (message.type === 'state' || (message.type === 'ack' && message.session === session))) {
-      if (message.type === 'ack' && verifying !== undefined) {
+      return;
+    }
+    if (message.presenter !== presenter) return; // a presentation that is not the one it follows: what it says is nothing to this window
+    if (message.type === 'bye') {
+      degrade(); // the one it follows has gone
+    } else if (message.type === 'pong') {
+      answered(message);
+    } else if (message.type === 'state') {
+      if (follow(message) === 'applied') heard();
+    } else if (message.type === 'ack' && message.session === session) {
+      if (verifying !== undefined) {
         clearTimeout(verifying);
         verifying = undefined;
       }
-      follow(message); // the presenter it follows, and no other
+      if (follow(message) !== 'invalid') heard(); // an answer to its hello says that the presentation is there, whether or not it had the state already
     }
   }
 

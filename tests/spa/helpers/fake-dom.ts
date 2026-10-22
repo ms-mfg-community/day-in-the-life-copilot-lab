@@ -148,6 +148,11 @@ export class FakeEventTarget {
     return total;
   }
 
+  /** Drops every listener of every type: what the end of a page does to the script that was listening. */
+  removeAllListeners(): void {
+    this.registrations.clear();
+  }
+
   protected eventParent(): FakeEventTarget | null {
     return null;
   }

@@ -8,12 +8,15 @@
 //   synchronized      following it (AC9): the segment, the reveal and the timer are the presentation's. The controls are off, because
 //                     the presentation moves the script, unless two-way navigation was asked for: then they ask the presentation to move,
 //                     and the surface moves when it does. It says this only while the presentation it follows owns this window and is
-//                     there: when another presentation opens the window again, it follows that one, and moves to what it shows within
-//                     the 500 ms of AC9; when the presentation leaves (goodbye, closed, reloaded away), it stops saying it.
+//                     there. When another presentation takes the window (it opens it again by its name, or the one that followed is reloaded
+//                     in place) it follows that one and moves to what it shows within the 500 ms of AC9, and asks only the one that owns the
+//                     window now to move. When the presentation leaves (goodbye, closed, reloaded away), or cannot be looked at and does not
+//                     say that it is there when it is asked (sync.ts, `liveness`), it stops saying it.
 //   not-synchronized  nothing answered (AC10), every transport was forced to fail, or the presentation it followed is gone. This is a
-//                     state of its own, not a broken page: the surface says so, announces it in the status region, and its controls move
-//                     the script by themselves. It looks for a presentation again, quietly, whenever the window has a new owner, and
-//                     after a while (sync.ts), and is synchronized again, and says so, when one answers.
+//                     state of its own, not a broken page: the surface says so, announces it in the status region (as a kept message, which
+//                     the announcement of a segment that follows does not replace), and its controls move the script by themselves. It
+//                     looks for a presentation again, quietly, whenever the window has a new owner, and after a while (sync.ts), and is
+//                     synchronized again, and says so, when one answers.
 //
 // What the page exposes, besides `data-segment-index` (zero-based, the one the spec names): `data-surface="script"`,
 // `data-segment-id`, `data-sync-state`, `data-sync-transport` (the transport that answered, or `none`), `data-revealed-steps` and
