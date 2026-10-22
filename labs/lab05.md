@@ -209,7 +209,7 @@ wrote to itself, committed alongside the code.
 > 💡 **Why markdown, not a server?** Files are diffable, reviewable,
 > revertable, and ship with the repo. Lab 10 walks through the full
 > three-layer model (raw sources → wiki → schema) and the
-> [`consolidate-lessons` prompt file](../.github/prompts/consolidate-lessons.prompt.md)
+> [`consolidate-lessons` prompt file](../.github/skills/consolidate-lessons/SKILL.md)
 > that promotes durable lessons. It is a prompt file, not a CLI slash command:
 > in Copilot CLI you ask the agent in plain English to follow it (see
 > [Lab 10](lab10.md) §10.4).

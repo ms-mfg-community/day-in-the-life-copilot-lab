@@ -94,7 +94,7 @@ Three promotion paths — and only these three:
    "Drizzle beat Prisma because…") that proves durable graduates into a
    lesson file in `.copilot/lessons/`.
 2. **Project wiki → Global wiki.** The `/consolidate-lessons` command
-   (see [`.github/prompts/consolidate-lessons.prompt.md`](../.github/prompts/consolidate-lessons.prompt.md))
+   (see [`.github/skills/consolidate-lessons/SKILL.md`](../.github/skills/consolidate-lessons/SKILL.md))
    promotes a project lesson to `~/.copilot/lessons/` when it applies
    beyond this repo, and flags stale or contradicting entries.
 3. **Wiki → Schema.** A lesson that turns out to bind *every*
@@ -149,7 +149,7 @@ of the three-layer model:
   pattern, in-repo.
 - [`.github/instructions/lessons.instructions.md`](../.github/instructions/lessons.instructions.md)
   — schema rules for how agents author the wiki.
-- [`.github/prompts/consolidate-lessons.prompt.md`](../.github/prompts/consolidate-lessons.prompt.md)
+- [`.github/skills/consolidate-lessons/SKILL.md`](../.github/skills/consolidate-lessons/SKILL.md)
   — the consolidation command that promotes project lessons to global
   and flags duplicates, staleness, and contradictions.
 - [`AGENTS.md`](../AGENTS.md) — the top-level Layer 3 entry point.

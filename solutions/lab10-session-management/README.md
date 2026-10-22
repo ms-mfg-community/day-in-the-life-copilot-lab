@@ -40,7 +40,7 @@ The schema that governs how the agent writes lessons:
 The prompt file that promotes lessons (Layer 2 → Layer 2-global, or
 flagged for Layer 3):
 
-- [`.github/prompts/consolidate-lessons.prompt.md`](../../.github/prompts/consolidate-lessons.prompt.md)
+- [`.github/skills/consolidate-lessons/SKILL.md`](../../.github/skills/consolidate-lessons/SKILL.md)
 
 ## Key concepts
 

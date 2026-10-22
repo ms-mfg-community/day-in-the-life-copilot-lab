@@ -566,7 +566,7 @@ whether a PR meets the bar, the contract is too vague — fix that before
 spending another A2A token.
 
 > 💡 The repository's
-> [`orchestrate.prompt.md`](../.github/prompts/orchestrate.prompt.md)
+> [`orchestrate.SKILL.md`](../.github/skills/orchestrate/SKILL.md)
 > sequences agents and aggregates their hand-off documents, but it does
 > **not** enforce an acceptance-criteria gate — and it is a prompt file
 > for IDE chat (VS Code, Visual Studio, JetBrains), not a Copilot CLI

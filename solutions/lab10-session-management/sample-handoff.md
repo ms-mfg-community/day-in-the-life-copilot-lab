@@ -87,7 +87,7 @@ It stays on disk where you saved it until you delete it.
    nothing you did not mean to keep.
 2. **Then:** Skim `.copilot/lessons/index.md` and pick one project
    lesson worth promoting — ask the agent to follow
-   `.github/prompts/consolidate-lessons.prompt.md` with `--dry-run --scope both`.
+   `.github/skills/consolidate-lessons/SKILL.md` with `--dry-run --scope both`.
 3. **Then:** Adapt the lessons pattern to your team's repo. Seed
    `index.md`, `log.md`, and one real lesson before opening it to the
    wider team.

@@ -91,12 +91,12 @@ Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsSt
 > truth for the full pattern set — keeping the appendix short avoids drift
 > between this file and the production skill.
 
-## `.github/prompts/create-dotnet-test.prompt.md`
+## `.github/skills/create-dotnet-test.SKILL.md`
 
 **WSL/Bash:**
 
 ```bash
-cat > .github/prompts/create-dotnet-test.prompt.md << 'PROMPT'
+cat > .github/skills/create-dotnet-test.SKILL.md << 'PROMPT'
 ---
 description: "Generate xUnit tests for a ContosoUniversity class. Creates unit tests with Moq mocks following MethodName_Condition_ExpectedResult naming."
 mode: "agent"

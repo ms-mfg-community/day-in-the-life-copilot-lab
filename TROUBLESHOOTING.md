@@ -173,7 +173,7 @@ copilot -p "Hello, capabilities check"
 /cost-check
 ```
 
-If the SQL example in `.github/prompts/cost-check.prompt.md` errors with
+If the SQL example in `.github/skills/cost-check/SKILL.md` errors with
 "no such column", the runtime schema has shifted — the prompt body is a
 template, not a guarantee. See `docs/token-and-model-guide.md` for the
 schema-agnostic fallback (the Cost Budget sidebars in labs 07/10/13/14

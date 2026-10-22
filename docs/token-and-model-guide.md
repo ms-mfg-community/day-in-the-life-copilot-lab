@@ -7,7 +7,7 @@
 > for cost-conscious Copilot use.
 >
 > Pair it with the `/cost-check` prompt
-> ([`.github/prompts/cost-check.prompt.md`](../.github/prompts/cost-check.prompt.md))
+> ([`.github/skills/cost-check/SKILL.md`](../.github/skills/cost-check/SKILL.md))
 > when you want a per-session estimate, and with the
 > `strategic-compact` skill when you want a recommended compaction
 > point.
@@ -244,7 +244,7 @@ usage at three granularities:
   team-wide footprint over time.
 
 The `/cost-check` prompt
-([`.github/prompts/cost-check.prompt.md`](../.github/prompts/cost-check.prompt.md))
+([`.github/skills/cost-check/SKILL.md`](../.github/skills/cost-check/SKILL.md))
 does this for you mid-session: it queries the current session's
 events, surfaces the top-3 compaction opportunities, and recommends
 a model switch if the running mix looks expensive for the work you're
@@ -259,4 +259,4 @@ doing. Run it once per phase as a habit.
 - [Lab 13 — A2A / ACP Concepts](../labs/lab13.md) — Cost Budget sidebar shows two-agent loop footprint.
 - [Lab 14 — Orchestrator + tmux Pattern](../labs/lab14.md) — Cost Budget sidebar shows multi-phase orchestrator footprint and is the canonical home for `/clear` discipline.
 - `strategic-compact` skill — when and how to compact mid-phase.
-- `.github/prompts/cost-check.prompt.md` — on-demand session footprint estimate.
+- `.github/skills/cost-check/SKILL.md` — on-demand session footprint estimate.
