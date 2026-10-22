@@ -78,7 +78,7 @@ without losing the plot.
 >   designed to keep per-turn context bounded.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
 >   to verify your footprint between phases. The repo's
->   `.github/SKILLS/cost-check.SKILL.md` is an **IDE prompt file**:
+>   `.github/skills/cost-check/SKILL.md` is an **IDE prompt file**:
 >   run it as `/cost-check` from Copilot Chat in VS Code, Visual
 >   Studio, or JetBrains. The Copilot CLI has no `/cost-check`
 >   command, so in a CLI pane paste the file's contents into the

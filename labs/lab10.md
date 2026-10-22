@@ -725,7 +725,7 @@ Your checklist for the next real task:
    `--dry-run` first (§10.4a); commit the live run when the diff is clean.
 
 > 🔖 **About `checkpoint` — a git-level safety net, not Layer 1.**
-> [`.github/SKILLS/checkpoint.SKILL.md`](../.github/SKILLS/checkpoint.SKILL.md)
+> [`.github/skills/checkpoint/SKILL.md`](../.github/skills/checkpoint/SKILL.md)
 > is the third prompt file, with `create`, `verify` and `list` actions.
 > `create` runs verification, makes a git stash or commit named for the
 > checkpoint, and appends one `date | name | short SHA` line to
@@ -742,13 +742,13 @@ Your checklist for the next real task:
 🖥️ **End-of-lab handoff drill:** a handoff is how one task outlives one
 conversation: a file a fresh conversation can pick up. In the Copilot
 prompt (not your shell), ask the agent to follow
-[`.github/SKILLS/handoff.SKILL.md`](../.github/prompts/handoff.SKILL.md).
+[`.github/skills/handoff/SKILL.md`](../.github/skills/handoff/SKILL.md).
 Its `${input:…}` placeholders are VS Code prompt-file syntax, and the file
 names no save location, so in the CLI put the three values *and* the
 location in the request itself:
 
 ```text
-Follow .github/SKILLS/handoff.SKILL.md. Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
+Follow .github/skills/handoff/SKILL.md. Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
 ```
 
 Note the path it prints. Now **resume from it**: open a fresh conversation
