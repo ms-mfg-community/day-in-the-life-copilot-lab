@@ -1243,3 +1243,140 @@ test('F1: a script window opened by hand before any presentation is there pairs 
     await advanceTo(page, speaker, IDS[1]);
   });
 });
+
+// Independent F1 boundary: the correct presenter id is readable, not secret.
+// A claim carrying it must still come from the actual opener, not another tab
+// on a transport shared by the origin. Check the wrong DOM and a subsequent
+// genuine update, not just whether the status continues to say synchronized.
+for (const row of TRANSPORT_ROWS.filter((one) => one.name !== 'postmessage')) {
+  test(`QA F1 boundary: a foreign ${row.name} claim cannot impersonate the current opener or freeze later updates`, async () => {
+    await withSession({}, async (context) => {
+      const { page, popup } = await present(context, row.query);
+      await synchronized(popup);
+      await advanceTo(page, popup, IDS[1]);
+      const foreign = await openPresenter(context, row.query);
+      const presenter = await page.evaluate(() => window.teachingSpaSyncPresenter);
+      const message = {
+        app: 'teaching-spa-sync', v: 1, type: 'claim', from: 'presenter',
+        presenter, seq: Number.MAX_SAFE_INTEGER,
+        state: { segmentId: IDS[2], segmentIndex: 2, revealedSteps: 0, timer: null },
+      };
+      await foreign.evaluate(([via, data]) => {
+        if (via === 'broadcastchannel') {
+          const channel = new BroadcastChannel('teaching-spa-sync');
+          channel.postMessage(data);
+          channel.close();
+        } else {
+          localStorage.setItem('teaching-spa-sync:to-speaker', JSON.stringify(data));
+        }
+      }, [row.name, message]);
+      await sleep(50);
+      const afterClaim = (await facts(popup)).index;
+      await go(page, IDS[0]);
+      await sleep(BUDGET_MS);
+      const after = await facts(popup);
+      assert.deepEqual(
+        { afterClaim, afterOwnerMove: after.index, sync: after.sync },
+        { afterClaim: '1', afterOwnerMove: '0', sync: 'synchronized' },
+        'a claim from a different real tab must neither move the script nor poison later owner counters',
+      );
+    });
+  });
+}
+
+test('QA F1 boundary: opaque reload plus Present recovers the named speaker within 500 ms', async () => {
+  await withSession({}, async (context) => {
+    // No API is stubbed: the existing sandbox surface supplies distinct opaque
+    // origins, and postMessage with the held WindowProxy is its working path.
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    await reloaded(page);
+    await page.check('#present-open-script');
+    await page.click('#present-start');
+    assert.equal(context.pages().length, 2, 'Present reuses the open named window');
+    await advanceTo(page, popup, IDS[2]);
+    assert.equal((await facts(popup)).sync, 'synchronized');
+  });
+});
+
+test('QA F1 boundary: opaque presenter reload without a bye cannot leave a falsely synchronized script', async () => {
+  await withSession({ silentPagehide: true }, async (context) => {
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    await reloaded(page);
+    await go(page, IDS[2]);
+    // A generous failure-detection allowance, not a new AC9 budget. There is
+    // no departure event: the existing silentPagehide fault hook suppresses it.
+    await sleep(3500);
+    const shown = await facts(popup);
+    assert.ok(
+      shown.sync !== 'synchronized' || shown.index === '2',
+      `the reloaded owner is on segment 2, but after 3.5 s the script still reports ${JSON.stringify({
+        index: shown.index, sync: shown.sync, status: shown.status,
+        previousDisabled: shown.previousDisabled, nextDisabled: shown.nextDisabled,
+      })}`,
+    );
+    if (shown.sync === 'not-synchronized') {
+      assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false]);
+      assert.match(shown.status, /not synchronized/i);
+      await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+    }
+  });
+});
+
+// An opaque origin cannot read the window that opened it, so the script window has nothing to look at and asks (sync.ts, `liveness`). The
+// question has to be put and answered for real, in the browser: staying synchronized across a wait proves nothing for a window that never asked.
+test('F1: an idle presentation in an opaque origin is asked whether it is there, answers every time, and is not given up on', async () => {
+  await withSession({}, async (context) => {
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await sleep(3500); // three questions a second apart, each answered at once, and nothing said by the presentation
+    const states = await syncStates(popup);
+    assert.ok(!states.includes('not-synchronized'), `a presentation that answers is not a presentation that is gone: ${states.join(' ')}`);
+    assert.equal(states.at(-1), 'synchronized');
+    const answers = await popup.evaluate(
+      () => window.__messages.filter((one) => one.fromOpener && one.data && one.data.app === 'teaching-spa-sync' && one.data.type === 'pong').length,
+    );
+    assert.ok(answers >= 2 && answers <= 5, `the script window asked about once a second and its opener answered each time: ${answers} answers in 3.5 s`);
+    await advanceTo(page, popup, IDS[1]);
+  });
+});
+
+test('F1: an opaque presentation that is closed without a goodbye is found out through its window, and the script window has its own navigation', async () => {
+  await withSession({ silentPagehide: true }, async (context) => {
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]); // in the middle of the deck, so that neither Previous nor Next is off for want of a segment
+    const since = await popup.evaluate(() => performance.timeOrigin + performance.now());
+    await page.close();
+    const left = await arrival(popup, 'data-sync-state', 'not-synchronized', since);
+    assert.ok(left <= 1500, `the script window took ${left.toFixed(0)} ms to stop claiming that it follows a presentation that is closed`);
+    const shown = await facts(popup);
+    assert.equal(shown.transport, 'none');
+    assert.match(shown.status, /not synchronized/i);
+    assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], 'Previous and Next are the speaker\'s own');
+    await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+  });
+});
+
+// A message that a page posts as it unloads reaches the other window of an opaque origin with no `source` (Chromium), so that it cannot be told
+// from the message of any window and is not acted on: the goodbye of an opaque presentation that is reloaded is lost, and the question of
+// `liveness` is what finds it, within the second it waits to ask and the second it waits for the answer (the default timeout), and not at once.
+test('F1: an opaque presentation that is reloaded, goodbye and all, is found out by the question and is not left as the one that is followed', async () => {
+  await withSession({}, async (context) => {
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    const since = await popup.evaluate(() => performance.timeOrigin + performance.now());
+    await reloaded(page);
+    const left = await arrival(popup, 'data-sync-state', 'not-synchronized', since);
+    assert.ok(left <= 3000, `the script window took ${left.toFixed(0)} ms to stop claiming that it follows a presentation that was reloaded; the question and its answer take 2000`);
+    const shown = await facts(popup);
+    assert.equal(shown.transport, 'none');
+    assert.match(shown.status, /not synchronized/i);
+    assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], 'Previous and Next are the speaker\'s own');
+    await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+  });
+});
