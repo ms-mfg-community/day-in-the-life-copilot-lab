@@ -9,7 +9,8 @@ const ROUTE_PREFIX = '#/';
 
 /** The hash of the speaker surface, which is what the presentation opens (`window.open`) for the speaker script. */
 export const SCRIPT_HASH = `${ROUTE_PREFIX}script`;
-const SCRIPT_NAME = SCRIPT_HASH.slice(ROUTE_PREFIX.length);
+/** The one name the router never looks up in the deck: a segment of this id could not be reached, so the build refuses it (F2). */
+export const SCRIPT_NAME = SCRIPT_HASH.slice(ROUTE_PREFIX.length);
 
 export type Route =
   | { kind: 'segment'; id: string }

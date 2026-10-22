@@ -200,6 +200,93 @@ describe('scriptHtml from a deck of our own', () => {
   });
 });
 
+// A segment called "script". The router knows `#/script` before it looks in the deck (`parseHash`), so the link of such a segment opens
+// the speaker surface and the segment itself can never be shown. The deck is refused when the build reads it, not found out in front of
+// an audience; the route is not made to give way, because the speaker surface has to be recognised whatever the deck holds.
+describe('a segment called "script"', () => {
+  type Load = (this: { addWatchFile(file: string): void }, id: string) => string;
+  const deckPath = (root: string): string => path.join(root, 'workshop/spa/content/deck.json');
+  /** Rewrites the manifest of a `repo({ [source]: … })` deck so that it names `ids`, every one of them rendered from the files of `source`. */
+  const rename = (root: string, ids: string[], source = 'one'): void =>
+    writeFileSync(
+      deckPath(root),
+      JSON.stringify({ segments: ids.map((id) => ({ id, slideSource: `workshop/slides/${source}.md`, scriptSource: `workshop/speaker-scripts/${source}.md`, labRefs: [], minutes: 1 })) }),
+    );
+  const failure = (work: () => unknown): string => {
+    try {
+      work();
+    } catch (error) {
+      return (error as Error).message;
+    }
+    throw new Error('the build accepted the deck');
+  };
+
+  it('is why it cannot be shown: its own hash is the speaker surface', () => {
+    expect(hashFor('script')).toBe(SCRIPT_HASH);
+    expect(parseHash(hashFor('script'), ['one', 'script'])).toEqual({ kind: 'script' });
+  });
+
+  it('fails loading the segments, and says what is reserved, which route has it and where in the deck the segment is', () => {
+    const root = repo({ one: '# One\n', script: '# The segment that cannot be shown\n', three: '# Three\n' });
+    const message = failure(() => loadSegments(root));
+    expect(message).toContain('"script"');
+    expect(message).toMatch(/reserved/i);
+    expect(message).toContain('#/script');
+    expect(message).toContain('segments[1]');
+    expect(message).toContain('deck.json');
+  });
+
+  it('is refused whether it is the first segment, the last or the only one', () => {
+    for (const ids of [['script'], ['script', 'one'], ['one', 'script']]) {
+      const root = repo({ one: '# One\n' });
+      rename(root, ids);
+      expect(failure(() => loadSegments(root)), ids.join()).toMatch(/reserved/i);
+    }
+  });
+
+  it('is refused every time the deck has one, and each is named', () => {
+    const root = repo({ one: '# One\n' });
+    rename(root, ['script', 'two', 'script', 'four']);
+    const message = failure(() => loadSegments(root));
+    expect(message).toContain('segments[0]');
+    expect(message).toContain('segments[2]');
+    expect(message).not.toContain('segments[1]');
+    expect(message).not.toContain('segments[3]');
+  });
+
+  it('fails the build from the plugin too, after deck.json was watched, so that renaming the segment recovers', () => {
+    const root = repo({ one: '# One\n', script: '# Two\n' });
+    const watched: string[] = [];
+    const load = spaContentPlugin(root).load as unknown as Load;
+    const addWatchFile = (file: string): void => void watched.push(path.normalize(file));
+    expect(failure(() => load.call({ addWatchFile }, VIRTUAL_ID))).toMatch(/reserved/i);
+    expect(watched).toContain(path.normalize(deckPath(root)));
+
+    // Repaired the way the message asks: only the id changes, so the same plugin builds the module once deck.json has been saved.
+    rename(root, ['one', 'script-notes']);
+    const built = load.call({ addWatchFile }, VIRTUAL_ID);
+    expect(built).toContain('"id":"script-notes"');
+  });
+
+  it('is a matter of the id: sources called script.md are no problem, and neither is any other spelling of the name', () => {
+    const root = repo({ one: '# One\n' });
+    const ids = ['Script', 'scripts', 'script-notes', 'my-script', 'scripting', '%73cript', 'script.md'];
+    rename(root, ids);
+    expect(loadSegments(root).map((segment) => segment.id)).toEqual(ids);
+    // The router reaches each of them as a segment: that is what they were allowed to be.
+    for (const id of ids) expect(parseHash(hashFor(id), ids), id).toEqual({ kind: 'segment', id });
+
+    const named = repo({ script: '# Sources called script\n' });
+    rename(named, ['one'], 'script');
+    expect(loadSegments(named).map((segment) => segment.id)).toEqual(['one']);
+  });
+
+  it('leaves the real deck as it was', () => {
+    expect(deck.map((entry) => entry.id)).not.toContain('script');
+    expect(loadSegments(ROOT).map((segment) => segment.id)).toEqual(deck.map((entry) => entry.id));
+  });
+});
+
 describe('the declared shape of the module', () => {
   it('has scriptHtml in virtual-content.d.ts', () => {
     const declaration = readFileSync(path.join(ROOT, 'workshop/spa/src/virtual-content.d.ts'), 'utf8');

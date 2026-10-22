@@ -8,6 +8,7 @@ import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { createRenderer } from './src/content/markdown';
 import { rewriteSlideLinks } from './src/content/slide-links';
+import { SCRIPT_HASH, SCRIPT_NAME } from './src/shell/router';
 
 const VIRTUAL_ID = 'virtual:spa-content';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
@@ -21,8 +22,25 @@ interface DeckSegment {
   minutes: number;
 }
 
+/**
+ * `#/script` is the speaker surface, and the router recognises it before it looks in the deck (parseHash), so the link of a
+ * segment called "script" would open the speaker script and the segment could never be shown. That is found out here, when the
+ * deck is read, and not in front of an audience: every such segment is named, by its place in the manifest, and the build fails.
+ * Nothing but that exact id is reserved: the router matches the decoded name exactly, so `Script` or `script-notes` are segments.
+ */
+function rejectReservedIds(segments: readonly DeckSegment[]): void {
+  const where = segments.flatMap((segment, index) => (segment.id === SCRIPT_NAME ? [`segments[${index}]`] : []));
+  if (where.length === 0) return;
+  throw new Error(
+    `${DECK_PATH}: ${where.join(', ')} ${where.length === 1 ? 'has' : 'have'} the id "${SCRIPT_NAME}", which is reserved: ` +
+      `${SCRIPT_HASH} is the speaker script, so a segment of that name could never be reached. Give it another id.`,
+  );
+}
+
 function readDeck(repoRoot: string): DeckSegment[] {
   const deck = JSON.parse(readFileSync(path.join(repoRoot, DECK_PATH), 'utf8')) as { segments: DeckSegment[] };
+  // After the manifest has been read, and so after load() has already asked for it to be watched: renaming the segment recovers.
+  rejectReservedIds(deck.segments);
   return deck.segments;
 }
 
