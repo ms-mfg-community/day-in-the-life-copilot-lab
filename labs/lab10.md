@@ -531,7 +531,7 @@ stable file paths.
 
 > ⚠️ **A prompt file, not a CLI slash command.** `consolidate-lessons`
 > — like `checkpoint` and `handoff` in §10.5 — ships as a VS Code-style
-> prompt file in [`.github/SKILLS/`](../.github/SKILLS/). Copilot CLI's
+> prompt file in [`.github/skills/`](../.github/skills/). Copilot CLI's
 > built-in command list (`copilot help commands`) has no
 > `/consolidate-lessons`, `/checkpoint` or `/handoff`, and this repo adds
 > no CLI skill or wrapper that registers them. Do not rely on typing those
