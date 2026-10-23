@@ -1,4 +1,10 @@
-import type { SessionMeta, TermBlock, TreeNode, VerifyState } from "./types";
+import type {
+  GitHubState,
+  SessionMeta,
+  TermBlock,
+  TreeNode,
+  VerifyState,
+} from "./types";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -56,4 +62,13 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     }).then((r) => json<VerifyState>(r)),
+
+  github: () => fetch("/api/github").then((r) => json<GitHubState>(r)),
+
+  githubOp: (op: string, payload: Record<string, unknown> = {}) =>
+    fetch("/api/github/op", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ op, ...payload }),
+    }).then((r) => json<{ ok: boolean }>(r)),
 };

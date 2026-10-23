@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { execFile } from "node:child_process";
 import { bridge, type StudioEvent } from "./copilot-bridge.js";
 import {
   ensureSandbox,
@@ -6,14 +7,61 @@ import {
   readTree,
   readWorkspaceFile,
   resetSandbox,
+  safePath,
   writeWorkspaceFile,
 } from "./sandbox.js";
+import {
+  isPlatformBusy,
+  iterateOnPull,
+  runCodeReview,
+  runCodingAgent,
+  triggerBranchCreate,
+} from "./sim-actions.js";
+import { loadGitHub, mutateGitHub, type SimRuleset } from "./sim-github.js";
 import { runTerminalLine, type TermBlock } from "./sim-terminal.js";
 import { runVerify } from "./verify.js";
 
 interface TerminalBody {
   line: string;
   mode: "shell" | "copilot";
+}
+
+/** Run a learner-authored hook script for real, with the event JSON on stdin. */
+function runHookScript(scriptRel: string, json: string): Promise<TermBlock[]> {
+  return new Promise((resolve) => {
+    let script: string;
+    try {
+      script = safePath(scriptRel);
+    } catch {
+      resolve([
+        { text: "hook scripts must live under scripts/hooks/", tone: "error" },
+      ]);
+      return;
+    }
+    if (!fileExists(scriptRel)) {
+      resolve([{ text: `bash: ${scriptRel}: no such file`, tone: "error" }]);
+      return;
+    }
+    const child = execFile(
+      "bash",
+      [script],
+      { timeout: 15000, cwd: safePath(".") },
+      (error, stdout, stderr) => {
+        const blocks: TermBlock[] = [];
+        for (const line of `${stdout}${stderr}`.split("\n")) {
+          if (line.trim()) blocks.push({ text: line });
+        }
+        const code = error ? ((error as { code?: number }).code ?? 1) : 0;
+        blocks.push({
+          text: `(exit status ${code})`,
+          tone: code === 0 ? "success" : "error",
+        });
+        resolve(blocks);
+      },
+    );
+    child.stdin?.write(json);
+    child.stdin?.end();
+  });
 }
 
 function metaSummaryBlocks(): TermBlock[] {
@@ -232,6 +280,10 @@ export function registerRoutes(app: FastifyInstance): void {
           };
         }
       }
+      case "hook-pipe": {
+        const blocks = await runHookScript(result.script, result.json);
+        return { blocks, mode: "shell" };
+      }
     }
   });
 
@@ -239,6 +291,148 @@ export function registerRoutes(app: FastifyInstance): void {
     ensureSandbox();
     return runVerify(req.body.id);
   });
+
+  // ------------------------------------------------- simulated GitHub surface
+
+  app.get("/api/github", async () => {
+    ensureSandbox();
+    return { ...loadGitHub(), platformBusy: isPlatformBusy() };
+  });
+
+  app.post<{ Body: { op: string; [key: string]: unknown } }>(
+    "/api/github/op",
+    async (req, reply) => {
+      ensureSandbox();
+      const { op } = req.body;
+      const notify = (): void => bridge.broadcast({ kind: "github-updated" });
+      try {
+        switch (op) {
+          case "create-branch-from-issue": {
+            const issueNumber = Number(req.body.issue);
+            const branch = String(req.body.branch ?? "");
+            if (!branch)
+              return reply.code(400).send({ error: "branch required" });
+            mutateGitHub((state) => {
+              if (!state.branches.includes(branch)) state.branches.push(branch);
+              const issue = state.issues.find((i) => i.number === issueNumber);
+              if (issue) issue.linkedBranch = branch;
+            });
+            notify();
+            void triggerBranchCreate(branch, issueNumber).catch(
+              () => undefined,
+            );
+            return { ok: true };
+          }
+          case "assign-copilot": {
+            const issueNumber = Number(req.body.issue);
+            if (isPlatformBusy())
+              return reply
+                .code(409)
+                .send({ error: "A platform agent is already running." });
+            mutateGitHub((state) => {
+              const issue = state.issues.find((i) => i.number === issueNumber);
+              if (issue && !issue.assignees.includes("Copilot"))
+                issue.assignees.push("Copilot");
+            });
+            notify();
+            void runCodingAgent(issueNumber).catch(() => undefined);
+            return { ok: true };
+          }
+          case "toggle-actions-pr": {
+            mutateGitHub((state) => {
+              state.settings.actionsCanCreatePRs = Boolean(req.body.value);
+            });
+            notify();
+            return { ok: true };
+          }
+          case "save-ruleset": {
+            const ruleset = req.body.ruleset as SimRuleset;
+            mutateGitHub((state) => {
+              const existing = state.settings.rulesets.findIndex(
+                (r) => r.name === ruleset.name,
+              );
+              if (existing >= 0) state.settings.rulesets[existing] = ruleset;
+              else state.settings.rulesets.push(ruleset);
+            });
+            notify();
+            return { ok: true };
+          }
+          case "request-review": {
+            const pr = Number(req.body.pr);
+            if (isPlatformBusy())
+              return reply
+                .code(409)
+                .send({ error: "A platform agent is already running." });
+            void runCodeReview(pr).catch(() => undefined);
+            return { ok: true };
+          }
+          case "comment-pr": {
+            const pr = Number(req.body.pr);
+            const body = String(req.body.body ?? "");
+            if (/@copilot/i.test(body)) {
+              if (isPlatformBusy())
+                return reply
+                  .code(409)
+                  .send({ error: "A platform agent is already running." });
+              void iterateOnPull(pr, body).catch(() => undefined);
+            } else {
+              mutateGitHub((state) => {
+                state.pulls
+                  .find((p) => p.number === pr)
+                  ?.comments.push({ author: "you", body, at: Date.now() });
+              });
+              notify();
+            }
+            return { ok: true };
+          }
+          case "pr-ready": {
+            mutateGitHub((state) => {
+              const pull = state.pulls.find(
+                (p) => p.number === Number(req.body.pr),
+              );
+              if (pull) pull.draft = false;
+            });
+            notify();
+            return { ok: true };
+          }
+          case "close-pr": {
+            mutateGitHub((state) => {
+              const pull = state.pulls.find(
+                (p) => p.number === Number(req.body.pr),
+              );
+              if (pull) {
+                pull.state = "closed";
+                if (req.body.deleteBranch)
+                  state.branches = state.branches.filter(
+                    (b) => b !== pull.head,
+                  );
+              }
+            });
+            notify();
+            return { ok: true };
+          }
+          case "close-issue": {
+            mutateGitHub((state) => {
+              const issue = state.issues.find(
+                (i) => i.number === Number(req.body.issue),
+              );
+              if (issue) issue.state = "closed";
+            });
+            notify();
+            return { ok: true };
+          }
+          default:
+            return reply.code(400).send({ error: `Unknown op: ${op}` });
+        }
+      } catch (error) {
+        return reply
+          .code(500)
+          .send({
+            error: error instanceof Error ? error.message : String(error),
+          });
+      }
+    },
+  );
 
   app.get("/api/events", (req, reply) => {
     reply.raw.writeHead(200, {

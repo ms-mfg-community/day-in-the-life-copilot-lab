@@ -93,17 +93,43 @@ edit → restart (`/exit` + `copilot`, or `/new`) → verify loop, and the
 
 ## Lab map
 
-| Lab                                | Steps                                                                                | Live / simulated                                                     |
-| ---------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| 01 Exploring Copilot Configuration | config map · marketplace · hierarchy · ask the planner                               | marketplace simulated, planner live                                  |
-| 02 Custom Instructions & AGENTS.md | repo rules · path rule · ADR · restart + `/instructions`                             | all live                                                             |
-| 03 Creating a Dev Agent            | anatomy · create `contoso-dev` · discover + select · analyze                         | all live                                                             |
-| 04 Skills & Prompts                | anatomy · create `contoso-testing` · auto-activation · prompts-vs-skills             | activation live (`skill.invoked`), prompt files explained (IDE-only) |
-| 05 MCP Server Configuration        | inspect config · add `lab-docs` stdio server · live MCP tool call · markdown lessons | all live                                                             |
+| Lab                                 | Steps                                                                                                      | Live / simulated                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 01 Exploring Copilot Configuration  | config map · marketplace · hierarchy · ask the planner                                                     | marketplace simulated, planner live                                  |
+| 02 Custom Instructions & AGENTS.md  | repo rules · path rule · ADR · restart + `/instructions`                                                   | all live                                                             |
+| 03 Creating a Dev Agent             | anatomy · create `contoso-dev` · discover + select · analyze                                               | all live                                                             |
+| 04 Skills & Prompts                 | anatomy · create `contoso-testing` · auto-activation · prompts-vs-skills                                   | activation live (`skill.invoked`), prompt files explained (IDE-only) |
+| 05 MCP Server Configuration         | inspect config · add `lab-docs` stdio server · live MCP tool call · markdown lessons                       | all live                                                             |
+| 06 Hooks                            | config + load order · stdin IPC contract · create + pipe-test a hook · live firing (incl. a pre-hook deny) | hook scripts execute for real; firing is live                        |
+| 07 Multi-Agent Orchestration        | design · workers (`contoso-qa`) · orchestrator · delegation run                                            | live — real `task` dispatches with subagent chips                    |
+| 08 gh-aw: PRD Generation            | md+frontmatter format · compile to .lock.yml · issue backlog · branch-triggered run · PRD review           | GitHub plumbing simulated; the PRD agent is a live Copilot session   |
+| 09 Coding Agent & Code Review       | ruleset · issue → draft PR · automated review · @copilot iteration                                         | platform simulated; coding agent + reviewer are live sessions        |
+| 10 Agent Memory                     | layer 1 (todos) · wiki + recall · schema rule firing · consolidation                                       | all live                                                             |
+| 11 Building & Distributing a Plugin | scaffold + local install · registries/release pipeline · allowlist policy                                  | local install + policy evaluation real; registry simulated           |
+| 12 Fabric MCP (offline path)        | why Fabric MCP · wire `fabric-sim` · enumerate + query the lakehouse                                       | real MCP wiring, fixture data (the lab's own offline path)           |
+| 13 A2A Concepts                     | peers vs sub-agents · implementer/critic cycle · failure modes                                             | critic cycle live                                                    |
+| 14 Orchestrator + tmux Pattern      | the cycle · handoff drill (write → clear → resume) · token discipline                                      | handoff drill live                                                   |
+| 15 LSP & Code Intelligence          | what LSP gives · watch the text-search fallback · when it still falls back                                 | fallback observation live                                            |
+| 16 Enterprise Managed Settings      | mechanism + key shapes · strictKnownMarketplaces · admin walkthrough                                       | shape verification server-side; quiz                                 |
+| 17 GitHub Admin Controls            | AI Controls + default-on model policy · audit log scope                                                    | quizzes                                                              |
+| 18 Spec-Driven Design & Stacked PRs | write a spec · spec→PRD check · 2-layer stack · review per layer                                           | spec + reviews live; stack simulated                                 |
+| 19 Self-Improving Agents            | the bounded workflow · local drift-scan dry run · why the bounds matter                                    | drift scan live                                                      |
+| 20 Enterprise Token Optimization    | the right usage source · prompt/knowledge governance                                                       | quizzes                                                              |
+
+The **GitHub tab** on the bench is the simulated platform surface (issues,
+pull requests, Actions runs, repo settings) that labs 08, 09 and 18 drive.
+Everything that would need a remote — branch triggers, workflow jobs, PR
+plumbing, rulesets — is simulated there, while every AI inside it (the PRD
+agent, the coding agent, code review, iteration) is a real Copilot session
+whose tool calls stream into the run logs and PR timelines.
 
 ## Safety
 
 Copilot runs with auto-approved tools (the labs' `--allow-all-tools`
 equivalent) against the sandbox workspace in `.sandbox/` — the same trust
 posture the workshop's own non-interactive examples use. The sandbox directory
-is gitignored and disposable.
+is gitignored and disposable. Two containment measures keep sessions inside
+it: the permission handler rejects file writes that resolve outside the
+workspace, and the workspace is initialized as its own git repository so
+`git rev-parse --show-toplevel` (an agent favorite) resolves to the sandbox,
+not the enclosing checkout.

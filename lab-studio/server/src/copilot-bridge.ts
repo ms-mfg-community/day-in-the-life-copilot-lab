@@ -2,8 +2,9 @@ import {
   approveAll,
   CopilotClient,
   type CopilotSession,
+  type PermissionHandler,
 } from "@github/copilot-sdk";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import {
   readMcpConfig,
   SANDBOX_DIR,
@@ -25,7 +26,12 @@ export interface StudioEvent {
     | "idle"
     | "busy"
     | "error"
-    | "meta-updated";
+    | "meta-updated"
+    | "hook"
+    | "subagent-start"
+    | "subagent-done"
+    | "github-updated"
+    | "worker-progress";
   [key: string]: unknown;
 }
 
@@ -65,6 +71,26 @@ type Listener = (event: StudioEvent) => void;
 
 const PROMPT_TIMEOUT_MS = 240_000;
 
+/**
+ * Auto-approve like the labs' --allow-all-tools, but confine file writes to
+ * the sandbox workspace. The sandbox lives inside a larger checkout, and a
+ * model following `git rev-parse --show-toplevel` can otherwise end up editing
+ * files above its workspace.
+ */
+const scopedApproval: PermissionHandler = (request, invocation) => {
+  const r = request as { kind?: string; fileName?: string };
+  if (r.kind === "write" && typeof r.fileName === "string") {
+    const target = resolve(r.fileName);
+    if (target !== SANDBOX_DIR && !target.startsWith(SANDBOX_DIR + sep)) {
+      return {
+        kind: "reject",
+        feedback: `Blocked by Lab Studio: file writes are confined to the lab workspace. Use the workspace-relative path instead of ${r.fileName}.`,
+      } as never;
+    }
+  }
+  return approveAll(request, invocation);
+};
+
 export class CopilotBridge {
   private client: CopilotClient | null = null;
   private session: CopilotSession | null = null;
@@ -80,7 +106,24 @@ export class CopilotBridge {
   }[] = [];
   readonly toolCalls: { toolName: string; at: number }[] = [];
   readonly skillInvocations: { name: string; at: number }[] = [];
+  readonly hookFirings: {
+    hookType: string;
+    toolName: string;
+    success: boolean;
+    at: number;
+  }[] = [];
+  readonly subagentRuns: {
+    agentName: string;
+    done: boolean;
+    toolCallCount?: number;
+    at: number;
+  }[] = [];
   sessionGeneration = 0;
+
+  /** Broadcast a studio event from outside the bridge (sim GitHub, workers…). */
+  broadcast(event: StudioEvent): void {
+    this.emit(event);
+  }
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
@@ -119,9 +162,10 @@ export class CopilotBridge {
     const session = await client.createSession({
       workingDirectory: SANDBOX_DIR,
       trustWorkingDirectory: "session",
-      onPermissionRequest: approveAll,
+      onPermissionRequest: scopedApproval,
       agentDirectories: [join(SANDBOX_DIR, ".github", "agents")],
       skillDirectories: [join(SANDBOX_DIR, ".github", "skills")],
+      hookDirectories: [join(SANDBOX_DIR, ".github", "hooks")],
       // SDK session config accepts the same shape as .copilot/mcp-config.json entries.
       mcpServers: mcpServers as never,
     });
@@ -252,6 +296,58 @@ export class CopilotBridge {
           const name = (data?.name as string) ?? "";
           this.skillInvocations.push({ name, at: Date.now() });
           this.emit({ kind: "skill-invoked", name });
+          break;
+        }
+        case "hook.start": {
+          const input = data?.input as Record<string, unknown> | undefined;
+          this.emit({
+            kind: "hook",
+            phase: "start",
+            hookType: String(data?.hookType ?? "hook"),
+            toolName:
+              typeof input?.toolName === "string" ? input.toolName : undefined,
+          });
+          break;
+        }
+        case "hook.end": {
+          const success = (data?.success as boolean) ?? true;
+          this.hookFirings.push({
+            hookType: String(data?.hookType ?? "hook"),
+            toolName: "",
+            success,
+            at: Date.now(),
+          });
+          this.emit({
+            kind: "hook",
+            phase: "end",
+            hookType: String(data?.hookType ?? "hook"),
+            success,
+          });
+          break;
+        }
+        case "subagent.started": {
+          const agentName = String(data?.agentName ?? "subagent");
+          this.subagentRuns.push({ agentName, done: false, at: Date.now() });
+          this.emit({ kind: "subagent-start", agentName });
+          break;
+        }
+        case "subagent.completed":
+        case "subagent.failed": {
+          const agentName = String(data?.agentName ?? "subagent");
+          const run = [...this.subagentRuns]
+            .reverse()
+            .find((r) => r.agentName === agentName && !r.done);
+          if (run) {
+            run.done = true;
+            run.toolCallCount = Number(data?.totalToolCalls ?? 0);
+          }
+          this.emit({
+            kind: "subagent-done",
+            agentName,
+            failed: event.type === "subagent.failed",
+            toolCalls: Number(data?.totalToolCalls ?? 0),
+            durationMs: Number(data?.durationMs ?? 0),
+          });
           break;
         }
         case "session.skills_loaded": {
@@ -389,6 +485,55 @@ export class CopilotBridge {
     if (this.meta) {
       this.meta.selectedAgent = null;
       this.emit({ kind: "meta-updated" });
+    }
+  }
+
+  /**
+   * Run a one-shot "platform" agent (PRD generator, coding agent, code
+   * reviewer) in its own ephemeral session against the sandbox. Progress is
+   * reported through the callback, not the learner's terminal.
+   */
+  async runWorker(options: {
+    prompt: string;
+    label: string;
+    onProgress?: (line: string) => void;
+    timeoutMs?: number;
+  }): Promise<string> {
+    const client = await this.ensureClient();
+    const session = await client.createSession({
+      workingDirectory: SANDBOX_DIR,
+      trustWorkingDirectory: "session",
+      onPermissionRequest: scopedApproval,
+    });
+    const chunks: string[] = [];
+    try {
+      session.on((event) => {
+        const type = (event as { type: string }).type;
+        const data = (event as { data?: unknown }).data as
+          Record<string, unknown> | undefined;
+        if (type === "tool.execution_start") {
+          const tool = String(data?.toolName ?? "tool");
+          const args = data?.arguments as Record<string, unknown> | undefined;
+          const target =
+            typeof args?.path === "string"
+              ? ` ${String(args.path).split("/").slice(-2).join("/")}`
+              : "";
+          options.onProgress?.(`[${options.label}] ${tool}${target}`);
+        } else if (type === "assistant.message") {
+          const content = data?.content;
+          if (typeof content === "string" && content.trim())
+            chunks.push(content);
+        }
+      });
+      const reply = await session.sendAndWait(
+        { prompt: options.prompt },
+        options.timeoutMs ?? 300_000,
+      );
+      const final = reply?.data?.content;
+      if (typeof final === "string" && final.trim()) return final;
+      return chunks[chunks.length - 1] ?? "";
+    } finally {
+      await session.disconnect().catch(() => undefined);
     }
   }
 

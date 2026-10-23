@@ -7,14 +7,23 @@ import {
   safePath,
   scanAgentFiles,
   scanInstructionSources,
+  writeWorkspaceFile,
   SANDBOX_DIR,
 } from "./sandbox.js";
 import {
   CATALOG,
   installedPlugins,
+  installLocalPlugin,
   installPlugin,
   MARKETPLACES,
 } from "./sim-registry.js";
+import { createIssue, loadGitHub, mutateGitHub } from "./sim-github.js";
+import {
+  isPlatformBusy,
+  iterateOnPull,
+  runCodingAgent,
+  triggerBranchCreate,
+} from "./sim-actions.js";
 
 export interface TermBlock {
   text: string;
@@ -29,7 +38,8 @@ export type TermResult =
   | { action: "exit-copilot"; blocks: TermBlock[] }
   | { action: "new-session"; blocks: TermBlock[] }
   | { action: "prompt"; prompt: string; agent?: string; blocks: TermBlock[] }
-  | { action: "select-agent"; agent: string; blocks: TermBlock[] };
+  | { action: "select-agent"; agent: string; blocks: TermBlock[] }
+  | { action: "hook-pipe"; script: string; json: string; blocks: TermBlock[] };
 
 const text = (
   t: string,
@@ -59,6 +69,16 @@ export function runTerminalLine(
 // ---------------------------------------------------------------- shell mode
 
 function runShellLine(line: string): TermResult {
+  // `echo '<json>' | bash scripts/hooks/<script>` — the lab's manual hook
+  // test. The script runs for real (spawned by the server) with the JSON on
+  // stdin, exactly like the Copilot runtime invokes it.
+  const pipe =
+    /^echo\s+'([\s\S]+)'\s*\|\s*bash\s+(scripts\/hooks\/[\w.-]+\.sh)\s*$/.exec(
+      line,
+    );
+  if (pipe && pipe[1] !== undefined && pipe[2] !== undefined) {
+    return { action: "hook-pipe", script: pipe[2], json: pipe[1], blocks: [] };
+  }
   const argv = tokenize(line);
   const cmd = argv[0] ?? "";
   const args = argv.slice(1);
@@ -107,20 +127,11 @@ function runShellLine(line: string): TermResult {
     case "copilot":
       return copilotCliCommand(args);
     case "gh":
-      return {
-        blocks: [
-          text(
-            "gh: remote GitHub operations are simulated in Lab Studio.",
-            "dim",
-            true,
-          ),
-          text(
-            "Everything labs 01–05 need runs against the local lab workspace instead.",
-            "dim",
-            true,
-          ),
-        ],
-      };
+      return ghCommand(args);
+    case "git":
+      return gitCommand(args);
+    case "policy":
+      return policyCommand(args);
     case "cd":
       return {
         blocks: [
@@ -404,12 +415,29 @@ function pluginCommand(args: string[]): TermResult {
       return {
         blocks: [
           text(
-            "usage: copilot plugin install <plugin>[@marketplace]",
+            "usage: copilot plugin install <plugin>[@marketplace] | <./local-dir>",
             "error",
             true,
           ),
         ],
       };
+    if (spec.startsWith("./") || spec.startsWith("my-plugin")) {
+      const local = installLocalPlugin(spec);
+      return {
+        blocks: [
+          text(local.message, local.ok ? "success" : "error", true),
+          ...(local.ok
+            ? [
+                text(
+                  "  Confirm with `copilot plugin list`. (Real CLI installs take owner/repo or a git URL — the local-path form here mirrors a directory-source marketplace entry.)",
+                  "dim",
+                  true,
+                ),
+              ]
+            : []),
+        ],
+      };
+    }
     const result = installPlugin(spec);
     return {
       blocks: [
@@ -678,4 +706,663 @@ function instructionsCommand(): TermResult {
     ),
   );
   return { blocks };
+}
+
+// -------------------------------------------------- simulated git + gh (lab 08-09)
+
+function flagValue(args: string[], ...names: string[]): string | undefined {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a !== undefined && names.includes(a)) return args[i + 1];
+  }
+  return undefined;
+}
+
+function gitCommand(args: string[]): TermResult {
+  const sub = args[0] ?? "";
+  if (sub === "push") {
+    // git push origin main:feature/x   |  git push [-u] origin feature/x
+    const refspec = args
+      .filter((a) => !a.startsWith("-"))
+      .slice(2)
+      .pop();
+    if (!refspec)
+      return {
+        blocks: [text("usage: git push origin main:<branch>", "error", true)],
+      };
+    const branch = refspec.includes(":")
+      ? (refspec.split(":")[1] ?? "")
+      : refspec;
+    if (!branch)
+      return { blocks: [text("git: empty branch name", "error", true)] };
+    const state = loadGitHub();
+    if (state.branches.includes(branch) || branch === "main") {
+      return {
+        blocks: [
+          text(
+            `git: branch '${branch}' already exists on origin`,
+            "error",
+            true,
+          ),
+        ],
+      };
+    }
+    mutateGitHub((s) => {
+      s.branches.push(branch);
+    });
+    const blocks: TermBlock[] = [
+      text(`To github.com/you/contoso-university.git`, "dim", true),
+      text(` * [new branch]      main -> ${branch}`, "normal", true),
+    ];
+    if (
+      /^(feature|story)\//.test(branch) &&
+      fileExists(".github/workflows/generate-prd.md")
+    ) {
+      blocks.push(
+        text(
+          `create event → "Generate PRD" workflow queued. Watch it in the GitHub tab → Actions.`,
+          "accent",
+          true,
+        ),
+      );
+      void triggerBranchCreate(branch).catch(() => undefined);
+    } else {
+      blocks.push(
+        text(
+          "Branch created. No workflow matches this branch name (filters: feature/**, story/**).",
+          "dim",
+          true,
+        ),
+      );
+    }
+    bridge.broadcast({ kind: "github-updated" });
+    return { blocks };
+  }
+  if (sub === "checkout" || sub === "switch") {
+    return {
+      blocks: [
+        text(
+          "Local branch created — but the gh-aw `create` trigger fires on the REMOTE branch creation.",
+          "dim",
+          true,
+        ),
+        text(
+          "Push it to trigger workflows: git push origin main:<branch>",
+          "dim",
+          true,
+        ),
+      ],
+    };
+  }
+  if (sub === "status") {
+    return {
+      blocks: [
+        text(
+          "On branch main — the workspace is a real local git repo; remote GitHub operations are simulated.",
+          "dim",
+          true,
+        ),
+      ],
+    };
+  }
+  return {
+    blocks: [
+      text(
+        `git: '${sub}' is not simulated in Lab Studio. Supported: push, checkout, status.`,
+        "error",
+        true,
+      ),
+    ],
+  };
+}
+
+function ghCommand(args: string[]): TermResult {
+  const sub = args[0] ?? "";
+  const sub2 = args[1] ?? "";
+
+  if (sub === "aw") return ghAwCommand(args.slice(1));
+  if (sub === "secret" && sub2 === "set") {
+    const name = args[2];
+    if (!name)
+      return { blocks: [text("usage: gh secret set NAME", "error", true)] };
+    mutateGitHub((s) => {
+      if (!s.secrets.includes(name)) s.secrets.push(name);
+    });
+    return {
+      blocks: [
+        text(
+          `✓ Set Actions secret ${name} for you/contoso-university`,
+          "success",
+          true,
+        ),
+      ],
+    };
+  }
+  if (sub === "repo" && sub2 === "set-default") {
+    return {
+      blocks: [
+        text("you/contoso-university (your fork — simulated)", "normal", true),
+      ],
+    };
+  }
+
+  if (sub === "issue") {
+    if (sub2 === "create") {
+      const title = flagValue(args, "--title") ?? "(untitled)";
+      const body = flagValue(args, "--body") ?? "";
+      const labels = (flagValue(args, "--label") ?? "")
+        .split(",")
+        .filter(Boolean);
+      const issue = createIssue(title, body, labels);
+      bridge.broadcast({ kind: "github-updated" });
+      return {
+        blocks: [
+          text(`✓ Created issue #${issue.number}: ${title}`, "success", true),
+          text("  View it in the GitHub tab → Issues.", "dim", true),
+        ],
+      };
+    }
+    if (sub2 === "list") {
+      const issues = loadGitHub().issues.filter((i) => i.state === "open");
+      if (issues.length === 0)
+        return { blocks: [text("no open issues", "dim", true)] };
+      return {
+        blocks: issues.map((i) =>
+          text(
+            `#${i.number}  ${i.title}  [${i.labels.join(",") || "no labels"}]`,
+            "normal",
+            true,
+          ),
+        ),
+      };
+    }
+    if (sub2 === "edit") {
+      const num = Number(args[2]);
+      const assignee = flagValue(args, "--add-assignee");
+      const issue = loadGitHub().issues.find((i) => i.number === num);
+      if (!issue)
+        return {
+          blocks: [text(`issue #${args[2] ?? "?"} not found`, "error", true)],
+        };
+      if (assignee && /copilot/i.test(assignee)) {
+        if (isPlatformBusy())
+          return {
+            blocks: [
+              text(
+                "A platform agent is already running — wait for it to finish.",
+                "error",
+                true,
+              ),
+            ],
+          };
+        mutateGitHub((s) => {
+          const target = s.issues.find((i) => i.number === num);
+          if (target && !target.assignees.includes("Copilot"))
+            target.assignees.push("Copilot");
+        });
+        void runCodingAgent(num).catch(() => undefined);
+        bridge.broadcast({ kind: "github-updated" });
+        return {
+          blocks: [
+            text(`✓ Assigned Copilot to issue #${num}.`, "success", true),
+            text(
+              "  The coding agent session is starting — watch the issue in the GitHub tab (live Copilot).",
+              "accent",
+              true,
+            ),
+          ],
+        };
+      }
+      return {
+        blocks: [
+          text(
+            "supported here: gh issue edit <num> --add-assignee @copilot",
+            "error",
+            true,
+          ),
+        ],
+      };
+    }
+    if (sub2 === "close") {
+      const num = Number(args[2]);
+      mutateGitHub((s) => {
+        const target = s.issues.find((i) => i.number === num);
+        if (target) target.state = "closed";
+      });
+      bridge.broadcast({ kind: "github-updated" });
+      return { blocks: [text(`✓ Closed issue #${num}`, "success", true)] };
+    }
+  }
+
+  if (sub === "pr") {
+    const state = loadGitHub();
+    if (sub2 === "create") {
+      const base = flagValue(args, "--base") ?? "main";
+      const head = flagValue(args, "--head") ?? "";
+      const title = flagValue(args, "--title") ?? "(untitled)";
+      const body = flagValue(args, "--body") ?? "";
+      if (!head)
+        return {
+          blocks: [
+            text(
+              "usage: gh pr create --base <branch> --head <branch> --title … --body …",
+              "error",
+              true,
+            ),
+          ],
+        };
+      mutateGitHub((s) => {
+        if (!s.branches.includes(head)) s.branches.push(head);
+      });
+      // Lab 18's stack exercise: the studio stages layer 1's model change so
+      // the per-layer review in the next step has a real diff to look at.
+      const files =
+        head === "feature/course-prereqs-model" &&
+        fileExists("src/entities/course.ts")
+          ? [
+              {
+                path: "src/entities/course.ts",
+                before: readWorkspaceFile("src/entities/course.ts"),
+                after:
+                  readWorkspaceFile("src/entities/course.ts").replace(
+                    "  readonly instructorId: number | null;",
+                    "  readonly instructorId: number | null;\n  /** Course ids that must be completed before enrolling. */\n  readonly prerequisiteCourseIds: readonly number[];",
+                  ) + "",
+              },
+            ]
+          : [];
+      const pr = createPullFromTerminal({ title, body, base, head, files });
+      bridge.broadcast({ kind: "github-updated" });
+      return {
+        blocks: [
+          text(
+            `✓ Created pull request #${pr} — ${title}  (${head} → ${base})`,
+            "success",
+            true,
+          ),
+          ...(base !== "main"
+            ? [
+                text(
+                  `  Stacked: this PR targets branch '${base}', not main — it sits on top of that layer.`,
+                  "accent",
+                  true,
+                ),
+              ]
+            : []),
+          ...(files.length > 0
+            ? [
+                text(
+                  "  The studio staged layer 1's model change as the PR's diff (simulated commit).",
+                  "dim",
+                  true,
+                ),
+              ]
+            : []),
+        ],
+      };
+    }
+    if (sub2 === "list") {
+      const open = state.pulls.filter((p) => p.state === "open");
+      if (open.length === 0)
+        return { blocks: [text("no open pull requests", "dim", true)] };
+      return {
+        blocks: open.map((p) =>
+          text(
+            `#${p.number}  ${p.draft ? "[draft] " : ""}${p.title}  (${p.head} → ${p.base})${p.reviews.length > 0 ? "  · reviewed by Copilot" : ""}`,
+            "normal",
+            true,
+          ),
+        ),
+      };
+    }
+    if (sub2 === "view") {
+      const pr = state.pulls.find((p) => p.number === Number(args[2]));
+      if (!pr)
+        return {
+          blocks: [
+            text(`pull request #${args[2] ?? "?"} not found`, "error", true),
+          ],
+        };
+      return {
+        blocks: [
+          text(
+            `#${pr.number} ${pr.title} ${pr.draft ? "(draft)" : ""}`,
+            "accent",
+            true,
+          ),
+          text(
+            `  ${pr.head} → ${pr.base} · ${pr.state} · labels: ${pr.labels.join(", ") || "none"}`,
+            "dim",
+            true,
+          ),
+          text(
+            `  files: ${pr.files.map((f) => f.path).join(", ")}`,
+            "normal",
+            true,
+          ),
+          text(
+            `  reviews: ${pr.reviews.length} · comments: ${pr.comments.length} — full view in the GitHub tab`,
+            "dim",
+            true,
+          ),
+        ],
+      };
+    }
+    if (sub2 === "comment") {
+      const num = Number(args[2]);
+      const body = flagValue(args, "--body") ?? "";
+      const pr = state.pulls.find((p) => p.number === num);
+      if (!pr)
+        return {
+          blocks: [
+            text(`pull request #${args[2] ?? "?"} not found`, "error", true),
+          ],
+        };
+      if (/@copilot/i.test(body)) {
+        if (isPlatformBusy())
+          return {
+            blocks: [
+              text(
+                "A platform agent is already running — wait for it to finish.",
+                "error",
+                true,
+              ),
+            ],
+          };
+        void iterateOnPull(num, body).catch(() => undefined);
+        return {
+          blocks: [
+            text(
+              `✓ Commented on #${num}. @copilot mentioned — the coding agent is iterating (live Copilot).`,
+              "success",
+              true,
+            ),
+            text(
+              "  Watch the PR in the GitHub tab for the new commit.",
+              "dim",
+              true,
+            ),
+          ],
+        };
+      }
+      mutateGitHub((s) => {
+        s.pulls
+          .find((p) => p.number === num)
+          ?.comments.push({ author: "you", body, at: Date.now() });
+      });
+      bridge.broadcast({ kind: "github-updated" });
+      return { blocks: [text(`✓ Commented on #${num}`, "success", true)] };
+    }
+    if (sub2 === "ready") {
+      const num = Number(args[2]);
+      mutateGitHub((s) => {
+        const target = s.pulls.find((p) => p.number === num);
+        if (target) target.draft = false;
+      });
+      bridge.broadcast({ kind: "github-updated" });
+      return {
+        blocks: [text(`✓ Marked #${num} ready for review`, "success", true)],
+      };
+    }
+    if (sub2 === "close") {
+      const num = Number(args[2]);
+      const deleteBranch = args.includes("--delete-branch");
+      mutateGitHub((s) => {
+        const target = s.pulls.find((p) => p.number === num);
+        if (target) {
+          target.state = "closed";
+          if (deleteBranch)
+            s.branches = s.branches.filter((b) => b !== target.head);
+        }
+      });
+      bridge.broadcast({ kind: "github-updated" });
+      return {
+        blocks: [
+          text(
+            `✓ Closed pull request #${num}${deleteBranch ? " and deleted its branch" : ""}`,
+            "success",
+            true,
+          ),
+        ],
+      };
+    }
+  }
+
+  return {
+    blocks: [
+      text(
+        "gh (simulated) — supported: issue create|list|edit|close · pr list|view|comment|ready|close · secret set · aw …",
+        "dim",
+        true,
+      ),
+    ],
+  };
+}
+
+function ghAwCommand(args: string[]): TermResult {
+  const sub = args[0] ?? "";
+  if (sub === "version") {
+    return {
+      blocks: [
+        text(
+          "gh-aw v0.37.0 (simulated — matches this workspace's committed lock files)",
+          "normal",
+          true,
+        ),
+      ],
+    };
+  }
+  if (sub === "secrets" && args[1] === "set") {
+    const name = args[2];
+    if (!name)
+      return {
+        blocks: [
+          text("usage: gh aw secrets set NAME --value VALUE", "error", true),
+        ],
+      };
+    mutateGitHub((s) => {
+      if (!s.secrets.includes(name)) s.secrets.push(name);
+    });
+    return { blocks: [text(`✓ Set Actions secret ${name}`, "success", true)] };
+  }
+  if (sub === "compile") {
+    const target = args[1] ?? ".github/workflows/generate-prd.md";
+    if (!fileExists(target))
+      return {
+        blocks: [
+          text(`compile: ${target}: no such workflow file`, "error", true),
+        ],
+      };
+    const { data } = parseFrontmatter(readWorkspaceFile(target));
+    const lockPath = target.replace(/\.md$/, ".lock.yml");
+    writeWorkspaceFile(lockPath, generateLockYml(target, data));
+    return {
+      blocks: [
+        text(`✓ Compiled ${target}`, "success", true),
+        text(
+          `  → ${lockPath} — the standard Actions YAML that GitHub actually runs`,
+          "dim",
+          true,
+        ),
+        text(
+          "  Open it in the Files tab: note the branch-filter fence, the read-only agent job, and the pinned actions.",
+          "dim",
+          true,
+        ),
+      ],
+    };
+  }
+  return {
+    blocks: [
+      text(
+        "gh aw (simulated) — supported: version, compile [file], secrets set NAME",
+        "dim",
+        true,
+      ),
+    ],
+  };
+}
+
+function generateLockYml(
+  sourcePath: string,
+  frontmatter: Record<string, string>,
+): string {
+  const name = sourcePath.split("/").pop()?.replace(/\.md$/, "") ?? "workflow";
+  const title = name
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return `# This file was automatically generated by gh-aw (simulated by Lab Studio).
+# Source: ${sourcePath} — edit the .md, recompile, commit both files.
+name: "${title}"
+on:
+  create:
+
+permissions: {}
+
+jobs:
+  pre_activation:
+    if: startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/story/')
+    runs-on: ubuntu-slim
+    steps:
+      - name: Evaluate activation filters
+        run: echo "branch filter matched"
+
+  activation:
+    needs: pre_activation
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check daily AI credits
+        run: echo "credits OK"
+
+  agent:
+    needs: activation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - name: Setup Scripts
+        uses: github/gh-aw-actions/setup@6aab9e5b5c91c615506061f09bedd81a23babe3c # v0.86.2
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run Copilot agent with the markdown instructions
+        run: gh-aw-agent --instructions ${sourcePath}
+        env:
+          COPILOT_GITHUB_TOKEN: \${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+  safe_outputs:
+    needs: [activation, agent]
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Create pull request from agent output
+        run: gh-aw-safe-outputs create-pull-request
+`;
+}
+
+// ------------------------------------------------ org allowlist policy (lab 11/16)
+
+/** Policy decisions the learner has run — the lab16 verify reads these. */
+export const policyChecks: { source: string; allowed: boolean; at: number }[] =
+  [];
+
+function globMatches(pattern: string, source: string): boolean {
+  // Segment wildcard: contoso-internal/* matches contoso-internal/anything.
+  const re = new RegExp(
+    "^" +
+      pattern
+        .split("*")
+        .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("[^/]*") +
+      "$",
+  );
+  return re.test(source);
+}
+
+function policyCommand(args: string[]): TermResult {
+  const [sub, source] = args;
+  if (sub !== "check" || !source) {
+    return {
+      blocks: [
+        text(
+          "usage: policy check <owner/repo>  — evaluates my-plugin/org-policy.yaml",
+          "error",
+        ),
+      ],
+    };
+  }
+  const policyPath = fileExists("my-plugin/org-policy.yaml")
+    ? "my-plugin/org-policy.yaml"
+    : fileExists("org-policy.yaml")
+      ? "org-policy.yaml"
+      : null;
+  if (!policyPath) {
+    return {
+      blocks: [
+        text(
+          "No policy file found — create my-plugin/org-policy.yaml first.",
+          "error",
+        ),
+      ],
+    };
+  }
+  const policy = readWorkspaceFile(policyPath);
+  const defaultDeny = /default_action:\s*deny/.test(policy);
+  const allowlist = [
+    ...policy.matchAll(/-\s*source:\s*["']?([^"'\n]+?)["']?\s*$/gm),
+  ].map((m) => (m[1] ?? "").trim());
+  const matched = allowlist.find((entry) => globMatches(entry, source));
+  const allowed = matched !== undefined ? true : !defaultDeny;
+  policyChecks.push({ source, allowed, at: Date.now() });
+  return {
+    blocks: [
+      text(
+        `policy: ${policyPath}  (default_action: ${defaultDeny ? "deny" : "allow"})`,
+        "dim",
+      ),
+      text(
+        allowed
+          ? `✓ ${source} → allowed: true${matched ? `  (matched "${matched}")` : ""}`
+          : `✗ ${source} → allowed: false  (no allowlist entry matched)`,
+        allowed ? "success" : "error",
+      ),
+      text(
+        "Local decision simulation — central enforcement is managed-settings.json (Lab 16).",
+        "dim",
+      ),
+    ],
+  };
+}
+
+function createPullFromTerminal(input: {
+  title: string;
+  body: string;
+  base: string;
+  head: string;
+  files: { path: string; before: string | null; after: string | null }[];
+}): number {
+  return mutateGitHub((s) => {
+    const number = ++s.counters.pull;
+    s.pulls.push({
+      number,
+      title: input.title,
+      body: input.body,
+      state: "open",
+      draft: false,
+      head: input.head,
+      base: input.base,
+      labels: [],
+      reviewers: [],
+      files: input.files,
+      commits: [{ message: input.title, at: Date.now() }],
+      comments: [],
+      reviews: [],
+    });
+    return number;
+  });
 }

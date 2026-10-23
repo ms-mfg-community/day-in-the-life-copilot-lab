@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SessionMeta, TermEntry, TreeNode } from "./types";
+import type { GitHubState, SessionMeta, TermEntry, TreeNode } from "./types";
 
 export interface Location {
   /** -1 = home screen. */
@@ -14,12 +14,13 @@ interface StudioState {
   termMode: "shell" | "copilot";
   termBusy: boolean;
   copilotBusy: boolean;
-  benchTab: "terminal" | "files";
+  benchTab: "terminal" | "files" | "github";
   tree: TreeNode[];
   selectedFile: string | null;
   fileContent: string;
   fileDirty: boolean;
   sessionMeta: SessionMeta | null;
+  github: GitHubState | null;
 
   navigate: (loc: Location) => void;
   markDone: (stepKey: string) => void;
@@ -29,12 +30,13 @@ interface StudioState {
   setTermMode: (mode: "shell" | "copilot") => void;
   setTermBusy: (busy: boolean) => void;
   setCopilotBusy: (busy: boolean) => void;
-  setBenchTab: (tab: "terminal" | "files") => void;
+  setBenchTab: (tab: "terminal" | "files" | "github") => void;
   setTree: (tree: TreeNode[]) => void;
   openFile: (path: string, content: string) => void;
   setFileContent: (content: string, dirty: boolean) => void;
   closeFile: () => void;
   setSessionMeta: (meta: SessionMeta | null) => void;
+  setGithub: (state: GitHubState | null) => void;
 }
 
 const PROGRESS_KEY = "lab-studio-progress";
@@ -73,6 +75,7 @@ export const useStudio = create<StudioState>((set) => ({
   fileContent: "",
   fileDirty: false,
   sessionMeta: null,
+  github: null,
 
   navigate: (location) => {
     localStorage.setItem(LOCATION_KEY, JSON.stringify(location));
@@ -107,4 +110,5 @@ export const useStudio = create<StudioState>((set) => ({
   closeFile: () =>
     set({ selectedFile: null, fileContent: "", fileDirty: false }),
   setSessionMeta: (sessionMeta) => set({ sessionMeta }),
+  setGithub: (github) => set({ github }),
 }));

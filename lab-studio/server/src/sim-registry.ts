@@ -71,6 +71,43 @@ export function installedPlugins(): MarketplacePlugin[] {
   }
 }
 
+/** Install a plugin from a local workspace directory (Lab 11's my-plugin). */
+export function installLocalPlugin(relDir: string): {
+  ok: boolean;
+  message: string;
+} {
+  const dir = relDir.replace(/^\.\//, "").replace(/\/$/, "");
+  const manifestPath = `${dir}/manifest.yaml`;
+  if (!fileExists(manifestPath)) {
+    return {
+      ok: false,
+      message: `${manifestPath} not found — a plugin directory needs a manifest.`,
+    };
+  }
+  const manifest = readWorkspaceFile(manifestPath);
+  const name =
+    /^name:\s*["']?([\w-]+)/m.exec(manifest)?.[1] ??
+    dir.split("/").pop() ??
+    "plugin";
+  const version = /^version:\s*["']?([\d.]+)/m.exec(manifest)?.[1] ?? "0.0.0";
+  const installed = installedPlugins();
+  const plugin: MarketplacePlugin = {
+    name,
+    marketplace: `local:${dir}`,
+    version,
+    description: /^description:\s*["']?([^"'\n]+)/m.exec(manifest)?.[1] ?? "",
+    components: `bundled from ${dir}/`,
+  };
+  const existing = installed.findIndex((p) => p.name === name);
+  if (existing >= 0) installed[existing] = plugin;
+  else installed.push(plugin);
+  writeWorkspaceFile(STATE_PATH, JSON.stringify(installed, null, 2));
+  return {
+    ok: true,
+    message: `Installed ${name} v${version} from ${dir}/ (local source)`,
+  };
+}
+
 export function installPlugin(spec: string): {
   ok: boolean;
   message: string;

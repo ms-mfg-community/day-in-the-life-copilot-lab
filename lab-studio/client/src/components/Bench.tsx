@@ -1,5 +1,6 @@
 import { useStudio } from "../store";
 import { FilesPanel } from "./FilesPanel";
+import { GitHubPanel } from "./GitHubPanel";
 import { Terminal } from "./Terminal";
 
 function StatusLamp(): JSX.Element {
@@ -41,9 +42,21 @@ export function Bench(): JSX.Element {
         >
           Files
         </button>
+        <button
+          className={`bench-tab${tab === "github" ? " active" : ""}`}
+          onClick={() => setTab("github")}
+        >
+          GitHub
+        </button>
         <StatusLamp />
       </div>
-      {tab === "terminal" ? <Terminal /> : <FilesPanel />}
+      {tab === "terminal" ? (
+        <Terminal />
+      ) : tab === "files" ? (
+        <FilesPanel />
+      ) : (
+        <GitHubPanel />
+      )}
     </section>
   );
 }

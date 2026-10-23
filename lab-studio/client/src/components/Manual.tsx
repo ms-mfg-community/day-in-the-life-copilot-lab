@@ -143,7 +143,7 @@ export function Manual(): JSX.Element {
             verifyId={step.verifyId}
             stepKey={step.key}
           />
-        ) : (
+        ) : step.quiz ? null : (
           <MarkReadCard key={`read-${step.key}`} stepKey={step.key} />
         )}
         <div className="step-nav">

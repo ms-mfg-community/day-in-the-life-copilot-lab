@@ -8,6 +8,8 @@ export interface LabStep {
   kind: StepKind;
   /** Server-side verification id; omit for read-only steps (manual mark-complete). */
   verifyId?: string;
+  /** The step completes through an in-body Quiz instead of a verify/mark-read card. */
+  quiz?: boolean;
   body: ReactNode;
 }
 

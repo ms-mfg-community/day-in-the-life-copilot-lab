@@ -701,14 +701,14 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 
 ## Workshop Content
 
-| Resource                              | Description                                                                                                                                    |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Setup](#choose-your-path)            | Fork, prerequisites, environment setup                                                                                                         |
-| [Lab Modules](labs/)                  | 20 hands-on labs — start here                                                                                                                  |
-| [Lab Studio](lab-studio/)             | Browser-based guided runner for Labs 01–05 — live Copilot session via the Copilot SDK, simulated marketplace/remote-git, per-step verification |
-| [Reference Solutions](solutions/)     | Completed solutions for each lab                                                                                                               |
-| [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes                                                                                                                        |
-| [AGENTS.md](AGENTS.md)                | Full project context document                                                                                                                  |
+| Resource                              | Description                                                                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Setup](#choose-your-path)            | Fork, prerequisites, environment setup                                                                                                                                                   |
+| [Lab Modules](labs/)                  | 20 hands-on labs — start here                                                                                                                                                            |
+| [Lab Studio](lab-studio/)             | Browser-based guided runner for all 20 labs — live Copilot sessions via the Copilot SDK, a simulated GitHub surface (Actions/PRs/rulesets) with real AI inside it, per-step verification |
+| [Reference Solutions](solutions/)     | Completed solutions for each lab                                                                                                                                                         |
+| [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes                                                                                                                                                                  |
+| [AGENTS.md](AGENTS.md)                | Full project context document                                                                                                                                                            |
 
 ---
 

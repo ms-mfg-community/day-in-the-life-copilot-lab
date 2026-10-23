@@ -204,3 +204,72 @@ export function OpenFileButton({
     </button>
   );
 }
+
+/**
+ * A knowledge check. For read-only steps the quiz IS the verification:
+ * answering correctly marks the step complete.
+ */
+export function Quiz({
+  stepKey,
+  question,
+  options,
+  correct,
+  explain,
+}: {
+  stepKey?: string;
+  question: string;
+  options: string[];
+  correct: number;
+  explain: string;
+}): JSX.Element {
+  const [picked, setPicked] = useState<number | null>(null);
+  const [checked, setChecked] = useState(false);
+  const markDone = useStudio((s) => s.markDone);
+  const isRight = picked === correct;
+  return (
+    <div className="quiz">
+      <div className="quiz-q">{question}</div>
+      {options.map((option, i) => (
+        <label key={i}>
+          <input
+            type="radio"
+            name={stepKey ?? question}
+            checked={picked === i}
+            onChange={() => {
+              setPicked(i);
+              setChecked(false);
+            }}
+          />
+          <span>{option}</span>
+        </label>
+      ))}
+      <div className="card-actions" style={{ background: "none", borderTop: "none", padding: "8px 0 0" }}>
+        <button
+          className="action verify"
+          disabled={picked === null}
+          onClick={() => {
+            setChecked(true);
+            if (picked === correct && stepKey) markDone(stepKey);
+          }}
+        >
+          Check answer ▸
+        </button>
+      </div>
+      {checked ? (
+        <div className={`quiz-result ${isRight ? "ok" : "no"}`}>
+          {isRight ? `✓ Right. ${explain}` : "✕ Not quite — think it through and try again."}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Opens the bench's GitHub tab. */
+export function GitHubTabButton({ children }: { children?: ReactNode }): JSX.Element {
+  const setBenchTab = useStudio((s) => s.setBenchTab);
+  return (
+    <button className="action paper" style={{ margin: "4px 0" }} onClick={() => setBenchTab("github")}>
+      {children ?? "Open the GitHub tab"}
+    </button>
+  );
+}

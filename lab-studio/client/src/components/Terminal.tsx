@@ -101,6 +101,44 @@ export function Terminal(): JSX.Element {
                   </span>
                 </div>
               );
+            case "hook":
+              return (
+                <div key={i}>
+                  <span className="tool-chip hook">
+                    {entry.running ? (
+                      <span className="spinner" />
+                    ) : entry.success === false ? (
+                      <span className="cross">✕</span>
+                    ) : (
+                      <span className="tick">✓</span>
+                    )}
+                    <span>
+                      ⛓ {entry.hookType} hook
+                      {entry.toolName ? ` · after ${entry.toolName}` : ""}
+                    </span>
+                  </span>
+                </div>
+              );
+            case "subagent":
+              return (
+                <div key={i}>
+                  <span className="tool-chip subagent">
+                    {entry.running ? (
+                      <span className="spinner" />
+                    ) : entry.failed ? (
+                      <span className="cross">✕</span>
+                    ) : (
+                      <span className="tick">✓</span>
+                    )}
+                    <span>
+                      ⇄ dispatch: {entry.agentName}
+                      {!entry.running && entry.toolCalls !== undefined
+                        ? ` · ${entry.toolCalls} tool calls`
+                        : ""}
+                    </span>
+                  </span>
+                </div>
+              );
           }
         })}
         {copilotBusy ? (

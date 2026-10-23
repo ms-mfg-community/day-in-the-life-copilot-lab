@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -8,6 +9,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,16 +39,75 @@ export function resetSandbox(): void {
   rmSync(SANDBOX_DIR, { recursive: true, force: true });
   mkdirSync(SANDBOX_ROOT, { recursive: true });
   cpSync(TEMPLATE_DIR, SANDBOX_DIR, { recursive: true });
+  initSandboxGit();
+}
+
+/**
+ * The workspace is its own git repository. Without this, the sandbox sits
+ * inside the outer checkout and `git rev-parse --show-toplevel` (which agents
+ * love to run) resolves ABOVE the workspace — a containment hazard.
+ */
+function initSandboxGit(): void {
+  const git = (...args: string[]): void => {
+    execFileSync("git", args, {
+      cwd: SANDBOX_DIR,
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "Lab Studio",
+        GIT_AUTHOR_EMAIL: "lab-studio@localhost",
+        GIT_COMMITTER_NAME: "Lab Studio",
+        GIT_COMMITTER_EMAIL: "lab-studio@localhost",
+      },
+    });
+  };
+  try {
+    git("init", "-q", "-b", "main");
+    git("add", "-A");
+    git(
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "-q",
+      "-m",
+      "chore: seed lab workspace",
+    );
+  } catch {
+    // git unavailable — the workspace still works; containment relies on the
+    // permission handler alone.
+  }
 }
 
 export function ensureSandbox(): void {
-  if (!existsSync(SANDBOX_DIR)) resetSandbox();
+  if (!existsSync(SANDBOX_DIR)) {
+    resetSandbox();
+    return;
+  }
+  syncTemplateAdditions();
+}
+
+/**
+ * Copy template files the sandbox doesn't have yet (new labs add template
+ * assets; an existing workspace picks them up without losing learner edits).
+ */
+function syncTemplateAdditions(dir = TEMPLATE_DIR): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const templatePath = join(dir, entry.name);
+    const rel = relative(TEMPLATE_DIR, templatePath);
+    const sandboxPath = join(SANDBOX_DIR, rel);
+    if (entry.isDirectory()) {
+      syncTemplateAdditions(templatePath);
+    } else if (!existsSync(sandboxPath)) {
+      mkdirSync(dirname(sandboxPath), { recursive: true });
+      cpSync(templatePath, sandboxPath);
+    }
+  }
 }
 
 export function readTree(relPath = "."): TreeNode[] {
   const abs = safePath(relPath);
   const entries = readdirSync(abs, { withFileTypes: true })
-    .filter((e) => e.name !== "node_modules" && e.name !== ".DS_Store")
+    .filter((e) => e.name !== "node_modules" && e.name !== ".DS_Store" && e.name !== ".git")
     .sort((a, b) => {
       if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
       return a.name.localeCompare(b.name);
@@ -81,6 +142,11 @@ export function writeWorkspaceFile(relPath: string, content: string): void {
   const abs = safePath(relPath);
   mkdirSync(dirname(abs), { recursive: true });
   writeFileSync(abs, content, "utf8");
+  // Hook scripts must be executable — the labs' "don't skip chmod +x" step
+  // is handled for files written through the studio.
+  if (/^scripts\/hooks\/.*\.sh$/.test(relPath.replace(/\\/g, "/"))) {
+    chmodSync(abs, 0o755);
+  }
 }
 
 /** Parse the sandbox's .copilot/mcp-config.json into SDK session mcpServers. */

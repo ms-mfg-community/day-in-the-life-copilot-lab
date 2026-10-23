@@ -89,6 +89,75 @@ export function connectEvents(): void {
           { kind: "skill", name: String(event.name ?? "") },
         ]);
         break;
+      case "hook": {
+        if (event.phase === "start") {
+          updateEntries((entries) => [
+            ...finalizeStream(entries),
+            {
+              kind: "hook",
+              hookType: String(event.hookType ?? "hook"),
+              toolName:
+                typeof event.toolName === "string" ? event.toolName : undefined,
+              running: true,
+            },
+          ]);
+        } else {
+          updateEntries((entries) => {
+            const idx = entries.map((e) => e.kind).lastIndexOf("hook");
+            if (idx === -1) return entries;
+            const hook = entries[idx] as Extract<TermEntry, { kind: "hook" }>;
+            if (!hook.running) return entries;
+            const next = [...entries];
+            next[idx] = {
+              ...hook,
+              running: false,
+              success: event.success !== false,
+            };
+            return next;
+          });
+        }
+        break;
+      }
+      case "subagent-start":
+        updateEntries((entries) => [
+          ...finalizeStream(entries),
+          {
+            kind: "subagent",
+            agentName: String(event.agentName ?? "subagent"),
+            running: true,
+          },
+        ]);
+        break;
+      case "subagent-done":
+        updateEntries((entries) => {
+          let idx = -1;
+          for (let i = entries.length - 1; i >= 0; i--) {
+            const e = entries[i];
+            if (
+              e?.kind === "subagent" &&
+              e.agentName === String(event.agentName ?? "") &&
+              e.running
+            ) {
+              idx = i;
+              break;
+            }
+          }
+          if (idx === -1) return entries;
+          const run = entries[idx] as Extract<TermEntry, { kind: "subagent" }>;
+          const next = [...entries];
+          next[idx] = {
+            ...run,
+            running: false,
+            failed: Boolean(event.failed),
+            toolCalls: Number(event.toolCalls ?? 0),
+          };
+          return next;
+        });
+        break;
+      case "github-updated":
+        void refreshGithub();
+        void refreshTree();
+        break;
       case "busy":
         setCopilotBusy(Boolean(event.busy));
         break;
@@ -158,6 +227,15 @@ export async function refreshMeta(): Promise<void> {
     useStudio.getState().setSessionMeta(meta);
   } catch {
     // Server unreachable — the health banner handles this.
+  }
+}
+
+export async function refreshGithub(): Promise<void> {
+  try {
+    const state = await api.github();
+    useStudio.getState().setGithub(state);
+  } catch {
+    // ignore
   }
 }
 

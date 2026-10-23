@@ -930,3 +930,249 @@ a:focus-visible {
     padding: 28px 26px 60px;
   }
 }
+
+/* hook + subagent chips */
+
+.tool-chip.hook {
+  border-color: rgba(227, 179, 65, 0.4);
+  color: #d9b65a;
+}
+
+.tool-chip.subagent {
+  border-color: rgba(87, 197, 119, 0.4);
+  color: #78cf93;
+}
+
+/* ───────── simulated GitHub panel ───────── */
+
+.gh {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--phos);
+  font-size: 13px;
+}
+
+.gh-nav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--bench-line);
+  align-items: center;
+}
+
+.gh-nav button {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: none;
+  border: none;
+  color: var(--phos-dim);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.gh-nav button.active {
+  color: #fff;
+  background: var(--bench);
+  box-shadow: inset 0 0 0 1px var(--bench-line);
+}
+
+.gh-nav .gh-sim-tag {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: #e3b341;
+  border: 1px solid rgba(227, 179, 65, 0.45);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.gh-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.gh-item {
+  border: 1px solid var(--bench-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: var(--bench-raise);
+}
+
+.gh-item .gh-title {
+  font-weight: 600;
+  color: #e9eff5;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.gh-item .gh-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--phos-dim);
+  margin-top: 2px;
+}
+
+.gh-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 99px;
+  padding: 1px 8px;
+  border: 1px solid rgba(106, 165, 245, 0.5);
+  color: #6aa5f5;
+}
+
+.gh-status-open { color: #57c577; }
+.gh-status-closed { color: #f08a73; }
+
+.gh-item .gh-section {
+  margin-top: 8px;
+  border-top: 1px solid var(--bench-line);
+  padding-top: 8px;
+}
+
+.gh-md {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12.5px;
+  color: #dfe7ee;
+  background: var(--bench);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.gh-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.gh-run-step {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+.gh-run-log {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--phos-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 2px 0 6px 18px;
+}
+
+.gh-diff {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bench);
+  border-radius: 6px;
+  margin-top: 6px;
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.gh-diff .df-file {
+  color: #6aa5f5;
+  padding: 6px 10px 2px;
+  font-weight: 600;
+}
+
+.gh-diff .df-line {
+  padding: 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gh-diff .df-add { background: rgba(45, 164, 78, 0.14); color: #7ddf9a; }
+.gh-diff .df-del { background: rgba(209, 69, 47, 0.12); color: #f0a093; }
+.gh-diff .df-ctx { color: var(--phos-dim); }
+
+.gh-form label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.gh-form input[type="text"] {
+  background: var(--bench);
+  border: 1px solid var(--bench-line);
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 9px;
+  flex: 1;
+}
+
+.gh-empty {
+  color: var(--phos-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+/* quiz */
+
+.quiz {
+  border: 1.5px solid var(--paper-edge);
+  border-radius: 10px;
+  background: var(--paper-raise);
+  padding: 14px 18px;
+  margin: 16px 0;
+}
+
+.quiz .quiz-q {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.quiz label {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.quiz input {
+  margin-top: 3px;
+  accent-color: var(--live);
+}
+
+.quiz .quiz-result {
+  margin-top: 8px;
+  font-size: 13.5px;
+}
+
+.quiz .quiz-result.ok { color: #1a7f37; }
+.quiz .quiz-result.no { color: var(--danger); }
+
+/* rail: collapsed labs + track divider */
+
+.rail-track-divider {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--phos-dim);
+  padding: 16px 18px 2px;
+}

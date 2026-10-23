@@ -11,13 +11,19 @@ demo app).
 ### Added
 
 - **Copilot Lab Studio** (`lab-studio/`) — a browser-based guided runner for
-  Labs 01–05. A React SPA walks the learner through each lab against a
+  **all 20 labs**. A React SPA walks the learner through each lab against a
   sandboxed mini-ContosoUniversity workspace, with a terminal "bench" that
   drives a **live Copilot session via `@github/copilot-sdk`** (agents, skills,
-  instruction discovery, and MCP tool calls are real) and simulates the pieces
-  that need remote git or the plugin marketplace. Each step has a server-side
-  Verify check against actual workspace/session state. `cd lab-studio &&
-npm install --include=dev && npm start`.
+  instruction discovery, hooks, subagent delegation, and MCP tool calls are
+  real) and a **simulated GitHub tab** (issues, PRs, Actions runs, rulesets)
+  for everything that needs a remote — where the AI inside each simulated
+  workflow (PRD generation, the coding agent, code review, @copilot
+  iteration) is itself a real Copilot session. Governance labs (16, 17, 20)
+  verify authored config shapes server-side and use knowledge-check quizzes.
+  Each step has a Verify check against actual workspace/session/platform
+  state. Sandbox containment: a write-scoping permission handler plus a
+  per-workspace git repo. `cd lab-studio && npm install --include=dev &&
+npm start`.
 
 ### Changed
 
