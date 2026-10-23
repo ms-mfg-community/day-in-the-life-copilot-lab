@@ -5,10 +5,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHANNEL_NAME,
+  LIVENESS_MS,
   PRESENTER_KEY,
   PROTOCOL,
   STORAGE_KEYS,
   VERSION,
+  createPresenterSync,
+  parseSyncConfig,
   type TransportName,
 } from '../../workshop/spa/src/shell/sync';
 import { disposeScenes, scene, stateAt } from './helpers/speaker-rig';
@@ -88,4 +91,45 @@ it('QA F1: a readable opener with no presenter marker is not an opaque unidentif
     nextDisabled: s.el('speaker-next').disabled,
     reportedLoss: s.announced.some((one) => one.keep && /not synchronized/i.test(one.message)),
   }).toEqual({ index: '1', sync: 'not-synchronized', nextDisabled: false, reportedLoss: true });
+});
+
+it('QA F1 recovery: reopening an opaque speaker after liveness loss follows its owner within 500 ms', async () => {
+  // Arrange: the opaque opener reloads without a farewell. Its WindowProxy is
+  // unchanged, but the old page no longer listens or answers liveness probes.
+  const s = scene({
+    at: 1,
+    presenter: { opaque: true },
+    options: { fail: ['broadcastchannel'], timeoutMs: 1000 },
+  });
+  s.lab.throwOnCrossOrigin = true;
+  await drain();
+  expect(s.attr('data-sync-state')).toBe('synchronized');
+  s.lab.unload(s.presenterWin);
+  const reloaded = createPresenterSync({
+    window: s.presenterWin,
+    config: parseSyncConfig('', { fail: ['broadcastchannel'] }),
+    segmentIds: s.ids,
+    presenterId: 'P-reloaded',
+    snapshot: () => stateAt(s.ids, 2),
+  });
+  try {
+    await vi.advanceTimersByTimeAsync(LIVENESS_MS + 1000);
+    await drain();
+    expect(s.attr('data-sync-state')).toBe('not-synchronized');
+    expect(s.el('speaker-next').disabled).toBe(false);
+
+    // Act: the user's Present control gives the new presenter the existing
+    // named window. Its authenticated claim must work from degraded state too.
+    reloaded.setPopup(s.handle);
+    await drain();
+    await vi.advanceTimersByTimeAsync(500);
+
+    // Assert the actual script, not merely the receipt of a claim.
+    expect({ index: s.index(), sync: s.attr('data-sync-state') }).toEqual({
+      index: '2',
+      sync: 'synchronized',
+    });
+  } finally {
+    reloaded.dispose();
+  }
 });

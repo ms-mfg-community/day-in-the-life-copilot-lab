@@ -64,6 +64,20 @@ try {
   const source = readFileSync(path.join(fixture, SYNC), 'utf8');
   const plugin = readFileSync(path.join(fixture, PLUGIN), 'utf8');
 
+  unit('Round-1 boundary regressions on current code', UNIT, { failures: 0 }, ['-t', 'QA F1:']);
+  browser('Round-1 browser regressions on current code', 'QA F1 boundary:', { failures: 0 });
+  // A real pre-fix revision, not the author's report. The inert constant only
+  // satisfies the added recovery test's import; it supplies no lifecycle code.
+  const beforeRound1 = execFileSync('git', ['show', `4d78b0a:${SYNC}`], { cwd: ROOT, encoding: 'utf8' });
+  write(SYNC, `${beforeRound1}\nexport const LIVENESS_MS = 1000;\n`);
+  unit('Pre-fix round-1 owner boundaries must go red', UNIT, { code: 1, failures: 3 }, ['-t', 'QA F1:']);
+  build();
+  browser('Pre-fix round-1 browser boundaries must go red', 'QA F1 boundary:', { code: 1, failures: 3 });
+  write(SYNC, source);
+  build();
+  unit('Restored round-1 owner boundaries return green', UNIT, { failures: 0 }, ['-t', 'QA F1:']);
+  browser('Restored round-1 browser boundaries return green', 'QA F1 boundary:', { failures: 0 });
+
   unit('Current postMessage source rejection control', UNIT, { failures: 0 }, ['-t', 'foreign postmessage']);
   const guarded = 'if ((handle === null || handle === undefined || event.source !== handle) && adopt?.(event) !== true) return;';
   write(SYNC, replaceOnce(source, guarded, '// Counterfactual fixture: no event.source check.'));
