@@ -14,6 +14,7 @@ import {
   CHANNEL_NAME,
   PRESENTER_KEY,
   PROTOCOL,
+  STORAGE_KEYS,
   VERSION,
   createPresenterSync,
   createSpeakerSync,
@@ -434,5 +435,117 @@ describe('the presenter answers the question of who it is only for the window it
 
     expect(lab.sent('postmessage', reloaded.win.name)).toEqual([]);
     expect(Reflect.get(reloaded.win, PRESENTER_KEY)).toBe('P-reloaded');
+  });
+});
+
+// §2.7: a receiver ignores any message whose counter is not greater than the last one it applied. A presentation counts every message that carries a
+// state (a state, a claim, the answer to a hello) in one sequence, so for one presentation the greater counter is the later state, whichever
+// transport it comes on, and the transports do not deliver in the order that it said things in: a claim that is posted on the line can be here before
+// the answer that was given, over a channel, to the hello that went out first.
+describe('S2: what the window shows is not taken back by a state that its presentation said before it', () => {
+  // The window that opened the script window is no presentation of its own here: it says what a test has it say, and when, so that the order in
+  // which things arrive is the test's. Its marker cannot be read (a file: page), so what it says it is, on the line, is all that the window knows.
+  const FAIL_BEFORE: Record<TransportName, TransportName[]> = { broadcastchannel: [], postmessage: ['broadcastchannel'], storage: ['broadcastchannel'] };
+  const shown = (speaker: Script): number[] => speaker.states.map((state) => state.segmentIndex);
+  const said = (type: 'ack' | 'state', index: number, seq: number, session?: string) => ({ ...claimOf('P-owner', index, seq), type, ...(session === undefined ? {} : { session }) });
+
+  /** `page` says something to the script window, on a transport. The script window hears it if it holds that one, and the line is always held. */
+  function say(page: LabWindow, speaker: Script, via: Via, message: object): void {
+    if (via === 'postmessage') {
+      lab.proxy(page, speaker.win).postMessage(message, '*');
+    } else if (via === 'broadcastchannel') {
+      const channel = new page.BroadcastChannel!(CHANNEL_NAME);
+      channel.postMessage(message);
+      channel.close();
+    } else {
+      page.localStorage!.setItem(STORAGE_KEYS.toSpeaker, JSON.stringify(message));
+    }
+  }
+
+  for (const via of ['broadcastchannel', 'postmessage', 'storage'] as const) {
+    it.each([
+      ['a claim', 'lower than', 'claim', 9],
+      ['a claim', 'equal to', 'claim', 10],
+      ['an ack', 'lower than', 'ack', 9],
+      ['an ack', 'equal to', 'ack', 10],
+    ] as const)(`while the hello is out over ${via}: %s with a counter that is %s the one of the claim that is shown does not take it back`, async (_label, _order, type, counter) => {
+      // Arrange: the opener said who it is and what it shows (counter 5), and was asked by name over `via`, where no one answers yet
+      const page = lab.window('presentation-P-owner', { file: true });
+      const speaker = await openScript(page, { fail: FAIL_BEFORE[via], timeoutMs: 100 });
+      say(page, speaker, 'postmessage', claimOf('P-owner', 1, 5));
+      await drain();
+      if (via === 'storage') await elapse(100); // the hello on the line, the first that works, goes unanswered: storage is next
+      const session = speakerSent(via, 'hello').at(-1)?.session;
+      expect(session).toEqual(expect.any(String));
+      // it moved on and says so on the line (counter 10), before what it said earlier (an answer to the hello, a claim) gets here
+      say(page, speaker, 'postmessage', claimOf('P-owner', 3, 10));
+      await drain();
+      expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: via, index: 3 });
+
+      // Act
+      say(page, speaker, type === 'claim' ? 'postmessage' : via, { ...claimOf('P-owner', 2, counter), type, ...(type === 'ack' ? { session } : {}) });
+      await drain();
+
+      // Assert: the older state was not shown, and the window is still following the presentation: what it says after that is
+      expect(shown(speaker)).toEqual([1, 3]);
+      expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: via, index: 3 });
+      say(page, speaker, via, said('ack', 4, 11, session as string));
+      await drain();
+      say(page, speaker, via, said('state', 5, 12));
+      await drain();
+      expect(shown(speaker)).toEqual([1, 3, 4, 5]);
+      expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: via, index: 5 });
+    });
+  }
+
+  it('not synchronized: a claim that is not newer than the one that was shown is not shown, and nothing is asked again for it; a newer one is', async () => {
+    // Arrange: a presentation claimed the window and showed segment 3 (counter 10), and then did not answer the hello on any transport
+    const page = lab.window('presentation-P-owner', { file: true });
+    const speaker = await openScript(page, { timeoutMs: 100 });
+    say(page, speaker, 'postmessage', claimOf('P-owner', 3, 10));
+    await elapse(500);
+    expect(speaker.shows()).toEqual({ sync: 'not-synchronized', transport: null, index: 3 });
+    const asked = speakerSent('broadcastchannel', 'hello').length;
+
+    // Act: what it said before (counter 9), and what it said again (counter 10), reach the window that is not synchronized
+    say(page, speaker, 'postmessage', claimOf('P-owner', 2, 9));
+    say(page, speaker, 'postmessage', claimOf('P-owner', 4, 10));
+    await elapse(100);
+
+    // Assert: neither was shown, and neither made the window ask again
+    expect(shown(speaker)).toEqual([3]);
+    expect(speaker.shows()).toEqual({ sync: 'not-synchronized', transport: null, index: 3 });
+    expect(speakerSent('broadcastchannel', 'hello')).toHaveLength(asked);
+
+    // and one that is newer is shown at once, and the presentation is asked for its state again, by name
+    say(page, speaker, 'postmessage', claimOf('P-owner', 5, 11));
+    await drain();
+    expect(shown(speaker)).toEqual([3, 5]);
+    expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: 'postmessage', index: 5 });
+    expect(speakerSent('broadcastchannel', 'hello').map((hello) => hello.to)).toEqual(Array<string>(asked + 1).fill('P-owner'));
+  });
+
+  it('a presentation that takes the window counts for itself: it is followed whatever its counters are, and the one before it is not followed again', async () => {
+    // Arrange: the first presentation claimed the window with a high counter, and is being asked
+    const first = lab.window('presentation-P-first', { file: true });
+    const speaker = await openScript(first, { timeoutMs: 1000 });
+    say(first, speaker, 'postmessage', claimOf('P-first', 4, 500));
+    await drain();
+    expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: 'postmessage', index: 4 });
+
+    // Act: another presentation opens the window by its name (the browser makes it the opener), and counts from one
+    const second = lab.window('presentation-P-second', { file: true });
+    speaker.win.opener = lab.proxy(speaker.win, second);
+    lab.proxy(second, speaker.win).postMessage(claimOf('P-second', 2, 1), '*');
+    await drain();
+
+    // Assert: it is shown, and asked by name, and its answer is taken, and the first one's counters are nothing to it
+    expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: 'postmessage', index: 2 });
+    expect(speakerSent('broadcastchannel', 'hello').map((hello) => hello.to)).toEqual(['P-first', 'P-second']);
+    const session = speakerSent('broadcastchannel', 'hello').at(-1)?.session;
+    say(second, speaker, 'broadcastchannel', { ...claimOf('P-second', 3, 2), type: 'ack', session });
+    await drain();
+    expect(shown(speaker)).toEqual([4, 2, 3]);
+    expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: 'broadcastchannel', index: 3 });
   });
 });
