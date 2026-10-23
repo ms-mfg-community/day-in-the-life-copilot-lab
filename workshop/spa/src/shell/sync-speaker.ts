@@ -24,11 +24,12 @@
 //             takes it in every phase and over whatever transport it holds, from its opener alone, if that window is what it says it is: where the
 //             name on it can be read it is the claimant's (a window that can be read and carries none is no owner), and where it cannot be read
 //             the sender is the whole of the proof. It then shows the state of the claim at once and is `synchronized`, follows that presentation from
-//             then on, forgets the counters of the one before and says hello to it, by name, on the transport it holds or, where it holds none (it
-//             had given up), on the first that works, and the presentation answers and publishes: the 500 ms of AC9, also for a presentation that
-//             was reloaded and a window that was not synchronized. If the new owner does not answer, it looks again, in the open. Over
-//             BroadcastChannel and `storage`, where any window of the origin can write and none is known to have, a claim is believed in nothing
-//             it says: it is a hint to look at who owns this window (`nudge`), and the owner is what the window says, and what it says to a hello.
+//             then on and says hello to it, by name, on the transport it holds or, where it holds none (it had given up), on the first that works,
+//             and the presentation answers and publishes: the 500 ms of AC9, also for a presentation that was reloaded and a window that was not
+//             synchronized. If the new owner does not answer, it looks again, in the open. The state that a claim shows is also where the counting
+//             starts (see "Order"). Over BroadcastChannel and `storage`, where any window of the origin can write and none is known to have, a claim
+//             is believed in nothing it says: it is a hint to look at who owns this window (`nudge`), and the owner is what the window says, and
+//             what it says to a hello.
 //
 //   bye       A presentation that is closed or reloaded (`pagehide` of a page that is not kept for later) says goodbye on the transports it
 //             was answered on, and the script window that follows it becomes `not-synchronized` at once. A goodbye from any other presentation
@@ -54,6 +55,14 @@
 //             Where presentations name themselves, a hello always names one: a window with no name (a page that is loading) is waited on. Where
 //             they cannot be read, the opener is asked first (`identity`), and a hello that names no one is sent only where postMessage is forced to
 //             fail and there is no one to ask.
+//
+// Order. Every number that orders what a presentation says is a counter that only goes up (2.7), and the window keeps the last one that it showed
+// of the presentation that owns it, in every phase and not only while it is paired: the state of a claim sets it from the moment it is shown, and so
+// does the answer to a hello. What is not greater than it is not shown. A claim that is not newer than what is on the surface still says who the
+// opener is, and nothing else: it is not shown and nothing is asked again for it. The answer to a hello that was said before a newer claim, and
+// arrives after it, completes the handshake (the window is paired, and follows what comes next) and takes nothing back. A presentation that is not
+// the one that owns the window counts from nothing, however low its numbers are: that is how a window that was handed to another presentation, or
+// whose presentation was reloaded (a new one, which starts again from one), follows its new owner at once.
 //
 // Known limits. Where postMessage is forced to fail there is no line, and a script window whose opener cannot be read has no one to name: it takes
 // the first presentation that answers, and asks that one alone to move. One opened by hand has no opener, so no presentation can claim it: it follows
@@ -206,6 +215,13 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     return { handle, key, owner: key ?? learned?.key ?? null };
   };
   const sameIdentity = (a: Identity, b: Identity): boolean => a.handle === b.handle && a.key === b.key;
+  /**
+   * Whether a state that the presentation `from` said under the counter `seq` is newer than the last one this window applied (2.7: a counter that
+   * is not greater than the last one is ignored). `presenter` and `lastSeq` are that last one, kept in every phase and not only while paired: a
+   * claim that is shown while the window is looking, or is not synchronized, sets them, and so does the answer to a hello. The counters are the
+   * presentation's own, so another presentation (one that took the window by its name) starts again from nothing, however low its numbers are.
+   */
+  const newer = (from: string, seq: number): boolean => from !== presenter || seq > lastSeq;
   const nextSession = (): string => {
     handshakes += 1;
     return options.sessionId === undefined ? randomId() : `${options.sessionId}-${handshakes}`;
@@ -365,12 +381,17 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     probeFrom(TRANSPORTS.indexOf(attempt.name) + 1);
   }
 
-  /** The presentation answered the hello: the speaker follows it, over the transport it answered on. */
+  /**
+   * The presentation answered the hello: the speaker follows it, over the transport it answered on. The answer is a state like any other, and is
+   * shown only if it is newer than the last one that was (`newer`): a claim of the same presentation that came on the line while the hello was
+   * out is, if the presentation moved after it answered, and then the answer completes the handshake and changes nothing that is shown.
+   */
   function settle(attempt: NonNullable<typeof held>, from: string, seq: number, state: SyncState): void {
     if (attempt.timer !== undefined) clearTimeout(attempt.timer);
     attempt.timer = undefined;
+    const shown = newer(from, seq);
     presenter = from;
-    lastSeq = seq;
+    if (shown) lastSeq = seq;
     requests = 0;
     pairing = attempt.identity;
     openerNames = pairing.key !== null;
@@ -379,7 +400,7 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     record(attempt.name, 'synchronized');
     silent = false;
     synchronized(attempt.name);
-    options.onState(state);
+    if (shown) options.onState(state);
     heard();
     arm();
     if (pendingMove === null) return;
@@ -488,6 +509,11 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
       return;
     }
     learned = readable ? null : { handle, key: from };
+    // the state that is shown is the watermark of this presentation, from the moment it is shown (2.7): a claim that is not newer than the last one, or the
+    // answer to a hello that is out and was said before it, does not take it back; and nothing is asked again for it
+    if (!newer(from, seq)) return;
+    presenter = from;
+    lastSeq = seq;
     const out = phase === 'probing' ? held : null;
     if (out !== null && (out.identity.owner === from || (out.identity.owner === null && out.name === 'postmessage'))) {
       // the handshake that is out is with this presentation: it was asked by name, or on the line, where only the window that opened this one can
@@ -504,8 +530,6 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     silent = false;
     trail = [];
     tried = null;
-    presenter = '';
-    lastSeq = 0;
     requests = 0;
     idleMs = 0;
     retryMs = RETRY_MS;

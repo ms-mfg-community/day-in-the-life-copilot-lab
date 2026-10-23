@@ -14,12 +14,14 @@
 //                     it opens it again after the surface stopped following it, or, where the window that opened it can be read, when
 //                     the one that followed is reloaded in place (the name on that window changes), the surface follows that one, shows
 //                     what it shows at once and moves to what it says within the 500 ms of AC9, and asks only the one that owns the
-//                     window now to move. Where the window that opened it cannot be read (a page from a file: URL) the same line is how
-//                     it learns which presentation that is, before it takes the word of any other that answers on a channel that says
-//                     nothing of who sent it; one that was reloaded in place there holds no handle to this window and cannot say, so the
-//                     surface finds it gone and waits for it to open the window again. When the presentation leaves (goodbye, closed,
-//                     reloaded away), or cannot be looked at and does not say that it is there when it is asked (sync-speaker.ts,
-//                     `liveness`), the surface stops saying it.
+//                     window now to move. What it shows is not taken back by anything that the presentation said before it: a state, a
+//                     claim or the answer to a hello whose counter is not greater than the last one shown is not shown (2.7). Where the
+//                     window that opened it cannot be read (a page from a file: URL) the same line is how it learns which presentation
+//                     that is, before it takes the word of any other that answers on a channel that says nothing of who sent it; one
+//                     that was reloaded in place there holds no handle to this window and cannot say, so the surface finds it gone and
+//                     waits for it to open the window again. When the presentation leaves (goodbye, closed, reloaded away), or cannot be
+//                     looked at and does not say that it is there when it is asked (sync-speaker.ts, `liveness`), the surface stops
+//                     saying it.
 //   not-synchronized  nothing answered (AC10), every transport was forced to fail, or the presentation it followed is gone. This is a
 //                     state of its own, not a broken page: the surface says so, announces it in the status region (as a kept message, which
 //                     the announcement of a segment that follows does not replace), and its controls move the script by themselves. It

@@ -36,7 +36,8 @@
 //
 // What goes over a transport is presentation state and nothing else (a segment, a reveal count, the timer), in envelopes of
 // `{ app, v, type, from, ... }`. Every number that orders them is a counter that only goes up: a state is applied only if its
-// counter is greater than the last one applied, so a stale or a duplicate one does nothing. Everything that arrives is
+// counter is greater than the last one applied, so a stale or a duplicate one does nothing. That holds for the script window in every phase and
+// for everything that carries a state: a state, a claim and the answer to a hello alike (./sync-speaker.ts, "Order"). Everything that arrives is
 // validated; nothing that arrives is trusted to have the shape it should.
 //
 // Failures can be forced, one transport at a time or all of them (`sync-fail=broadcastchannel,postmessage,storage|all` in the
