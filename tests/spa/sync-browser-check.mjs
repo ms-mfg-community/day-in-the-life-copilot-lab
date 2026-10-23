@@ -1457,9 +1457,9 @@ async function withFiles(run) {
   }
 }
 
-async function openFilePresenter(context) {
+async function openFilePresenter(context, query = '') {
   const page = await context.newPage();
-  await page.goto(`${portableUrl()}#/${IDS[0]}`);
+  await page.goto(`${portableUrl()}${query === '' ? '' : `?${query}`}#/${IDS[0]}`);
   await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
   return observed(page);
 }
@@ -1470,8 +1470,8 @@ const leaveFullscreen = (page) =>
     if (document.fullscreenElement !== null) await document.exitFullscreen();
   });
 
-async function presentFile(context) {
-  const page = await openFilePresenter(context);
+async function presentFile(context, query = '') {
+  const page = await openFilePresenter(context, query);
   const popup = await openScript(page);
   await leaveFullscreen(page);
   return { page, popup };
@@ -1642,5 +1642,121 @@ test('J1 file: P6 a presentation that is closed stops being followed: the script
     const shown = await facts(popup);
     assert.equal(shown.transport, 'none');
     assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], "Previous and Next are the speaker's own");
+  });
+});
+
+test('QA claim ordering: a delayed real BroadcastChannel ack cannot rewind the newer opener claim', async () => {
+  await withSession({}, async (context) => {
+    // STUB: hold only the first acknowledgement at the receiver. This models
+    // different delivery times for BroadcastChannel and postMessage, rather than
+    // inventing an acknowledgement or a presenter identity. Everything sent is
+    // produced by the built presenter and carried by the browser's real APIs.
+    await context.addInitScript(() => {
+      const Channel = window.BroadcastChannel;
+      window.BroadcastChannel = class extends Channel {
+        constructor(name) {
+          super(name);
+          this.addEventListener('message', (event) => {
+            const data = event.data;
+            if (location.hash !== '#/script' || data?.app !== 'teaching-spa-sync' || data.type !== 'ack') return;
+            if (!window.__qaReleaseAck) {
+              window.__qaHeldAck = data;
+              event.stopImmediatePropagation();
+            } else {
+              window.__qaDeliveredAck = true;
+            }
+          });
+        }
+      };
+    });
+    const { page, popup } = await present(context, 'sync-timeout=4000');
+    await waitFor(popup, () => !!window.__qaHeldAck);
+    const olderAck = await popup.evaluate(() => window.__qaHeldAck);
+    assert.equal(olderAck.state.segmentIndex, 0, 'the held ack is the actual initial presentation state');
+    assert.equal((await facts(popup)).sync, 'connecting', 'the original handshake is still awaiting that acknowledgement');
+
+    await go(page, IDS[2]);
+    await leaveFullscreen(page);
+    await presentAgain(page);
+    await waitFor(popup, () => document.getElementById('speaker-script').getAttribute('data-segment-index') === '2');
+    assert.equal((await facts(popup)).sync, 'synchronized', 'the authenticated current-opener claim was applied');
+
+    await popup.evaluate(() => { window.__qaReleaseAck = true; });
+    await page.evaluate((ack) => {
+      const channel = new BroadcastChannel('teaching-spa-sync');
+      channel.postMessage(ack);
+      channel.close();
+    }, olderAck);
+    await waitFor(popup, () => window.__qaDeliveredAck === true);
+    const shown = await facts(popup);
+    assert.deepEqual(
+      { sync: shown.sync, index: shown.index },
+      { sync: 'synchronized', index: '2' },
+      'the initial ack predates the claim: §2.7 requires its older counter to be ignored, not to show the old script as synchronized',
+    );
+  });
+});
+
+// S2 of the second round over a REAL file: URL, where the script window cannot read its opener (J1) and so learns who the opener is from
+// the first claim it gets from it. QA claim ordering above is the same case over http, where the opener is readable. The claim of a
+// second Present is the newest thing that the script window knows of the presentation; the answer to the hello that was said before it,
+// and arrives after it, must not take the window back to the state that the presentation was in then (2.7: a message whose counter is
+// not greater than the last one applied is ignored). Nothing is invented: both the claim and the answer are the presentation's own.
+test('S2 file: the answer to a hello that was said before a newer claim does not take the script window back, and the window goes on following', async () => {
+  await withFiles(async (context) => {
+    // STUB: the first acknowledgement is held at the script window, as in QA claim ordering, so that it arrives after the claim, as it would
+    // from a slower transport. The page of the presentation is not touched.
+    await context.addInitScript(() => {
+      const Channel = window.BroadcastChannel;
+      window.BroadcastChannel = class extends Channel {
+        constructor(name) {
+          super(name);
+          this.addEventListener('message', (event) => {
+            const data = event.data;
+            if (location.hash !== '#/script' || data?.app !== 'teaching-spa-sync' || data.type !== 'ack') return;
+            if (!window.__releaseAck) {
+              window.__heldAck = data;
+              event.stopImmediatePropagation();
+            } else {
+              window.__deliveredAck = true;
+            }
+          });
+        }
+      };
+    });
+    const { page, popup } = await presentFile(context, 'sync-timeout=4000');
+    await waitFor(popup, () => !!window.__heldAck);
+    const older = await popup.evaluate(() => window.__heldAck);
+    assert.equal(older.state.segmentIndex, 0, 'the held acknowledgement is what the presentation said first: it is on segment 0');
+
+    await go(page, IDS[2]);
+    await presentAgain(page);
+    await waitFor(popup, () => document.getElementById('speaker-script').getAttribute('data-segment-index') === '2');
+    assert.equal((await facts(popup)).sync, 'synchronized', 'the claim of the presentation that opened the window is shown at once');
+
+    await popup.evaluate(() => {
+      window.__releaseAck = true;
+    });
+    await page.evaluate((ack) => {
+      const channel = new BroadcastChannel('teaching-spa-sync');
+      channel.postMessage(ack);
+      channel.close();
+    }, older);
+    await waitFor(popup, () => window.__deliveredAck === true);
+    await sleep(BUDGET_MS);
+    const shown = await facts(popup);
+    assert.deepEqual(
+      { sync: shown.sync, index: shown.index },
+      { sync: 'synchronized', index: '2' },
+      'the answer that was said before the claim is older than it: its counter is not greater, so it is not shown',
+    );
+    const seen = await segmentsShown(popup);
+    assert.deepEqual(
+      seen.slice(seen.indexOf('2')).filter((index) => index !== '2'),
+      [],
+      `the script surface never went back from segment 2: ${seen.join(' ')}`,
+    );
+    // The handshake did complete, and over the working transport: the window follows the presentation again, within the budget of AC9.
+    await advanceTo(page, popup, IDS[3]);
   });
 });

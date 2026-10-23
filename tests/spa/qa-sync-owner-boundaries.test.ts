@@ -133,3 +133,57 @@ it('QA F1 recovery: reopening an opaque speaker after liveness loss follows its 
     reloaded.dispose();
   }
 });
+
+// §2.7 applies the counter rule to every state-bearing message, including a
+// claim heard on the persistent line while a transport handshake is still out.
+// Model the cross-transport ordering explicitly: the owner says its NEW state
+// on postMessage before an older acknowledgement arrives on the held transport.
+describe('QA claim ordering: an authenticated state cannot be rewound during a handshake', () => {
+  for (const via of ['broadcastchannel', 'postmessage', 'storage'] as const) {
+    it.each([['claim', 9], ['claim', 10], ['ack', 9], ['ack', 10]] as const)(
+      `keeps the newer opener claim when a %s with counter %s arrives while probing ${via}`,
+      async (lateType, counter) => {
+        // Arrange: the real presenter owns the marker but does not answer.
+        // Leave postMessage enabled on the speaker even when probing storage:
+        // its independent opener line must remain open after that probe times out.
+        const s = scene({
+          presenterOptions: { fail: 'all' },
+          options: { fail: via === 'broadcastchannel' ? [] : ['broadcastchannel'], timeoutMs: 100 },
+        });
+        if (via === 'storage') await vi.advanceTimersByTimeAsync(100);
+        await drain();
+        const hello = s.lab.sent(via, 'speaker').filter((message) => message.type === 'hello').at(-1);
+        expect(hello?.session).toEqual(expect.any(String));
+        const presenter = String(Reflect.get(s.presenterWin, PRESENTER_KEY));
+        const newer = { ...claim(presenter, stateAt(s.ids, 2, { revealedSteps: 7 })), seq: 10 };
+        const line = s.lab.proxy(s.presenterWin, s.speakerWin);
+        line.postMessage(newer, 'https://spa.test');
+        await drain();
+        expect({ index: s.index(), sync: s.attr('data-sync-state') }).toEqual({ index: '2', sync: 'synchronized' });
+
+        // Act: an actual opener message, not a foreign sender or invalid input.
+        const older = {
+          ...claim(presenter, stateAt(s.ids, 1)),
+          type: lateType, session: hello!.session, seq: counter,
+        };
+        if (lateType === 'claim' || via === 'postmessage') {
+          line.postMessage(older, 'https://spa.test');
+        } else if (via === 'broadcastchannel') {
+          const channel = new s.presenterWin.BroadcastChannel!(CHANNEL_NAME);
+          channel.postMessage(older);
+          channel.close();
+        } else {
+          s.presenterWin.localStorage!.setItem(STORAGE_KEYS.toSpeaker, JSON.stringify(older));
+        }
+        await drain();
+
+        // Assert the script DOM, not a received-message log or a status alone.
+        expect({
+          index: s.index(),
+          reveal: s.attr('data-revealed-steps'),
+          sync: s.attr('data-sync-state'),
+        }).toEqual({ index: '2', reveal: '7', sync: 'synchronized' });
+      },
+    );
+  }
+});
