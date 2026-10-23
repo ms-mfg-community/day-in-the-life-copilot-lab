@@ -120,6 +120,33 @@ been through CI yet, so treat the first build on your engine as a smoke test.
 | `LAB_STUDIO_HOST`                   | `127.0.0.1` | Bind address; set `0.0.0.0` to serve the network (see warning above)          |
 | `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` | —           | Fine-grained PAT with **Copilot Requests**; overrides the logged-in-user auth |
 
+### Keeping content in sync with labs/\*.md
+
+Studio lab content is an **adaptation** of the workshop's `labs/*.md`, not a
+build artifact — each markdown lab has a hand-authored counterpart in
+`client/src/labs/labNN.tsx`, coupled to verify checks (`server/src/verify.ts`)
+and the sandbox template. Nothing regenerates automatically; instead the sync
+is detected deterministically and repaired agentically:
+
+```bash
+npm run drift            # exit 1 + report when any labs/*.md changed since last sync
+npm run drift:accept     # record the current sources as in-sync (after updating the studio)
+```
+
+When drift is reported, the repo ships maintainer tooling for the repair —
+run it from the **repository root** with the real Copilot CLI:
+
+```bash
+copilot --agent lab-studio-maintainer \
+  -p "Sync Lab Studio with the lab markdown changes" --allow-all-tools
+```
+
+The `lab-studio-maintainer` agent (`.github/agents/`) follows the
+`lab-studio-sync` skill (`.github/skills/`), which encodes the file mapping,
+the sandbox adaptation rules (dotnet → Node mini-workspace translations), the
+live-vs-simulated boundary, step/verify conventions, and the prove-it steps
+(typecheck + tests) before `drift:accept`.
+
 ### Updating / resetting
 
 - Pull new code → `npm install --include=dev && npm start` again (the client

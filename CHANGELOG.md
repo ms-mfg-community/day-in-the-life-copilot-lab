@@ -24,6 +24,12 @@ demo app).
   state. Sandbox containment: a write-scoping permission handler plus a
   per-workspace git repo. `cd lab-studio && npm install --include=dev &&
 npm start`.
+- **Lab Studio sync tooling** — deterministic drift detection between
+  `labs/*.md` and the studio's adapted content (`npm run drift` /
+  `npm run drift:accept` against a hash baseline in
+  `lab-studio/lab-sources.json`), plus a `lab-studio-maintainer` custom
+  agent and `lab-studio-sync` skill in `.github/` that encode the
+  markdown-to-studio adaptation rules for agent-assisted repair.
 
 ### Changed
 
