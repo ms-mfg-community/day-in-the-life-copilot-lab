@@ -148,7 +148,13 @@ export class CopilotBridge {
 
   private async ensureClient(): Promise<CopilotClient> {
     if (!this.client) {
-      this.client = new CopilotClient({ logLevel: "error" });
+      // Headless machines can authenticate with a fine-grained PAT carrying the
+      // "Copilot Requests" permission instead of a one-time `copilot login`.
+      const token = process.env.COPILOT_GITHUB_TOKEN ?? process.env.GH_TOKEN;
+      this.client = new CopilotClient({
+        logLevel: "error",
+        ...(token ? { gitHubToken: token } : {}),
+      });
       await this.client.start();
     }
     return this.client;

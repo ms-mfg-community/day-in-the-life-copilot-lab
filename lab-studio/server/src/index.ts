@@ -11,6 +11,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = resolve(here, "..", "..", "client", "dist");
 
 const PORT = Number(process.env.LAB_STUDIO_PORT ?? 5180);
+// Loopback by default: the studio is single-user and unauthenticated, and its
+// terminal drives a live Copilot session. Opt into a network bind (e.g. inside
+// a container or behind a reverse proxy) with LAB_STUDIO_HOST=0.0.0.0.
+const HOST = process.env.LAB_STUDIO_HOST ?? "127.0.0.1";
 
 const app = Fastify({ logger: { level: "warn" } });
 
@@ -29,8 +33,15 @@ if (existsSync(clientDist)) {
 
 ensureSandbox();
 
-await app.listen({ port: PORT, host: "127.0.0.1" });
+await app.listen({ port: PORT, host: HOST });
 console.log(`\n  Copilot Lab Studio server → http://localhost:${PORT}\n`);
+if (HOST !== "127.0.0.1" && HOST !== "localhost") {
+  console.log(
+    `  ⚠ Bound to ${HOST} — the studio has no authentication and runs a live\n` +
+      `    Copilot session with tool access on this machine. Only expose it on\n` +
+      `    networks you trust, or put it behind an authenticating proxy/VPN.\n`,
+  );
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {

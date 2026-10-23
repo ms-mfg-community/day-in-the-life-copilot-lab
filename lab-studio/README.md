@@ -1,16 +1,16 @@
 # Copilot Lab Studio
 
-Run **labs 01–05** of the _Everything GitHub Copilot_ workshop entirely in the
+Run **all 20 labs** of the _Everything GitHub Copilot_ workshop entirely in the
 browser — a guided SPA with a **live GitHub Copilot session** on the right-hand
 "bench", driven through the official [`@github/copilot-sdk`](https://www.npmjs.com/package/@github/copilot-sdk).
 
 ![layout](./docs/layout.png)
 
-| Pane                | What it is                                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Rail** (left)     | Labs 01–05 with per-step punch-holes that fill green as steps verify                                        |
-| **Manual** (center) | The teaching content — prose, concept tables, and action cards                                              |
-| **Bench** (right)   | A terminal that emulates the Copilot CLI against a sandboxed workspace, plus a Files tab with a live editor |
+| Pane                | What it is                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rail** (left)     | Labs 01–20 with per-step punch-holes that fill green as steps verify                                                                                  |
+| **Manual** (center) | The teaching content — prose, concept tables, and action cards                                                                                        |
+| **Bench** (right)   | A terminal that emulates the Copilot CLI against a sandboxed workspace, a Files editor, and the simulated GitHub tab (issues, PRs, Actions, settings) |
 
 Everything **blue is real**: prompts, custom agents, skills (including
 auto-activation via the `skill.invoked` event), instruction discovery, and MCP
@@ -22,25 +22,112 @@ server-side.
 
 ## Prerequisites
 
-- Node.js 22+
-- Copilot CLI authenticated **once** on this machine: `npm i -g @github/copilot && copilot login`
-  (the studio reuses that login through the SDK — it never asks for credentials)
+| Requirement                                     | Why                                                   | Check            |
+| ----------------------------------------------- | ----------------------------------------------------- | ---------------- |
+| **Node.js 22+**                                 | runs the server and the bundled Copilot SDK runtime   | `node --version` |
+| **git**                                         | the sandbox workspace is its own git repository       | `git --version`  |
+| **Copilot auth** (one of the two options below) | the live sessions bill against a real Copilot license | —                |
 
-## Run it
+**Copilot auth, pick one:**
+
+1. **Interactive machine (simplest):** sign in once with the Copilot CLI —
+   `npm i -g @github/copilot && copilot login`. The studio reuses that login
+   through the SDK forever after; it never asks for credentials itself.
+2. **Headless server / container:** set `COPILOT_GITHUB_TOKEN` (or `GH_TOKEN`)
+   to a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new)
+   with the **Copilot Requests** permission. No CLI install needed — the SDK
+   ships its own runtime.
+
+> Auth is only exercised when the first session starts (type `copilot` in the
+> bench terminal, or run any blue "live" card). The app itself boots without it.
+
+## Build & launch
+
+There is no database and no external service — the whole deployment is: install
+dependencies, build the static client, run one Node process. State lives in
+`.sandbox/` (disposable) and the browser's localStorage (progress).
+
+### On your computer
 
 ```bash
-cd lab-studio
-npm install --include=dev   # --include=dev matters if your npm config sets omit=dev
-npm start                   # builds the client, serves everything at http://localhost:5180
+git clone <this repo> && cd day-in-the-life-copilot-lab/lab-studio
+npm install --include=dev   # --include=dev matters only if your npm config sets omit=dev
+npm start                   # builds the client, serves app + API at http://localhost:5180
 ```
 
-For development (hot reload):
+Open **http://localhost:5180** — that's it. First build takes ~1 minute
+(mostly `npm install`); after that, `npm start` is a few seconds of Vite build
+plus server boot.
+
+For development with hot reload:
 
 ```bash
-npm run dev                 # server on :5180, Vite client on :5190
+npm run dev                 # server on :5180, Vite client with HMR on :5190
 ```
 
 Other commands: `npm test` (server unit tests) · `npm run typecheck`.
+
+### On a server
+
+Same two commands, plus auth and (optionally) a network bind:
+
+```bash
+cd lab-studio && npm install --include=dev
+COPILOT_GITHUB_TOKEN=<fine-grained PAT> \
+LAB_STUDIO_HOST=0.0.0.0 \
+LAB_STUDIO_PORT=5180 \
+npm start
+```
+
+Run it under your process manager of choice (systemd, pm2, a tmux pane) — it's
+one long-lived process. Two things to know before exposing it:
+
+- **One instance = one learner.** There is a single sandbox workspace and a
+  single Copilot session per server. For a workshop, run one instance per
+  attendee (distinct ports or containers), not one shared URL.
+- **It binds loopback by default on purpose.** The studio has no
+  authentication, and its terminal drives a live Copilot session with tool
+  access on the host. Setting `LAB_STUDIO_HOST=0.0.0.0` prints a warning —
+  only do it on a trusted network or behind an authenticating reverse
+  proxy/VPN.
+
+### In a container
+
+A `Dockerfile` ships in this directory (one container = one learner):
+
+```bash
+cd lab-studio
+docker build -t lab-studio .
+
+# auth via token:
+docker run --rm -p 5180:5180 -e COPILOT_GITHUB_TOKEN=<PAT> lab-studio
+
+# or reuse an existing `copilot login` from the host:
+docker run --rm -p 5180:5180 -v ~/.copilot:/root/.copilot lab-studio
+```
+
+The image installs git + bash (the sandbox and hook scripts need them), builds
+the client, and starts the server bound to `0.0.0.0` inside the container —
+publish the port only where you'd accept the network-bind caveat above. The
+build steps mirror the npm path verified on macOS; the image itself hasn't
+been through CI yet, so treat the first build on your engine as a smoke test.
+
+### Environment variables
+
+| Variable                            | Default     | Effect                                                                        |
+| ----------------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `LAB_STUDIO_PORT`                   | `5180`      | HTTP port for app + API                                                       |
+| `LAB_STUDIO_HOST`                   | `127.0.0.1` | Bind address; set `0.0.0.0` to serve the network (see warning above)          |
+| `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` | —           | Fine-grained PAT with **Copilot Requests**; overrides the logged-in-user auth |
+
+### Updating / resetting
+
+- Pull new code → `npm install --include=dev && npm start` again (the client
+  rebuild is part of `npm start`).
+- The **reset workspace** button in the app's rail restores the sandbox to its
+  template state; deleting `.sandbox/` by hand does the same on next boot.
+- Existing sandboxes pick up newly shipped template files automatically on
+  server start, without touching learner-edited files.
 
 ## How it works
 
