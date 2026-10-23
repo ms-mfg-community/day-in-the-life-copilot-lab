@@ -244,8 +244,8 @@ function world(o: WorldOptions = {}) {
   return { lab, config, present, listen, open, bare, reopen, take, reload, vanish, within, hellos, forge };
 }
 
-/** Two presentations of one origin, A and B, and the script window that A opened, started: over `via`, the first transport standing. */
-function paired(via: TransportName, o: { twoWay?: boolean } = {}) {
+/** Two presentations of one origin, A and B, and the script window that A opened, started: over `via`, the first transport standing (or, with `fail`, whichever are left). */
+function paired(via: TransportName, o: { twoWay?: boolean; fail?: readonly TransportName[] } = {}) {
   const w = world({ fail: ONLY[via], ...o });
   const a = w.present('A');
   const b = w.present('B');
@@ -384,7 +384,8 @@ describe.each(TRANSPORTS)('a presentation that is handed the script window that 
       ? 'takes a claim from the owner it follows for a state, where the window that posted it is the window that owns the script window: no handshake, and no word about it'
       : 'does not take a claim from the owner it follows for a state, where nothing says who sent it: it is in step already, and it asks no one and says nothing',
     async () => {
-      const { w, a, b, s } = paired(via);
+      // over a shared transport it stands alone: a claim that comes on the line as well, from the window that owns the script window, is the next test
+      const { w, a, b, s } = via === 'postmessage' ? paired(via) : paired(via, { fail: ALONE[via] });
       await drain();
       w.take(s, b);
       await drain();
@@ -459,6 +460,28 @@ describe.each(TRANSPORTS)('a presentation that is handed the script window that 
     a.show(at(1));
     await drain();
     expect(s.states.at(-1)).toEqual(at(2));
+  });
+});
+
+// the line to the opener is open for as long as the script window runs, so a claim that the presentation it follows puts on it is heard whatever the held transport is
+describe('a script window that follows a presentation over BroadcastChannel, with the line to its opener open as well', () => {
+  it('takes the claim that the owner puts on the line for a state, though BroadcastChannel is what it follows it on: no handshake, and no word about it', async () => {
+    const { w, a, b, s } = paired('broadcastchannel');
+    await drain();
+    w.take(s, b);
+    await drain();
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: 'broadcastchannel' });
+    const said = s.statuses.length;
+    const asked = w.hellos(s).length;
+
+    b.shown.value = at(2);
+    b.sync.setPopup(w.lab.proxy(b.win, s.win)); // opened again, by name, from the presentation it follows: the claim goes over BroadcastChannel and over postMessage
+    await drain();
+    expect(s.states.at(-1)).toEqual(at(2)); // the one that came on the line is believed, and the one on BroadcastChannel is a hint that adds nothing
+    expect(w.hellos(s)).toHaveLength(asked);
+    expect(s.statuses).toHaveLength(said);
+    expect(s.speaker.status).toMatchObject({ state: 'synchronized', transport: 'broadcastchannel' });
+    expect(a.moves).toEqual([]);
   });
 });
 
@@ -679,7 +702,7 @@ describe('a claim in an opaque origin, where the name on the opener cannot be re
 // -- 3. a presentation that goes away ------------------------------------------------------------------------------------------
 
 describe.each(TRANSPORTS)('a presentation that goes away, over %s', (via) => {
-  it('says goodbye, and the script window is not synchronized at once, with nothing held open and no one asked', async () => {
+  it('says goodbye, and the script window is not synchronized at once, with nothing held open but the line to its opener, and no one asked', async () => {
     const { w, a, s } = paired(via);
     await drain();
     a.sync.dispose();
@@ -687,7 +710,7 @@ describe.each(TRANSPORTS)('a presentation that goes away, over %s', (via) => {
     expect(s.speaker.status).toMatchObject({ state: 'not-synchronized', transport: null });
     expect(s.kinds()).toEqual(['connecting', 'synchronized', 'not-synchronized']);
     expect(w.lab.openChannels()).toBe(via === 'broadcastchannel' ? 1 : 0); // what is left is B's own channel: the script window and A hold none
-    expect(s.win.listenerCount('message')).toBe(0);
+    expect(s.win.listenerCount('message')).toBe(via === 'storage' ? 0 : 1); // the line to its opener stays, wherever postMessage is not forced to fail: it is how the owner is heard
     expect(s.win.listenerCount('storage')).toBe(0);
 
     await vi.advanceTimersByTimeAsync(60_000); // the window that named itself is gone: there is no one to ask, so no one is
@@ -1356,6 +1379,8 @@ describe('a script window that cannot look at the window of the presentation it 
   it('never flaps for a presentation that is only idle: it answers every question, however long the window waits', async () => {
     const { w, a, s } = sealed();
     await drain();
+    const given = s.states.length; // what the handshake gave: the questions that follow add nothing to it
+    expect(given).toBeGreaterThanOrEqual(1);
     for (const wait of [500, 1000, 2500, 30_000]) {
       await vi.advanceTimersByTimeAsync(wait);
       await drain();
@@ -1368,7 +1393,7 @@ describe('a script window that cannot look at the window of the presentation it 
     expect(asked.length).toBeLessThanOrEqual(35);
     expect(answered).toHaveLength(asked.length);
     expect(w.hellos(s)).toHaveLength(1);
-    expect(s.states).toHaveLength(1); // nothing was said that is a state: a question changes nothing
+    expect(s.states).toHaveLength(given); // nothing was said that is a state: a question changes nothing
     a.show(at(2));
     await drain();
     expect(s.states.at(-1)).toEqual(at(2)); // and it still follows, after all that time

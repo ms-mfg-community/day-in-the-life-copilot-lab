@@ -18,7 +18,7 @@
 // BroadcastChannel, and the iframe that posts a message that is not from the opener. Everything else goes through to the browser.
 // Only the browser named by SPA_QA_BROWSER_TYPE is exercised; nothing here speaks for the other engines.
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import { createRequire } from 'node:module';
 import os from 'node:os';
@@ -795,7 +795,11 @@ test('in an opaque origin the presenter and the speaker post with *, only to eac
     assert.deepEqual(await where(popup), { origin: 'null', located: origin, opener: true });
     assert.equal(await page.evaluate(() => window.teachingSpa.sync.targetOrigin), '*', 'window.origin is "null", so it is *');
     assert.equal(await popup.evaluate(() => window.teachingSpa.speaker.sync.targetOrigin), '*');
-    // BroadcastChannel reaches nobody in an opaque origin (the engine says no, or nobody answers); the window handle does
+    // BroadcastChannel reaches nobody in an opaque origin (the engine says no, or nobody answers); the window handle does. The script window
+    // shows itself as synchronized as soon as the presentation has said, on the line, that the window is its own (it was asked who it is,
+    // because its name cannot be read); the hello that follows it, on BroadcastChannel first, completes the handshake, and the attempts are
+    // the ones of that handshake: they are read when it is done
+    await waitFor(popup, () => window.teachingSpa.speaker.sync.status.attempts.some((one) => one.outcome === 'synchronized'));
     const tried = await attempts(popup);
     assert.equal(tried.length, 2);
     assert.match(tried[0], /^broadcastchannel:(unavailable|timeout)$/);
@@ -1378,5 +1382,265 @@ test('F1: an opaque presentation that is reloaded, goodbye and all, is found out
     assert.match(shown.status, /not synchronized/i);
     assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], 'Previous and Next are the speaker\'s own');
     await waitFor(popup, () => /not synchronized/i.test(window.__said.join(' ')));
+  });
+});
+
+test('QA F1 recovery: opaque reload then Present after liveness loss follows within 500 ms', async () => {
+  await withSession({ silentPagehide: true }, async (context) => {
+    const { page, popup } = await present(context, 'sync-fail=broadcastchannel', 'opaque');
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    await reloaded(page);
+    await go(page, IDS[2]);
+    await notSynchronized(popup);
+    const degraded = await facts(popup);
+    assert.deepEqual([degraded.previousDisabled, degraded.nextDisabled], [false, false]);
+
+    // Reuse through the real Present control, but only after the new liveness
+    // path has released the old pairing. No window or transport is stubbed.
+    await page.check('#present-open-script');
+    await page.click('#present-start');
+    assert.equal(context.pages().length, 2, 'the named speaker is reused');
+    await sleep(BUDGET_MS);
+    const shown = await facts(popup);
+    assert.deepEqual(
+      { sync: shown.sync, index: shown.index },
+      { sync: 'synchronized', index: '2' },
+      `Present must repair an already degraded opaque speaker within ${BUDGET_MS} ms; got ${JSON.stringify({
+        sync: shown.sync, index: shown.index, transport: shown.transport,
+      })}`,
+    );
+    await advanceTo(page, popup, IDS[3]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// J1 of the independent review of SPA-07, over a REAL file: URL, as P1-P6 of the independent probe, kept as tests. The portable page
+// (specification 2.9) is a file that the teacher opens by double click. Its origin is "null", so the script window cannot read the
+// window that opened it, and BroadcastChannel and localStorage are shared by every copy of that file that is open. Without a way to
+// ask the opener who it is, the script window would take the first presentation that answered: an older one that has nothing to do
+// with it (P5), or the one that has just given the named window away (P2). The build of this repository is still index.html and a
+// module script, which file: will not fetch, so the bundle is put inside the page, as the single-file build will have it. Nothing
+// else is changed and nothing is stubbed: a real click on Present, real windows, a real reload, a real close.
+
+let portableDir;
+/** The URL of dist/index.html with its bundle inside the page, written once to a temporary directory that is removed after the run. */
+function portableUrl() {
+  if (portableDir === undefined) {
+    const html = readFileSync(path.join(DIST, 'index.html'), 'utf8');
+    const tag = html.match(/<script[^>]*src="\.\/assets\/([^"]+\.js)"[^>]*><\/script>/);
+    assert.ok(tag, 'dist/index.html has a module script to put inside the page');
+    const bundle = readFileSync(path.join(DIST, 'assets', tag[1]), 'utf8');
+    assert.ok(!/<\/script/i.test(bundle), 'the bundle holds no </script, which putting it inside the page would have to escape');
+    portableDir = mkdtempSync(path.join(os.tmpdir(), 'spa-07-file-'));
+    writeFileSync(path.join(portableDir, 'index.html'), html.replace(tag[0], () => `<script type="module">${bundle}</script>`));
+  }
+  return pathToFileURL(path.join(portableDir, 'index.html')).href;
+}
+
+after(() => {
+  if (portableDir !== undefined) rmSync(portableDir, { recursive: true, force: true });
+});
+
+/** The context of withSession for pages that are files. A file has no origin to hold the requests to, so none is held. */
+async function withFiles(run) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const problems = [];
+  context.setDefaultTimeout(8000);
+  context.on('page', (page) => page.on('pageerror', (error) => problems.push(error.message)));
+  try {
+    await context.addInitScript(instrument, {});
+    await run(context);
+    assert.deepEqual(problems, [], 'the speaker script and its synchronization must not throw, nor leave a rejection unhandled');
+  } finally {
+    await context.close();
+  }
+}
+
+async function openFilePresenter(context) {
+  const page = await context.newPage();
+  await page.goto(`${portableUrl()}#/${IDS[0]}`);
+  await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
+  return observed(page);
+}
+
+/** Present takes the presentation into full screen, and a presentation in full screen has no Present control to use again. */
+const leaveFullscreen = (page) =>
+  page.evaluate(async () => {
+    if (document.fullscreenElement !== null) await document.exitFullscreen();
+  });
+
+async function presentFile(context) {
+  const page = await openFilePresenter(context);
+  const popup = await openScript(page);
+  await leaveFullscreen(page);
+  return { page, popup };
+}
+
+/** The Present control used again, for a script window that is already open under its name. The time is that of the click, on the shared clock. */
+async function presentAgain(page) {
+  await page.check('#present-open-script');
+  await page.evaluate(() =>
+    document.getElementById('present-start').addEventListener(
+      'click',
+      () => {
+        window.__presentedAt = performance.timeOrigin + performance.now();
+      },
+      { capture: true, once: true },
+    ),
+  );
+  await page.click('#present-start');
+  await leaveFullscreen(page);
+  return page.evaluate(() => window.__presentedAt);
+}
+
+/** Every segment index the script surface took, in order, as the page it is in saw it happen. */
+const segmentsShown = (popup) => popup.evaluate(() => window.__attrs.filter((one) => one.name === 'data-segment-index').map((one) => one.value));
+
+test('J1 file: P1 a script window that cannot read its opener, over a file whose origin is null, follows the presentation that opened it within 500 ms', async () => {
+  await withFiles(async (context) => {
+    const { page, popup } = await presentFile(context);
+    await synchronized(popup);
+    const environment = await popup.evaluate(() => {
+      let opener;
+      try {
+        opener = typeof window.opener.teachingSpaSyncPresenter;
+      } catch (error) {
+        opener = error.name;
+      }
+      return { origin: window.origin, locationOrigin: location.origin, channel: typeof BroadcastChannel, opener };
+    });
+    assert.deepEqual(
+      environment,
+      { origin: 'null', locationOrigin: 'file://', channel: 'function', opener: 'SecurityError' },
+      'a file is an opaque origin: BroadcastChannel is there and the window that opened it cannot be read',
+    );
+    const shown = await facts(popup);
+    assert.deepEqual({ sync: shown.sync, index: shown.index, transport: shown.transport }, { sync: 'synchronized', index: '0', transport: 'broadcastchannel' });
+    await advanceTo(page, popup, IDS[1]);
+    await advanceTo(page, popup, IDS[2]);
+  });
+});
+
+test('J1 file: P2 a second presentation that takes the named script window is followed within 500 ms, and the one it took it from is not followed again', async () => {
+  await withFiles(async (context) => {
+    const { page: first, popup } = await presentFile(context);
+    await synchronized(popup);
+    await advanceTo(first, popup, IDS[1]);
+    // The first presentation opens a second one of the same file, with its opener, the way a presenter opens another tab of it: the two
+    // are related, so the second can name the script window that the first opened.
+    await first.evaluate(() => {
+      const link = document.createElement('a');
+      link.id = 'j1-another-presentation';
+      link.href = location.href;
+      link.target = 'j1-another-presentation';
+      link.rel = 'opener';
+      link.textContent = 'Open another presentation';
+      document.body.prepend(link);
+    });
+    const [second] = await Promise.all([first.waitForEvent('popup'), first.click('#j1-another-presentation')]);
+    await second.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
+    await observed(second);
+    await go(second, IDS[3]);
+    const pages = context.pages().length;
+
+    const at = await presentAgain(second);
+    assert.equal(context.pages().length, pages, 'Present names the script window that is open, and the browser gives that one back');
+    assert.equal(await second.evaluate(() => window.__opened.opener === window), true, 'the browser paired the named window with the second presentation');
+    const delay = await arrival(popup, 'data-segment-index', String(IDS.indexOf(IDS[3])), at);
+    assert.ok(delay <= BUDGET_MS, `the script window took ${delay.toFixed(1)} ms to show the presentation that took it; the budget is ${BUDGET_MS} ms`);
+    await advanceTo(second, popup, IDS[2]);
+
+    // The first presentation is still open, and still moving. It is not the owner of the script window any more.
+    await go(first, IDS[4]);
+    await sleep(2 * BUDGET_MS);
+    const shown = await facts(popup);
+    assert.deepEqual(
+      { sync: shown.sync, index: shown.index },
+      { sync: 'synchronized', index: String(IDS.indexOf(IDS[2])) },
+      `the script window must stay with the presentation that owns it, not follow the one that gave it up: ${JSON.stringify(shown)}`,
+    );
+    assert.ok(!(await segmentsShown(popup)).includes(String(IDS.indexOf(IDS[4]))), 'the script window never showed the segment that only the first presentation went to');
+  });
+});
+
+test('J1 file: P3 a presentation that is reloaded in place is followed again within 500 ms, or the script window does not say that it is synchronized', async () => {
+  await withFiles(async (context) => {
+    const { page, popup } = await presentFile(context);
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    await reloaded(page);
+    await go(page, IDS[2]);
+    await sleep(BUDGET_MS);
+    const soon = await facts(popup);
+    assert.ok(
+      soon.sync !== 'synchronized' || soon.index === '2',
+      `the presentation was reloaded and is on segment 2, but 500 ms later the script window says ${JSON.stringify({ sync: soon.sync, index: soon.index })}`,
+    );
+    // A presentation that is reloaded does not hold the window it opened any more: only Present, which names the script window again,
+    // brings the two back together over a file. Until then the script window does not say that it follows anything.
+    await sleep(3 * BUDGET_MS);
+    const later = await facts(popup);
+    assert.ok(
+      later.sync !== 'synchronized' || later.index === '2',
+      `after 2 s the script window says ${JSON.stringify({ sync: later.sync, index: later.index })} of a presentation that is on segment 2`,
+    );
+  });
+});
+
+test('J1 file: P4 a presentation that is reloaded and then presented again takes its script window back within 500 ms, and AC9 holds', async () => {
+  await withFiles(async (context) => {
+    const { page, popup } = await presentFile(context);
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    await reloaded(page);
+    await go(page, IDS[2]);
+    await sleep(4000); // the script window has had time to find out that its owner went, to ask, and to give up for now
+    const waiting = await facts(popup);
+    assert.ok(waiting.sync !== 'synchronized' || waiting.index === '2', `a presentation that is on segment 2 is not what the script window shows: ${JSON.stringify(waiting)}`);
+
+    await presentAgain(page);
+    await sleep(BUDGET_MS);
+    const shown = await facts(popup);
+    assert.deepEqual(
+      { sync: shown.sync, index: shown.index },
+      { sync: 'synchronized', index: '2' },
+      `Present must bring the script window back within ${BUDGET_MS} ms: ${JSON.stringify({ sync: shown.sync, index: shown.index, transport: shown.transport })}`,
+    );
+    await advanceTo(page, popup, IDS[3]);
+  });
+});
+
+test('J1 file: P5 an older presentation of the same file that is open is not followed by a script window that another presentation opened', async () => {
+  await withFiles(async (context) => {
+    assert.ok(IDS.length > 5, 'the deck has a segment for the older presentation to be on');
+    const older = await openFilePresenter(context);
+    await go(older, IDS[5]);
+    const { page, popup } = await presentFile(context);
+    await synchronized(popup);
+    const shown = await facts(popup);
+    assert.deepEqual({ sync: shown.sync, index: shown.index }, { sync: 'synchronized', index: '0' }, 'the script window shows the presentation that opened it, not the older one');
+    await advanceTo(page, popup, IDS[2]);
+
+    await go(older, IDS[4]);
+    await sleep(2 * BUDGET_MS);
+    assert.equal((await facts(popup)).index, '2', 'the older presentation moved, and the script window did not');
+    const seen = await segmentsShown(popup);
+    assert.ok(!seen.includes('5') && !seen.includes('4'), `the script window never showed a segment that only the older presentation was on: ${seen.join(' ')}`);
+  });
+});
+
+test('J1 file: P6 a presentation that is closed stops being followed: the script window says that it is not synchronized', async () => {
+  await withFiles(async (context) => {
+    const { page, popup } = await presentFile(context);
+    await synchronized(popup);
+    await advanceTo(page, popup, IDS[1]);
+    const since = await popup.evaluate(() => performance.timeOrigin + performance.now());
+    await page.close();
+    const left = await arrival(popup, 'data-sync-state', 'not-synchronized', since);
+    assert.ok(left <= 3500, `the script window took ${left.toFixed(0)} ms to stop claiming that it follows a presentation that is closed`);
+    const shown = await facts(popup);
+    assert.equal(shown.transport, 'none');
+    assert.deepEqual([shown.previousDisabled, shown.nextDisabled], [false, false], "Previous and Next are the speaker's own");
   });
 });

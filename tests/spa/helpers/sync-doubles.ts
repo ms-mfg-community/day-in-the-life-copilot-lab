@@ -5,8 +5,9 @@
 //     same origin, an origin only for a receiver that is not opaque), and the receiver is told the sender's window as
 //     `event.source`: the same object every time, as a WindowProxy is. An invalid target origin throws a SyntaxError, so
 //     `window.origin`, which reads "null" in an opaque document, is not a target origin that works.
-//   - A `BroadcastChannel` reaches the other channels of the same name and origin, never the one that sent. An opaque
-//     document shares no channel and no storage with any other window.
+//   - A `BroadcastChannel` reaches the other channels of the same name and origin, never the one that sent. A sandboxed (opaque)
+//     document shares no channel and no storage with any other window; a `file:` page (`file: true`) is opaque to the handles of
+//     other windows and yet shares one channel and one storage with every other `file:` page, as Chromium has it.
 //   - `localStorage` fires `storage` at the other windows of the origin and never at the writer, and only when the value
 //     changed. Its getter can throw a SecurityError, as it does in an opaque document, and each method can throw too.
 //
@@ -41,6 +42,13 @@ export interface LabWindowOptions {
    * "null", the `localStorage` getter throws, and no other window shares its channels or its storage.
    */
   opaque?: boolean;
+  /**
+   * A page that runs from a `file:` URL, as Chromium runs it (measured, not assumed): `window.origin` is "null" and `location.origin` is
+   * "file://", a read through the handle of another window throws (so the window that opened this one cannot be told from any other), a
+   * message says its origin is "null", and yet every `file:` page shares one BroadcastChannel and one localStorage, whose `storage`
+   * events reach the others. So an unrelated presentation that is open in another tab hears everything a script window says over either.
+   */
+  file?: boolean;
   /** `location.origin`, which is the origin of the URL and not of the document, so a sandboxed document keeps it. Default: `origin`. */
   locationOrigin?: string;
   /** `location.search`. */
@@ -176,7 +184,9 @@ export class LabWindow extends FakeWindow {
   declare readonly BroadcastChannel: (new (name: string) => LabChannel) | undefined;
   declare readonly localStorage: LabStorage | undefined;
   readonly trueOrigin: string;
+  /** An opaque document: its handle cannot be read by another window. A `file:` page is one, and still shares its channels and storage. */
   readonly opaque: boolean;
+  readonly fileLike: boolean;
   readonly storageObject: LabStorage | undefined;
   /** `window.opener`: what the window that opened this one is to it, or null. */
   opener: unknown = null;
@@ -190,10 +200,11 @@ export class LabWindow extends FakeWindow {
     options: LabWindowOptions = {},
   ) {
     super();
-    this.opaque = options.opaque === true;
+    this.fileLike = options.file === true;
+    this.opaque = options.opaque === true || this.fileLike;
     const origin = this.opaque ? 'null' : (options.origin ?? 'https://spa.test');
-    this.trueOrigin = this.opaque ? `opaque:${name}` : origin;
-    const locationOrigin = options.locationOrigin ?? (this.opaque ? 'https://spa.test' : origin);
+    this.trueOrigin = this.fileLike ? 'file://' : this.opaque ? `opaque:${name}` : origin;
+    const locationOrigin = options.locationOrigin ?? (this.fileLike ? 'file://' : this.opaque ? 'https://spa.test' : origin);
     Object.defineProperty(this, 'location', { configurable: true, value: new LabLocation(this, locationOrigin, options.search ?? '') });
     Object.defineProperty(this, 'origin', { configurable: true, value: options.noOriginApi === true ? undefined : origin });
 
@@ -212,7 +223,7 @@ export class LabWindow extends FakeWindow {
       });
     }
 
-    const mode: StorageMode = options.storage ?? (this.opaque ? 'getter-throws' : 'ok');
+    const mode: StorageMode = options.storage ?? (this.opaque && !this.fileLike ? 'getter-throws' : 'ok');
     if (mode === 'getter-throws') {
       Object.defineProperty(this, 'localStorage', {
         configurable: true,
@@ -302,7 +313,7 @@ export class Lab {
 
   /** `opener` opens a window of its own origin: the handle `window.open` returns, and the new window's `window.opener` set. */
   popup(opener: LabWindow, name = 'speaker', options: LabWindowOptions = {}): { window: LabWindow; handle: WindowHandle } {
-    const win = this.window(name, { origin: opener.opaque ? undefined : opener.origin, opaque: opener.opaque, ...options });
+    const win = this.window(name, { origin: opener.opaque ? undefined : opener.origin, opaque: opener.opaque, file: opener.fileLike, ...options });
     win.opener = this.proxy(win, opener);
     return { window: win, handle: this.proxy(opener, win) };
   }
@@ -392,7 +403,7 @@ export class Lab {
 
   fireStorage(writer: LabWindow, key: string, oldValue: string | null, newValue: string | null): void {
     for (const other of this.windows) {
-      if (other === writer || other.opaque || other.trueOrigin !== writer.trueOrigin || other.storageObject === undefined) continue;
+      if (other === writer || (other.opaque && !other.fileLike) || other.trueOrigin !== writer.trueOrigin || other.storageObject === undefined) continue;
       queueMicrotask(() => {
         if (other.closed) return;
         other.dispatchEvent(Object.assign(new FakeEvent('storage'), { key, oldValue, newValue, url: '', storageArea: other.storageObject }));

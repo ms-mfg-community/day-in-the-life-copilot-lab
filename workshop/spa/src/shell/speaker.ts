@@ -1,22 +1,30 @@
 // The speaker script surface (specs/005-teaching-spa.md 2.7, AC9, AC10): the script of the segment the presentation is on, the stage
 // of the reveal it has reached and the time left on its timer, in the same document as the presentation, at `#/script`.
 //
-// The surface follows the presentation over the first transport that answers (sync.ts) and is in one of three states, which it says in
-// words and in `data-sync-state`:
+// The surface follows the presentation over the first transport that answers (sync.ts, sync-speaker.ts) and is in one of three states, which
+// it says in words and in `data-sync-state`:
 //
 //   connecting        looking for the presentation; it shows the first segment, and its controls wait.
 //   synchronized      following it (AC9): the segment, the reveal and the timer are the presentation's. The controls are off, because
 //                     the presentation moves the script, unless two-way navigation was asked for: then they ask the presentation to move,
 //                     and the surface moves when it does. It says this only while the presentation it follows owns this window and is
-//                     there. When another presentation takes the window (it opens it again by its name, or the one that followed is reloaded
-//                     in place) it follows that one and moves to what it shows within the 500 ms of AC9, and asks only the one that owns the
-//                     window now to move. When the presentation leaves (goodbye, closed, reloaded away), or cannot be looked at and does not
-//                     say that it is there when it is asked (sync.ts, `liveness`), it stops saying it.
+//                     there. The surface keeps a line to the window that opened it for as long as it lives (sync-speaker.ts), whether it
+//                     follows a presentation or not, and the presentation that is handed the window says on it that the window is its
+//                     own. When another presentation takes the window (it opens it again by its name), when the presentation that has
+//                     it opens it again after the surface stopped following it, or, where the window that opened it can be read, when
+//                     the one that followed is reloaded in place (the name on that window changes), the surface follows that one, shows
+//                     what it shows at once and moves to what it says within the 500 ms of AC9, and asks only the one that owns the
+//                     window now to move. Where the window that opened it cannot be read (a page from a file: URL) the same line is how
+//                     it learns which presentation that is, before it takes the word of any other that answers on a channel that says
+//                     nothing of who sent it; one that was reloaded in place there holds no handle to this window and cannot say, so the
+//                     surface finds it gone and waits for it to open the window again. When the presentation leaves (goodbye, closed,
+//                     reloaded away), or cannot be looked at and does not say that it is there when it is asked (sync-speaker.ts,
+//                     `liveness`), the surface stops saying it.
 //   not-synchronized  nothing answered (AC10), every transport was forced to fail, or the presentation it followed is gone. This is a
 //                     state of its own, not a broken page: the surface says so, announces it in the status region (as a kept message, which
 //                     the announcement of a segment that follows does not replace), and its controls move the script by themselves. It
-//                     looks for a presentation again, quietly, whenever the window has a new owner, and after a while (sync.ts), and is
-//                     synchronized again, and says so, when one answers.
+//                     looks for a presentation again, quietly, whenever the window has a new owner, and after a while (sync-speaker.ts), and
+//                     is synchronized again, and says so, when one answers or the presentation that has the window claims it on the line.
 //
 // What the page exposes, besides `data-segment-index` (zero-based, the one the spec names): `data-surface="script"`,
 // `data-segment-id`, `data-sync-state`, `data-sync-transport` (the transport that answered, or `none`), `data-revealed-steps` and

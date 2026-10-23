@@ -1285,18 +1285,9 @@ describe('pairing: a speaker follows the presentation that opened it, and no oth
       o.script('S-hand').speaker.start();
       // a window that a page opened that has no presentation on it
       o.listen(o.lab.popup(o.lab.window('some-page'), 'S-page-window').window, 'S-page').speaker.start();
-      // an opener that cannot be read, as a window of another origin cannot: every property but the two a handle always has throws
-      const refusing = new Proxy({ closed: false, postMessage: (): void => undefined } as Record<string | symbol, unknown>, {
-        get(target, key) {
-          if (key === 'closed' || key === 'postMessage') return target[key];
-          throw new DOMException('Blocked a frame from accessing a cross-origin frame.', 'SecurityError');
-        },
-      });
-      const odd = o.lab.window('S-odd-window');
-      odd.opener = refusing;
-      o.listen(odd, 'S-odd').speaker.start();
+      // (an opener that cannot be read at all is the next one: where it can be asked who it is, it is asked, and no hello goes before it is told)
       // an opener whose name is not a name: a number, nothing, a list, one too long to be taken
-      const sessions = ['S-hand', 'S-odd', 'S-page'];
+      const sessions = ['S-hand', 'S-page'];
       for (const [index, name] of [5, '', null, ['live'], 'live'.repeat(100)].entries()) {
         const win = o.lab.window(`S-name-${index}-window`);
         win.opener = { closed: false, postMessage: (): void => undefined, [PRESENTER_KEY]: name };
@@ -1308,6 +1299,36 @@ describe('pairing: a speaker follows the presentation that opened it, and no oth
       const hellos = o.lab.sent(via).filter((message) => message.type === 'hello');
       expect(hellos.map((message) => message.session).sort()).toEqual(sessions.sort());
       for (const hello of hellos) expect(Object.keys(hello)).not.toContain('to');
+    });
+
+    it.each(SHARED)('over %s, a script window that cannot read who opened it asks that window where it can, and names no one where it cannot: nothing goes where every presentation hears it', async (via) => {
+      const o = origin(via);
+      const asked: Array<{ message: unknown; target: unknown }> = [];
+      // an opener that cannot be read, as a window of another origin cannot: every property but the two a handle always has throws
+      const refusing = new Proxy(
+        { closed: false, postMessage: (message: unknown, target: unknown): void => void asked.push({ message, target }) } as Record<string | symbol, unknown>,
+        {
+          get(target, key) {
+            if (key === 'closed' || key === 'postMessage') return target[key];
+            throw new DOMException('Blocked a frame from accessing a cross-origin frame.', 'SecurityError');
+          },
+        },
+      );
+      const odd = o.lab.window('S-odd-window');
+      odd.opener = refusing;
+      o.listen(odd, 'S-odd').speaker.start();
+      await drain();
+
+      const hellos = o.lab.sent(via).filter((message) => message.type === 'hello');
+      if (via === 'broadcastchannel') {
+        // postMessage stands: the window that opened it is asked who it is, and only it can answer; a hello on BroadcastChannel is answered by all
+        expect(asked).toEqual([{ message: wire({ type: 'identify', from: 'speaker' }), target: ORIGIN }]);
+        expect(hellos).toEqual([]);
+      } else {
+        // postMessage is forced to fail: there is no one to ask, and the hello names no one
+        expect(asked).toEqual([]);
+        expect(hellos).toEqual([wire({ type: 'hello', from: 'speaker', session: 'S-odd' })]);
+      }
     });
 
     it.each(SHARED)('over %s, takes the acknowledgement of the presentation that opened it and not that of another', async (via) => {
