@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHANNEL_NAME,
+  LIVENESS_MS,
   PRESENTER_KEY,
   PROTOCOL,
   STORAGE_KEYS,
@@ -548,4 +549,56 @@ describe('S2: what the window shows is not taken back by a state that its presen
     expect(shown(speaker)).toEqual([4, 2, 3]);
     expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: 'broadcastchannel', index: 3 });
   });
+
+  for (const via of ['broadcastchannel', 'postmessage', 'storage'] as const) {
+    it.each([9, 10])(`QA claim recovery: liveness loss on ${via} does not erase the last applied counter before a delayed claim with counter %s`, async (counter) => {
+      // Arrange: a real opener-authenticated claim establishes counter 10, and
+      // its addressed acknowledgement completes the handshake on each transport.
+      const page = lab.window('presentation-P-owner', { file: true });
+      const speaker = await openScript(page, { fail: FAIL_BEFORE[via], timeoutMs: 100 });
+      say(page, speaker, 'postmessage', claimOf('P-owner', 3, 10));
+      await drain();
+      if (via === 'storage') await elapse(100);
+      const session = speakerSent(via, 'hello').at(-1)?.session;
+      expect(session).toEqual(expect.any(String));
+      say(page, speaker, via, said('ack', 3, 10, session as string));
+      await drain();
+      expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: via, index: 3 });
+
+      // Act: transient silence loses liveness, but does not create a different
+      // presenter. An already-sent, older/equal claim then reaches the live line.
+      await elapse(LIVENESS_MS + 100);
+      expect(speaker.shows().sync).toBe('not-synchronized');
+      say(page, speaker, 'postmessage', claimOf('P-owner', 2, counter));
+      await drain();
+
+      // Assert the states actually applied, including any transient rewind.
+      expect(shown(speaker)).toEqual([3]);
+    });
+
+    it.each([9, 10])(`QA claim recovery: a handover timeout on ${via} does not erase the new owner's counter before a delayed claim with counter %s`, async (counter) => {
+      // Arrange: pair with one presentation, then a new document on the same
+      // WindowProxy claims the window at counter 10 while its ack is delayed.
+      const page = lab.window('presentation-P-owner', { file: true });
+      const speaker = await openScript(page, { fail: FAIL_BEFORE[via], timeoutMs: 100 });
+      say(page, speaker, 'postmessage', claimOf('P-first', 1, 1));
+      await drain();
+      if (via === 'storage') await elapse(100);
+      const session = speakerSent(via, 'hello').at(-1)?.session;
+      say(page, speaker, via, { ...claimOf('P-first', 1, 1), type: 'ack', session });
+      await drain();
+      expect(speaker.shows()).toEqual({ sync: 'synchronized', transport: via, index: 1 });
+      say(page, speaker, 'postmessage', claimOf('P-owner', 3, 10));
+      await drain();
+      expect(speaker.shows().index).toBe(3);
+
+      // Act: no ack arrives before repair starts. Identity has not changed.
+      await elapse(100);
+      say(page, speaker, 'postmessage', claimOf('P-owner', 2, counter));
+      await drain();
+
+      // Assert that repair cannot make a stale authenticated state current.
+      expect(shown(speaker)).toEqual([1, 3]);
+    });
+  }
 });

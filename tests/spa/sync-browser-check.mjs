@@ -1760,3 +1760,43 @@ test('S2 file: the answer to a hello that was said before a newer claim does not
     await advanceTo(page, popup, IDS[3]);
   });
 });
+
+test('QA claim recovery: a real file opener claim cannot rewind the script after transient liveness loss', async () => {
+  await withFiles(async (context) => {
+    // STUB: drop only pong delivery at the receiver to model a transient loss,
+    // without replacing either document, its identity, or any state payload.
+    await context.addInitScript(() => {
+      const Channel = window.BroadcastChannel;
+      window.BroadcastChannel = class extends Channel {
+        constructor(name) {
+          super(name);
+          this.addEventListener('message', (event) => {
+            if (location.hash === '#/script' && window.__qaDropPongs && event.data?.type === 'pong') {
+              window.__qaDroppedPong = true;
+              event.stopImmediatePropagation();
+            }
+          });
+        }
+      };
+    });
+    const { page, popup } = await presentFile(context, 'sync-timeout=200');
+    await synchronized(popup);
+    const delayedClaim = await popup.evaluate(() =>
+      window.__messages.find((one) => one.fromOpener && one.data?.type === 'claim')?.data,
+    );
+    assert.equal(delayedClaim?.state.segmentIndex, 0, 'the delayed payload is the real initial opener claim, not a fabricated state');
+    await advanceTo(page, popup, IDS[2]);
+    await popup.evaluate(() => { window.__qaDropPongs = true; });
+    await notSynchronized(popup);
+    assert.equal(await popup.evaluate(() => window.__qaDroppedPong), true, 'a lost liveness response caused the transition');
+    assert.equal((await facts(popup)).index, '2');
+    const before = await popup.evaluate(() => ({ messages: window.__messages.length, segments: window.__attrs.filter((one) => one.name === 'data-segment-index').length }));
+
+    // The current opener delivers its original claim only after the timeout.
+    // Any later fresh ack may recover, but cannot excuse a transient rewind.
+    await page.evaluate((claim) => window.__opened.postMessage(claim, '*'), delayedClaim);
+    await waitFor(popup, (start) => window.__messages.slice(start).some((one) => one.fromOpener && one.data?.type === 'claim'), before.messages);
+    const after = (await segmentsShown(popup)).slice(before.segments);
+    assert.ok(!after.includes('0'), `§2.7 still applies after liveness loss: an old claim rewound segment 2; subsequent segments were ${JSON.stringify(after)}`);
+  });
+});
