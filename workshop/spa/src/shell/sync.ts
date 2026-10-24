@@ -3,7 +3,8 @@
 // Two windows of one origin, the presentation (the opener) and the speaker script (the window it opened, `#/script`), say what
 // the presentation shows to one another over the first of three transports that answers, probed in this order:
 //
-//   1. BroadcastChannel  needs no handle on the other window, and reaches the same origin only; an opaque origin reaches nobody.
+//   1. BroadcastChannel  needs no handle on the other window, and reaches the same origin only. In an opaque origin it is
+//                        browser-dependent: Chromium delivers it between file: pages, so it says nothing of which presentation sent a message.
 //   2. postMessage       between the opener and the opened window, whose handles are kept (no `noopener`, F45-F47). The target
 //                        origin is the page's own; "*" is for `window.origin === "null"` alone, an opaque origin (C2), and a
 //                        receiver acts only on a message whose `event.source` is the window it holds.
