@@ -1,4 +1,5 @@
 import { segments } from 'virtual:spa-content';
+import inventory from '../content/interactions.json';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
 import { mountInteractions, type Mounted } from './interactions';
 import { createAnnouncer } from './shell/live-region';
@@ -8,8 +9,10 @@ import {
   type PresentationNavigator,
   type PresentationWindow,
 } from './shell/presentation';
-import { hashFor, parseHash } from './shell/router';
-import { createState } from './shell/state';
+import { SCRIPT_HASH, hashFor, parseHash } from './shell/router';
+import { mountSpeaker, type SpeakerDocument, type SpeakerWindow } from './shell/speaker';
+import { createState, type ShellState } from './shell/state';
+import { createPresenterSync, parseSyncConfig, snapshotFrom, type SyncWindow } from './shell/sync';
 
 const ids = segments.map((segment) => segment.id);
 const store = createState(ids);
@@ -17,8 +20,18 @@ const nav = document.getElementById('segment-nav') as HTMLElement;
 const main = document.getElementById('main') as HTMLElement;
 const announce = createAnnouncer(document.getElementById('live-region') as HTMLElement);
 
+// One document, two surfaces (spec 2.7): the presentation shows the segments, and `#/script` is the speaker's script. The hash says
+// which of the two this page is, once, when it boots; a page that is running does not turn into the other (see changeSurface).
+const initialRoute = parseHash(window.location.hash, ids);
+const onScript = initialRoute.kind === 'script';
+// The failure hooks and the timeout of the synchronization (sync.ts). A window opened from the presentation inherits the query of it.
+const syncConfig = parseSyncConfig(window.location.search);
+
 // Extension point for later issues: interactions, fullscreen and the speaker window attach through these.
 (window as unknown as { teachingSpa: object }).teachingSpa = { store, announce, segments };
+function expose(extra: object): void {
+  Object.assign((window as unknown as { teachingSpa: object }).teachingSpa, extra);
+}
 
 // The links are built once. Replacing them on every segment would destroy the link a keyboard user has just activated
 // and drop focus to <body>, so later renders only move `aria-current`.
@@ -69,12 +82,27 @@ function replaceHash(hash: string): void {
   } else location.hash = hash; // a minimal location double cannot replace an entry
 }
 
+// Where the address goes back to when it named a way station and no surface: the script on the speaker's page, the segment that
+// is open on the presentation's.
+function home(): string {
+  return onScript ? SCRIPT_HASH : hashFor(store.get().currentId);
+}
+
+// The surface is chosen when the page boots, and the two hold different things (the presentation the fullscreen, the keyboard and the
+// interactions; the speaker a transport). So a hash that names the other surface is a change of surface: the page loads again at that
+// address, as a visit to it would, and neither surface carries what it holds into the other. A window with no reload changes nothing.
+function changeSurface(): void {
+  if (typeof window.location.reload === 'function') window.location.reload();
+}
+
 function route(): void {
   const result = parseHash(window.location.hash, ids);
-  if (result.kind === 'segment') store.navigate(result.id);
-  else if (result.kind === 'unknown') {
-    replaceHash(hashFor(store.get().currentId));
+  if (result.kind === 'unknown') {
+    replaceHash(home());
     announce(`Unknown segment "${result.id}"`);
+  } else if (result.kind === 'script' || result.kind === 'segment') {
+    if ((result.kind === 'script') !== onScript) changeSurface();
+    else if (result.kind === 'segment') store.navigate(result.id);
   }
 }
 
@@ -130,7 +158,7 @@ function settleAnchor(): void {
   const hash = window.location.hash;
   if (parseHash(hash, ids).kind !== 'anchor') return;
   if (isShellHash(hash)) focusMain();
-  replaceHash(hashFor(store.get().currentId)); // a segment hash is never an anchor, so this cannot repeat
+  replaceHash(home()); // a segment hash is never an anchor, so this cannot repeat
 }
 
 // A browser restores the scroll offset of the entry it travels to (Back, Forward) after the hashchange handlers have run,
@@ -139,12 +167,32 @@ function settleAnchor(): void {
 if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
 
 // Boot order is load-bearing. The initial route is resolved and its segment rendered once, before anything subscribes,
-// so a deep link opens on its own segment instead of painting the first one and announcing a move nobody made.
-const initialRoute = parseHash(window.location.hash, ids);
+// so a deep link opens on its own segment instead of painting the first one and announcing a move nobody made. The speaker's
+// surface is built in the same place, instead of a segment, and follows the store itself (speaker.ts).
 if (initialRoute.kind === 'segment') store.navigate(initialRoute.id);
-renderSegment(store.get().currentId);
 
-store.subscribe((next, previous) => {
+// The speaker's page: the script in <main>, and none of what belongs to the presentation. Its deck navigation and its Present
+// controls have nothing to do in a window that is not the one being presented, so they are put away; the skip link stays, as a
+// way into <main> on either surface.
+function mountScriptSurface() {
+  nav.hidden = true;
+  const controls = document.getElementById('presentation-controls');
+  if (controls) controls.hidden = true;
+  return mountSpeaker({
+    document: document as unknown as SpeakerDocument,
+    window: window as unknown as SpeakerWindow,
+    store,
+    segments,
+    announce,
+    config: syncConfig,
+  });
+}
+
+const speaker = onScript ? mountScriptSurface() : null;
+if (!onScript) renderSegment(store.get().currentId);
+if (speaker) expose({ speaker });
+
+function followStore(next: ShellState, previous: ShellState): void {
   if (next.currentId === previous.currentId) return;
   renderSegment(next.currentId);
   openAtTop();
@@ -155,7 +203,9 @@ store.subscribe((next, previous) => {
   if (window.location.hash !== hash) window.location.hash = hash;
   const segment = segments.find((candidate) => candidate.id === next.currentId);
   announce(`Segment ${ids.indexOf(next.currentId) + 1} of ${ids.length}: ${segment?.title}`);
-});
+}
+// The speaker's page has no segment to render and keeps its address on `#/script`: it moves the script itself.
+if (!onScript) store.subscribe(followStore);
 
 // A segment needs nothing more here; an unknown initial route falls back to the first segment, replaces the hash and
 // announces, as it would on any later hashchange.
@@ -171,21 +221,54 @@ installHashRewrite(contentWindow, document);
 settleAnchor();
 window.addEventListener('hashchange', settleAnchor);
 
+// What the presentation tells the speaker's window (spec 2.7), and the handle it tells it through. It listens from the start, not from
+// the moment a window is opened: a script window that the browser blocked is one the user opens by hand, and finds the presentation
+// by BroadcastChannel or by storage. The segment, the reveal stage and the timer all live in the store, so a change of the store is
+// what is said. The one interaction that keeps time for a segment is the one the inventory names.
+const timerIdOf = (segmentId: string): string | undefined =>
+  inventory.interactions.find((entry) => entry.pattern === 'segment-timer' && entry.segment === segmentId)?.id;
+const presenter = onScript
+  ? null
+  : createPresenterSync({
+      window: window as unknown as SyncWindow,
+      config: syncConfig,
+      segmentIds: ids,
+      snapshot: () => snapshotFrom(store.get(), ids, timerIdOf),
+      navigate: (id) => store.navigate(id), // the script window's request, and only when the URL turned two-way navigation on
+    });
+if (presenter) {
+  store.subscribe(() => presenter.publish());
+  expose({ sync: presenter });
+}
+
 // Presentation mode (spec 2.5). Last, once the segment is on screen, so nothing here can keep it from rendering. A shell
-// without the controls, or a document with no selector support, mounts nothing and boots as it did before.
-const presentation = mountPresentation({
-  document: document as unknown as PresentationDocument,
-  window: window as unknown as PresentationWindow,
-  navigator: (typeof navigator === 'undefined' ? undefined : navigator) as unknown as PresentationNavigator | undefined,
-  store,
-  announce,
-  // Reads inside a sentence ("the window is showing segment 2 of 9: Title"), and says where the reader is when fullscreen ends.
-  describeSegment: (id) => {
-    const segment = segments.find((candidate) => candidate.id === id);
-    return `segment ${ids.indexOf(id) + 1} of ${ids.length}${segment ? `: ${segment.title}` : ''}`;
-  },
-  // Firefox and WebKit end fullscreen with the Escape and never hand it to the page, so what Escape closes, hides or pauses
-  // (SPA-04/05) would stay as it was: the interactions of the segment that is on show put it away.
-  onEndedByBrowser: () => interactions?.dismiss?.(),
+// without the controls, or a document with no selector support, mounts nothing and boots as it did before. The speaker's page has
+// no presentation to mount: it is not the window that is presented.
+const presentation = onScript
+  ? null
+  : mountPresentation({
+      document: document as unknown as PresentationDocument,
+      window: window as unknown as PresentationWindow,
+      navigator: (typeof navigator === 'undefined' ? undefined : navigator) as unknown as PresentationNavigator | undefined,
+      store,
+      announce,
+      // Reads inside a sentence ("the window is showing segment 2 of 9: Title"), and says where the reader is when fullscreen ends.
+      describeSegment: (id) => {
+        const segment = segments.find((candidate) => candidate.id === id);
+        return `segment ${ids.indexOf(id) + 1} of ${ids.length}${segment ? `: ${segment.title}` : ''}`;
+      },
+      // Firefox and WebKit end fullscreen with the Escape and never hand it to the page, so what Escape closes, hides or pauses
+      // (SPA-04/05) would stay as it was: the interactions of the segment that is on show put it away.
+      onEndedByBrowser: () => interactions?.dismiss?.(),
+      // The window that was opened for the script is kept, and is the road of postMessage to it.
+      onScriptWindow: (opened) => presenter?.setPopup(opened),
+    });
+if (presentation) expose({ presentation });
+
+// A channel, a listener and a timer are held for the synchronization: they are let go of when the page goes away. Not when it is
+// only put into the back/forward cache, because it comes back from there with everything it held.
+window.addEventListener('pagehide', (event) => {
+  if ((event as { persisted?: boolean }).persisted === true) return;
+  presenter?.dispose();
+  speaker?.dispose();
 });
-if (presentation) Object.assign((window as unknown as { teachingSpa: object }).teachingSpa, { presentation });

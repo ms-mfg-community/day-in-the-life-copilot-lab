@@ -57,7 +57,7 @@ export const PART_TWO = ['parameter-chart', 'node-diagram', 'carousel', 'segment
 // ---------------------------------------------------------------------------------------------------------------------
 // Booting the shell
 
-type SegmentRecord = ReadonlyArray<{ id: string; minutes: number; labRefs: string[]; scriptSource: string; title: string; html: string }>;
+type SegmentRecord = ReadonlyArray<{ id: string; minutes: number; labRefs: string[]; scriptSource: string; title: string; html: string; scriptHtml: string }>;
 
 let renderedSegments: SegmentRecord | undefined;
 
