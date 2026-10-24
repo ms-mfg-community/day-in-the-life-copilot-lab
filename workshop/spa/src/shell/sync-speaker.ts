@@ -58,7 +58,8 @@
 //
 // Order. Every number that orders what a presentation says is a counter that only goes up (2.7), and the window keeps the last one that it showed
 // of the presentation that owns it, in every phase and not only while it is paired: the state of a claim sets it from the moment it is shown, and so
-// does the answer to a hello. What is not greater than it is not shown. A claim that is not newer than what is on the surface still says who the
+// does the answer to a hello. Losing the presentation, or a handover that is not answered, does not clear it (`degrade`, `repair`), so the same
+// presentation found again cannot take the window back to something older. What is not greater than it is not shown. A claim that is not newer than what is on the surface still says who the
 // opener is, and nothing else: it is not shown and nothing is asked again for it. The answer to a hello that was said before a newer claim, and
 // arrives after it, completes the handshake (the window is paired, and follows what comes next) and takes nothing back. A presentation that is not
 // the one that owns the window counts from nothing, however low its numbers are: that is how a window that was handed to another presentation, or
@@ -594,8 +595,6 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
     release();
     lastTried = pairing;
     tried = null;
-    presenter = '';
-    lastSeq = 0;
     requests = 0;
     pendingMove = null;
     learned = null; // the name was that presentation's, and it is gone
@@ -610,8 +609,6 @@ export function createSpeakerSync(options: SpeakerSyncOptions): SpeakerSync {
   function repair(): void {
     release();
     session = nextSession();
-    presenter = '';
-    lastSeq = 0;
     requests = 0;
     phase = 'probing';
     silent = false;
