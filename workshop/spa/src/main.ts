@@ -1,3 +1,4 @@
+import './styles.css';
 import { segments } from 'virtual:spa-content';
 import inventory from '../content/interactions.json';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
