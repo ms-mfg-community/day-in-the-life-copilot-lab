@@ -104,7 +104,9 @@ describe('QA SPA-06: failures must preserve the working window', () => {
       page.flushLive();
       expect(page.store.get()).toEqual(before);
       expect(page.live.textContent).toMatch(/fullscreen could not start.*beta/i);
-      expect(page.doubles.keyboardUnlock).toHaveBeenCalledTimes(1);
+      // The lock follows the browser's answer (section 2.5 as measured, SPA-13): a request that failed took none, so none is held.
+      expect(page.doubles.keyboardLock).not.toHaveBeenCalled();
+      expect(page.doubles.keyboardUnlock).not.toHaveBeenCalled();
       expect(page.doubles.wakeLockRequest).not.toHaveBeenCalled();
 
       page.doubles.outcome = 'resolve';
@@ -129,8 +131,9 @@ describe('QA SPA-06: failures must preserve the working window', () => {
     page.check('present-open-script');
     page.check('present-keyboard-lock');
     page.click('present-start');
-    expect(page.doubles.log).toEqual(['open', 'lock', 'requestFullscreen']);
+    expect(page.doubles.log).toEqual(['requestFullscreen']);
     await settle();
+    expect(page.doubles.log).toEqual(['requestFullscreen', 'wakeLock.request:screen', 'open', 'lock']);
     page.flushLive();
     expect(page.presentation.active).toBe(true);
     expect(page.live.textContent).toMatch(/speaker script.*blocked/i);

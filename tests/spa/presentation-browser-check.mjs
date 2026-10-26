@@ -893,14 +893,18 @@ test('with document.fullscreenEnabled false (stubbed) Present is disabled and th
 // ---------------------------------------------------------------------------------------------------------------------
 // The order of the activation handler (section 2.5). The window, the lock and the screens are STUBS that record calls.
 
-test('the handler opens the speaker script, then locks the keyboard without Escape, then requests fullscreen', async () => {
+// Section 2.5 as measured (SPA-13, 2026-10-26): a window.open before the request leaves no activation for requestFullscreen() in
+// Chrome, Edge and Firefox, so the handler requests fullscreen first and opens the script window and takes the lock once it has begun.
+test('the handler requests fullscreen first, and once it has begun opens the speaker script and locks the keyboard without Escape', async () => {
   await withPage({}, async (page) => {
     await page.check('#present-open-script');
     await page.check('#present-keyboard-lock');
     await page.click('#present-start');
     await waitForFullscreen(page, true);
     const entries = await log(page);
-    assert.deepEqual(entries.slice(0, 3), ['open', 'lock', 'requestFullscreen']);
+    assert.equal(entries[0], 'requestFullscreen');
+    assert.ok(entries.indexOf('open') > 0, `open follows the request: ${entries.join(',')}`);
+    assert.ok(entries.indexOf('lock') > entries.indexOf('open'), `lock follows open: ${entries.join(',')}`);
     const facts = await page.evaluate(() => ({ open: window.__openCalls, lock: window.__lockCalls }));
     assert.equal(facts.open[0][0], '#/script');
     assert.doesNotMatch(`${facts.open[0][1] ?? ''} ${facts.open[0][2] ?? ''}`, /noopener|noreferrer/i, 'the script window must keep window.opener');
@@ -939,7 +943,9 @@ test('a blocked speaker window (window.open returned null) is announced, and pre
     await waitForFullscreen(page, true);
     await waitForLive(page, /speaker script.*blocked/i);
     assert.equal((await state(page)).mode, 'presenting');
-    assert.deepEqual((await log(page)).slice(0, 2), ['open', 'requestFullscreen']);
+    const entries = await log(page);
+    assert.equal(entries[0], 'requestFullscreen');
+    assert.ok(entries.includes('open'), `the blocked open follows the request: ${entries.join(',')}`);
   });
 });
 

@@ -136,6 +136,7 @@ const ENTERED = 'Presentation mode on. Press Esc or F11 to exit fullscreen.';
 const EXIT_FAILED = 'Could not leave fullscreen. Press Esc or F11 to exit fullscreen.';
 const SCRIPT_BLOCKED =
   'The speaker script window was blocked by the browser. Allow pop-ups for this page, or open #/script yourself.';
+const SCRIPT_OPENED = 'The speaker script window is open. Move it onto your own screen, then activate Present.';
 const KEYBOARD_REFUSED = 'Keyboard lock was not granted by the browser, so some shortcuts may still be captured.';
 const KEYBOARD_UNAVAILABLE = 'Keyboard lock is not available in this browser, so it cannot be turned on.';
 const WAKE_UNAVAILABLE = 'Screen wake lock is unavailable here, so the screen may dim.';
@@ -186,6 +187,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
   const keyboardToggle = doc.getElementById('present-keyboard-lock');
   const keyboardHint = doc.getElementById('present-keyboard-hint');
   const scriptToggle = doc.getElementById('present-open-script');
+  const scriptButton = doc.getElementById('present-script-open');
   const chooseButton = doc.getElementById('present-choose-screen');
   const screenField = doc.getElementById('present-screen-field');
   const screenSelect = doc.getElementById('present-screen');
@@ -315,6 +317,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     if (startHadFocus) exitButton.focus?.({ preventScroll: true });
     base = ENTERED;
     requestWakeLock();
+    follow();
     render();
     speak();
   }
@@ -393,7 +396,8 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     // Any other element is fullscreen: not ours, and not a reason to leave presentation mode.
   }
 
-  function openSpeakerScript(): void {
+  /** Opens the speaker script window. Returns whether it opened; when it did not, the note says so and is announced. */
+  function openSpeakerScript(): boolean {
     let opened: unknown = null;
     try {
       opened = win.open?.(SCRIPT_URL, SCRIPT_WINDOW); // no `noopener`: the opener is how the two windows stay in step (F43-F46)
@@ -403,13 +407,23 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     if (opened === null || opened === undefined) {
       notes.script = SCRIPT_BLOCKED;
       announce(SCRIPT_BLOCKED, { keep: true }); // kept as speak() is: the speak() that follows carries this note too, and replaces it
-      return;
+      return false;
     }
     try {
       options.onScriptWindow?.(opened); // the handle is the page's to keep; a hook that fails is not a reason not to present
     } catch {
       // nothing to undo: the window is open and the presentation goes on
     }
+    return true;
+  }
+
+  // The script window from its own control, before Present: the way that keeps fullscreen in every engine (see present()). A
+  // window that was blocked says so through its note; one that opened says where to put it.
+  function onOpenScript(): void {
+    if (disposed) return;
+    const opened = openSpeakerScript();
+    render();
+    if (opened) announce(SCRIPT_OPENED);
   }
 
   function lockKeyboard(token: number): void {
@@ -435,17 +449,27 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     return screens[Number(value)];
   }
 
-  // The activation handler. Order is normative (spec 2.5) and nothing awaits before `requestFullscreen`, which consumes the
-  // transient activation a pop-up and the keyboard lock also need (F1, F46, F160, F163).
+  // What follows fullscreen beginning: the speaker script window and the keyboard lock, if asked for. Called from enter(), in
+  // the same task as the browser's answer, so the activation the click gave is still there for both (see present()).
+  function follow(): void {
+    if (scriptToggle?.checked === true) openSpeakerScript();
+    if (keyboardToggle?.checked === true && keyboardAvailable()) lockKeyboard(activation);
+  }
+
+  // The activation handler. Spec 2.5 orders it script window, keyboard lock, fullscreen, on the ground that the fullscreen steps
+  // consume the transient activation the other two need (F1). Measured on 2026-10-26 (SPA-13 rehearsal; Chrome 155, Edge 156,
+  // Firefox 142, WebKit 26 under Playwright), the browsers do the opposite: a window.open before the request leaves nothing for
+  // requestFullscreen(), which is refused in Chrome, Edge and Firefox ("Permissions check failed", "Fullscreen request denied"),
+  // while a window.open and a keyboard.lock made once the request has been answered are honoured in all four. So the request goes
+  // first, with nothing awaited before it, and the rest follows once fullscreen has begun (enter -> follow). Firefox and WebKit end
+  // fullscreen when a new window opens or is raised, whatever the order; there the script window is opened first, from its own
+  // control (onOpenScript).
   function present(): void {
     if (disposed || phase !== 'idle' || !supported()) return;
     const token = ++activation;
     phase = 'requesting';
     notes = {};
     base = '';
-
-    if (scriptToggle?.checked === true) openSpeakerScript();
-    if (keyboardToggle?.checked === true && keyboardAvailable()) lockKeyboard(token);
 
     const screen = chosenScreen();
     let answer: unknown;
@@ -458,7 +482,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
     if (isThenable(answer)) {
       answer.then(
         () => {
-          if (token === activation) reconcile();
+          if (token === activation) reconcile(); // fullscreen has begun: enter() opens the script window and takes the lock
         },
         () => {
           if (token === activation) fail();
@@ -583,6 +607,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
 
   start.addEventListener('click', onStart);
   exitButton.addEventListener('click', onExit);
+  scriptButton?.addEventListener('click', onOpenScript);
   chooseButton?.addEventListener('click', onChooseScreen);
   doc.addEventListener('fullscreenchange', onFullscreenChange);
   // `fullscreenerror` is fired at the element and bubbles, but a browser that does not bubble it, or a root that has left the
@@ -602,6 +627,7 @@ export function mountPresentation(options: PresentationOptions): Presentation | 
       disposed = true;
       start.removeEventListener('click', onStart);
       exitButton.removeEventListener('click', onExit);
+      scriptButton?.removeEventListener('click', onOpenScript);
       chooseButton?.removeEventListener('click', onChooseScreen);
       doc.removeEventListener('fullscreenchange', onFullscreenChange);
       doc.removeEventListener('fullscreenerror', onFullscreenError);

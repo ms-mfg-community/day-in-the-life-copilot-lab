@@ -54,7 +54,8 @@ afterEach(() => {
 });
 
 describe('QA delta: presentation announcements do not change a running timer', () => {
-  it.each(['browser-ended', 'reject', 'error-event', 'reject-and-event', 'throw', 'blocked-popup-pending'] as const)(
+  // 'blocked-popup': the request is granted and the script window, opened once it is (section 2.5 as measured, SPA-13), is blocked.
+  it.each(['browser-ended', 'reject', 'error-event', 'reject-and-event', 'throw', 'blocked-popup'] as const)(
     '%s keeps counting through both later marks without replaying fullscreen status',
     async (outcome) => {
       const browser = createBrowser(HTML);
@@ -89,8 +90,8 @@ describe('QA delta: presentation announcements do not change a running timer', (
 
       if (outcome === 'browser-ended') doubles.endFullscreen();
       else {
-        doubles.outcome = outcome === 'blocked-popup-pending' ? 'pending' : outcome;
-        if (outcome === 'blocked-popup-pending') {
+        doubles.outcome = outcome === 'blocked-popup' ? 'resolve' : outcome;
+        if (outcome === 'blocked-popup') {
           const scriptToggle = browser.document.getElementById('present-open-script');
           if (!scriptToggle) throw new Error('The real shell must have its speaker-window option');
           Object.assign(scriptToggle, { checked: true });
@@ -103,15 +104,15 @@ describe('QA delta: presentation announcements do not change a running timer', (
       const status =
         outcome === 'browser-ended'
           ? /Presentation mode off.*segment 1 of/
-          : outcome === 'blocked-popup-pending'
+          : outcome === 'blocked-popup'
             ? /speaker script window was blocked/
             : /Fullscreen could not start.*segment 1 of/;
       expect(writes.mock.calls.some(([text]) => status.test(text) && text.includes('5 minutes left.'))).toBe(true);
-      if (outcome === 'blocked-popup-pending') {
+      if (outcome === 'blocked-popup') {
         expect(doubles.open).toHaveBeenCalledTimes(1);
-        expect(doubles.requests).toHaveLength(1); // Blocking the popup must not prevent the pending fullscreen request.
+        expect(doubles.requests).toHaveLength(1); // The blocked popup follows the request; it must not undo the presentation.
       }
-      expect(spa.presentation.active).toBe(false);
+      expect(spa.presentation.active).toBe(outcome === 'blocked-popup');
       expect(spa.store.get().currentId).toBe(SEGMENT);
       expect(spa.store.get().segments[SEGMENT]?.parameters['m1-segment-timer']).toMatchObject({ state: 'running' });
       expect(readout.textContent).toBe('5:00');
