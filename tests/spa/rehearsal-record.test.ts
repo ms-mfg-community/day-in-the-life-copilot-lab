@@ -27,7 +27,7 @@ describe('AC22 — the rehearsal record', () => {
   it.each(records.map((record) => [record.file, record] as const))('%s has the four headings, each once, in order', (_file, record) => {
     const found = [...record.sections.keys()].filter((heading) => HEADINGS.includes(heading));
     expect(found).toEqual(HEADINGS);
-    const text = readFileSync(path.join(DOCS, record.file), 'utf8');
+    const text = readFileSync(path.join(DOCS, record.file), 'utf8').replace(/\r\n/g, '\n'); // a CRLF checkout is the same record
     for (const heading of HEADINGS) expect(text.split(`\n${heading}\n`).length - 1, heading).toBe(1);
   });
 

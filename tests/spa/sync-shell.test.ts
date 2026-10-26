@@ -336,12 +336,15 @@ describe('the shell as the presentation', () => {
     for (const entry of sent) expect(entry.targetOrigin).not.toBe('*');
   });
 
-  it('keeps the order of SPA-06: the script window, then the keyboard lock, then fullscreen', async () => {
+  it('keeps the order of SPA-06 as measured in SPA-13: fullscreen first, then the script window, then the keyboard lock', async () => {
     const { shell } = await presenterShell();
     shell.check('present-open-script', true);
     shell.check('present-keyboard-lock', true);
     shell.press('present-start');
-    expect(shell.doubles.log).toEqual(['open', 'lock', 'requestFullscreen']); // as the click leaves it, before anything is awaited
+    expect(shell.doubles.log).toEqual(['requestFullscreen']); // as the click leaves it: the request, and nothing before it
+    await settle();
+    const order = shell.doubles.log.filter((entry) => ['requestFullscreen', 'open', 'lock'].includes(entry));
+    expect(order).toEqual(['requestFullscreen', 'open', 'lock']); // the rest follows once fullscreen has begun
   });
 
   it('moves the script surface within 500 ms of advancing the presentation, once it is open (AC9)', async () => {
@@ -632,38 +635,42 @@ describe('the hook that hands over the window that was opened', () => {
       Object.assign(must(browser.document.getElementById(id), id) as object, { checked: true });
     }
     browser.pointer.click(must(browser.document.getElementById('present-start'), 'the start button'));
-    const order = [...doubles.log]; // what the click itself did: the order that spec 2.5 makes normative, before anything is awaited
+    // What the click itself did: the request, and nothing before it (spec 2.5 as measured in the SPA-13 rehearsal: a window.open
+    // before the request leaves no activation for it). The window and the lock follow once fullscreen has begun.
+    const clicked = [...doubles.log];
     await settle();
-    return { doubles, handle, order };
+    const order = doubles.log.filter((entry) => ['requestFullscreen', 'open', 'hook', 'lock'].includes(entry));
+    return { doubles, handle, order, clicked };
   }
 
-  it('is given the very window that window.open returned, before the keyboard is locked and the page goes fullscreen', async () => {
+  it('is given the very window that window.open returned, once fullscreen has begun and before the keyboard is locked', async () => {
     let given: unknown = 'not called';
-    const { handle, order } = await mount((opened, seen) => {
+    const { handle, order, clicked } = await mount((opened, seen) => {
       given = opened;
       seen.log.push('hook');
     });
     expect(given).toBe(handle);
-    expect(order).toEqual(['open', 'hook', 'lock', 'requestFullscreen']);
+    expect(clicked).toEqual(['requestFullscreen']);
+    expect(order).toEqual(['requestFullscreen', 'open', 'hook', 'lock']);
   });
 
   it.each(['null', 'undefined', 'throws'] as const)('is not called when the window was blocked (%s)', async (blocked) => {
     const hook = vi.fn();
     const { order } = await mount(hook, { blocked });
     expect(hook).not.toHaveBeenCalled();
-    expect(order).toEqual(['open', 'lock', 'requestFullscreen']);
+    expect(order).toEqual(['requestFullscreen', 'open', 'lock']);
   });
 
   it('does not stop the presentation when it throws', async () => {
     const { order } = await mount(() => {
       throw new Error('the hook is broken');
     });
-    expect(order).toEqual(['open', 'lock', 'requestFullscreen']);
+    expect(order).toEqual(['requestFullscreen', 'open', 'lock']);
   });
 
   it('is optional', async () => {
     const { order } = await mount(undefined);
-    expect(order).toEqual(['open', 'lock', 'requestFullscreen']);
+    expect(order).toEqual(['requestFullscreen', 'open', 'lock']);
   });
 });
 
