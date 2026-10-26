@@ -40,9 +40,14 @@
           </label>
           <p id="present-keyboard-hint" hidden></p>
           <label>
-            <input type="checkbox" id="present-open-script" />
+            <input type="checkbox" id="present-open-script" aria-describedby="present-script-hint" />
             Also open the speaker script window (optional)
           </label>
+          <button type="button" id="present-script-open">Open speaker script</button>
+          <p id="present-script-hint">
+            In Firefox and Safari, opening a window ends fullscreen: open the speaker script first, move it onto your own screen,
+            then activate Present with the option above left off.
+          </p>
           <button type="button" id="present-choose-screen" hidden>Choose audience screen</button>
           <div id="present-screen-field" hidden>
             <label for="present-screen">Audience screen</label>

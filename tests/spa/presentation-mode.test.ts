@@ -267,7 +267,8 @@ describe('activating Present (AC7)', () => {
     check(page, 'present-keyboard-lock');
     page.presentation.present();
     page.presentation.present();
-    expect(page.doubles.log).toEqual(['open', 'lock', 'requestFullscreen']);
+    // One request, and nothing else yet: the script window and the lock follow the browser's answer, which has not come.
+    expect(page.doubles.log).toEqual(['requestFullscreen']);
   });
 
   it('does nothing when asked while the root is already the fullscreen element', async () => {
@@ -281,19 +282,27 @@ describe('activating Present (AC7)', () => {
   });
 });
 
-describe('the order of the activation handler (section 2.5)', () => {
-  it('opens the speaker script first, locks the keyboard second and requests fullscreen last', () => {
+// Section 2.5 orders the handler script window, lock, fullscreen. Measured on 2026-10-26 in the SPA-13 rehearsal (Chrome 155,
+// Edge 156, Firefox 142, WebKit 26), a window.open before the request leaves no activation for requestFullscreen(), which Chrome,
+// Edge and Firefox then refuse, while a window.open and a lock made once the request has been answered are honoured in all four.
+// The handler therefore requests fullscreen first, with nothing awaited before it, and the rest follows the answer.
+describe('the order of the activation handler (section 2.5, as measured)', () => {
+  it('requests fullscreen first, with nothing before it, and opens the speaker script and locks the keyboard once the browser has answered', async () => {
     const page = mount();
     check(page, 'present-open-script');
     check(page, 'present-keyboard-lock');
     click(page, 'present-start');
-    expect(page.doubles.log).toEqual(['open', 'lock', 'requestFullscreen']);
+    expect(page.doubles.log).toEqual(['requestFullscreen']);
+    await settle();
+    expect(page.doubles.log).toEqual(['requestFullscreen', 'wakeLock.request:screen', 'open', 'lock']);
+    expectPresenting(page);
   });
 
-  it('opens #/script by name, with no noopener, so the two windows can talk (F43, F45, F46)', () => {
+  it('opens #/script by name, with no noopener, so the two windows can talk (F43, F45, F46)', async () => {
     const page = mount();
     check(page, 'present-open-script');
     click(page, 'present-start');
+    await settle();
     expect(page.doubles.open).toHaveBeenCalledTimes(1);
     const [url, target, features] = page.doubles.open.mock.calls[0];
     expect(url).toBe('#/script');
@@ -301,10 +310,11 @@ describe('the order of the activation handler (section 2.5)', () => {
     expect(`${target} ${features ?? ''}`).not.toMatch(/noopener|noreferrer/i);
   });
 
-  it('never passes Escape to the keyboard lock, and never an empty list that would lock every key (F84, F163, F168)', () => {
+  it('never passes Escape to the keyboard lock, and never an empty list that would lock every key (F84, F163, F168)', async () => {
     const page = mount();
     check(page, 'present-keyboard-lock');
     click(page, 'present-start');
+    await settle();
     expect(page.doubles.lockedCodes).toHaveLength(1);
     const codes = page.doubles.lockedCodes[0];
     expect(codes).toEqual([...KEYBOARD_LOCK_CODES]);
@@ -396,9 +406,10 @@ describe('the order of the activation handler (section 2.5)', () => {
     page.doubles.behaviour.popupBlocked = true;
     check(page, 'present-open-script');
     click(page, 'present-start');
-    expect(page.doubles.log).toEqual(['open', 'requestFullscreen']);
-    expect(page.announced.join(' ')).toMatch(/speaker script.*blocked/i);
+    expect(page.doubles.log).toEqual(['requestFullscreen']);
     await settle();
+    expect(page.doubles.log).toEqual(['requestFullscreen', 'wakeLock.request:screen', 'open']);
+    expect(page.announced.join(' ')).toMatch(/speaker script.*blocked/i);
     expectPresenting(page);
     expect(last(page)).toMatch(/presentation mode on/i);
     expect(last(page)).toMatch(/speaker script.*blocked/i);
@@ -474,13 +485,14 @@ describe('when fullscreen fails (F3, F9, F10)', () => {
     expect(page.announced).toEqual([]);
   });
 
-  it('gives up the keyboard lock it took for a request that failed', async () => {
+  it('takes no keyboard lock for a request that failed: the lock follows an answer that said no', async () => {
     const page = mount();
     page.doubles.outcome = 'reject';
     check(page, 'present-keyboard-lock');
     click(page, 'present-start');
     await settle();
-    expect(page.doubles.log).toEqual(['lock', 'requestFullscreen', 'unlock']);
+    expect(page.doubles.log).toEqual(['requestFullscreen']);
+    expect(page.doubles.lockedCodes).toHaveLength(0);
   });
 
   it('does not report a failure once fullscreen has in fact begun (a stale second request)', async () => {
