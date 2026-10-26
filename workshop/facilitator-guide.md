@@ -17,41 +17,48 @@ audience: "Workshop presenter / facilitator"
 > Pacing is governed by `workshop/timing-plan.md`. Per-module
 > advanced outcomes live in `workshop/curriculum.md`.
 
-## Delivery artifacts (hackathon variant)
+## Delivery artifacts
 
 Open these before each session; rehearse against them the day before.
 
-- **Slide deck:** `workshop/site/hackathon.html` — open in a browser
-  on the presenter machine. Press `S` to launch presenter mode
-  (speaker notes + clock on the second screen).
+- **Teaching SPA:** the live-delivery surface
+  ([spec 005](../specs/005-teaching-spa.md)). Build it with
+  `npm run spa:build` and serve `workshop/spa/dist/` over
+  `http://localhost`, or build the portable file with
+  `npm run spa:build:single` and open
+  `workshop/spa/dist/standalone/teaching-spa.html` from disk. Open the
+  speaker script window for your own screen (in Chrome and Edge the
+  "Also open the speaker script window" option does it with Present;
+  in Firefox and Safari use **Open speaker script** first, then
+  Present), then **Present** for fullscreen on the audience monitor.
+  **Keyboard shortcuts** on the page lists the keys: n and p move
+  between segments, t starts and pauses the segment timer.
 - **Presenter script:** `docs/workshop/presenter-script.md` — read
   during rehearsal; keep open in a side pane during delivery for the
-  per-slide narration.
-- **Schedule data:** `workshop/site/agenda.json` — slide 3 reads this
-  at runtime. If the agenda shifts, edit the JSON; do not hand-edit
-  the deck.
+  narration. It was written for the retired Reveal.js deck and
+  follows the same module order.
+- **Schedule data:** `workshop/site/agenda.json` — the schedule the
+  presenter script describes. If the agenda shifts, edit the JSON.
 
-### Regenerating slide screenshots
+### Smoke-testing the Teaching SPA
 
-If the deck changes and you need refreshed PNGs (for handouts or
-review), run:
-
-```
-node scripts/workshop/screenshot-slides.mjs
-```
-
-Output lands in `.orchestrator/screenshots/` (1920×1080 PNG per slide).
-
-### Smoke-testing presenter mode
-
-Before a live session, verify presenter mode still launches cleanly:
+Before a live session, run the gates on the presenter machine:
 
 ```
-node scripts/workshop/test-presenter-mode.mjs
+npm run spa:test:present
+npm run spa:test:sync
+npm run spa:test:keyboard
+npm run spa:test:a11y
+npm run spa:test:single
 ```
 
-The script opens the deck, triggers `S`, and confirms the speaker-notes
-window renders. Run it as part of pre-flight when the deck has changed.
+Each builds the application, drives it in a real browser and checks
+presentation mode, the speaker script following, the keyboard, the
+accessibility gate and the portable file. `workshop/spa/docs/` holds
+the capability matrix (which browser allows what from a file, from
+localhost and from a hosted site), the accessibility record and the
+rehearsal records; the Reveal.js hackathon deck was retired on
+2026-10-26 (`workshop/spa/docs/hackathon-retired.md`).
 
 ## Pre-flight — the day before
 

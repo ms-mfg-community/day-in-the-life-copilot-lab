@@ -11,20 +11,31 @@ Advanced Copilot CLI workshop. Labs under `labs/` remain authoritative
 for self-paced study; materials here are curated slices that reference
 the labs, not duplicates of them.
 
-## Hackathon delivery artifacts
+## Live delivery surface
 
-Live-session surface produced by the materials-gap arc. Open these
-when delivering or rehearsing the hackathon variant of the workshop.
+The Teaching SPA under `workshop/spa/` is the surface for delivering
+or rehearsing the workshop ([spec 005](../specs/005-teaching-spa.md)).
+It is built over the slide and speaker-script Markdown in this
+directory, so it cannot drift from the labs it teaches.
 
-- `workshop/site/hackathon.html` — Reveal.js deck (64 slides at
-  1920×1080). Open in a browser; press `S` for presenter mode with
-  speaker notes and a dual-screen clock.
-- `docs/workshop/presenter-script.md` — narrative walkthrough mapped
-  1:1 to the deck slides. Use this for rehearsal and as the
-  facilitator handoff doc.
-- `workshop/site/agenda.json` — single source of truth for the
-  schedule. Slide 3 of the deck reads it at runtime; edit here, not
-  in the HTML.
+- `npm run spa:build` — the multi-file build in `workshop/spa/dist/`;
+  serve it over `http://localhost` or open `npm run spa:dev`.
+- `npm run spa:build:single` — the portable
+  `workshop/spa/dist/standalone/teaching-spa.html`, one file to open
+  from disk with no server.
+- Press **Present** for fullscreen on the audience monitor and open
+  the speaker script window for your own screen; **Keyboard
+  shortcuts** on the page lists the keys. The rehearsal checklist and
+  `workshop/spa/docs/` hold the capability matrix, the accessibility
+  record and the rehearsal records.
+- `docs/workshop/presenter-script.md` — narrative walkthrough written
+  for the retired Reveal.js hackathon deck; still useful for
+  rehearsal narration. `workshop/site/agenda.json` is the schedule
+  data it describes.
+
+The Reveal.js hackathon deck that used to live at `workshop/site/`
+was retired on 2026-10-26 after a passing rehearsal; see
+`workshop/spa/docs/hackathon-retired.md`.
 
 ## Layout
 

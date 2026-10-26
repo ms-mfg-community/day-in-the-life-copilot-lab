@@ -21,4 +21,3 @@ packaging/core/copilot text eol=lf
 solutions/lab-gh-extensions/gh-clab/gh-clab text eol=lf
 scripts/workshop/*.mjs text eol=lf
 scripts/generate-lab12-fixture.py text eol=lf
-workshop/site/hackathon.html -text
