@@ -123,12 +123,13 @@ describe('the shell markup (index.html)', () => {
     expect(document.body.contains(found)).toBe(true);
   });
 
-  it('lists the skip link, the nav and <main> first, then the controls, then the live region: the tab order of the shell does not move', () => {
+  it('lists the skip link, the nav and <main> first, then the controls, then the keyboard settings (SPA-09), then the live region: the tab order of the shell does not move', () => {
     expect(Array.from(root().children).map((child) => child.id || child.localName)).toEqual([
       'a',
       'segment-nav',
       'main',
       'presentation-controls',
+      'keyboard-settings',
       'live-region',
     ]);
   });

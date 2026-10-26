@@ -1,48 +1,10 @@
 // APG modal dialog (specs/005-teaching-spa.md 2.4, F102, F103; AC13). A button after the slide's first preformatted block
 // opens a dialog that holds a copy of that block. While the dialog is open the rest of the page is inert, Tab stays inside
-// it, and Escape or the close button closes it and gives focus back to the button that opened it.
+// it, and Escape or the close button closes it and gives focus back to the button that opened it (modal.ts).
 
-import { create, listen, tabbables } from './dom';
+import { create, listen } from './dom';
+import { BACKDROP, PANEL, createModal } from './modal';
 import type { Mounted, Mounter } from './types';
-
-// aria-modal="true" is only true when the page behind the dialog is hidden from the eye as well as from the keyboard
-// (F103), so the dialog is its own backdrop: it covers the viewport and dims what is behind it, and what it says sits on
-// an opaque panel above that. The shell has no stylesheet yet, so the presentation travels with the elements. Neither
-// sets `display`: an author `display` would beat the rule behind the `hidden` attribute and leave a closed dialog on screen.
-const BACKDROP = 'position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; background: rgba(0, 0, 0, 0.7)';
-const PANEL = [
-  'box-sizing: border-box',
-  'width: calc(100% - 2rem)',
-  'max-width: 48rem',
-  'max-height: 90vh',
-  'margin: 5vh auto',
-  'padding: 1rem 1.5rem',
-  'overflow: auto',
-  'background: Canvas',
-  'color: CanvasText',
-  'border: 2px solid CanvasText',
-  'border-radius: 0.5rem',
-].join('; ');
-
-/**
- * Makes everything around `element` inert, on every level up to the body, and returns what it touched. A live region is
- * left alone so that announcements are still heard, and so is anything already inert, which is somebody else's to restore.
- */
-function isolate(element: HTMLElement, body: HTMLElement): HTMLElement[] {
-  const touched: HTMLElement[] = [];
-  let node = element;
-  while (node !== body) {
-    const parent = node.parentElement;
-    if (parent === null) break;
-    for (const sibling of Array.from(parent.children) as HTMLElement[]) {
-      if (sibling === node || sibling.hasAttribute('inert') || sibling.matches('[aria-live]')) continue;
-      sibling.setAttribute('inert', '');
-      touched.push(sibling);
-    }
-    node = parent;
-  }
-  return touched;
-}
 
 export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): Mounted => {
   const source = root.querySelector('pre');
@@ -72,79 +34,14 @@ export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): M
   );
   source.after(create(doc, 'div', { id: entry.id }, trigger, dialog));
 
-  let isOpen = false;
-  let disposed = false;
-  let inert: HTMLElement[] = [];
-  /** Exists only while the dialog is open, so Escape elsewhere on the page is never swallowed. */
-  let removeKeydown: (() => void) | undefined;
-
-  const release = (): void => {
-    for (const element of inert) element.removeAttribute('inert');
-    inert = [];
-  };
-  const stopListening = (): void => {
-    removeKeydown?.();
-    removeKeydown = undefined;
-  };
-
-  /** Tab moves between the controls of the dialog and wraps at both ends; from anywhere outside them it comes back in. */
-  const keepTabInside = (event: KeyboardEvent): void => {
-    const stops = tabbables(dialog);
-    if (stops.length === 0) {
-      event.preventDefault();
-      return;
-    }
-    const first = stops[0];
-    const last = stops[stops.length - 1];
-    const current = doc.activeElement;
-    if (current === null || !dialog.contains(current)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && current === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && current === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  const onKeydown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      close();
-    } else if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) {
-      keepTabInside(event);
-    }
-  };
-
-  function open(): void {
-    if (isOpen || disposed) return;
-    isOpen = true;
-    inert = isolate(dialog, doc.body);
-    dialog.hidden = false; // before the focus moves: an element that is not shown cannot take it
-    removeKeydown = listen(doc, 'keydown', onKeydown);
-    closeButton.focus();
-  }
-
-  function close(): void {
-    if (!isOpen) return;
-    isOpen = false;
-    release(); // before the focus moves back: the trigger was inert too
-    trigger.focus(); // the button that opened it, named rather than guessed from where the focus happened to be
-    dialog.hidden = true;
-    stopListening();
-  }
-
-  const removers = [listen(trigger, 'click', open), listen(closeButton, 'click', close)];
+  // The button that opened it is where focus goes back to: named, rather than guessed from where the focus happened to be.
+  const modal = createModal(doc, dialog, { initialFocus: () => closeButton, returnTo: () => trigger });
+  const removers = [listen(trigger, 'click', modal.open), listen(closeButton, 'click', modal.close)];
 
   return {
-    dismiss: close, // what Escape does, for when the browser has spent the key: closed, and the focus back on the button that opened it
+    dismiss: modal.close, // what Escape does, for when the browser has spent the key: closed, and the focus back on the button that opened it
     dispose(): void {
-      disposed = true;
-      isOpen = false;
-      release(); // nothing to restore the focus to: the segment is going away
-      stopListening();
+      modal.dispose();
       removers.forEach((remove) => remove());
     },
   };

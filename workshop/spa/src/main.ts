@@ -2,6 +2,7 @@ import { segments } from 'virtual:spa-content';
 import inventory from '../content/interactions.json';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
 import { mountInteractions, type Mounted } from './interactions';
+import { mountKeyboard } from './shell/keyboard';
 import { createAnnouncer } from './shell/live-region';
 import {
   mountPresentation,
@@ -176,8 +177,10 @@ if (initialRoute.kind === 'segment') store.navigate(initialRoute.id);
 // way into <main> on either surface.
 function mountScriptSurface() {
   nav.hidden = true;
-  const controls = document.getElementById('presentation-controls');
-  if (controls) controls.hidden = true;
+  for (const id of ['presentation-controls', 'keyboard-settings']) {
+    const section = document.getElementById(id);
+    if (section) section.hidden = true;
+  }
   return mountSpeaker({
     document: document as unknown as SpeakerDocument,
     window: window as unknown as SpeakerWindow,
@@ -227,6 +230,11 @@ window.addEventListener('hashchange', settleAnchor);
 // what is said. The one interaction that keeps time for a segment is the one the inventory names.
 const timerIdOf = (segmentId: string): string | undefined =>
   inventory.interactions.find((entry) => entry.pattern === 'segment-timer' && entry.segment === segmentId)?.id;
+// The presenter's shortcuts (spec 2.10): single keys with a setting that turns them off, modifier equivalents that always work, and
+// the dialog that lists them. Only on the presentation surface: the speaker's page has its own controls and no deck to move.
+const keyboard = onScript ? null : mountKeyboard({ document, window, store, segmentIds: ids, announce, timerIdOf });
+if (keyboard) expose({ keyboard });
+
 const presenter = onScript
   ? null
   : createPresenterSync({
@@ -259,7 +267,10 @@ const presentation = onScript
       },
       // Firefox and WebKit end fullscreen with the Escape and never hand it to the page, so what Escape closes, hides or pauses
       // (SPA-04/05) would stay as it was: the interactions of the segment that is on show put it away.
-      onEndedByBrowser: () => interactions?.dismiss?.(),
+      onEndedByBrowser: () => {
+        interactions?.dismiss?.();
+        keyboard?.dismiss();
+      },
       // The window that was opened for the script is kept, and is the road of postMessage to it.
       onScriptWindow: (opened) => presenter?.setPopup(opened),
     });
@@ -271,4 +282,5 @@ window.addEventListener('pagehide', (event) => {
   if ((event as { persisted?: boolean }).persisted === true) return;
   presenter?.dispose();
   speaker?.dispose();
+  keyboard?.dispose();
 });

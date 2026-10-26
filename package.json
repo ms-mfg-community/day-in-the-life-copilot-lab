@@ -19,6 +19,7 @@
     "spa:probe": "node scripts/spa/probe.mjs",
     "spa:test:present": "npm run spa:build && vitest run tests/spa/presentation-mode.test.ts && node --test tests/spa/presentation-browser-check.mjs",
     "spa:test:sync": "npm run spa:build && vitest run tests/spa/sync-core.test.ts tests/spa/sync-lifecycle.test.ts tests/spa/sync-content.test.ts tests/spa/sync-speaker.test.ts tests/spa/sync-shell.test.ts tests/spa/qa-sync-owner-boundaries.test.ts tests/spa/sync-owner-identity.test.ts && node --test tests/spa/sync-browser-check.mjs",
+    "spa:test:keyboard": "npm run spa:build && vitest run tests/spa/keyboard.test.ts && node --test tests/spa/keyboard-browser-check.mjs",
     "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs",
     "spa:test:single": "npm run spa:build:single && vitest run tests/spa/single-file.test.ts tests/spa/single-file-csp.test.ts && node --test tests/spa/single-file-browser-check.mjs"
   },

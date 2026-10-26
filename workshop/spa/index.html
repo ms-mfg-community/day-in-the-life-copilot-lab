@@ -58,6 +58,13 @@
         </p>
         <p id="present-notes"></p>
       </section>
+      <section id="keyboard-settings" aria-label="Keyboard">
+        <label>
+          <input type="checkbox" id="shortcut-single-key" checked />
+          Single-key shortcuts (n, p, t and ?)
+        </label>
+        <button type="button" id="shortcut-help-open" aria-haspopup="dialog" aria-controls="shortcut-help">Keyboard shortcuts</button>
+      </section>
       <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
     </div>
     <script type="module" src="./src/main.ts"></script>
