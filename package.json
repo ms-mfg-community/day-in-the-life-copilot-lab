@@ -14,10 +14,12 @@
     "build:slides": "node scripts/workshop/build-slides.mjs",
     "spa:dev": "vite --config workshop/spa/vite.config.ts",
     "spa:build": "vite build --config workshop/spa/vite.config.ts",
+    "spa:build:single": "vite build --config workshop/spa/vite.single.config.ts",
     "spa:validate": "node scripts/spa/validate.mjs",
     "spa:test:present": "npm run spa:build && vitest run tests/spa/presentation-mode.test.ts && node --test tests/spa/presentation-browser-check.mjs",
     "spa:test:sync": "npm run spa:build && vitest run tests/spa/sync-core.test.ts tests/spa/sync-lifecycle.test.ts tests/spa/sync-content.test.ts tests/spa/sync-speaker.test.ts tests/spa/sync-shell.test.ts tests/spa/qa-sync-owner-boundaries.test.ts tests/spa/sync-owner-identity.test.ts && node --test tests/spa/sync-browser-check.mjs",
-    "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs"
+    "spa:frontmatter-keys": "node scripts/spa/frontmatter-keys.mjs",
+    "spa:test:single": "npm run spa:build:single && vitest run tests/spa/single-file.test.ts tests/spa/single-file-csp.test.ts && node --test tests/spa/single-file-browser-check.mjs"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
@@ -38,6 +40,7 @@
     "typescript": "^5.9.3",
     "unified": "^11.0.5",
     "vite": "^5.4.21",
+    "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^2.1.9"
   }
 }
