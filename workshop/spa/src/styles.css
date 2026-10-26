@@ -1,0 +1,128 @@
+/*
+ * The shell's stylesheet (specs/005-teaching-spa.md 2.10 and 2.11; AC17, AC18; child issue 10). Until this issue the shell had
+ * none, and each interaction carried its presentation in style attributes (see dialog.ts); those stay. What is here is what the
+ * conformance target asks of the chrome and of every control:
+ *
+ *   - every target is at least 24 by 24 CSS pixels (SC 2.5.8, F89): the segment links, the buttons, the checkboxes, the tabs and
+ *     the sliders; a link inside the slide text is the one declared exception (workshop/spa/docs/target-size-exceptions.md);
+ *   - focus is visible (SC 2.4.7, F86) and the indicator meets 3:1 against what is next to it (SC 1.4.11, F91): a 3px ring in a
+ *     blue that is 5.7:1 against white and 3.6:1 against a dark Canvas, held off the control by a 2px gap in the Canvas color, so
+ *     the ring is adjacent to the page and to the gap, never to the control's own color (the chosen node of a diagram is blue too);
+ *   - the current segment is marked by weight and an underline, not by color alone (SC 1.4.1);
+ *   - motion follows C39's inverse pattern (F107): the static presentation is the default, and the one transition and the smooth
+ *     scroll exist only under prefers-reduced-motion: no-preference, so a browser that reports nothing gets no motion either (AC18);
+ *   - a code block wraps instead of widening the page (SC 1.4.10): at 320 CSS px no route scrolls sideways, and no block becomes a
+ *     scrolling region a keyboard could not reach. A projected slide is wider than any line, so nothing wraps there.
+ */
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+a[data-skip] {
+  display: inline-block;
+  box-sizing: border-box;
+  min-height: 24px;
+  padding: 0.25rem 0.5rem;
+}
+
+#segment-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#segment-nav a {
+  display: inline-block;
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid CanvasText;
+  border-radius: 0.25rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+#segment-nav a[aria-current='page'] {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+button,
+select,
+[role='tab'],
+[role='slider'] {
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  font: inherit;
+}
+
+input[type='checkbox'] {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: 0 0.5rem 0 0;
+  vertical-align: middle;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+#presentation-controls,
+#keyboard-settings {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid CanvasText;
+}
+
+#presentation-controls > *,
+#keyboard-settings > * {
+  margin-bottom: 0.5rem;
+}
+
+:focus-visible {
+  outline: 3px solid #1a5fb4;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px Canvas;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  [role='tab'],
+  [role='slider'] {
+    transition: outline-offset 120ms ease-out;
+  }
+}
