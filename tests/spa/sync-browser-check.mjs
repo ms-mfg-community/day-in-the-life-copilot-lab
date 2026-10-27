@@ -37,6 +37,13 @@ const REVEAL = INVENTORY.find((entry) => entry.pattern === 'staged-reveal');
 const BUDGET_MS = 500; // AC9
 const require = createRequire(import.meta.url);
 let browser;
+
+/** The presenter options are in a panel under the bar (Setup): open it before using them. */
+async function openSetup(page) {
+  await page.evaluate(() => window.teachingSpa?.deck?.dismiss()); // a page opened without a module named shows its cover first
+  const toggle = page.locator('#present-setup-toggle');
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
 let server;
 let origin;
 
@@ -291,6 +298,7 @@ async function openPresenter(context, query = '', surface = 'nested') {
   const page = await context.newPage();
   await page.goto(url(surface, query));
   await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
+  await page.evaluate(() => window.teachingSpa.deck?.dismiss()); // opened without a module named, the page shows its cover first
   return observed(page);
 }
 
@@ -302,6 +310,7 @@ async function observed(page) {
 
 /** The control the presenter uses: the option, then a real click on Present. The script window is the one the browser opens for it. */
 async function openScript(page) {
+  await openSetup(page);
   await page.check('#present-open-script');
   const [popup] = await Promise.all([page.waitForEvent('popup'), page.click('#present-start')]);
   await popup.waitForFunction(() => window.teachingSpa && window.teachingSpa.speaker);
@@ -858,6 +867,7 @@ for (const blocked of ['null', 'undefined']) {
   test(`popup blocked (STUB: window.open gives back ${blocked}): it is surfaced and announced, nothing is sent, and the presentation goes on`, async () => {
     await withSession({ popupBlocked: blocked }, async (context) => {
       const page = await openPresenter(context);
+      await openSetup(page);
       await page.check('#present-open-script');
       await page.click('#present-start');
       await page.waitForFunction(() => /speaker script.*blocked/i.test(document.getElementById('present-notes').textContent));
@@ -1061,6 +1071,7 @@ async function reopenNamedSpeaker(context, query) {
     first.click('#qa-r2-another-presentation'),
   ]);
   await second.waitForFunction(() => window.teachingSpa && window.teachingSpa.sync);
+  await openSetup(second);
   await second.check('#present-open-script');
   await second.click('#present-start');
   await second.waitForFunction(() => window.__opened && window.__opened.teachingSpa?.speaker);
@@ -1158,6 +1169,7 @@ for (const row of TRANSPORT_ROWS) {
       await advanceTo(page, popup, IDS[1]);
 
       await reloaded(page);
+      await openSetup(page);
       await page.check('#present-open-script');
       await page.click('#present-start');
       await page.waitForFunction(() => window.__opened && window.__opened.teachingSpa?.speaker);
@@ -1296,6 +1308,7 @@ test('QA F1 boundary: opaque reload plus Present recovers the named speaker with
     await synchronized(popup);
     await advanceTo(page, popup, IDS[1]);
     await reloaded(page);
+    await openSetup(page);
     await page.check('#present-open-script');
     await page.click('#present-start');
     assert.equal(context.pages().length, 2, 'Present reuses the open named window');
@@ -1398,6 +1411,7 @@ test('QA F1 recovery: opaque reload then Present after liveness loss follows wit
 
     // Reuse through the real Present control, but only after the new liveness
     // path has released the old pairing. No window or transport is stubbed.
+    await openSetup(page);
     await page.check('#present-open-script');
     await page.click('#present-start');
     assert.equal(context.pages().length, 2, 'the named speaker is reused');
@@ -1479,6 +1493,7 @@ async function presentFile(context, query = '') {
 
 /** The Present control used again, for a script window that is already open under its name. The time is that of the click, on the shared clock. */
 async function presentAgain(page) {
+  await openSetup(page);
   await page.check('#present-open-script');
   await page.evaluate(() =>
     document.getElementById('present-start').addEventListener(

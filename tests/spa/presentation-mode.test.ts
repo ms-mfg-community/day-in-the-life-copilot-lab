@@ -123,15 +123,10 @@ describe('the shell markup (index.html)', () => {
     expect(document.body.contains(found)).toBe(true);
   });
 
-  it('lists the skip link, the nav and <main> first, then the controls, then the keyboard settings (SPA-09), then the live region: the tab order of the shell does not move', () => {
-    expect(Array.from(root().children).map((child) => child.id || child.localName)).toEqual([
-      'a',
-      'segment-nav',
-      'main',
-      'presentation-controls',
-      'keyboard-settings',
-      'live-region',
-    ]);
+  it('lists the skip link, then the bar (the controls, the keyboard settings (SPA-09) and the nav inside it), then <main>, the pager and the live region: the tab order of the shell does not move', () => {
+    expect(Array.from(root().children).map((child) => child.id || child.localName)).toEqual(['a', 'journey', 'main', 'segment-pager', 'live-region']);
+    const bar = root().querySelector('#journey');
+    for (const selector of ['#presentation-controls', '#keyboard-settings', 'nav#segment-nav']) expect(bar?.querySelector(selector), selector).not.toBeNull();
   });
 
   it('keeps the module script outside the root', () => {

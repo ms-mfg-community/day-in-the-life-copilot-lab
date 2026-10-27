@@ -148,6 +148,9 @@ async function measureTargets(page) {
 
 /** AC15 and AC17 over the page as it is now. Returns what it saw, for the report. */
 async function auditState(page, label) {
+  // The state is audited where the page starts, not where opening it left the scroll: a control scrolled under the sticky
+  // bar is out of the way, not obscured, and the bar covers nothing at the top of the page.
+  await page.evaluate(() => window.scrollTo(0, 0));
   const violations = await runChecker(page);
   assert.deepEqual(violations, [], `${label}: ${A11Y_TOOL.tool} reports violations:\n${JSON.stringify(violations, null, 2)}`);
   const targets = await measureTargets(page);
@@ -236,6 +239,24 @@ describe('AC15 and AC17: the declared checker over every route and every opened 
       await page.click('#shortcut-help-open');
       await page.waitForSelector('#shortcut-help:not([hidden])');
       console.log(JSON.stringify(await auditState(page, `#/${IDS[0]} + shortcuts dialog`)));
+    });
+  });
+
+  test(`route #/${IDS[0]} with the cover (the agenda) opened`, async () => {
+    await withContext({}, async (context) => {
+      const page = await open(context, `#/${IDS[0]}`);
+      await page.click('#agenda-open');
+      await page.waitForSelector('#agenda:not([hidden])');
+      console.log(JSON.stringify(await auditState(page, `#/${IDS[0]} + cover`)));
+    });
+  });
+
+  test(`route #/${IDS[0]} with the presenter setup panel opened`, async () => {
+    await withContext({}, async (context) => {
+      const page = await open(context, `#/${IDS[0]}`);
+      await page.click('#present-setup-toggle');
+      await page.waitForSelector('#present-options.is-open');
+      console.log(JSON.stringify(await auditState(page, `#/${IDS[0]} + setup`)));
     });
   });
 

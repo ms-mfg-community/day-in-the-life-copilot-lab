@@ -38,6 +38,13 @@ const ENGINE = process.env.SPA_QA_BROWSER_TYPE || 'chromium';
 const HEADED = process.env.SPA_QA_HEADED === '1';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 let browser;
+
+/** The presenter options are in a panel under the bar (Setup): open it before using them. */
+async function openSetup(page) {
+  await page.evaluate(() => window.teachingSpa?.deck?.dismiss()); // a page opened without a module named shows its cover first
+  const toggle = page.locator('#present-setup-toggle');
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
 let server;
 let base;
 const report = { browser: '', steps: [] };
@@ -127,6 +134,7 @@ test('the presentation: Present with the speaker script window, every segment, t
     const oneClick = ENGINE === 'chromium';
     let popupPromise;
     if (oneClick) {
+      await openSetup(page);
       await page.check('#present-open-script');
       popupPromise = context.waitForEvent('page', { timeout: 5000 }).catch(() => null);
     } else {
@@ -208,6 +216,7 @@ test('the portable file from disk: boots, presents, opens its script window, and
     await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation && window.teachingSpa.sync);
     const popupPromise = context.waitForEvent('page', { timeout: 5000 }).catch(() => null);
     if (ENGINE === 'chromium') {
+      await openSetup(page);
       await page.check('#present-open-script');
       await page.click('#present-start');
     } else {

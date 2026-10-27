@@ -29,6 +29,13 @@ const FIRST = 'm1-extensibility-architecture';
 const SECOND = 'm2-mcp';
 const require = createRequire(import.meta.url);
 let browser;
+
+/** The presenter options are in a panel under the bar (Setup): open it before using them. */
+async function openSetup(page) {
+  await page.evaluate(() => window.teachingSpa?.deck?.dismiss()); // a page opened without a module named shows its cover first
+  const toggle = page.locator('#present-setup-toggle');
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
 let server;
 let base;
 
@@ -80,7 +87,7 @@ before(async () => {
         response.writeHead(404).end();
         return;
       }
-      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : 'text/html');
+      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
       response.end(readFileSync(file));
     } catch {
       response.writeHead(404).end();
@@ -897,7 +904,9 @@ test('with document.fullscreenEnabled false (stubbed) Present is disabled and th
 // Chrome, Edge and Firefox, so the handler requests fullscreen first and opens the script window and takes the lock once it has begun.
 test('the handler requests fullscreen first, and once it has begun opens the speaker script and locks the keyboard without Escape', async () => {
   await withPage({}, async (page) => {
+    await openSetup(page);
     await page.check('#present-open-script');
+    await openSetup(page);
     await page.check('#present-keyboard-lock');
     await page.click('#present-start');
     await waitForFullscreen(page, true);
@@ -925,6 +934,7 @@ test('with both options left off, the handler calls nothing but requestFullscree
 
 test('leaving calls exitFullscreen() before it releases the keyboard lock', async () => {
   await withPage({}, async (page) => {
+    await openSetup(page);
     await page.check('#present-keyboard-lock');
     await page.click('#present-start');
     await waitForFullscreen(page, true);
@@ -938,6 +948,7 @@ test('leaving calls exitFullscreen() before it releases the keyboard lock', asyn
 
 test('a blocked speaker window (window.open returned null) is announced, and presenting goes on', async () => {
   await withPage({ popupBlocked: true }, async (page) => {
+    await openSetup(page);
     await page.check('#present-open-script');
     await page.click('#present-start');
     await waitForFullscreen(page, true);
@@ -951,6 +962,7 @@ test('a blocked speaker window (window.open returned null) is announced, and pre
 
 test('a refused keyboard lock (stubbed) is noted and presenting goes on', async () => {
   await withPage({ keyboard: 'reject' }, async (page) => {
+    await openSetup(page);
     await page.check('#present-keyboard-lock');
     await page.click('#present-start');
     await waitForFullscreen(page, true);
@@ -1036,6 +1048,7 @@ const MANUAL = /move this browser window onto the audience monitor, then activat
 
 test('without getScreenDetails the page gives the manual steps and offers no choice of screen', async () => {
   await withPage({ screens: 'absent' }, async (page) => {
+    await openSetup(page); // the manual steps are in the setup panel
     const facts = await page.evaluate(() => ({
       choose: !document.getElementById('present-choose-screen').hidden,
       guidance: document.getElementById('present-screen-guidance').textContent,
@@ -1054,6 +1067,7 @@ test('without getScreenDetails the page gives the manual steps and offers no cho
 
 test('when getScreenDetails is refused the page falls back to the manual steps and says so', async () => {
   await withPage({ screens: 'reject' }, async (page) => {
+    await openSetup(page);
     await page.click('#present-choose-screen');
     await waitForLive(page, MANUAL);
     const facts = await page.evaluate(() => ({
@@ -1071,6 +1085,7 @@ test('when getScreenDetails is refused the page falls back to the manual steps a
 
 test('a screen chosen through getScreenDetails is passed to requestFullscreen, and none otherwise', async () => {
   await withPage({ screens: 'stub' }, async (page) => {
+    await openSetup(page);
     await page.click('#present-choose-screen');
     await page.waitForFunction(() => !document.getElementById('present-screen-field').hidden);
     assert.deepEqual(await page.evaluate(() => [...document.getElementById('present-screen').options].map((option) => option.textContent.replace(/\s+/g, ' '))).then((labels) => labels.length), 3);

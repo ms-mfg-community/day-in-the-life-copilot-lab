@@ -56,7 +56,7 @@ before(async () => {
         response.writeHead(404).end();
         return;
       }
-      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : 'text/html');
+      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
       response.end(readFileSync(file));
     } catch {
       response.writeHead(404).end();
@@ -73,6 +73,12 @@ after(async () => {
 
 const settled = (page) =>
   page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
+/** Where a scrolled-to element lands: just under the sticky bar, which html's scroll-padding-top keeps it clear of. */
+async function belowBar(page, top) {
+  const barBottom = await page.evaluate(() => document.getElementById('journey')?.getBoundingClientRect().bottom ?? 0);
+  return top >= -1 && top <= barBottom + 12;
+}
 
 async function readPosition(page) {
   await settled(page);
@@ -110,8 +116,11 @@ async function withHistory(run) {
     await page.evaluate((id) => { location.hash = `#/${id}`; }, SECOND);
     await page.waitForFunction((id) => window.teachingSpa.store.get().currentId === id, SECOND);
     assert.equal((await readPosition(page)).y, 0, 'The outgoing transition must work before testing history');
-    await page.evaluate(() => window.scrollTo(0, 1300));
-    assert.equal((await readPosition(page)).y, 1300, 'The second real segment must be scrollable');
+    // As far down as the second segment goes, up to 1300: with the stylesheet on, a collapsed accordion is a shorter page.
+    const reach = await page.evaluate(() => Math.min(1300, document.documentElement.scrollHeight - innerHeight));
+    assert.ok(reach >= 400, `The second real segment must be scrollable: it scrolls ${reach}px`);
+    await page.evaluate((y) => window.scrollTo(0, y), reach);
+    assert.equal((await readPosition(page)).y, reach, 'The second real segment must be scrollable');
     await run(page);
   });
 }
@@ -164,7 +173,7 @@ test('Shell #main remains a skip target when content has a sanitized Main headin
     console.log('Reserved #main:', actual);
     assert.equal(actual.focus, 'main');
     assert.equal(actual.hash, `#/${FIRST}`);
-    assert.equal(Math.round(actual.mainTop), 0, 'A deferred content rewrite must not override the shell skip scroll');
+    assert.ok(await belowBar(page, actual.mainTop), `A deferred content rewrite must not override the shell skip scroll (top=${actual.mainTop})`);
   });
 });
 
@@ -203,10 +212,11 @@ for (const invalid of ['#/no-such-segment', '#/%E0%A4%A', '#/constructor']) {
 test('Keyboard segment navigation keeps the activated link focused and the next Tab usable', async () => {
   await withPage(async (page) => {
     const secondLink = await page.locator(`#segment-nav a[href="#/${SECOND}"]`).elementHandle();
-    await page.keyboard.press('Tab'); // skip link
-    await page.keyboard.press('Tab'); // first segment
-    await page.keyboard.press('Tab'); // second segment
-    assert.equal(await secondLink.evaluate((node) => node === document.activeElement), true);
+    // Tab to the second segment's link, through whatever the shell puts before the module list (the skip link, the journey
+    // header's controls, the outline): the test is about what happens after the link is activated, not about that distance.
+    const onSecond = () => secondLink.evaluate((node) => node === document.activeElement);
+    for (let presses = 0; presses < 40 && !(await onSecond()); presses += 1) await page.keyboard.press('Tab');
+    assert.equal(await onSecond(), true);
     await page.evaluate(() => window.scrollTo(0, 900));
     await page.keyboard.press('Enter');
     await page.waitForFunction((id) => window.teachingSpa.store.get().currentId === id, SECOND);
@@ -277,7 +287,7 @@ test('Keyboard skip activation keeps the non-first route and history entry intac
     assert.equal(actual.focus, 'main');
     assert.equal(await page.evaluate(() => location.href), before.href, 'The skip link must never replace the segment route');
     assert.equal(await page.evaluate(() => history.length), before.length, 'The skip link must not add a history entry');
-    assert.ok(Math.abs(await page.locator('#main').evaluate((node) => node.getBoundingClientRect().top)) <= 1);
+    assert.ok(await belowBar(page, await page.locator('#main').evaluate((node) => node.getBoundingClientRect().top)));
     await page.reload();
     await page.waitForFunction(() => window.teachingSpa);
     assert.equal((await readPosition(page)).id, SECOND);
@@ -312,7 +322,7 @@ test('Repeated in-page anchors scroll the real heading but retain the non-first 
       assert.equal(actual.id, SECOND);
       assert.equal(await content.evaluate((node) => node.isConnected), true);
       const top = await page.locator(`[id="${headingId}"]`).evaluate((node) => node.getBoundingClientRect().top);
-      assert.ok(Math.abs(top) <= 1, `The content heading must still be reached after route settlement (top=${top})`);
+      assert.ok(await belowBar(page, top), `The content heading must still be reached after route settlement (top=${top})`);
       assert.equal(new URL(page.url()).pathname, before.pathname);
       assert.equal(new URL(page.url()).search, before.search);
     }
@@ -335,6 +345,6 @@ test('An encoded shell skip fragment cannot be stolen by a content heading named
     await settled(page);
     assert.equal((await readPosition(page)).focus, 'main');
     const top = await page.locator('#main').evaluate((node) => node.getBoundingClientRect().top);
-    assert.ok(Math.abs(top) <= 1, `Decoded #main must reach the landmark, not user-content-main (top=${top})`);
+    assert.ok(await belowBar(page, top), `Decoded #main must reach the landmark, not user-content-main (top=${top})`);
   });
 });

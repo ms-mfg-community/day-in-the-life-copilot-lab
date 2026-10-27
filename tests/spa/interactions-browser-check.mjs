@@ -101,7 +101,7 @@ before(async () => {
         response.writeHead(404).end();
         return;
       }
-      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : 'text/html');
+      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
       response.end(readFileSync(file));
     } catch {
       response.writeHead(404).end();
@@ -406,7 +406,7 @@ for (const engine of ENGINES) {
         // at its active tab, which is the only tab stop it has.
         await page.locator('#segment-nav a').last().focus();
         let entered = false;
-        for (let press = 0; press < 12 && !entered; press++) {
+        for (let press = 0; press < 80 && !entered; press++) {
           await page.keyboard.press('Tab');
           entered = await page.evaluate((id) => document.getElementById(id).contains(document.activeElement), entry.id);
         }
@@ -549,7 +549,7 @@ for (const engine of ENGINES) {
       await withPage(engine, entry.segment, async (page) => {
         const trigger = `#${entry.id} button[aria-haspopup="dialog"]`;
         const dialog = `#${entry.id} [role="dialog"]`;
-        const close = `${dialog} button`;
+        const close = `${dialog} > div > button`; // the panel's own Close; the enlarged drawing has buttons of its own
         const isOpen = () => page.evaluate((css) => !document.querySelector(css).hidden, dialog);
 
         assert.equal(await page.getByRole('dialog').count(), 0, 'a closed dialog is not exposed');
@@ -803,8 +803,9 @@ for (const engine of ENGINES) {
         await page.mouse.move(5, 700);
 
         await page.locator('#segment-nav a').last().focus();
-        await page.keyboard.press('Tab');
-        assert.equal(await isFocused(page, trigger), true, 'the button is the first Tab stop of the slide');
+        // Through the opener's own controls (the outline, a timer) to the button: it is on the opener, after them.
+        for (let press = 0; press < 40 && !(await isFocused(page, trigger)); press++) await page.keyboard.press('Tab');
+        assert.equal(await isFocused(page, trigger), true, 'Tab from the navigation reaches the button');
         assert.equal(await expanded(), 'true', 'focus reveals it');
         await page.keyboard.press('Escape');
         assert.equal(await expanded(), 'false', 'Escape dismisses it');

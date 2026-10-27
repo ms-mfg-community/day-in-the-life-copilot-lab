@@ -63,6 +63,13 @@ async function withPage(url, run) {
   }
 }
 
+/** The presenter options are in a panel under the bar (Setup): open it before using them. */
+async function openSetup(page) {
+  await page.evaluate(() => window.teachingSpa?.deck?.dismiss()); // a page opened without a module named shows its cover first
+  const toggle = page.locator('#present-setup-toggle');
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
+
 const cspMessages = (lines) => lines.filter((line) => /content security policy|content-security-policy|refused to/i.test(line));
 
 test('the portable page boots from a file: URL: its inline module script runs under its own policy, and nothing is refused', async () => {
@@ -101,6 +108,7 @@ test('a segment link moves the page, and the move is announced: the application 
 test('Present opens the speaker script window from the same file, and that window boots under the same policy', async () => {
   await withPage(`${pathToFileURL(PORTABLE).href}#/${IDS[0]}`, async (page, { console: lines, errors, context }) => {
     await page.waitForFunction(() => window.teachingSpa && window.teachingSpa.presentation);
+    await openSetup(page);
     await page.check('#present-open-script');
     const [popup] = await Promise.all([context.waitForEvent('page'), page.click('#present-start')]);
     await popup.waitForFunction(() => document.querySelector('[data-surface="script"]') !== null);
