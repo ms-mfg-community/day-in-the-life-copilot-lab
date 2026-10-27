@@ -314,6 +314,20 @@ function tree(doc: Document, source: HTMLElement): { figure: HTMLElement; dispos
 }
 
 /** Replaces, in `root`, every text block the segment's diagrams describe, and every text-drawn tree, with its drawing. */
+/**
+ * A second, live drawing of a flow already drawn in `figure`, for the enlarge dialog: a copy of its DOM would carry the
+ * nodes and the steppers without what they do. Null when `figure` is not a flow, or where nothing can be drawn.
+ */
+export function redraw(doc: Document, figure: HTMLElement): { figure: HTMLElement; dispose: () => void } | null {
+  if (typeof doc.createElementNS !== 'function') return null;
+  const spec = FLOWS.find((candidate) => candidate.id === figure.getAttribute('data-diagram'));
+  const block = figure.querySelector<HTMLElement>('details > pre');
+  if (!spec || !block) return null;
+  const drawn = flow(doc, spec, block);
+  drawn.figure.querySelector('details')?.append(block.cloneNode(true));
+  return drawn;
+}
+
 export function renderDiagrams(doc: Document, root: HTMLElement, segmentId: string): () => void {
   if (typeof doc.createElementNS !== 'function' || typeof root.querySelectorAll !== 'function') return () => undefined;
   const disposers: Array<() => void> = [];

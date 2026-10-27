@@ -2,6 +2,7 @@
 // else its first preformatted block, opens a dialog that holds a copy of it, enlarged. While the dialog is open the rest of the page is inert, Tab stays inside
 // it, and Escape or the close button closes it and gives focus back to the button that opened it (modal.ts).
 
+import { redraw } from '../content/diagrams';
 import { create, listen } from './dom';
 import { BACKDROP, PANEL, createModal } from './modal';
 import type { Mounted, Mounter } from './types';
@@ -12,8 +13,10 @@ export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): M
 
   const titleId = `${entry.id}-title`;
   const dialogId = `${entry.id}-dialog`;
-  // The copy is a scrolling region, so it has to be reachable by keyboard. Its ids go: the slide keeps the originals.
-  const copy = source.cloneNode(true) as HTMLElement;
+  // A drawn flow is drawn again, live, so its nodes and step-through work in the enlarged view too; anything else is
+  // copied. The copy is a scrolling region, so it has to be reachable by keyboard. Its ids go: the slide keeps the originals.
+  const live = source.getAttribute('data-diagram') === null ? null : redraw(doc, source);
+  const copy = live?.figure ?? (source.cloneNode(true) as HTMLElement);
   for (const element of [copy, ...Array.from(copy.querySelectorAll('[id]'))]) element.removeAttribute('id');
   copy.setAttribute('role', 'region');
   copy.setAttribute('aria-labelledby', titleId);
@@ -42,6 +45,7 @@ export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): M
     dismiss: modal.close, // what Escape does, for when the browser has spent the key: closed, and the focus back on the button that opened it
     dispose(): void {
       modal.dispose();
+      live?.dispose();
       removers.forEach((remove) => remove());
     },
   };
