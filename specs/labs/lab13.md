@@ -67,7 +67,7 @@ See §4 C1, §6 D5 and the scope allowance in §5.
 | C5 | `--available-tools='view,grep,glob,lsp'` and `--allow-tool='shell(git:*)'` (§13.3.3) | `free-check` — **correct** | Both appear in `copilot --help`. Leave them. |
 | C6 | `--acp` exists on the installed CLI | `free-check` — **correct** | `copilot --help`: `--acp  Start as Agent Client Protocol server`. The lab's preflight grep is honest. |
 | C7 | `make test-node`, `pnpm -C node install`, `node/web/routes/students-api.ts` | `free-check` — **all resolve** | `Makefile` declares `test-node`; `node/pnpm-lock.yaml` exists (pnpm, not npm); `node/web/routes/students-api.ts` exists. No change. |
-| C8 | "`/orchestrate` command … refuses to spawn workers until the plan has acceptance criteria" (§13.5) | `free-check` — **resolves** | `.github/skills/orchestrate.SKILL.md` exists. Keep, but it is a repo prompt file, not a built-in CLI slash command — the sentence must not imply the latter. |
+| C8 | "`/orchestrate` command … refuses to spawn workers until the plan has acceptance criteria" (§13.5) | `free-check` — **resolves** | `.github/skills/orchestrate/SKILL.md` exists. Keep, but it is a repository command skill (`disable-model-invocation: true`, run as `/orchestrate`), not a built-in CLI slash command — the sentence must not imply the latter. |
 
 > No `research` disposition. Every claim above was settled by running the installed tool or
 > reading a file in this repo. **Do not commission a `spec-forge` run for this lab.**
@@ -139,7 +139,7 @@ parallel with this one.
 | D4 | L229 | `COPILOT_AGENT_NAME=critic copilot \` — not a documented environment variable (`copilot help environment`). Remove the assignment; keep the `--agent rubber-duck --available-tools=… --acp` invocation, which is valid. |
 | D5 | L64–L88 (the included block) + `docs/_partials/currency.md` L32–L33 | **The shared partial is wrong in two rows, and ten labs inherit it.** (a) "`Shift+Tab` toggles plan mode; autopilot mode is the default" — autopilot is **not** the default (`--autopilot` *starts* it; `--mode` defaults to `interactive`), and `shift+tab` *switches* among three modes rather than toggling one. (b) "`/model <tier-or-id>`" — there is no tier argument; `/model` takes a model id or `auto`. Labs 01 and 07 were each corrected in their own pass and now contradict the partial, and `lab07-contract` already **bans** the `tier-or-id` string. Fix per the wording map below, then re-sync all ten per §5. |
 | D6 | L55, L223, L274, and §A./§B. cites at L206, L292, L312, L321, L340, L348, L396, L403 | Eleven internal cross-references use the old scheme or point at a non-existent section. All must be rewritten with D2's map. |
-| D7 | L406 | "the `/orchestrate` command" reads as a built-in CLI slash command. It is `.github/skills/orchestrate.SKILL.md`, a repo prompt file. Phrase it as such; the file resolves, so this is wording only. |
+| D7 | L406 | "the `/orchestrate` command" reads as a built-in CLI slash command. It is `.github/skills/orchestrate/SKILL.md`, a repository command skill. Phrase it as such; the file resolves, so this is wording only. |
 
 ### D2 — the numbering map (authoritative; `lab14`'s spec restates it)
 

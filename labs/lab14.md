@@ -78,11 +78,9 @@ without losing the plot.
 >   designed to keep per-turn context bounded.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
 >   to verify your footprint between phases. The repo's
->   `.github/skills/cost-check/SKILL.md` is an **IDE prompt file**:
->   run it as `/cost-check` from Copilot Chat in VS Code, Visual
->   Studio, or JetBrains. The Copilot CLI has no `/cost-check`
->   command, so in a CLI pane paste the file's contents into the
->   session as an ordinary prompt.
+>   `.github/skills/cost-check/SKILL.md` is a command skill: run it
+>   as `/cost-check` in any CLI pane. It is not a built-in command,
+>   so it appears in `/skills list`, not in `copilot help commands`.
 
 > ⚠️ **Enterprise model policy changed — pinning tiers no longer holds
 > automatically.** Since the org-wide policy took effect on 2026-08-26
