@@ -48,7 +48,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | AC4 | No `@`-prefixed invocation form survives — not `@prompt-name`, `@name`, `@create-dotnet-test` or `@create-node-test` — and the `/`-prefixed forms are present | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC5 | The "Skills vs Prompts" callout appears **once**, not twice with conflicting characters | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC6 | §4.1 no longer asserts skills cannot be invoked, and names the documented `/skill-name` form | `npx vitest run tests/lab-structure/lab04-contract` |
-| AC7 | §4.4's interactive CLI session contains no prompt-file invocation; the prompt step is marked IDE-only | `npx vitest run tests/lab-structure/lab04-contract` |
+| AC7 | §4.4's interactive CLI session runs the track's command skill (`/create-dotnet-test`) itself; no step is sent to an IDE, and the lab still records that `.prompt.md` files are IDE-only | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC8 | The unsourced "max 1024 chars" description limit is gone | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC9 | §4.2 states that `dotnet-testing` already ships in this repo, so the step overwrites it | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC10 | The lab names a deterministic skills command (`/skills list` or `/skills info`) as the way to confirm loading | `npx vitest run tests/lab-structure/lab04-contract` |

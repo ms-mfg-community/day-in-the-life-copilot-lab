@@ -1,14 +1,14 @@
 ---
-title: "Lab 04 — Node.js skill & prompt (track appendix)"
+title: "Lab 04 — Node.js skills (track appendix)"
 lab_number: 4
 track: node
 ---
 
-# Lab 04 — Node track appendix: `node-testing` skill + `@create-node-test` prompt
+# Lab 04 — Node track appendix: `node-testing` skill + `/create-node-test` command skill
 
-This appendix gives you the Node.js variants of the skill and prompt template created in [`labs/lab04.md`](../../lab04.md).
+This appendix gives you the Node.js variants of the knowledge skill and command skill created in [`labs/lab04.md`](../../lab04.md).
 
-> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature; the `@create-node-test` invocation below works in Copilot Chat (VS Code / Visual Studio / JetBrains), not in Copilot CLI. The skill portion of this appendix is unaffected — skills run in CLI as written.
+> ℹ️ Section B creates a **command skill**: a skill with `disable-model-invocation: true`, which Copilot loads only when you type `/create-node-test`. Earlier versions of this lab wrote it as a VS Code prompt file (`.prompt.md`), which only runs in an IDE chat view; as a skill it runs in Copilot CLI as well as in VS Code's Copilot harness.
 
 ## A. Create the `node-testing` skill
 
@@ -79,14 +79,15 @@ SKILL
 
 **PowerShell:** wrap in `@'...'@ | Out-File -FilePath .github/skills/node-testing/SKILL.md -Encoding utf8`.
 
-## B. Create the `@create-node-test` prompt
+## B. Create the `/create-node-test` command skill
 
 ````bash
-mkdir -p .github/prompts
-cat > .github/prompts/create-node-test.prompt.md << 'PROMPT'
+mkdir -p .github/skills/create-node-test
+cat > .github/skills/create-node-test/SKILL.md << 'SKILL'
 ---
 name: create-node-test
 description: Generate a Vitest test file for a Node.js Fastify route or repository
+disable-model-invocation: true
 ---
 
 # Create Node Test
@@ -109,12 +110,12 @@ Generate a Vitest test file following the `node-testing` skill conventions.
 
 - Run `pnpm -C node test` and confirm all new cases pass.
 - Ensure no `console.log` appears in the test file.
-PROMPT
+SKILL
 ````
 
 ## C. Verify
 
 ```bash
 head -5 .github/skills/node-testing/SKILL.md
-head -7 .github/prompts/create-node-test.prompt.md
+head -7 .github/skills/create-node-test/SKILL.md
 ```
