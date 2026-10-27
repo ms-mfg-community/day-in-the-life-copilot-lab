@@ -431,11 +431,10 @@ code .
 
 | Directory | Contents | Count |
 |-----------|----------|-------|
-| `.github/skills/` | Agent skills (`SKILL.md`) | 6 |
-| `.github/prompts/` | Prompt templates (`.prompt.md`) | 19 |
+| `.github/skills/` | Agent skills (`SKILL.md`): 6 knowledge packs and 19 `/name` command skills | 25 |
 | `.github/hooks/` | Hook configuration | 1 |
 | `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
-| `.copilot/` | MCP server configuration (`mcp-config.json`; the root `.mcp.json` is an empty workspace-scope stub that the labs populate) | 2 |
+| `.copilot/` | MCP server configuration (`mcp-config.json`, the template Lab 05 copies to `~/.copilot/`; the root `.mcp.json` carries the same four servers at workspace scope for Copilot CLI and VS Code) | 2 |
 | `scripts/hooks/` | Hook shell scripts | 17 |
 | `ContosoUniversity.*` | .NET project files | 5 projects |
 
@@ -523,8 +522,8 @@ erDiagram
 | **Skills** | `SKILL.md` auto-activating knowledge packs | 01, 04 |
 | **Instructions** | `copilot-instructions.md` + path-scoped `.instructions.md` | 02 |
 | **AGENTS.md** | Repository-level context — always loaded | 02 |
-| **Prompts** | `.prompt.md` reusable command templates | 04 |
-| **MCP Servers** | External tool integrations (Context7, Memory, Microsoft Learn) | 05 |
+| **Command skills** | `SKILL.md` with `disable-model-invocation: true` — reusable `/name` commands | 04 |
+| **MCP Servers** | External tool integrations (Context7, Microsoft Learn, WorkIQ) | 05 |
 | **Hooks** | Pre/post tool-use lifecycle automation | 06 |
 | **Orchestration** | Multi-agent coordination workflows | 07 |
 | **Agentic Workflows** | `gh-aw` CI/CD automation with AI agents | 08, 09 |
@@ -551,7 +550,7 @@ erDiagram
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
-| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three memory layers (Raw sources → Wiki → Schema), the `consolidate-lessons` prompt file, `.copilot/lessons/` |
+| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three memory layers (Raw sources → Wiki → Schema), the `/consolidate-lessons` skill, `.copilot/lessons/` |
 | [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
@@ -586,9 +585,9 @@ This repo ships with a rich set of configurations for you to explore and extend:
 |----------|-------|---------|
 | **Agents** | 3 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07 |
 | **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
-| **Prompts** | 23 | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent` |
+| **Command skills** | 19 | `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/cost-check` |
 | **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
-| **MCP Servers** | 5 | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn |
+| **MCP Servers** | 4 | Context7 (library docs), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 
 ### Current Copilot CLI surface (2026 refresh)
@@ -631,14 +630,13 @@ Version floors, model tiers, and MCP pins live in
 day-in-the-life-copilot-lab/
 ├── .github/
 │   ├── agents/                    # Agent profiles (more created during labs)
-│   ├── skills/                    # Agent skills (SKILL.md)
-│   ├── prompts/                   # Prompt templates (.prompt.md, incl. /cost-check)
+│   ├── skills/                    # Agent skills (SKILL.md), incl. /cost-check and the other /name commands
 │   ├── hooks/                     # Hook configuration (default.json)
 │   ├── instructions/              # Path-specific instructions (.instructions.md)
 │   ├── copilot-instructions.md    # Repository-wide instructions
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
-│   └── mcp-config.json            # MCP server configuration (5 servers)
+│   └── mcp-config.json            # MCP server configuration (4 servers; root .mcp.json mirrors it)
 ├── dotnet/                        # .NET track — ContosoUniversity solution
 │   ├── ContosoUniversity.sln
 │   ├── ContosoUniversity.Core/        # Domain models and interfaces
