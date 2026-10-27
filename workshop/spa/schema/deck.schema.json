@@ -12,6 +12,11 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9._/-]+\\.json$"
     },
+    "cover": {
+      "description": "The cover slide (role: cover), under workshop/slides/. Not a segment: the shell's header takes the workshop's title and tagline from it.",
+      "type": "string",
+      "pattern": "^workshop/slides/[A-Za-z0-9._-]+\\.md$"
+    },
     "segments": {
       "type": "array",
       "minItems": 1,

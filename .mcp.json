@@ -18,17 +18,6 @@
         "*"
       ]
     },
-    "memory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
-      "tools": [
-        "*"
-      ]
-    },
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",

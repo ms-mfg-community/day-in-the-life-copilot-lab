@@ -6,7 +6,7 @@
 > compact context between phases. This guide gives you a mental model
 > for cost-conscious Copilot use.
 >
-> Pair it with the `/cost-check` prompt
+> Pair it with the `/cost-check` skill
 > ([`.github/skills/cost-check/SKILL.md`](../.github/skills/cost-check/SKILL.md))
 > when you want a per-session estimate, and with the
 > `strategic-compact` skill when you want a recommended compaction
@@ -28,7 +28,7 @@
 > and curate the allowlist themselves; otherwise, treat "pin your team to
 > these tiers" as social convention, not a technical guarantee.
 
-> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature today — Copilot CLI does not expose a `/cost-check` slash command for user-authored prompts. Treat the `.prompt.md` file as a reusable template you paste into a CLI session, or invoke it from Copilot Chat in your IDE.
+> ℹ️ `/cost-check` is a repository skill ([`.github/skills/cost-check/SKILL.md`](../.github/skills/cost-check/SKILL.md)) with `disable-model-invocation: true`: Copilot CLI loads it only when you type `/cost-check`. It used to be an IDE-only prompt file (`.prompt.md`); as a skill it also runs in VS Code's Copilot harness.
 
 ---
 
@@ -243,7 +243,7 @@ usage at three granularities:
   with `session_store_sql` `scope: "repository"`, gives you a
   team-wide footprint over time.
 
-The `/cost-check` prompt
+The `/cost-check` skill
 ([`.github/skills/cost-check/SKILL.md`](../.github/skills/cost-check/SKILL.md))
 does this for you mid-session: it queries the current session's
 events, surfaces the top-3 compaction opportunities, and recommends

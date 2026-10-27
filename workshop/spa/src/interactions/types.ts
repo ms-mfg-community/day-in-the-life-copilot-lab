@@ -1,0 +1,51 @@
+import type { Announcer } from '../shell/live-region';
+import type { ShellStore } from '../shell/state';
+
+/** One entry of workshop/spa/content/interactions.json, the inventory (specs/005-teaching-spa.md 2.4). */
+export interface InventoryEntry {
+  readonly id: string;
+  readonly pattern: string;
+  readonly segment: string;
+  readonly label: string;
+  readonly keys: readonly string[];
+  readonly statusRegion: boolean;
+  /** The id of the element that holds the long description of a chart or a diagram (AC19). */
+  readonly longDescriptionId?: string;
+  /** The id of the dataset a parameter-chart is computed from (workshop/spa/content/datasets). */
+  readonly dataset?: string;
+}
+
+/** What a pattern may read about the segment it sits in: the metadata the content pipeline derives from front matter. */
+export interface SegmentInfo {
+  readonly id: string;
+  readonly title: string;
+  readonly minutes: number;
+  readonly labRefs: readonly string[];
+}
+
+/**
+ * A mounted interaction. `dispose` undoes whatever reaches outside the segment's own DOM: document listeners, timers, `inert`, store subscriptions.
+ * `dismiss` is for a pattern that Escape puts away something in (a dialog, a popover, a running timer): it puts that away the way Escape does,
+ * and does nothing when there is nothing to put away. The shell calls it when the browser spends the Escape that leaves fullscreen, because
+ * Firefox and WebKit never hand the page that key.
+ */
+export interface Mounted {
+  dispose(): void;
+  dismiss?(): void;
+}
+
+export interface PatternContext {
+  readonly entry: InventoryEntry;
+  readonly segment: SegmentInfo;
+  /** The element holding the rendered slide. The pattern derives its content from it and builds its widget in it. */
+  readonly root: HTMLElement;
+  readonly document: Document;
+  readonly store: ShellStore;
+  readonly announce: Announcer;
+}
+
+/**
+ * Builds one inventory entry into the segment DOM. Throws, before it has changed anything, when the slide does not
+ * have the structure the pattern derives its content from.
+ */
+export type Mounter = (context: PatternContext) => Mounted;

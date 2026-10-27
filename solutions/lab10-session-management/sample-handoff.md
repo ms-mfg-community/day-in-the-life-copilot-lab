@@ -148,10 +148,10 @@ no graph, just markdown the agent wrote to itself last time.
 - code-reviewer.agent.md — for code review
 - planner.agent.md — for feature planning
 
-### Recommended Prompts
-Prompt files — ask the agent to follow them by path:
-- handoff.prompt.md — for session continuity
-- consolidate-lessons.prompt.md — to reshape the wiki (always start with --dry-run)
-- tdd.prompt.md — for test-driven development
-- orchestrate.prompt.md — for multi-agent workflows
+### Recommended Commands
+Command skills in .github/skills/ — run them as /name:
+- /handoff — for session continuity
+- /consolidate-lessons — to reshape the wiki (always start with --dry-run)
+- /tdd — for test-driven development
+- /orchestrate — for multi-agent workflows
 ```

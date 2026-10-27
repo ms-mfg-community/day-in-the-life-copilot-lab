@@ -439,15 +439,14 @@ code .
 
 2. Explore the key directories:
 
-| Directory               | Contents                                                                                                                   | Count      |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `.github/skills/`       | Agent skills (`SKILL.md`)                                                                                                  | 6          |
-| `.github/prompts/`      | Prompt templates (`.prompt.md`)                                                                                            | 19         |
-| `.github/hooks/`        | Hook configuration                                                                                                         | 1          |
-| `.github/instructions/` | Path-specific instructions (`.instructions.md`)                                                                            | 4          |
-| `.copilot/`             | MCP server configuration (`mcp-config.json`; the root `.mcp.json` is an empty workspace-scope stub that the labs populate) | 2          |
-| `scripts/hooks/`        | Hook shell scripts                                                                                                         | 17         |
-| `ContosoUniversity.*`   | .NET project files                                                                                                         | 5 projects |
+| Directory | Contents | Count |
+|-----------|----------|-------|
+| `.github/skills/` | Agent skills (`SKILL.md`): 6 knowledge packs and 19 `/name` command skills | 25 |
+| `.github/hooks/` | Hook configuration | 1 |
+| `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
+| `.copilot/` | MCP server configuration (`mcp-config.json`, the template Lab 05 copies to `~/.copilot/`; the root `.mcp.json` carries the same four servers at workspace scope for Copilot CLI and VS Code) | 2 |
+| `scripts/hooks/` | Hook shell scripts | 17 |
+| `ContosoUniversity.*` | .NET project files | 5 projects |
 
 3. Read the repository context document:
 
@@ -532,22 +531,22 @@ erDiagram
 
 ## What You'll Learn
 
-| Feature                | What It Does                                                          | Lab    |
-| ---------------------- | --------------------------------------------------------------------- | ------ |
-| **Plugin Marketplace** | Browse and install community agents from the CLI marketplace          | 01     |
-| **Agents**             | Custom `.agent.md` profiles with specialized AI roles                 | 01, 03 |
-| **Skills**             | `SKILL.md` auto-activating knowledge packs                            | 01, 04 |
-| **Instructions**       | `copilot-instructions.md` + path-scoped `.instructions.md`            | 02     |
-| **AGENTS.md**          | Repository-level context — always loaded                              | 02     |
-| **Prompts**            | `.prompt.md` reusable command templates                               | 04     |
-| **MCP Servers**        | External tool integrations (Context7, Memory, Microsoft Learn)        | 05     |
-| **Hooks**              | Pre/post tool-use lifecycle automation                                | 06     |
-| **Orchestration**      | Multi-agent coordination workflows                                    | 07     |
-| **Agentic Workflows**  | `gh-aw` CI/CD automation with AI agents                               | 08, 09 |
-| **Coding Agent**       | Platform-level issue → PR implementation                              | 09     |
-| **Code Review**        | AI-powered pull request reviews                                       | 09     |
-| **Reindex**            | Automatic semantic understanding of your codebase                     | 10     |
-| **Session Management** | Agent memory via markdown lessons — decisions, handoffs, project wiki | 10     |
+| Feature | What It Does | Lab |
+|---------|-------------|-----|
+| **Plugin Marketplace** | Browse and install community agents from the CLI marketplace | 01 |
+| **Agents** | Custom `.agent.md` profiles with specialized AI roles | 01, 03 |
+| **Skills** | `SKILL.md` auto-activating knowledge packs | 01, 04 |
+| **Instructions** | `copilot-instructions.md` + path-scoped `.instructions.md` | 02 |
+| **AGENTS.md** | Repository-level context — always loaded | 02 |
+| **Command skills** | `SKILL.md` with `disable-model-invocation: true` — reusable `/name` commands | 04 |
+| **MCP Servers** | External tool integrations (Context7, Microsoft Learn, WorkIQ) | 05 |
+| **Hooks** | Pre/post tool-use lifecycle automation | 06 |
+| **Orchestration** | Multi-agent coordination workflows | 07 |
+| **Agentic Workflows** | `gh-aw` CI/CD automation with AI agents | 08, 09 |
+| **Coding Agent** | Platform-level issue → PR implementation | 09 |
+| **Code Review** | AI-powered pull request reviews | 09 |
+| **Reindex** | Automatic semantic understanding of your codebase | 10 |
+| **Session Management** | Agent memory via markdown lessons — decisions, handoffs, project wiki | 10 |
 
 ---
 
@@ -555,29 +554,29 @@ erDiagram
 
 > 💡 **Multi-Platform Support:** All lab command lines provide both **PowerShell** and **WSL/Bash** alternatives. Choose the commands that work best for your environment.
 
-| Lab                        | Module                                                    | Focus                                                                                                                                                                                                                                                                                                                        |
-| -------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Setup](#choose-your-path) | Fork, Prerequisites, Overview                             | Fork repo, enable Actions, install tools                                                                                                                                                                                                                                                                                     |
-| [Lab 01](labs/lab01.md)    | Exploring Copilot Configuration                           | Plugin marketplace, agents, skills, instructions, prompts                                                                                                                                                                                                                                                                    |
-| [Lab 02](labs/lab02.md)    | Custom Instructions & AGENTS.md                           | Instruction hierarchy, modify, extend                                                                                                                                                                                                                                                                                        |
-| [Lab 03](labs/lab03.md)    | Creating a .NET Agent                                     | Build `dotnet-dev.agent.md`                                                                                                                                                                                                                                                                                                  |
-| [Lab 04](labs/lab04.md)    | Skills & Prompts                                          | Create a skill, write a prompt template                                                                                                                                                                                                                                                                                      |
-| [Lab 05](labs/lab05.md)    | MCP Server Configuration                                  | Configure Context7, Memory, Sequential Thinking                                                                                                                                                                                                                                                                              |
-| [Lab 06](labs/lab06.md)    | Hooks                                                     | Pre/post tool hooks, build checks                                                                                                                                                                                                                                                                                            |
-| [Lab 07](labs/lab07.md)    | Multi-Agent Orchestration                                 | Orchestrator → dev → QA → review                                                                                                                                                                                                                                                                                             |
-| [Lab 08](labs/lab08.md)    | gh-aw: PRD Generation                                     | Branch creation triggers PM agent                                                                                                                                                                                                                                                                                            |
-| [Lab 09](labs/lab09.md)    | Copilot Coding Agent & Code Review                        | Issue → Coding Agent → PR → AI review                                                                                                                                                                                                                                                                                        |
-| [Lab 10](labs/lab10.md)    | Agent memory: personalities, lessons, and consolidation   | Three memory layers (Raw sources → Wiki → Schema), the `consolidate-lessons` prompt file, `.copilot/lessons/`                                                                                                                                                                                                                |
-| [Lab 11](labs/lab11.md)    | Building & Distributing a Copilot Plugin                  | Enterprise marketplace, private registry, SBOM, allowlist policy                                                                                                                                                                                                                                                             |
-| [Lab 12](labs/lab12.md)    | Fabric MCP with Copilot CLI & VS Code                     | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene                                                                                                                                                                                |
-| [Lab 13](labs/lab13.md)    | A2A Concepts with Copilot CLI ACP                         | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations                                                                                                   |
-| [Lab 14](labs/lab14.md)    | Orchestrator + tmux Pattern (Deep-Dive)                   | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
-| [Lab 15](labs/lab15.md)    | LSP & Code Intelligence in Copilot CLI                    | Configure a language server, use go-to-definition/find-references/rename/call-hierarchy, know when Copilot still falls back to text search                                                                                                                                                                                   |
-| [Lab 16](labs/lab16.md)    | Enterprise Marketplace & Plugin Governance                | GA `managed-settings.json` schema, `strictKnownMarketplaces` deny-by-default, AI Controls admin walkthrough                                                                                                                                                                                                                  |
-| [Lab 17](labs/lab17.md)    | GitHub Admin Controls for Copilot/AI                      | AI Controls nav, default-on model availability policy, Copilot audit log scope                                                                                                                                                                                                                                               |
-| [Lab 18](labs/lab18.md)    | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer                                                                                                                                                                                                                          |
-| [Lab 19](labs/lab19.md)    | Self-Improving Agents & Skills (gh-aw Template)           | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs                                                                                                                                                                                                              |
-| [Lab 20](labs/lab20.md)    | Enterprise Token Optimization & Reporting                 | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency                                                                                                                                                                                                                              |
+| Lab | Module | Focus |
+|-----|--------|-------|
+| [Setup](#choose-your-path) | Fork, Prerequisites, Overview | Fork repo, enable Actions, install tools |
+| [Lab 01](labs/lab01.md) | Exploring Copilot Configuration | Plugin marketplace, agents, skills, instructions, prompts |
+| [Lab 02](labs/lab02.md) | Custom Instructions & AGENTS.md | Instruction hierarchy, modify, extend |
+| [Lab 03](labs/lab03.md) | Creating a .NET Agent | Build `dotnet-dev.agent.md` |
+| [Lab 04](labs/lab04.md) | Skills & Prompts | Create a skill, write a prompt template |
+| [Lab 05](labs/lab05.md) | MCP Server Configuration | Configure Context7, Memory, Sequential Thinking |
+| [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks |
+| [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
+| [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
+| [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
+| [Lab 10](labs/lab10.md) | Agent memory: personalities, lessons, and consolidation | Three memory layers (Raw sources → Wiki → Schema), the `/consolidate-lessons` skill, `.copilot/lessons/` |
+| [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
+| [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
+| [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
+| [Lab 14](labs/lab14.md) | Orchestrator + tmux Pattern (Deep-Dive) | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
+| [Lab 15](labs/lab15.md) | LSP & Code Intelligence in Copilot CLI | Configure a language server, use go-to-definition/find-references/rename/call-hierarchy, know when Copilot still falls back to text search |
+| [Lab 16](labs/lab16.md) | Enterprise Marketplace & Plugin Governance | GA `managed-settings.json` schema, `strictKnownMarketplaces` deny-by-default, AI Controls admin walkthrough |
+| [Lab 17](labs/lab17.md) | GitHub Admin Controls for Copilot/AI | AI Controls nav, default-on model availability policy, Copilot audit log scope |
+| [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
+| [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
+| [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
 **Total: ~7 hours** (20 labs — self-paced or presenter-led)
 
@@ -598,14 +597,14 @@ erDiagram
 
 This repo ships with a rich set of configurations for you to explore and extend:
 
-| Category         | Count                       | Examples                                                                                                                                                                  |
-| ---------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agents**       | 3 (+ more you build!)       | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07                                                                                     |
-| **Skills**       | 10                          | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns`                                                                           |
-| **Prompts**      | 23                          | `/plan`, `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/create-agent`                                                                                   |
-| **Hooks**        | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
-| **MCP Servers**  | 5                           | Context7 (library docs), Memory (knowledge graph), Sequential Thinking, WorkIQ, Microsoft Learn                                                                           |
-| **Instructions** | 3                           | Path-specific rules for `.cs`, test files, and more                                                                                                                       |
+| Category | Count | Examples |
+|----------|-------|---------|
+| **Agents** | 3 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07 |
+| **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
+| **Command skills** | 19 | `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/cost-check` |
+| **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
+| **MCP Servers** | 4 | Context7 (library docs), Sequential Thinking, WorkIQ, Microsoft Learn |
+| **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 
 ### Current Copilot CLI surface (2026 refresh)
 
@@ -647,14 +646,13 @@ Version floors, model tiers, and MCP pins live in
 day-in-the-life-copilot-lab/
 ├── .github/
 │   ├── agents/                    # Agent profiles (more created during labs)
-│   ├── skills/                    # Agent skills (SKILL.md)
-│   ├── prompts/                   # Prompt templates (.prompt.md, incl. /cost-check)
+│   ├── skills/                    # Agent skills (SKILL.md), incl. /cost-check and the other /name commands
 │   ├── hooks/                     # Hook configuration (default.json)
 │   ├── instructions/              # Path-specific instructions (.instructions.md)
 │   ├── copilot-instructions.md    # Repository-wide instructions
 │   └── workflows/                 # GitHub Agentic Workflows (.md + .lock.yml)
 ├── .copilot/
-│   └── mcp-config.json            # MCP server configuration (5 servers)
+│   └── mcp-config.json            # MCP server configuration (4 servers; root .mcp.json mirrors it)
 ├── dotnet/                        # .NET track — ContosoUniversity solution
 │   ├── ContosoUniversity.sln
 │   ├── ContosoUniversity.Core/        # Domain models and interfaces

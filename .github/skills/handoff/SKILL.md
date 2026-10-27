@@ -7,9 +7,11 @@ Create a comprehensive session handoff document for my current work.
 
 ## Context
 
-Work description: ${input:work_description:What were you working on?}
-Why stopped: ${input:stop_reason:Why are you stopping? (e.g., context limit, blocker, decision point, break)}
-Current blocker: ${input:blocker:Any blockers or unresolved issues? (leave empty if none)}
+Take these three values from the `/handoff` request; ask for any that are missing before you start:
+
+- **Work description** — what were you working on?
+- **Why stopped** — context limit, blocker, decision point, or a break?
+- **Current blocker** — any blockers or unresolved issues (none is a valid answer).
 
 ## Analysis Tasks
 

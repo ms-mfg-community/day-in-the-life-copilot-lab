@@ -18,6 +18,7 @@ const SCHEMA_FILES = Object.freeze({
   deck: 'deck.schema.json',
   interactions: 'interactions.schema.json',
   dataset: 'dataset.schema.json',
+  diagrams: 'diagrams.schema.json',
 });
 
 /** Bad invocation or unreadable environment: the CLI exits 2, never 0 or 1. */
@@ -70,7 +71,7 @@ const isPlainObject = (value) => typeof value === 'object' && value !== null && 
 
 /**
  * Which schema governs a file, decided by its parent directory and its name:
- * datasets/*.json, deck.json, interactions.json and *.md (front matter).
+ * datasets/*.json, deck.json, interactions.json, diagrams.json and *.md (front matter).
  * The directory decides first. Spec 005 section 2.1 says every .json file in
  * datasets/ is a dataset, so datasets/deck.json is a dataset that happens to be
  * called deck.json, not a deck. Only outside datasets/ does a reserved name pick
@@ -84,6 +85,7 @@ export function classify(abs) {
   if (basename(dirname(abs)) === 'datasets') return 'dataset';
   if (name === 'deck.json') return 'deck';
   if (name === 'interactions.json') return 'interactions';
+  if (name === 'diagrams.json') return 'diagrams';
   return null;
 }
 
@@ -101,7 +103,7 @@ export function validateFile(abs) {
   const result = { file: abs, kind, errors: [], data: undefined };
   if (kind === null) {
     result.errors.push(
-      issue('unclassified', '(file)', 'no schema applies; expected deck.json, interactions.json, datasets/*.json or *.md'),
+      issue('unclassified', '(file)', 'no schema applies; expected deck.json, interactions.json, diagrams.json, datasets/*.json or *.md'),
     );
     return result;
   }

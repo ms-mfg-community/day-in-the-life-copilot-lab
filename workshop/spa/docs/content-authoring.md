@@ -68,7 +68,18 @@ Each one is checked by `npm run spa:validate` against the schema of the same kin
 - `workshop/spa/content/deck.json` lists the segments in teaching order. A segment names its
   slide, its speaker script and its labs by path, and gives its `minutes`. It copies no prose,
   and `tests/spa/content-refs.test.ts` (AC2) checks that every path exists and that each
-  segment's `minutes` equals the `minutes` in its slide's front matter.
+  segment's `minutes` equals the `minutes` in its slide's front matter. Its optional `cover`
+  names the cover slide (`role: cover`) by path: not a segment, but where the shell's header
+  takes the workshop's title and tagline from at build time, and where the agenda's framing
+  comes from. The build also reads each segment's `module` code and its h2 sections from the
+  slide, and the module's "Advanced outcome" paragraph from `workshop/curriculum.md`, for the
+  module strip, the module opener and the agenda; `tests/spa/content-outline.test.ts` checks that.
+- `workshop/spa/content/diagrams.json` describes the drawn form of a diagram a slide carries as a
+  block of box-drawing text: the segment, a phrase the block contains, and the nodes, edges, bands
+  and steps to draw. The shell draws it in place of the block, clickable and step-through, and
+  keeps the block as the text version; a block no diagram matches stays as text, and a tree drawn
+  in text (`├──`) becomes an explorer without any description. Labels are short names, not prose:
+  the slide is where a diagram is explained.
 - `workshop/spa/content/interactions.json` is the inventory of interactive components: an `id`,
   one of the nine `pattern` names, the `segment` it belongs to, its `label` and `keys`, and
   whether it has a `statusRegion`. A chart or diagram also names the `longDescriptionId` of its

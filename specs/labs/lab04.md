@@ -48,7 +48,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | AC4 | No `@`-prefixed invocation form survives — not `@prompt-name`, `@name`, `@create-dotnet-test` or `@create-node-test` — and the `/`-prefixed forms are present | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC5 | The "Skills vs Prompts" callout appears **once**, not twice with conflicting characters | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC6 | §4.1 no longer asserts skills cannot be invoked, and names the documented `/skill-name` form | `npx vitest run tests/lab-structure/lab04-contract` |
-| AC7 | §4.4's interactive CLI session contains no prompt-file invocation; the prompt step is marked IDE-only | `npx vitest run tests/lab-structure/lab04-contract` |
+| AC7 | §4.4's interactive CLI session runs the track's command skill (`/create-dotnet-test`) itself; no step is sent to an IDE, and the lab still records that `.prompt.md` files are IDE-only | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC8 | The unsourced "max 1024 chars" description limit is gone | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC9 | §4.2 states that `dotnet-testing` already ships in this repo, so the step overwrites it | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC10 | The lab names a deterministic skills command (`/skills list` or `/skills info`) as the way to confirm loading | `npx vitest run tests/lab-structure/lab04-contract` |
@@ -68,7 +68,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | C9 | §4.4: verification is "ask a question and see if the answer mentions your patterns" | `free-check` — **not the authoritative check** | Same CLI skills doc, *Skills commands in the CLI*: `/skills list`, `/skills info SKILL-NAME` ("including its location"), `/skills reload`, `/skills add`, `/skills remove`, and enable/disable via `/skills`. The terminal equivalents `copilot skill list|add|disable` also exist. A deterministic command exists, so a model probe is corroboration, not proof. |
 | C10 | Skills work in Copilot CLI at all | `free-check` — correct | *About agent skills*: *"Agent skills work with Copilot cloud agent, Copilot code review, the GitHub Copilot CLI, the GitHub Copilot app, and agent mode in Visual Studio Code and JetBrains IDEs."* Project skills live in `.github/skills`. |
 | C11 | Two reference URLs (L16–17) and the L59 doc link | `free-check` | All three returned **HTTP 200** on 2026-10-12. |
-| C12 | Solutions links in §4.5 | `free-check` — correct | `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md` and `…/create-dotnet-test.prompt.md` both exist on disk. |
+| C12 | Solutions links in §4.5 | `free-check` — correct | `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md` and `…/create-dotnet-test/SKILL.md` both exist on disk. |
 
 ## 5. Non-goals
 
