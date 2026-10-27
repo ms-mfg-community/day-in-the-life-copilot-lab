@@ -9,12 +9,10 @@ import { NOTHING, create, leadInLists, textOf } from './dom';
 import { readParameter, storedIndex, writeParameter } from './persist';
 import type { Mounter } from './types';
 
-// The shell has no stylesheet yet (see dialog.ts), so the presentation travels with the elements. The buttons are at least
+// The stylesheet (styles.css) draws the carousel's box and type; only the layout of the controls travels with the elements. The buttons are at least
 // 24 by 24 CSS pixels (2.5.8).
-const BOX = 'margin:1rem 0;padding:0.75rem 1rem;border:1px solid CanvasText;';
 const CONTROLS = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;';
 const BUTTON = 'min-width:24px;min-height:24px;';
-const NOTE = 'margin:0.75rem 0 0;font-size:0.875rem;';
 const PREVIOUS = 'Previous slide';
 const NEXT = 'Next slide';
 
@@ -42,14 +40,14 @@ export const mountCarousel: Mounter = ({ entry, segment, root, document: doc, st
   const carousel = create(
     doc,
     'div',
-    { id: entry.id, role: 'group', 'aria-roledescription': 'carousel', 'aria-label': entry.label, 'aria-describedby': entry.longDescriptionId, style: BOX },
+    { id: entry.id, role: 'group', 'aria-roledescription': 'carousel', 'aria-label': entry.label, 'aria-describedby': entry.longDescriptionId },
     create(doc, 'div', { style: CONTROLS }, previous, ' ', place, ' ', next),
     wrapper,
   );
   // Outside the live wrapper, so a change of slide does not read it out again.
   if (entry.longDescriptionId !== undefined) {
     const description = `${slides.length} slides, shown one at a time: ${names.join(', ')}. ${PREVIOUS} and ${NEXT} move between them, and the first follows the last.`;
-    carousel.append(create(doc, 'p', { id: entry.longDescriptionId, style: NOTE }, description));
+    carousel.append(create(doc, 'p', { id: entry.longDescriptionId }, description));
   }
   list.replaceWith(carousel);
 

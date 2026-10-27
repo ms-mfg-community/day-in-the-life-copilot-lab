@@ -1,5 +1,5 @@
-// APG modal dialog (specs/005-teaching-spa.md 2.4, F102, F103; AC13). A button after the slide's first preformatted block
-// opens a dialog that holds a copy of that block. While the dialog is open the rest of the page is inert, Tab stays inside
+// APG modal dialog (specs/005-teaching-spa.md 2.4, F102, F103; AC13). A button after the slide's first drawn diagram, or
+// else its first preformatted block, opens a dialog that holds a copy of it, enlarged. While the dialog is open the rest of the page is inert, Tab stays inside
 // it, and Escape or the close button closes it and gives focus back to the button that opened it (modal.ts).
 
 import { create, listen } from './dom';
@@ -7,7 +7,7 @@ import { BACKDROP, PANEL, createModal } from './modal';
 import type { Mounted, Mounter } from './types';
 
 export const mountDialog: Mounter = ({ entry, segment, root, document: doc }): Mounted => {
-  const source = root.querySelector('pre');
+  const source = root.querySelector<HTMLElement>('figure[data-diagram], pre');
   if (source === null) throw new Error(`dialog ${entry.id}: segment ${segment.id} has no preformatted block to show`);
 
   const titleId = `${entry.id}-title`;

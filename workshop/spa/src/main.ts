@@ -1,8 +1,10 @@
 import './styles.css';
 import { segments } from 'virtual:spa-content';
 import inventory from '../content/interactions.json';
+import { renderDiagrams } from './content/diagrams';
 import { installHashRewrite, type HashWindow } from './content/hash-rewrite';
 import { mountInteractions, type Mounted } from './interactions';
+import { mountDeck } from './shell/deck';
 import { mountKeyboard } from './shell/keyboard';
 import { createAnnouncer } from './shell/live-region';
 import {
@@ -44,6 +46,9 @@ function renderNav(currentId: string): void {
         const link = document.createElement('a');
         link.href = hashFor(segment.id);
         link.textContent = segment.title; // front matter is untrusted: text, never HTML
+        // The code and the minutes are shown beside the title by the stylesheet (attr()), outside the link's own text.
+        if (segment.module !== undefined) link.setAttribute('data-module', segment.module);
+        link.setAttribute('data-minutes', String(segment.minutes));
         return link;
       }),
     );
@@ -58,18 +63,24 @@ function renderNav(currentId: string): void {
 // The interactions of the segment on show. Each one may hold something outside the segment's own DOM (a listener on the
 // document, a timer, a store subscription, the inert marker of an open dialog), so they are undone before the segment goes.
 let interactions: Mounted | undefined;
+let undrawDiagrams: (() => void) | undefined;
 
 function renderSegment(id: string): void {
   const segment = segments.find((candidate) => candidate.id === id);
   if (!segment) return;
   interactions?.dispose();
+  undrawDiagrams?.();
   const heading = document.createElement('h1');
   heading.textContent = segment.title;
+  if (segment.module !== undefined) heading.setAttribute('data-module', segment.module); // the stylesheet shows it as a kicker
   const body = document.createElement('div');
   body.innerHTML = segment.html; // sanitized by the SPA-02 pipeline at build time
   main.replaceChildren(heading, body);
+  // The diagrams first: the dialog interaction enlarges the slide's first figure, and that should be the drawing.
+  undrawDiagrams = renderDiagrams(document, body, id);
   interactions = mountInteractions({ segment, root: body, document, store, announce });
   renderNav(id);
+  deck?.render(id, body); // after the interactions: the screens are cut from the DOM they left
   document.title = `${segment.title} — Teaching SPA`;
 }
 
@@ -178,7 +189,7 @@ if (initialRoute.kind === 'segment') store.navigate(initialRoute.id);
 // way into <main> on either surface.
 function mountScriptSurface() {
   nav.hidden = true;
-  for (const id of ['presentation-controls', 'keyboard-settings']) {
+  for (const id of ['journey', 'segment-pager', 'presentation-controls', 'keyboard-settings']) {
     const section = document.getElementById(id);
     if (section) section.hidden = true;
   }
@@ -193,8 +204,24 @@ function mountScriptSurface() {
 }
 
 const speaker = onScript ? mountScriptSurface() : null;
+// The deck (deck.ts): the screens, the bar, the strip, the pager and the cover. Nothing in a shell that cannot measure a page.
+const stagedStepsOf = (segmentId: string): number => {
+  const staged = inventory.interactions.some((entry) => entry.pattern === 'staged-reveal' && entry.segment === segmentId);
+  return staged ? (segments.find((segment) => segment.id === segmentId)?.sections?.length ?? 0) : 0;
+};
+const deck = onScript
+  ? null
+  : mountDeck({
+      document,
+      window,
+      store,
+      segments,
+      openCover: window.location.hash === '' || window.location.hash === '#' || window.location.hash === '#/', // opened without a module named
+      revealStepsOf: stagedStepsOf,
+    });
 if (!onScript) renderSegment(store.get().currentId);
 if (speaker) expose({ speaker });
+if (deck) expose({ deck });
 
 function followStore(next: ShellState, previous: ShellState): void {
   if (next.currentId === previous.currentId) return;
@@ -271,6 +298,7 @@ const presentation = onScript
       onEndedByBrowser: () => {
         interactions?.dismiss?.();
         keyboard?.dismiss();
+        deck?.dismiss();
       },
       // The window that was opened for the script is kept, and is the road of postMessage to it.
       onScriptWindow: (opened) => presenter?.setPopup(opened),
@@ -284,4 +312,5 @@ window.addEventListener('pagehide', (event) => {
   presenter?.dispose();
   speaker?.dispose();
   keyboard?.dispose();
+  deck?.dispose();
 });

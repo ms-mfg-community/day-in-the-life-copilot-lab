@@ -1,5 +1,6 @@
 {
   "$schema": "../schema/deck.schema.json",
+  "cover": "workshop/slides/00-cover.md",
   "segments": [
     {
       "id": "m1-extensibility-architecture",

@@ -123,14 +123,13 @@ function describe(model: Dataset, values: Values, baseline: Values): string[] {
   ];
 }
 
-// The shell has no stylesheet yet (see dialog.ts), so the presentation travels with the elements. System colors keep the
+// The stylesheet (styles.css) draws the chart's box and the faces of the track and the bars; the layout travels with the elements. System colors keep the
 // chart legible in a dark theme and in forced colors; the controls are at least 24 by 24 CSS pixels (2.5.8), the track
 // of a slider included, and the fill of a track or a bar is a flex item, which takes the whole height of what holds it.
-const BOX = 'margin:1rem 0;padding:0.75rem 1rem;border:1px solid CanvasText;';
 const ROW = 'display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem;margin:0.5rem 0;';
 const BUTTON = 'min-width:24px;min-height:24px;';
-const TRACK = 'display:flex;flex:1 1 10rem;min-width:10rem;min-height:24px;box-sizing:border-box;border:1px solid CanvasText;';
-const BAR = 'display:flex;width:10rem;max-width:100%;height:0.75rem;border:1px solid CanvasText;';
+const TRACK = 'display:flex;flex:1 1 10rem;min-width:10rem;min-height:24px;box-sizing:border-box;';
+const BAR = 'display:flex;width:10rem;max-width:100%;height:0.75rem;';
 const FILL = 'background-color:Highlight;';
 
 export const mountParameterChart: Mounter = ({ entry, segment, root, document: doc, store, announce }) => {
@@ -188,7 +187,7 @@ export const mountParameterChart: Mounter = ({ entry, segment, root, document: d
   const widget = create(
     doc,
     'div',
-    { id: entry.id, role: 'group', 'aria-label': entry.label, 'aria-describedby': descriptionId, style: BOX },
+    { id: entry.id, role: 'group', 'aria-label': entry.label, 'aria-describedby': descriptionId },
     ...sliders.map(({ row }) => row),
     create(doc, 'dl', { style: 'margin:0;' }, ...results.map(({ row }) => row)),
     description,

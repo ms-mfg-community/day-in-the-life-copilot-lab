@@ -8,8 +8,9 @@ import { listen, tabbables } from './dom';
 
 // aria-modal="true" is only true when the page behind the dialog is hidden from the eye as well as from the keyboard
 // (F103), so the dialog is its own backdrop: it covers the viewport and dims what is behind it, and what it says sits on
-// an opaque panel above that. The presentation travels with the elements (see dialog.ts). Neither sets `display`: an
-// author `display` would beat the rule behind the `hidden` attribute and leave a closed dialog on screen.
+// an opaque panel above that. The backdrop, the panel's place and its opaque background travel with the elements (see
+// dialog.ts); the panel's face (border, corners, padding) is the stylesheet's. Neither sets `display`: an author `display`
+// would beat the rule behind the `hidden` attribute and leave a closed dialog on screen.
 export const BACKDROP = 'position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; background: rgba(0, 0, 0, 0.7)';
 export const PANEL = [
   'box-sizing: border-box',
@@ -17,12 +18,9 @@ export const PANEL = [
   'max-width: 48rem',
   'max-height: 90vh',
   'margin: 5vh auto',
-  'padding: 1rem 1.5rem',
   'overflow: auto',
-  'background: Canvas',
-  'color: CanvasText',
-  'border: 2px solid CanvasText',
-  'border-radius: 0.5rem',
+  'background: var(--surface, Canvas)',
+  'color: var(--text, CanvasText)',
 ].join('; ');
 
 export interface ModalOptions {

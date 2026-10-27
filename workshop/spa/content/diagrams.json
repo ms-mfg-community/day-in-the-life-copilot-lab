@@ -1,0 +1,51 @@
+{
+  "$schema": "../schema/diagrams.schema.json",
+  "diagrams": [
+    {
+      "id": "m5c-synergy",
+      "segment": "m5c-copilot-cli-extensions",
+      "match": "userPromptSubmitted hook",
+      "title": "The synergy: deterministic hooks around a probabilistic extension",
+      "bands": [
+        { "label": "Deterministic · certain · free", "rows": [0, 1, 2], "tone": "calm" },
+        { "label": "Probabilistic · approximate · billable", "rows": [3], "tone": "hot" }
+      ],
+      "nodes": [
+        { "id": "user", "kind": "actor", "col": 0, "row": 0, "label": ["User types", "\"summarize:\""] },
+        { "id": "prompt-hook", "kind": "gate", "col": 1, "row": 0, "label": ["userPromptSubmitted hook", "deterministic detector", "emits audit / telemetry"], "warn": "Output not honored: it cannot call a tool itself" },
+        { "id": "agent", "kind": "box", "col": 2, "row": 0, "label": ["Copilot agent", "reasons over the prompt"] },
+        { "id": "call", "kind": "box", "col": 2, "row": 1, "label": ["Agent calls", "clab_summarize(text)"] },
+        { "id": "tool-hook", "kind": "gate", "col": 1, "row": 2, "label": ["preToolUse hook", "deterministic gate", "emits permissionDecision", "\"deny\" if size > 10 KB"], "warn": "Deny-only: allow / ask are accepted but ignored" },
+        { "id": "handler", "kind": "model", "col": 1, "row": 3, "label": ["extension.mjs handler", "session.sendAndWait({ prompt })", "returns the model's summary"] }
+      ],
+      "edges": [
+        { "from": "user", "to": "prompt-hook" },
+        { "from": "prompt-hook", "to": "agent" },
+        { "from": "agent", "to": "call", "label": "tool catalog" },
+        { "from": "call", "to": "tool-hook", "label": "offered to every preToolUse hook" },
+        { "from": "tool-hook", "to": "handler", "label": "no deny: proceeds" },
+        { "from": "handler", "to": "call", "label": "summary", "dashed": true }
+      ]
+    },
+    {
+      "id": "m6-meta-loop",
+      "segment": "m6-a2a-tmux",
+      "match": "ORCHESTRATOR pane",
+      "title": "The tmux meta-loop: one orchestrator pane, transient worker and QA panes, hand-off state on disk",
+      "steps": ["plan", "implement", "handoff", "clear", "qa", "clear", "next"],
+      "nodes": [
+        { "id": "orchestrator", "kind": "actor", "col": 0, "row": 0, "label": ["ORCHESTRATOR pane", "never /clear-ed", "owns .copilot/session-state/*", "writes hand-off docs"] },
+        { "id": "worker", "kind": "box", "col": 1, "row": 0, "label": ["WORKER pane", "/clear-ed between phases"] },
+        { "id": "qa", "kind": "box", "col": 2, "row": 0, "label": ["QA pane", "/clear-ed between phases"] },
+        { "id": "disk", "kind": "note", "col": 1, "row": 1, "label": ["Hand-off docs on disk", "the contract between panes"] }
+      ],
+      "edges": [
+        { "from": "orchestrator", "to": "worker", "label": "hand-off doc" },
+        { "from": "worker", "to": "qa", "label": "output doc" },
+        { "from": "qa", "to": "orchestrator", "label": "verdict", "dashed": true },
+        { "from": "orchestrator", "to": "disk", "label": "writes" },
+        { "from": "disk", "to": "worker", "label": "reads", "dashed": true }
+      ]
+    }
+  ]
+}

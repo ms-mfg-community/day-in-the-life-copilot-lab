@@ -4,6 +4,8 @@
 //   gray-matter         splits off the front matter. It parses YAML and JSON, but it performs no sanitizing and no slug
 //                       generation (F149), so neither is assumed below.
 //   remark-parse        markdown to mdast.
+//   remark-gfm          GitHub's extensions, above all tables: the slides write their comparisons as pipe tables, and
+//                       without this they render as the pipes. Runs on the markdown tree, before any HTML exists.
 //   remark-frontmatter  recognises a leading YAML block so it is dropped, not rendered. YAML only (F133). Its `anywhere`
 //                       option is forbidden (F135): it would swallow any later `---` block. It does not parse the YAML
 //                       (F134); gray-matter does.
@@ -33,6 +35,7 @@ import rehypeSanitize from 'rehype-sanitize';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
 import remarkFrontmatter from 'remark-frontmatter';
+import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import { unified } from 'unified';
@@ -50,6 +53,7 @@ export function createProcessor(options: ProcessorOptions = {}) {
   return unified()
     .use(remarkParse)
     .use(remarkFrontmatter, ['yaml']) // F133: YAML only. F135: never `anywhere`.
+    .use(remarkGfm)
     .use(options.extraRemarkPlugins ?? [])
     .use(remarkRehype) // F136, F137: raw HTML stays off.
     .use(options.extraRehypePlugins ?? [])

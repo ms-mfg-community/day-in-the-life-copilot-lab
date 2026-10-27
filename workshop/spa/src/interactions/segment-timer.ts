@@ -8,13 +8,13 @@ import { create, hasModifier } from './dom';
 import { isRecord, readParameter, writeParameter } from './persist';
 import type { Mounter } from './types';
 
-// The shell has no stylesheet yet (see dialog.ts), so the presentation travels with the elements. The timer sits in the page,
+// The stylesheet (styles.css) draws the timer's box and the clock's type; the layout of the row travels with the elements. The timer sits in the page,
 // not over it, so it cannot hide the item that has the focus (2.4.11), and its buttons are at least 24 by 24 CSS pixels (2.5.8).
-const BOX = 'margin:1rem 0;padding:0.75rem 1rem;border:1px solid CanvasText;display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;';
-const CLOCK = 'font-size:1.5rem;font-variant-numeric:tabular-nums;';
+const BOX = 'display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;';
+const CLOCK = 'font-variant-numeric:tabular-nums;';
 const BUTTON = 'min-width:24px;min-height:24px;';
 // The long description takes a row of its own under the clock and the buttons.
-const NOTE = 'flex-basis:100%;margin:0;font-size:0.875rem;';
+const NOTE = 'flex-basis:100%;margin:0;';
 
 type Phase = 'idle' | 'running' | 'paused' | 'done';
 type Count = { readonly phase: Phase; readonly elapsed: number };
