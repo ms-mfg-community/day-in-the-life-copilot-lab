@@ -29,13 +29,12 @@ directory, so it cannot drift from the labs it teaches.
   `workshop/spa/docs/` hold the capability matrix, the accessibility
   record and the rehearsal records.
 - `docs/workshop/presenter-script.md` — narrative walkthrough written
-  for the retired Reveal.js hackathon deck; still useful for
+  for the Reveal.js hackathon deck; still useful for
   rehearsal narration. `workshop/site/agenda.json` is the schedule
   data it describes.
 
-The Reveal.js hackathon deck that used to live at `workshop/site/`
-was retired on 2026-10-26 after a passing rehearsal; see
-`workshop/spa/docs/hackathon-retired.md`.
+The Reveal.js hackathon deck remains at `workshop/site/hackathon.html`
+until the live presenter rehearsal is complete and recorded.
 
 ## Layout
 

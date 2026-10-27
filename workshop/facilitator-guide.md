@@ -21,6 +21,9 @@ audience: "Workshop presenter / facilitator"
 
 Open these before each session; rehearse against them the day before.
 
+- **Reveal.js deck:** `workshop/site/hackathon.html` — remains
+  available until the live presenter rehearsal is complete and
+  recorded. Press `S` for presenter mode.
 - **Teaching SPA:** the live-delivery surface
   ([spec 005](../specs/005-teaching-spa.md)). Build it with
   `npm run spa:build` and serve `workshop/spa/dist/` over
@@ -57,8 +60,7 @@ presentation mode, the speaker script following, the keyboard, the
 accessibility gate and the portable file. `workshop/spa/docs/` holds
 the capability matrix (which browser allows what from a file, from
 localhost and from a hosted site), the accessibility record and the
-rehearsal records; the Reveal.js hackathon deck was retired on
-2026-10-26 (`workshop/spa/docs/hackathon-retired.md`).
+rehearsal records.
 
 ## Pre-flight — the day before
 
