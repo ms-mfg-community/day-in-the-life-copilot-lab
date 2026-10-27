@@ -179,3 +179,71 @@ application has none of the content the criterion governs, which satisfies the c
 - How a given screen reader renders each pattern: the constructs follow the APG patterns and
   expose the roles, names and states those patterns require, which is what was checked.
 - Conformance of future curriculum content beyond what the tests named above re-check.
+
+## Revision of 2026-10-26: the deck
+
+After the review above, the shell was rebuilt as a lesson (`workshop/spa/index.html`,
+`workshop/spa/src/shell/deck.ts`, `workshop/spa/src/content/diagrams.ts`,
+`workshop/spa/src/styles.css`). What changed against the facts recorded above, re-taken on
+2026-10-26 in Chromium 141 (Playwright) against the dev server and the multi-file build:
+
+- **DOM order (1.3.2, 2.4.3).** The root's children are the skip link, the bar (`#journey`: Agenda,
+  the brand, the position, Previous and Next; the Present controls; the keyboard settings; the
+  module strip; the cover dialog), `main`, the pager and the live region
+  (`tests/spa/presentation-mode.test.ts` pins it). The skip link is still the first focusable
+  element. Visual order is DOM order throughout; no `order` is used. Absolute positioning: the
+  dialog backdrops, the skip link (off the top until focused, at full size), the presenter setup
+  panel (under the bar, from its Setup control), the disclosure popover, and the nodes of a drawn
+  diagram over its wires.
+- **Screens.** A segment's document is cut into screens after the interactions mount: the opener
+  (module code, title, the curriculum's advanced outcome, the outline, the labs, the timer where
+  there is one) and one screen per h2 section, each at least a viewport tall. Nothing is removed:
+  every element of the document is in a screen, and a screen the staged reveal has not reached is
+  `hidden` with its content. ArrowRight, ArrowLeft, PageDown and PageUp move between screens
+  except inside a widget, a field or a dialog, where they keep their meaning; Next at the last
+  screen reveals the next step of a staged module or opens the next module.
+- **What the reader acts on.** A list whose items open with a name becomes reveal cards (the name
+  a `button` with `aria-expanded`, the point `hidden` until pressed, a Reveal all control); a code
+  block gets a Copy control; a text-drawn tree becomes an explorer (folders are `button`s with
+  `aria-expanded`); a text-drawn flow described in `content/diagrams.json` becomes a drawing whose
+  nodes are `button`s (`aria-pressed`) with a step-through, the wires `aria-hidden` SVG, the title
+  a `figcaption`, and the original text block kept under a Text version disclosure. The diagram's
+  own long-description list is left as written.
+- **Layout (1.3.4, 1.4.10).** One column; the bar wraps below 1100 px and again below 720 px.
+  Measured: `documentElement.scrollWidth` equals the viewport width at 1100, 820 and 320 px.
+- **Headings.** The slide's own first `<h1>` is `display: none` inside the opener, so a segment has
+  one `<h1>` (the shell's, with the module code as a CSS kicker) followed by the sections' `<h2>`s.
+- **Sticky content (2.4.11).** The bar is the one sticky element, windowed and in fullscreen;
+  `html` and the fullscreen root carry `scroll-padding-top` of its height, so an element scrolled
+  into view for focus lands below it.
+- **Focus indicator (1.4.11, 2.4.7), colour (1.4.1, 1.4.3).** As in the stylesheet's header: the
+  ring is `#1a5fb4` (light; 6.3:1 on white, 5.8:1 on the page) or `#9cc4ff` (dark; 11:1 on the
+  page, 10:1 on a surface), 3 px with a 2 px surface-coloured gap; `--text-muted` is 6.6:1 on white
+  and 7.9:1 on the dark surface; link text 6.3:1 and 8.5:1. The current module is a filled chip
+  with bold text, an open card carries its state, a chosen diagram node a thicker border. The
+  widgets' faces are the stylesheet's; the dialog's backdrop and opaque panel and the node
+  diagram's declared colours stay inline, checked by `tests/spa/interaction-behavior.test.ts`.
+- **Multiple ways (2.4.5), labels (2.4.6, 2.5.3).** The cover (also the agenda: every module with
+  its minutes, labs and sections, each a link; Start, the speaker script, Present), the module
+  strip, the opener's outline, Previous and Next, the pager, the arrow keys. Every control's
+  visible text is its name.
+- **Target size (2.5.8).** Every control the deck adds is at least 24 CSS px: the strip's chips
+  (2 rem), the bar's buttons (2.25 rem), the outline and card buttons (2.75 and 3.25 rem), the
+  Copy control (2 rem), a diagram's nodes (their drawn box, never under 24 px at any width the
+  gate measures), the tree's folder toggles (2 rem), the disclosure summaries. The gate measures
+  them in every route and opened state, including the cover and the setup panel.
+  `workshop/spa/docs/target-size-exceptions.md` is unchanged: the deck's links sit outside `#main`,
+  and inside it the deck adds buttons, never links.
+- **Status messages (4.1.3).** Unchanged: a move the deck causes is announced as any move is; a
+  diagram's step caption is plain text beside its controls.
+- **Motion (AC18).** The one transition (the focus ring's offset) is under
+  `prefers-reduced-motion: no-preference`; no smooth scrolling, no colour transition.
+
+Re-run over the deck's build on 2026-10-26: `npm run spa:test:a11y` (32 browser cases in Chromium
+141, zero axe-core violations, every target measured, the cover and the setup panel audited open),
+`npm run spa:test:keyboard`, `npm run spa:test:present`, `npm run spa:test:sync`,
+`npm run spa:test:single`, `tests/spa/interactions-browser-check.mjs` (Chromium and Firefox) and
+`tests/spa/rehearsal-browser-check.mjs` in the installed Chrome 155 all pass;
+`npx vitest run tests/spa` passes (45 files). The gate audits an opened state with the page scrolled
+to its top: axe's `target-size` rule reads a control that has scrolled under the sticky bar as
+partially obscured, which is where the scroll is, not what the target is.

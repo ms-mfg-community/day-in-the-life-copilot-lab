@@ -29,7 +29,7 @@ checks the set of rows, the methods and the paths.
 | 1.3.1 | Info and Relationships | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/interaction-inventory.test.ts`, `tests/spa/a11y-browser-check.mjs` | Headings, lists, the definition list, the table and every APG role set; the AC6 audit and the gate's ARIA and list rules hold them. |
 | 1.3.2 | Meaningful Sequence | A | manual | `workshop/spa/docs/a11y-manual-review.md` | DOM order is reading order; no CSS reordering. |
 | 1.3.3 | Sensory Characteristics | A | manual | `workshop/spa/docs/a11y-manual-review.md` | Instructions name controls by label, never by shape, position or colour. |
-| 1.3.4 | Orientation | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | Single column; nothing locks orientation. |
+| 1.3.4 | Orientation | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | One column of screens under a bar that wraps below 1100 px; nothing locks orientation. |
 | 1.3.5 | Identify Input Purpose | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | No input collects information about the user. |
 | 1.4.1 | Use of Color | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/a11y-browser-check.mjs` | Current segment, selected node, active tab and spent buttons are marked by more than colour; the gate's `link-in-text-block` rule runs. |
 | 1.4.2 | Audio Control | A | manual | `workshop/spa/docs/a11y-manual-review.md` | No such content. |
@@ -50,10 +50,10 @@ checks the set of rows, the methods and the paths.
 | 2.4.2 | Page Titled | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/a11y-browser-check.mjs` | Measured: unique, descriptive titles on every route; the gate's `document-title` rule runs. |
 | 2.4.3 | Focus Order | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/interaction-behavior.test.ts`, `tests/spa/keyboard.test.ts` | Focus follows the DOM; dialogs take and return focus; roving tab stops. |
 | 2.4.4 | Link Purpose (In Context) | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/a11y-browser-check.mjs` | Segment links carry titles; no "here" or "click" links; the gate's `link-name` rule runs. |
-| 2.4.5 | Multiple Ways | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | Navigation on every route, URLs, the n and p shortcuts; the deck is a sequence. |
+| 2.4.5 | Multiple Ways | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | The module strip, the cover's agenda, the opener's outline, Previous and Next, the pager, URLs, the n and p shortcuts and the arrow keys; the deck is a sequence. |
 | 2.4.6 | Headings and Labels | AA | manual | `workshop/spa/docs/a11y-manual-review.md` | Section titles as headings; every control's label says what it does. |
 | 2.4.7 | Focus Visible | AA | manual | `workshop/spa/docs/a11y-manual-review.md`, `workshop/spa/src/styles.css`, `tests/spa/a11y-browser-check.mjs` | The `:focus-visible` ring on every control; the gate's control case shows it is applied to the focused control. |
-| 2.4.11 | Focus Not Obscured (Minimum) | AA | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/presentation-mode.test.ts` | Sticky controls in fullscreen with scroll padding; the presentation tests hold the check. |
+| 2.4.11 | Focus Not Obscured (Minimum) | AA | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/presentation-mode.test.ts` | The bar is sticky at the top, windowed and in fullscreen, and the scroll padding of the page and of the fullscreen root keeps a focused element clear of it. |
 | 2.5.1 | Pointer Gestures | A | manual | `workshop/spa/docs/a11y-manual-review.md` | No gestures: single clicks only. |
 | 2.5.2 | Pointer Cancellation | A | manual | `workshop/spa/docs/a11y-manual-review.md` | Activation on `click` (the up-event). |
 | 2.5.3 | Label in Name | A | manual | `workshop/spa/docs/a11y-manual-review.md`, `tests/spa/a11y-browser-check.mjs` | Visible text is the accessible name; the gate's `label-content-name-mismatch` rule runs. |
