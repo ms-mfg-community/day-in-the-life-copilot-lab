@@ -70,7 +70,16 @@ Why per track? The `description` field is what drives auto-activation. `xUnit + 
 
 ## 4.3 Create a Command Skill (per track)
 
-A skill can also be a reusable **command**: one you run yourself by typing `/` and its name, and that Copilot never loads on its own. One frontmatter key makes the difference — `disable-model-invocation: true` tells Copilot to read the skill only when you name it. This repository's command skills (`/commit`, `/handoff`, `/cost-check` and the rest) used to be VS Code prompt files (`.prompt.md`), which only run in an IDE's chat view; as skills in `.github/skills/` they run in Copilot CLI, in VS Code's Copilot harness and in the coding agent. The test-generator command for your track lives in your track's appendix:
+A skill can also be a reusable **command**: one you run yourself by typing `/` and its name, and that Copilot never loads on its own. You create it exactly the way you created a skill in 4.2 — a folder under `.github/skills/` with a `SKILL.md` — and add one frontmatter key, `disable-model-invocation: true`. That flag is the whole difference: Copilot reads the skill only when you name it. This is also how you now create what used to be a *prompt file*. This repository's command skills (`/commit`, `/handoff`, `/cost-check` and the rest) were VS Code prompt files (`.prompt.md`), which only run in an IDE's chat view; as skills in `.github/skills/` they run in Copilot CLI, in VS Code's Copilot harness and in the coding agent.
+
+> 💡 **Which kind should you write?** Leave the flag off when the skill is *knowledge* that Copilot should bring in whenever the topic comes up — conventions, patterns, gotchas — because being picked up unprompted is the point. Set `disable-model-invocation: true` when either of these is true:
+>
+> - **You do not want the model deciding when it runs.** The skill has side effects or a cost — it writes files, runs builds or tests, commits, reshapes the wiki, posts a handoff — or it is specific enough that firing from a loosely matching `description` would be wrong. Discovery is a judgement call the model makes each turn; a command runs only when a person types `/name`, so *whether* and *when* it ran is never in question.
+> - **It is a fixed workflow, not reference material.** Steps in a set order with arguments the user supplies (`/tdd`: red → green → refactor; `/checkpoint create <name>`; `/consolidate-lessons --dry-run`) work best loaded whole, on demand, instead of competing with other skills for selection halfway through a task.
+>
+> Most of this repository's command skills are both. `create-dotnet-test` is a command because it writes a test file and runs `dotnet test`; `dotnet-testing` stays discoverable because it only describes what a good test looks like. When in doubt, make it a command: you can always type the name, but you cannot un-run a skill the model chose for you.
+
+The test-generator command for your track lives in your track's appendix:
 
 - **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `/create-dotnet-test`, which emits xUnit test classes. As with `dotnet-testing`, `.github/skills/create-dotnet-test/SKILL.md` **already ships** in this repository, and the appendix's command block **overwrites** it with a shorter version.
 - **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) — `/create-node-test`, which emits Vitest test files. It does not ship in this repository, so you create it now: run **section B** of the appendix in the same Bash (WSL2) terminal you used in 4.2.
@@ -176,7 +185,7 @@ The .NET command should generate a complete test class for the CoursesController
 **Best practices:**
 - Write clear, specific descriptions — they drive activation/discovery
 - Keep skills focused on one domain (testing, security, architecture)
-- Use command skills for repeatable workflows (generate tests, review code)
+- Use command skills for repeatable workflows (generate tests, review code) and for anything with side effects; keep knowledge skills discoverable
 - Test activation by asking natural questions about the topic, and confirm a skill is loaded with `/skills list` or `/skills info <name>`
 
 </details>
@@ -185,7 +194,7 @@ The .NET command should generate a complete test class for the CoursesController
 <summary>Solutions</summary>
 
 - Skill: [`solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md`](../solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md)
-- Command skill: [`.github/skills/create-dotnet-test/SKILL.md`](../.github/skills/create-dotnet-test/SKILL.md)
+- Command skill: [`solutions/lab04-skill-and-prompt/create-dotnet-test/SKILL.md`](../solutions/lab04-skill-and-prompt/create-dotnet-test/SKILL.md)
 
 </details>
 

@@ -56,7 +56,7 @@ function section(prefix: string): string {
 /**
  * A slash command / slash-invoked name, never a path segment. Without the lookbehind,
  * `/create-dotnet-test` matches the solutions path
- * `solutions/lab04-skill-and-prompt/create-dotnet-test.prompt.md`, and `/skills`
+ * `solutions/lab04-skill-and-prompt/create-dotnet-test/SKILL.md`, and `/skills`
  * matches `.github/skills/` — both would pass on the unedited lab.
  */
 const slash = (name: string): RegExp => new RegExp(`(?<![\\w./])/${name}`);

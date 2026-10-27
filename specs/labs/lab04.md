@@ -68,7 +68,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | C9 | §4.4: verification is "ask a question and see if the answer mentions your patterns" | `free-check` — **not the authoritative check** | Same CLI skills doc, *Skills commands in the CLI*: `/skills list`, `/skills info SKILL-NAME` ("including its location"), `/skills reload`, `/skills add`, `/skills remove`, and enable/disable via `/skills`. The terminal equivalents `copilot skill list|add|disable` also exist. A deterministic command exists, so a model probe is corroboration, not proof. |
 | C10 | Skills work in Copilot CLI at all | `free-check` — correct | *About agent skills*: *"Agent skills work with Copilot cloud agent, Copilot code review, the GitHub Copilot CLI, the GitHub Copilot app, and agent mode in Visual Studio Code and JetBrains IDEs."* Project skills live in `.github/skills`. |
 | C11 | Two reference URLs (L16–17) and the L59 doc link | `free-check` | All three returned **HTTP 200** on 2026-10-12. |
-| C12 | Solutions links in §4.5 | `free-check` — correct | `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md` and `…/create-dotnet-test.prompt.md` both exist on disk. |
+| C12 | Solutions links in §4.5 | `free-check` — correct | `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md` and `…/create-dotnet-test/SKILL.md` both exist on disk. |
 
 ## 5. Non-goals
 

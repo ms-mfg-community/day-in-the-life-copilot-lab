@@ -1,7 +1,7 @@
 ---
+name: create-dotnet-test
 description: "Generate xUnit tests for a ContosoUniversity class. Creates unit tests with Moq mocks following MethodName_Condition_ExpectedResult naming."
-mode: "agent"
-tools: ["read", "edit", "execute", "search"]
+disable-model-invocation: true
 ---
 
 # Create .NET Test
