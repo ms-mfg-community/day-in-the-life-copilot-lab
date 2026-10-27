@@ -109,7 +109,7 @@ describe('AC1: spa:validate exits 0 over the content and the curriculum', () => 
     const { json } = report();
     for (const { target, files: checked } of json.targets) {
       const kinds = [...new Set(checked.map((file) => file.kind))].sort();
-      expect(kinds, `schemas applied to ${target}`).toEqual(target === CONTENT ? ['dataset', 'deck', 'interactions'] : ['frontmatter']);
+      expect(kinds, `schemas applied to ${target}`).toEqual(target === CONTENT ? ['dataset', 'deck', 'diagrams', 'interactions'] : ['frontmatter']);
     }
   }, SLOW);
 

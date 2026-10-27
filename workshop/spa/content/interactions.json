@@ -24,7 +24,8 @@
       "segment": "m1-extensibility-architecture",
       "label": "Segment pacing timer",
       "keys": ["Space", "Escape"],
-      "statusRegion": true
+      "statusRegion": true,
+      "longDescriptionId": "m1-segment-timer-description"
     },
     {
       "id": "m2-lab-walkthrough",
@@ -51,6 +52,31 @@
       "label": "Progressive build-up",
       "keys": ["ArrowRight", "ArrowLeft"],
       "statusRegion": true
+    },
+    {
+      "id": "m5-controls-carousel",
+      "pattern": "carousel",
+      "segment": "m5-marketplace",
+      "label": "Enterprise controls",
+      "keys": ["Tab", "Enter", "Space"],
+      "statusRegion": false,
+      "longDescriptionId": "m5-controls-carousel-description"
+    },
+    {
+      "id": "m5c-synergy-zoom",
+      "pattern": "dialog",
+      "segment": "m5c-copilot-cli-extensions",
+      "label": "Synergy diagram, enlarged view",
+      "keys": ["Enter", "Space", "Tab", "Shift+Tab", "Escape"],
+      "statusRegion": false
+    },
+    {
+      "id": "m6-segment-details",
+      "pattern": "disclosure-popover",
+      "segment": "m6-a2a-tmux",
+      "label": "Segment labs and timing",
+      "keys": ["Tab", "Escape"],
+      "statusRegion": false
     }
   ]
 }

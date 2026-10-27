@@ -39,8 +39,10 @@ export const HAS_BASH = bashExe() !== null;
 
 /** True when `name` is runnable on PATH. Used to skip tests whose dependency is absent. */
 export function hasCommand(name: string): boolean {
+  // Through a shell on every platform: `command` is a shell builtin, so spawned directly it is ENOENT and every
+  // dependency reads as absent (the jq assertions skipped on Linux CI with jq installed).
   const probe = IS_WINDOWS ? ['where', name] : ['command', '-v', name];
-  const res = spawnSync(probe[0], probe.slice(1), { stdio: 'ignore', shell: IS_WINDOWS });
+  const res = spawnSync(probe[0], probe.slice(1), { stdio: 'ignore', shell: true });
   return res.status === 0;
 }
 
