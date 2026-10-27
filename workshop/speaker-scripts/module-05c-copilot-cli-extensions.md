@@ -82,8 +82,10 @@ Walk the synergy diagram from slide 56. Three actors, one flow:
    (`{toolName, toolArgs, timestamp, cwd}`), checks byte size. If
    `text` > 10 000 bytes → emits
    `{"permissionDecision":"deny","permissionDecisionReason":"..."}`.
-   **`preToolUse` is veto-only** — `deny` is honored; `allow`/`ask`
-   are accepted but ignored. Absence of `deny` is allow.
+   **`preToolUse` is veto-only here, by design** — `permissionDecision`
+   accepts `allow`, `deny` and `ask`; this hook emits only `deny`, so it
+   can only narrow what a session may do. Absence of `deny` is not an
+   `allow`: the normal permission flow decides.
 
 3. **`clab_summarize` extension body** (`extension.mjs`) — calls
    `session.sendAndWait({ prompt })`. This is the **probabilistic
