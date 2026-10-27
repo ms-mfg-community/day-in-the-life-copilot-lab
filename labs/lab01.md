@@ -125,8 +125,8 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 | Directory | What | Count | Lab |
 |-----------|------|-------|-----|
-| `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
-| `.github/skills/` | Reusable command templates and auto-activating knowledge packs (`SKILL.md`) | 25 | Labs 04, 10, 14 |
+| `.github/agents/` | Specialized AI personas (`.agent.md`) | 4 (+ more in Lab 03) | Lab 03 |
+| `.github/skills/` | Reusable command templates and auto-activating knowledge packs (`SKILL.md`) | 26 | Labs 04, 10, 14 |
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |

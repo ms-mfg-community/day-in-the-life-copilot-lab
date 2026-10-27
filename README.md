@@ -441,7 +441,7 @@ code .
 
 | Directory | Contents | Count |
 |-----------|----------|-------|
-| `.github/skills/` | Agent skills (`SKILL.md`): 6 knowledge packs and 19 `/name` command skills | 25 |
+| `.github/skills/` | Agent skills (`SKILL.md`): 7 knowledge packs and 19 `/name` command skills | 26 |
 | `.github/hooks/` | Hook configuration | 1 |
 | `.github/instructions/` | Path-specific instructions (`.instructions.md`) | 4 |
 | `.copilot/` | MCP server configuration (`mcp-config.json`, the template Lab 05 copies to `~/.copilot/`; the root `.mcp.json` carries the same four servers at workspace scope for Copilot CLI and VS Code) | 2 |
@@ -599,8 +599,8 @@ This repo ships with a rich set of configurations for you to explore and extend:
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **Agents** | 3 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows` — learners create more in Labs 03, 07 |
-| **Skills** | 10 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
+| **Agents** | 4 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows`, `lab-studio-maintainer` — learners create more in Labs 03, 07 |
+| **Skills** | 7 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
 | **Command skills** | 19 | `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/cost-check` |
 | **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
 | **MCP Servers** | 4 | Context7 (library docs), Sequential Thinking, WorkIQ, Microsoft Learn |
