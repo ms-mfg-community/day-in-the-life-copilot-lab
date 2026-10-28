@@ -9,7 +9,7 @@ This is the **Everything GitHub Copilot Hands-On Lab** — a comprehensive train
 
 - **Application**: ASP.NET Core 8 MVC with Entity Framework Core (ContosoUniversity)
 - **Architecture**: Clean architecture — Core (domain), Infrastructure (data), Web (MVC), Tests (xUnit), PlaywrightTests (E2E)
-- **Copilot Config**: 3 agents, 25 skills (6 knowledge packs + 19 `/name` command skills, formerly prompt files), 4 hook events, 4 instructions, 4 MCP servers
+- **Copilot Config**: 4 agents, 26 skills (7 knowledge packs + 19 `/name` command skills, formerly prompt files), 4 hook events, 4 instructions, 4 MCP servers
 - **CI/CD**: GitHub Agentic Workflows (gh-aw) for PRD generation and code review
 
 ## Build & Test
