@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bridge } from "./copilot-bridge.js";
+import { registerOriginGuard } from "./origin-guard.js";
 import { registerRoutes } from "./routes.js";
 import { ensureSandbox } from "./sandbox.js";
 
@@ -18,6 +19,15 @@ const HOST = process.env.LAB_STUDIO_HOST ?? "127.0.0.1";
 
 const app = Fastify({ logger: { level: "warn" } });
 
+// 5190 is the Vite dev server (client/vite.config.ts), which proxies /api here.
+// LAB_STUDIO_ORIGINS adds the origins a network bind is reached on.
+registerOriginGuard(app, {
+  ports: [PORT, 5190],
+  extraOrigins: (process.env.LAB_STUDIO_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+});
 registerRoutes(app);
 
 if (existsSync(clientDist)) {

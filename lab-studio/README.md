@@ -118,6 +118,8 @@ been through CI yet, so treat the first build on your engine as a smoke test.
 | ----------------------------------- | ----------- | ----------------------------------------------------------------------------- |
 | `LAB_STUDIO_PORT`                   | `5180`      | HTTP port for app + API                                                       |
 | `LAB_STUDIO_HOST`                   | `127.0.0.1` | Bind address; set `0.0.0.0` to serve the network (see warning above)          |
+| `LAB_STUDIO_ORIGINS`                | —           | Comma-separated extra browser origins (e.g. `http://lab-host:5180`). Loopback origins on the API and Vite ports are always allowed; `/api` mutations from any other origin, and any other `Host`, get 403 |
+| `LAB_STUDIO_SANDBOX`                | `.sandbox`  | Directory holding the learner workspace; `npm test` points it at a temp dir   |
 | `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` | —           | Fine-grained PAT with **Copilot Requests**; overrides the logged-in-user auth |
 
 ### Keeping content in sync with labs/\*.md

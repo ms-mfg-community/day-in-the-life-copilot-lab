@@ -16,7 +16,11 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 
 export const TEMPLATE_DIR = resolve(here, "..", "template");
-export const SANDBOX_ROOT = resolve(here, "..", "..", ".sandbox");
+// LAB_STUDIO_SANDBOX relocates learner state; the test suite points it at a
+// temp dir so `npm test` never resets the workspace a running studio uses.
+export const SANDBOX_ROOT = process.env.LAB_STUDIO_SANDBOX
+  ? resolve(process.env.LAB_STUDIO_SANDBOX)
+  : resolve(here, "..", "..", ".sandbox");
 export const SANDBOX_DIR = join(SANDBOX_ROOT, "workspace");
 
 export interface TreeNode {
