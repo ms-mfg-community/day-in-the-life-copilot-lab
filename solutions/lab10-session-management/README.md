@@ -15,13 +15,13 @@ cross-session database.
 
 | File | Lab section | Purpose |
 |------|-------------|---------|
-| `sample-checkpoint-log.txt` | §10.5 callout | Example of the line the `checkpoint` prompt file's `create` action appends to `.github/checkpoints.log` — a git-level safety net, not a Layer 1 snapshot. |
-| `sample-handoff.md` | §10.5 handoff drill | Example of the handoff document the `handoff` prompt file produces. In the drill you save your own copy as `lab10-handoff.md` in the session's `files/` folder, outside the repository, and a fresh conversation reads it back and continues from its Fresh Context Prompt section. The sample also shows that prompt sending the fresh conversation to the in-repo wiki (`.copilot/lessons/`) instead of a memory server. |
+| `sample-checkpoint-log.txt` | §10.5 callout | Example of the line the `/checkpoint` skill's `create` action appends to `.github/checkpoints.log` — a git-level safety net, not a Layer 1 snapshot. |
+| `sample-handoff.md` | §10.5 handoff drill | Example of the handoff document the `/handoff` skill produces. In the drill you save your own copy as `lab10-handoff.md` in the session's `files/` folder, outside the repository, and a fresh conversation reads it back and continues from its Fresh Context Prompt section. The sample also shows that prompt sending the fresh conversation to the in-repo wiki (`.copilot/lessons/`) instead of a memory server. |
 
-`checkpoint`, `handoff` and `consolidate-lessons` are **prompt files** under
-[`.github/prompts/`](../../.github/prompts/), not registered Copilot CLI slash
-commands — `copilot help commands` does not list them. In the CLI you ask
-the agent to follow the file by path, as Lab 10 §10.4a shows.
+`checkpoint`, `handoff` and `consolidate-lessons` are **command skills** under
+[`.github/skills/`](../../.github/skills/) (`disable-model-invocation: true`),
+not built-in Copilot CLI commands — `copilot help commands` does not list
+them, `/skills list` does. You run one as `/name`, as Lab 10 §10.4a shows.
 
 ## Where the actual wiki lives
 
@@ -37,10 +37,10 @@ The schema that governs how the agent writes lessons:
 
 - [`.github/instructions/lessons.instructions.md`](../../.github/instructions/lessons.instructions.md)
 
-The prompt file that promotes lessons (Layer 2 → Layer 2-global, or
+The skill that promotes lessons (Layer 2 → Layer 2-global, or
 flagged for Layer 3):
 
-- [`.github/prompts/consolidate-lessons.prompt.md`](../../.github/prompts/consolidate-lessons.prompt.md)
+- [`.github/skills/consolidate-lessons/SKILL.md`](../../.github/skills/consolidate-lessons/SKILL.md)
 
 ## Key concepts
 
@@ -53,10 +53,10 @@ flagged for Layer 3):
 - **The schema (Layer 3)** is binding rules that apply on every task:
   `AGENTS.md`, `.github/instructions/*.md`, and the agent
   personalities in `.github/agents/*.agent.md`.
-- **Consolidation** goes through the `consolidate-lessons` prompt file,
-  not by hand. Ask the agent to follow it with `--dry-run` first; never
+- **Consolidation** goes through the `/consolidate-lessons` skill,
+  not by hand. Run it with `--dry-run` first; never
   reorganize the wiki by hand because agents rely on stable file paths.
-- **Handoff** (the `handoff` prompt file) produces a Layer 1 artefact: one
+- **Handoff** (the `/handoff` skill) produces a Layer 1 artefact: one
   task's context, written to a file so a fresh conversation can pick the
   task up. Save it outside the repository (Lab 10 §10.5 uses
   `lab10-handoff.md` in the session's `files/` folder), then open a fresh

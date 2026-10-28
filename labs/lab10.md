@@ -51,7 +51,7 @@ at once.
 >   and the §10.5 diagram; the rest is self-paced.
 > - **Prerequisites.** Finish [Lab 02 — Custom Instructions & AGENTS.md](lab02.md)
 >   (§10.3 edits an instruction file) and [Lab 04 — Skills & Prompts](lab04.md)
->   (§10.4–§10.5 use prompt files) first. Your CLI must meet
+>   (§10.4–§10.5 run command skills) first. Your CLI must meet
 >   `copilot_cli_version_floor` in
 >   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml). You also need
 >   `git` and the .NET SDK. The lab runs only `dotnet build`: running that
@@ -125,7 +125,7 @@ References:
 - [Copilot CLI docs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli)
 - [`.copilot/lessons/README.md`](../.copilot/lessons/README.md) — the pattern, in-repo
 - [`.github/instructions/lessons.instructions.md`](../.github/instructions/lessons.instructions.md) — the schema
-- [`.github/prompts/consolidate-lessons.prompt.md`](../.github/prompts/consolidate-lessons.prompt.md) — the prompt file that promotes lessons
+- [`.github/skills/consolidate-lessons/SKILL.md`](../.github/skills/consolidate-lessons/SKILL.md) — the skill that promotes lessons
 
 ## 10.0 Copilot CLI surface check (2026 refresh)
 
@@ -323,7 +323,7 @@ Get-Content .copilot/lessons/log.md | Select-Object -First 40
 
 The new entry should sit at the top (newest first), cite evidence, and
 leave `Promoted to:` blank — that gets filled in by the
-`consolidate-lessons` prompt file in §10.4.
+`/consolidate-lessons` skill in §10.4.
 
 ### 10.2b Recall from a fresh session
 
@@ -525,46 +525,44 @@ entries shaped the same way once someone records them.
 
 The wiki accumulates entropy. Over a few weeks you get duplicate topic
 files, stale lessons, and project-scoped entries that actually apply
-globally. This repo's way to reshape the wiki is the `consolidate-lessons`
-prompt file — manual reorganization is a footgun because agents rely on
+globally. This repo's way to reshape the wiki is the `/consolidate-lessons`
+command skill — manual reorganization is a footgun because agents rely on
 stable file paths.
 
-> ⚠️ **A prompt file, not a CLI slash command.** `consolidate-lessons`
-> — like `checkpoint` and `handoff` in §10.5 — ships as a VS Code-style
-> prompt file in [`.github/prompts/`](../.github/prompts/). Copilot CLI's
-> built-in command list (`copilot help commands`) has no
-> `/consolidate-lessons`, `/checkpoint` or `/handoff`, and this repo adds
-> no CLI skill or wrapper that registers them. Do not rely on typing those
-> names, in the prompt or through `--prompt`: in the CLI, ask the agent in
-> plain English to follow the file.
+> ℹ️ **A repository skill, not a built-in command.** `consolidate-lessons`
+> — like `checkpoint` and `handoff` in §10.5 — ships as a skill in
+> [`.github/skills/`](../.github/skills/) with `disable-model-invocation: true`,
+> so Copilot never loads it on its own: you run it by typing
+> `/consolidate-lessons` in the Copilot prompt, options after the name.
+> Copilot CLI's built-in list (`copilot help commands`) does not show it;
+> `/skills list` does.
 
-🖥️ **Read the prompt file before you use it:**
+🖥️ **Read the skill before you use it:**
 
 **WSL/Bash:**
 ```bash
-head -40 .github/prompts/consolidate-lessons.prompt.md
+head -40 .github/skills/consolidate-lessons/SKILL.md
 ```
 
 **PowerShell:**
 ```powershell
-Get-Content .github/prompts/consolidate-lessons.prompt.md | Select-Object -First 40
+Get-Content .github/skills/consolidate-lessons/SKILL.md | Select-Object -First 40
 ```
 
 ### 10.4a Dry run first
 
-Always start with a dry run so you can see what would change. The prompt
-file takes two options — `--dry-run` and `--scope project|global|both` —
-and tells the agent what each one means. Ask for it **in the Copilot
-prompt** (not in your shell), naming the file and passing the options as
-plain text:
+Always start with a dry run so you can see what would change. The skill
+takes two options — `--dry-run` and `--scope project|global|both` —
+and tells the agent what each one means. Run it **in the Copilot
+prompt** (not in your shell), with the options after the name:
 
 ```text
-Follow .github/prompts/consolidate-lessons.prompt.md with --dry-run --scope project.
+/consolidate-lessons --dry-run --scope project
 Do not write any files.
 ```
 
 `--scope project` keeps the run inside this repository's
-`.copilot/lessons/`. The prompt's own default is `both`, which also
+`.copilot/lessons/`. The skill's own default is `both`, which also
 writes to `~/.copilot/lessons/`; this lab only does that if you opt in
 (see the note below).
 
@@ -578,7 +576,7 @@ re-run the dry run.
 > 🌐 **Opt-in: both scopes.** If — and only if — the global wiki is the
 > one §10.2c just created for you (your starting-point check said
 > `absent`), you may use `--scope both` here, in §10.4b and in the
-> §10.4d line instead. That also lets the prompt propose project→global
+> §10.4d line instead. That also lets the skill propose project→global
 > moves and `CONTRADICTION` flags, and it writes under
 > `~/.copilot/lessons/`, which `git` cannot see — §10.4b says how to
 > review that. Never use `both` against a global wiki you already kept:
@@ -590,7 +588,7 @@ When the dry run looks right, run it for real — again **in the Copilot
 prompt**, not in your shell:
 
 ```text
-Follow .github/prompts/consolidate-lessons.prompt.md with --scope project.
+/consolidate-lessons --scope project
 ```
 
 Expected result, given the seed wiki this repo ships:
@@ -677,15 +675,15 @@ delete the lesson (keep the `log.md` history). The wiki stays a
 
 If you want consolidation to run on a cadence, add a cron/launchd/Task
 Scheduler entry that launches a non-interactive Copilot session
-(`-p`/`--prompt`) and sends the request in plain English. An example to
+(`-p`/`--prompt`) and names the skill in the request. An example to
 read, **not a step in this lab** — nothing here runs it:
 
 ```text
-copilot -p "Follow .github/prompts/consolidate-lessons.prompt.md with --scope project" --allow-all-tools
+copilot -p "/consolidate-lessons --scope project" --allow-all-tools
 ```
 
-`--prompt` carries ordinary prompt text, which is why the request names the
-prompt file rather than a slash command (§10.4). `copilot help` marks
+`--prompt` carries ordinary prompt text, and a `/skill-name` inside it is
+how a skill is requested (§10.4). `copilot help` marks
 `--allow-all-tools` as required for non-interactive runs; it pre-approves
 every tool, file writes included, so use it only in a repository and on a
 machine you trust, and rehearse the schedule with `--dry-run` first. This
@@ -704,7 +702,7 @@ belong in your personal setup.
                                                       agent personalities)
 
   one task        consolidate-lessons        hardens into a rule
-  (kept on disk,  prompt file promotes       when it must apply
+  (kept on disk,  skill promotes             when it must apply
    not curated)   log → topic and            on every task
                   project → global
 ```
@@ -721,12 +719,12 @@ Your checklist for the next real task:
    time goes into `log.md` with evidence cited.
 4. **Harden into schema (L3):** if a rule should apply on every task,
    propose it during consolidation — not mid-feature.
-5. **Consolidate weekly:** run the `consolidate-lessons` prompt file with
+5. **Consolidate weekly:** run `/consolidate-lessons` with
    `--dry-run` first (§10.4a); commit the live run when the diff is clean.
 
 > 🔖 **About `checkpoint` — a git-level safety net, not Layer 1.**
-> [`.github/prompts/checkpoint.prompt.md`](../.github/prompts/checkpoint.prompt.md)
-> is the third prompt file, with `create`, `verify` and `list` actions.
+> [`.github/skills/checkpoint/SKILL.md`](../.github/skills/checkpoint/SKILL.md)
+> is the third command skill, with `create`, `verify` and `list` actions.
 > `create` runs verification, makes a git stash or commit named for the
 > checkpoint, and appends one `date | name | short SHA` line to
 > `.github/checkpoints.log`, a file that is created on first use. It does
@@ -736,19 +734,17 @@ Your checklist for the next real task:
 > shows the log format. Nothing in this lab uses it, and you should not run
 > it mid-lab: its stash or commit would sweep up your §10.3a and §10.4b
 > edits, and the §10.6 revert would no longer find them. Keep it for your
-> own next task, asked for in plain English the way §10.4a asks for
-> consolidation.
+> own next task, run as `/checkpoint create <name>`.
 
 🖥️ **End-of-lab handoff drill:** a handoff is how one task outlives one
 conversation: a file a fresh conversation can pick up. In the Copilot
-prompt (not your shell), ask the agent to follow
-[`.github/prompts/handoff.prompt.md`](../.github/prompts/handoff.prompt.md).
-Its `${input:…}` placeholders are VS Code prompt-file syntax, and the file
-names no save location, so in the CLI put the three values *and* the
-location in the request itself:
+prompt (not your shell), run the
+[`handoff`](../.github/skills/handoff/SKILL.md) skill. It asks for three
+values and names no save location, so put the values *and* the location
+in the request itself:
 
 ```text
-Follow .github/prompts/handoff.prompt.md. Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
+/handoff Work description: "Completed Lab 10 — three-layer agent memory". Stop reason: "Lab 10 exercises finished; the §10.6 cleanup is still to do". Blocker: none. Save the handoff as lab10-handoff.md in the files folder of your session folder, outside the repository, and print its absolute path.
 ```
 
 Note the path it prints. Now **resume from it**: open a fresh conversation

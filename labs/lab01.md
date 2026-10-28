@@ -19,7 +19,7 @@ References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
 - [Custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
-- [Prompt files](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files)
+- [Add skills to Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
 
 ## 1.0a Copilot CLI currency (2026 refresh)
 
@@ -125,9 +125,8 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 | Directory | What | Count | Lab |
 |-----------|------|-------|-----|
-| `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
-| `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 6 | Lab 04 |
-| `.github/prompts/` | Reusable command templates (`.prompt.md`) — run from IDE chat, not the CLI (see §1.2) | 19 | Lab 04 |
+| `.github/agents/` | Specialized AI personas (`.agent.md`) | 4 (+ more in Lab 03) | Lab 03 |
+| `.github/skills/` | Reusable command templates and auto-activating knowledge packs (`SKILL.md`) | 26 | Labs 04, 10, 14 |
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
@@ -166,7 +165,7 @@ Copilot **combines** every instruction source that applies to what you are doing
 | Files matching `applyTo` | `.github/instructions/*.instructions.md` | Only when the file's `applyTo` glob matches files in context |
 | Matching topics | `.github/skills/*/SKILL.md` | When description matches the conversation topic |
 | The selected agent | Agent profile (`.agent.md`) | When you select the agent with `/agent` (or start with `copilot --agent NAME`) |
-| The prompt you run | Prompt (`.prompt.md`) | When invoked with `/prompt-name` in IDE chat (prompt files are an IDE feature — the CLI has no equivalent, see Lab 04) |
+| The command you run | Command skill (`SKILL.md` with `disable-model-invocation: true`) | Only when you type `/skill-name` — never from topic matching (see Lab 04) |
 
 In a session, type `/instructions` to see which instruction files Copilot found and to turn them on or off.
 
@@ -233,7 +232,7 @@ copilot --agent planner `
 | **Instructions** | `.github/copilot-instructions.md` | Always-on repo-wide rules |
 | **Path Instructions** | `.github/instructions/*.instructions.md` | Rules for specific file types |
 | **AGENTS.md** | `AGENTS.md` (repo root) | Non-obvious project context (keep minimal) |
-| **Prompts** | `.github/prompts/*.prompt.md` | Reusable prompt templates, invoked from IDE chat |
+| **Command skills** | `.github/skills/*/SKILL.md` (`disable-model-invocation: true`) | Reusable commands, run as `/name` |
 | **Hooks** | `.github/hooks/default.json` | Lifecycle guardrails |
 | **MCP** | `.copilot/mcp-config.json` | External tool integrations |
 

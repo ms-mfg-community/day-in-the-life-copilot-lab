@@ -9,7 +9,7 @@ This is the **Everything GitHub Copilot Hands-On Lab** — a comprehensive train
 
 - **Application**: ASP.NET Core 8 MVC with Entity Framework Core (ContosoUniversity)
 - **Architecture**: Clean architecture — Core (domain), Infrastructure (data), Web (MVC), Tests (xUnit), PlaywrightTests (E2E)
-- **Copilot Config**: 3 agents, 6 skills, 19 prompts, 4 hook events, 4 instructions, 4 MCP servers
+- **Copilot Config**: 4 agents, 26 skills (7 knowledge packs + 19 `/name` command skills, formerly prompt files), 4 hook events, 4 instructions, 4 MCP servers
 - **CI/CD**: GitHub Agentic Workflows (gh-aw) for PRD generation and code review
 
 ## Build & Test
@@ -59,7 +59,6 @@ A separate, portable gh-aw workflow (`.github/workflows/self-improving-agents.md
 | Server | Type | Use For |
 |--------|------|---------|
 | `context7` | stdio | Third-party library docs, SDKs, frameworks |
-| `memory` | stdio | Knowledge graph for persisting entities across sessions |
 | `sequential-thinking` | stdio | Structured chain-of-thought reasoning |
 | `workiq` | stdio | Microsoft Work IQ for productivity |
 | `microsoft-learn` | http | Azure services, Bicep, WAF, Microsoft products |
@@ -87,7 +86,7 @@ The .NET project models a university system with these entities:
 - Batch related tool calls — reads, edits, and shell commands — into a single turn whenever the calls are independent.
 - Keep context lean: prefer `view_range` over full-file reads, archive completed `plan.md` phases, and run `/clear` (or `scripts/orchestrator/clear-context.sh`) between worker-pane phases.
 - Run `/cost-check` once per phase to estimate the session footprint and surface the top compaction opportunities.
-- Full mental model: [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md). On-demand audit prompt: [`.github/prompts/cost-check.prompt.md`](.github/prompts/cost-check.prompt.md).
+- Full mental model: [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md). On-demand audit skill: [`.github/skills/cost-check/SKILL.md`](.github/skills/cost-check/SKILL.md).
 
 ## Git Workflow
 

@@ -50,7 +50,6 @@ describe('lab01 contract: AC5 — §1.1 counts equal the disk', () => {
   const cases: Array<[string, number]> = [
     ['.github/agents/', ls('.github/agents').filter((f) => f.endsWith('.agent.md')).length],
     ['.github/skills/', ls('.github/skills').length],
-    ['.github/prompts/', ls('.github/prompts').filter((f) => f.endsWith('.prompt.md')).length],
     ['.github/instructions/', ls('.github/instructions').filter((f) => f.endsWith('.instructions.md')).length],
     ['.github/hooks/', hookEvents.length],
     ['.copilot/mcp-config.json', mcpServers.length],
@@ -60,6 +59,15 @@ describe('lab01 contract: AC5 — §1.1 counts equal the disk', () => {
   it.each(cases)('%s row states the on-disk count', (needle, onDisk) => {
     expect(onDisk, `${needle} has nothing on disk — the check would be vacuous`).toBeGreaterThan(0);
     expect(countOf(needle)).toBe(onDisk);
+  });
+
+  it('does not list a repository prompt directory that is no longer shipped', () => {
+    expect(section('1.1')).not.toContain('`.github/prompts/`');
+  });
+
+  it('root .mcp.json (what Copilot CLI and VS Code load) names the same servers as .copilot/mcp-config.json', () => {
+    const root = Object.keys(JSON.parse(read(join(ROOT, '.mcp.json'))).mcpServers);
+    expect([...root].sort()).toEqual([...mcpServers].sort());
   });
 });
 

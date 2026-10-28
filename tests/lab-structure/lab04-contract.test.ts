@@ -56,7 +56,7 @@ function section(prefix: string): string {
 /**
  * A slash command / slash-invoked name, never a path segment. Without the lookbehind,
  * `/create-dotnet-test` matches the solutions path
- * `solutions/lab04-skill-and-prompt/create-dotnet-test.prompt.md`, and `/skills`
+ * `solutions/lab04-skill-and-prompt/create-dotnet-test/SKILL.md`, and `/skills`
  * matches `.github/skills/` — both would pass on the unedited lab.
  */
 const slash = (name: string): RegExp => new RegExp(`(?<![\\w./])/${name}`);
@@ -102,16 +102,15 @@ describe('lab04 contract: AC6 — skills can also be named explicitly', () => {
   });
 });
 
-describe('lab04 contract: AC7 — no prompt-file invocation inside the CLI session', () => {
+describe('lab04 contract: AC7 — the command skill runs inside the CLI session', () => {
   it('§4.4 contains no @-prefixed prompt invocation', () => {
     expect(section('4.4')).not.toMatch(/@create-/);
   });
 
-  it('if §4.4 still invokes the prompt file, it is marked IDE-only', () => {
+  it('§4.4 runs /create-dotnet-test as a command and no longer sends the learner to an IDE for it', () => {
     const sec = section('4.4');
-    if (/create-dotnet-test/.test(sec)) {
-      expect(sec).toMatch(/IDE|VS Code|Visual Studio|JetBrains/i);
-    }
+    expect(sec).toMatch(slash('create-dotnet-test'));
+    expect(sec).not.toMatch(/in your IDE|not the terminal/i);
   });
 
   it('the lab still records that prompt files are IDE-only', () => {

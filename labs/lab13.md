@@ -566,12 +566,11 @@ whether a PR meets the bar, the contract is too vague — fix that before
 spending another A2A token.
 
 > 💡 The repository's
-> [`orchestrate.prompt.md`](../.github/prompts/orchestrate.prompt.md)
-> sequences agents and aggregates their hand-off documents, but it does
-> **not** enforce an acceptance-criteria gate — and it is a prompt file
-> for IDE chat (VS Code, Visual Studio, JetBrains), not a Copilot CLI
-> command. In Copilot CLI **you** are the gate: write the `acceptance`
-> section of the hand-off doc before you dispatch a peer.
+> [`orchestrate` skill](../.github/skills/orchestrate/SKILL.md) (run as
+> `/orchestrate`) sequences agents and aggregates their hand-off
+> documents, but it does **not** enforce an acceptance-criteria gate.
+> **You** are the gate: write the `acceptance` section of the hand-off
+> doc before you dispatch a peer.
 
 ---
 
