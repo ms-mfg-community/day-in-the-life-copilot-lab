@@ -1,0 +1,218 @@
+{
+  "id": "2026-10-26-firefox-142.0.1",
+  "browser": "Firefox",
+  "engine": "firefox",
+  "channel": null,
+  "version": "142.0.1",
+  "build": "Playwright's build of Firefox",
+  "playwright": "1.56.1",
+  "headless": true,
+  "profile": "a fresh profile per target, with nothing granted",
+  "platform": "win32 10.0.26300",
+  "ranAt": "2026-10-26T16:38:17.838Z",
+  "targets": {
+    "file:": "file:///<temporary directory>/probe.html",
+    "http://localhost": "http://localhost:<port>/probe.html",
+    "https://": "https://<this machine's LAN address>:<port>/probe.html"
+  },
+  "results": [
+    {
+      "mechanism": "Secure context",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "window.isSecureContext is true"
+    },
+    {
+      "mechanism": "Inline `type=\"module\"` script",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "the inline type=\"module\" script ran and set its flag"
+    },
+    {
+      "mechanism": "ES module script fetched by URL",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "<script type=\"module\" src=\"./module.js\"> was fetched and ran"
+    },
+    {
+      "mechanism": "Service worker",
+      "target": "file:",
+      "verdict": "fails",
+      "detail": "service worker: TypeError: ServiceWorkerContainer.register: Script URL's scheme is not 'http' or 'https'"
+    },
+    {
+      "mechanism": "Screen Wake Lock",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "navigator.wakeLock.request('screen') resolved with a sentinel, which was released"
+    },
+    {
+      "mechanism": "Keyboard Lock",
+      "target": "file:",
+      "verdict": "fails",
+      "detail": "keyboard lock: navigator.keyboard.lock is not available"
+    },
+    {
+      "mechanism": "`requestFullscreen()`",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "requestFullscreen() resolved and fullscreenchange made the element the fullscreenElement (fullscreenEnabled was true)"
+    },
+    {
+      "mechanism": "`requestFullscreen({screen})`",
+      "target": "file:",
+      "verdict": "fails",
+      "detail": "window.getScreenDetails is not a function"
+    },
+    {
+      "mechanism": "`BroadcastChannel`",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived; the documents' origin is \"null\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`postMessage` via handle/`opener`",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived with origin \"null\"; the documents' origin is \"null\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`localStorage` + `storage` event",
+      "target": "file:",
+      "verdict": "works",
+      "detail": "storage event for key \"teaching-spa-probe\" arrived; the documents' origin is \"null\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "Secure context",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "window.isSecureContext is true"
+    },
+    {
+      "mechanism": "Inline `type=\"module\"` script",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "the inline type=\"module\" script ran and set its flag"
+    },
+    {
+      "mechanism": "ES module script fetched by URL",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "<script type=\"module\" src=\"./module.js\"> was fetched and ran"
+    },
+    {
+      "mechanism": "Service worker",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "navigator.serviceWorker.register(\"./sw.js\") resolved, and the registration was unregistered"
+    },
+    {
+      "mechanism": "Screen Wake Lock",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "navigator.wakeLock.request('screen') resolved with a sentinel, which was released"
+    },
+    {
+      "mechanism": "Keyboard Lock",
+      "target": "http://localhost",
+      "verdict": "fails",
+      "detail": "keyboard lock: navigator.keyboard.lock is not available"
+    },
+    {
+      "mechanism": "`requestFullscreen()`",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "requestFullscreen() resolved and fullscreenchange made the element the fullscreenElement (fullscreenEnabled was true)"
+    },
+    {
+      "mechanism": "`requestFullscreen({screen})`",
+      "target": "http://localhost",
+      "verdict": "fails",
+      "detail": "window.getScreenDetails is not a function"
+    },
+    {
+      "mechanism": "`BroadcastChannel`",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived; the documents' origin is \"http://localhost:<port>\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`postMessage` via handle/`opener`",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived with origin \"http://localhost:<port>\"; the documents' origin is \"http://localhost:<port>\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`localStorage` + `storage` event",
+      "target": "http://localhost",
+      "verdict": "works",
+      "detail": "storage event for key \"teaching-spa-probe\" arrived; the documents' origin is \"http://localhost:<port>\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "Secure context",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "window.isSecureContext is true"
+    },
+    {
+      "mechanism": "Inline `type=\"module\"` script",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "the inline type=\"module\" script ran and set its flag"
+    },
+    {
+      "mechanism": "ES module script fetched by URL",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "<script type=\"module\" src=\"./module.js\"> was fetched and ran"
+    },
+    {
+      "mechanism": "Service worker",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "navigator.serviceWorker.register(\"./sw.js\") resolved, and the registration was unregistered"
+    },
+    {
+      "mechanism": "Screen Wake Lock",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "navigator.wakeLock.request('screen') resolved with a sentinel, which was released"
+    },
+    {
+      "mechanism": "Keyboard Lock",
+      "target": "https://",
+      "verdict": "fails",
+      "detail": "keyboard lock: navigator.keyboard.lock is not available"
+    },
+    {
+      "mechanism": "`requestFullscreen()`",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "requestFullscreen() resolved and fullscreenchange made the element the fullscreenElement (fullscreenEnabled was true)"
+    },
+    {
+      "mechanism": "`requestFullscreen({screen})`",
+      "target": "https://",
+      "verdict": "fails",
+      "detail": "window.getScreenDetails is not a function"
+    },
+    {
+      "mechanism": "`BroadcastChannel`",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived; the documents' origin is \"https://<this machine's LAN address>:<port>\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`postMessage` via handle/`opener`",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "message \"hello\" arrived with origin \"https://<this machine's LAN address>:<port>\"; the documents' origin is \"https://<this machine's LAN address>:<port>\"; the opener's location.href is readable (the same page)"
+    },
+    {
+      "mechanism": "`localStorage` + `storage` event",
+      "target": "https://",
+      "verdict": "works",
+      "detail": "storage event for key \"teaching-spa-probe\" arrived; the documents' origin is \"https://<this machine's LAN address>:<port>\"; the opener's location.href is readable (the same page)"
+    }
+  ]
+}

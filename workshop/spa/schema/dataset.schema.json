@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/workshop/spa/schema/dataset.schema.json",
+  "title": "Teaching SPA dataset",
+  "description": "Data behind a parameter-chart or simulation: settable parameters and outputs that are linear combinations of them. Declarative on purpose, so the application never evaluates a formula string. Parameter ids unique, every term naming a declared parameter, and min <= default <= max are checked by scripts/spa/validate.mjs, which JSON Schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "label", "provenance", "parameters", "outputs"],
+  "properties": {
+    "$schema": {
+      "description": "Relative path to the schema this file is validated against. Constrained so it cannot hold a sentence.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+\\.json$"
+    },
+    "id": {
+      "description": "Dataset id; an interaction names it in its dataset field. Unique across datasets/.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "label": {
+      "description": "Human-readable name of the dataset.",
+      "type": "string",
+      "pattern": "^[^\\r\\n]+$",
+      "maxLength": 80
+    },
+    "provenance": {
+      "description": "Where the numbers come from. A dataset must never pass invented numbers off as measured ones.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "note"],
+      "properties": {
+        "kind": { "enum": ["illustrative", "measured", "derived"] },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/output" }
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "unit", "min", "max", "step", "default"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "label": { "type": "string", "pattern": "^[^\\r\\n]+$", "maxLength": 80 },
+        "unit": { "type": "string", "minLength": 1 },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "default": { "type": "number" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "unit", "terms"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "label": { "type": "string", "pattern": "^[^\\r\\n]+$", "maxLength": 80 },
+        "unit": { "type": "string", "minLength": 1 },
+        "constant": { "type": "number" },
+        "terms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["parameter", "coefficient"],
+            "properties": {
+              "parameter": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+              "coefficient": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

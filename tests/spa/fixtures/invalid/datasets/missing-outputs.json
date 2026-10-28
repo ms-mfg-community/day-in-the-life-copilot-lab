@@ -1,0 +1,11 @@
+{
+  "id": "missing-outputs",
+  "label": "Invalid dataset: no outputs, provenance kind outside the enum",
+  "provenance": {
+    "kind": "invented",
+    "note": "A provenance kind that is not illustrative, measured or derived."
+  },
+  "parameters": [
+    { "id": "inputTokens", "label": "Input tokens", "unit": "tokens", "min": 0, "max": 1000, "step": 1, "default": 10 }
+  ]
+}

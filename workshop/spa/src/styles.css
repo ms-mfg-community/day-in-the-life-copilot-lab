@@ -1,0 +1,1920 @@
+/*
+ * The shell's stylesheet (specs/005-teaching-spa.md 2.10 and 2.11; AC17, AC18; child issue 10, revised for the deck).
+ *
+ * What the conformance target asks of the chrome and of every control, and where it is met here:
+ *
+ *   - every target is at least 24 by 24 CSS pixels (SC 2.5.8, F89): the module strip's links, every button, the checkboxes, the
+ *     tabs and the sliders; a link inside the slide text is the one declared exception (workshop/spa/docs/target-size-exceptions.md);
+ *   - focus is visible (SC 2.4.7, F86) and the indicator meets 3:1 against what is next to it (SC 1.4.11, F91): a 3px ring in
+ *     --focus, held off the control by a 2px gap in the surface colour. Light: #1a5fb4 is 6.3:1 against white and 5.8:1 against
+ *     the page (#f4f6f9). Dark: #9cc4ff is 11:1 against the page (#0e1116) and 10:1 against a surface (#161b22);
+ *   - text is 4.5:1 or better on every surface it sits on (SC 1.4.3): --text-muted is 6.6:1 on white and 7.9:1 on the dark
+ *     surface; --accent as link text is 6.3:1 on white and, as #86b7ff, 8.5:1 on the dark surface;
+ *   - the current module is marked by weight and a filled background, a chosen node by a thicker border and weight, an open card
+ *     by its state, never by colour alone (SC 1.4.1); links in text are underlined;
+ *   - motion follows C39's inverse pattern (F107): the static presentation is the default, and the one transition (the focus
+ *     ring's offset) exists only under prefers-reduced-motion: no-preference (AC18); no smooth scroll and no colour transition,
+ *     so a scroll lands at once and a painted colour is what the state says;
+ *   - a code block wraps instead of widening the page (SC 1.4.10): at 320 CSS px no route scrolls sideways;
+ *   - the bar is the one sticky element, and html's scroll-padding-top keeps a focused element clear of it (SC 2.4.11).
+ *
+ * Layout: the bar (#journey: the brand, the position, Previous and Next, Present, the speaker script, Setup, the module strip)
+ * sticks to the top; main holds the segment, cut by deck.ts into screens, each at least a viewport tall; the pager and the
+ * live region follow. No CSS reorders content: visual order is DOM order.
+ */
+
+:root {
+  color-scheme: light dark;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  --bar-h: 6.25rem;
+
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --text: #161a22;
+  --text-muted: #525c6c;
+  --line: #d6dce5;
+  --line-strong: #aeb7c4;
+  --accent: #1a5fb4;
+  --accent-strong: #134a8f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6effc;
+  --focus: #1a5fb4;
+  --success: #1b7f3b;
+  --warn: #8a5a00;
+  --warn-soft: #fff4dc;
+  --danger: #b3261e;
+  --danger-soft: #fdecea;
+  --code-bg: #f1f3f7;
+  --terminal-bg: #171b24;
+  --terminal-ink: #e7ebf0;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 10px 28px -14px rgba(16, 24, 40, 0.25);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.08);
+  --radius: 1rem;
+  --radius-sm: 0.6rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116;
+    --surface: #161b22;
+    --surface-2: #1f2630;
+    --text: #e7ebf0;
+    --text-muted: #a6b0bd;
+    --line: #2a323e;
+    --line-strong: #46515f;
+    --accent: #86b7ff;
+    --accent-strong: #a9cbff;
+    --accent-ink: #0b1a33;
+    --accent-soft: #15284a;
+    --focus: #9cc4ff;
+    --success: #6fd48f;
+    --warn: #f0b84a;
+    --warn-soft: #2e2510;
+    --danger: #ff8a80;
+    --danger-soft: #3a1a18;
+    --code-bg: #0b0e13;
+    --terminal-bg: #0b0e13;
+    --terminal-ink: #e7ebf0;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * Base
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* The shell and the widgets hide things with the attribute: no display rule below may undo it. */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--bar-h) + 0.5rem);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 1.0625rem/1.6 var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  color: var(--accent-strong);
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}
+
+code {
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  padding: 0.08em 0.35em;
+}
+
+pre {
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 1rem 1.15rem;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+kbd {
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  padding: 0.1em 0.45em;
+}
+
+blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1.1rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--surface);
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+ul,
+ol {
+  margin: 0 0 1rem;
+  padding-left: 1.4rem;
+}
+
+li {
+  margin: 0.35rem 0;
+}
+
+li > strong:first-child {
+  font-weight: 650;
+}
+
+table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  margin: 2rem 0;
+  background: var(--line);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * Controls
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+button,
+.button,
+select,
+[role='tab'],
+[role='slider'] {
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  font: inherit;
+}
+
+button,
+.button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button:hover,
+.button:hover {
+  background: var(--surface-2);
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+button:disabled,
+button[aria-disabled='true'] {
+  color: var(--text-muted);
+  border-color: var(--line);
+  background: var(--surface-2);
+  cursor: default;
+}
+
+select {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+input[type='checkbox'] {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: 0 0.6rem 0 0;
+  vertical-align: middle;
+  accent-color: var(--accent);
+  flex: none;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+#main:focus-visible {
+  outline-width: 2px;
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Off the top of the page until it has focus; it keeps its size, so it is measured as the target it is. */
+a[data-skip] {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 60;
+  display: inline-block;
+  box-sizing: border-box;
+  min-height: 2.25rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+a[data-skip]:focus {
+  transform: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * The bar
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+[data-spa-root='presentation'] {
+  position: relative;
+  min-height: 100vh;
+}
+
+#journey {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  min-height: 3.5rem;
+  padding: 0.45rem clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.bar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.bar-agenda {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.brand-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.brand-title:empty {
+  display: none;
+}
+
+.bar-position {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.deck-position {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.deck-position:empty {
+  display: none;
+}
+
+.bar-steps {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.bar-present,
+.bar-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.bar-present {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+#present-start {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+
+#present-start:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
+#present-start[aria-disabled='true'] {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-muted);
+}
+
+.present-guidance,
+.present-unavailable,
+.present-notes {
+  max-width: 22rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.present-guidance {
+  display: none;
+}
+
+.present-notes:empty {
+  display: none;
+}
+
+.bar-setting {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* The presenter setup: a panel that drops under the bar from the Setup control. */
+.setup-panel {
+  position: absolute;
+  top: 100%;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  z-index: 45;
+  display: none;
+  width: min(34rem, calc(100vw - 2rem));
+  margin-top: 0.4rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.setup-panel.is-open {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.setup-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.setup-panel p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.setup-panel > button {
+  justify-self: start;
+}
+
+#present-screen-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+/* The module strip: every module, numbered, the current one filled. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0 clamp(0.75rem, 2vw, 1.5rem) 0.5rem;
+  counter-reset: module;
+}
+
+.strip a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 9rem;
+  min-width: 24px;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.2;
+  text-decoration: none;
+  counter-increment: module;
+}
+
+.strip a::before {
+  content: counter(module, decimal-leading-zero);
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.strip a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.strip a[aria-current='page'] {
+  flex: 2 1 12rem;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * The segment, cut into screens
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+#main {
+  --stage-pad: clamp(1.25rem, 5vw, 5rem);
+  display: block;
+}
+
+#main > h1 {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vh, 4rem) var(--stage-pad) 0;
+  font-size: clamp(2.2rem, 4vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+#main > h1[data-module]::before {
+  content: attr(data-module);
+  display: block;
+  margin-bottom: 0.75rem;
+  font: 700 0.9rem/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.screen {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 64rem);
+  justify-content: center;
+  align-content: center;
+  min-height: calc(100vh - var(--bar-h));
+  padding: 3rem var(--stage-pad) 4rem;
+  border-top: 1px solid var(--line);
+}
+
+.screen > * {
+  min-width: 0;
+}
+
+.screen[data-kind='opener'] {
+  align-content: start;
+  min-height: calc(100vh - var(--bar-h) - 9rem);
+  padding-top: 1.5rem;
+  border-top: 0;
+}
+
+/* The slide's own first heading repeats the title the shell has written above the opener. */
+.screen[data-kind='opener'] > h1 {
+  display: none;
+}
+
+.screen::before {
+  content: attr(data-kicker);
+  display: block;
+  margin-bottom: 1rem;
+  font: 700 0.78rem/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.screen[data-kind='opener']::before {
+  display: none;
+}
+
+.screen > h2 {
+  margin: 0 0 1.5rem;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.screen > h3 {
+  margin: 1.75rem 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.screen > p,
+.screen > ul:not(.cards),
+.screen > ol:not(.cards) {
+  font-size: clamp(1.05rem, 1.35vw, 1.25rem);
+  line-height: 1.6;
+  max-width: 44rem;
+}
+
+.screen > ul:not(.cards) > li,
+.screen > ol:not(.cards) > li {
+  margin: 0.5rem 0;
+}
+
+/* The hook: the module's question, large. */
+.screen[data-kind='hook'] {
+  background: linear-gradient(180deg, var(--accent-soft), transparent 55%);
+}
+
+.screen[data-kind='hook'] > h2 {
+  color: var(--accent);
+}
+
+.screen[data-kind='hook'] > p:first-of-type {
+  font-size: clamp(1.25rem, 1.9vw, 1.6rem);
+  line-height: 1.5;
+  max-width: 48rem;
+}
+
+/* The live demo: the terminal. */
+.screen[data-kind='demo'] .code pre {
+  background: var(--terminal-bg);
+  border-color: var(--terminal-bg);
+  color: var(--terminal-ink);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+}
+
+.screen[data-kind='demo'] .code pre code {
+  color: inherit;
+}
+
+/* The pitfalls: each point flagged. */
+.screen[data-kind='pitfalls'] > ul:not(.cards) > li::marker {
+  color: var(--danger);
+  content: '✕  ';
+}
+
+/* The takeaway: one statement, set large and centred. */
+.screen[data-kind='takeaway'] {
+  justify-items: center;
+  text-align: center;
+  background: linear-gradient(0deg, var(--accent-soft), transparent 60%);
+}
+
+.screen[data-kind='takeaway'] > h2 {
+  color: var(--accent);
+}
+
+.screen[data-kind='takeaway'] > p {
+  max-width: 46rem;
+  font-size: clamp(1.3rem, 2.1vw, 1.8rem);
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.screen[data-kind='takeaway'] > ul:not(.cards),
+.screen[data-kind='takeaway'] > ol:not(.cards) {
+  text-align: left;
+}
+
+/* The opener */
+.opener {
+  margin-bottom: 1.5rem;
+}
+
+.opener-kicker {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.opener-label {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.opener-outcome p {
+  max-width: 46rem;
+  margin: 0;
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+  line-height: 1.5;
+}
+
+.opener-outline {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: outline;
+}
+
+.opener-outline li {
+  margin: 0;
+  counter-increment: outline;
+}
+
+.opener-jump {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  text-align: left;
+  font-weight: 500;
+}
+
+.opener-jump::before {
+  content: counter(outline, decimal-leading-zero);
+  flex: none;
+  font: 700 0.75rem/1 var(--font-mono);
+  color: var(--accent);
+}
+
+.opener-labs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+  background: var(--surface);
+  font: 600 0.82rem/1.5 var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * What the reader can act on
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+/* Reveal cards: a named point each, the point a click away. */
+.cards-block {
+  margin: 0 0 1.25rem;
+}
+
+.cards-all {
+  display: block;
+  margin: 0 auto 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-face {
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.card-name {
+  flex: 1 1 auto;
+}
+
+.card-face::after {
+  content: '+';
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-weight: 400;
+  line-height: 1.4rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.card-face[aria-expanded='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.card-face[aria-expanded='true']::after {
+  content: '−';
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.card-detail {
+  padding: 0.75rem 1rem 1rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  border-top: 1px solid var(--line);
+}
+
+/* Code with a Copy control. */
+.code {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.code > pre {
+  margin: 0;
+  padding-right: 4.5rem;
+}
+
+.code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+/* Drawn diagrams. */
+.diagram,
+.tree {
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+}
+
+.diagram-stage {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.diagram-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.diagram-band {
+  fill: var(--surface-2);
+}
+
+.diagram-band-hot {
+  fill: var(--warn-soft);
+}
+
+.diagram-band-label {
+  font: 700 13px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--text-muted);
+}
+
+.diagram-step {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+}
+
+.diagram-step-label {
+  font: 600 15px var(--font-mono);
+  fill: var(--accent);
+}
+
+.diagram-step-arrow {
+  font: 600 16px var(--font-sans);
+  fill: var(--text-muted);
+}
+
+.diagram-edge line {
+  stroke: var(--line-strong);
+  stroke-width: 2.5;
+}
+
+.diagram-edge-dashed line {
+  stroke-dasharray: 7 6;
+}
+
+.diagram-edge.is-active line {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.diagram-arrow {
+  fill: var(--line-strong);
+}
+
+.diagram-arrow-active {
+  fill: var(--accent);
+}
+
+.diagram-edge-label {
+  font: 500 14px var(--font-sans);
+  fill: var(--text-muted);
+}
+
+.diagram-edge-label-box {
+  fill: var(--surface);
+  stroke: var(--line);
+}
+
+.diagram-edge.is-active .diagram-edge-label-box {
+  stroke: var(--accent);
+}
+
+.diagram-edge.is-active .diagram-edge-label {
+  fill: var(--accent);
+  font-weight: 700;
+}
+
+.diagram-nodes {
+  position: absolute;
+  inset: 0;
+}
+
+.dnode {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  min-width: 24px;
+  min-height: 24px;
+  padding: calc(100cqw / var(--w) * 10) calc(100cqw / var(--w) * 12);
+  border: 2px solid var(--line-strong);
+  border-radius: calc(100cqw / var(--w) * 12);
+  background: var(--surface);
+  color: var(--text);
+  font-size: calc(100cqw / var(--w) * 15);
+  line-height: calc(100cqw / var(--w) * 22);
+  text-align: left;
+  overflow: hidden;
+}
+
+.dnode-name {
+  font-weight: 700;
+}
+
+.dnode-line {
+  color: var(--text-muted);
+}
+
+.dnode-warn {
+  margin-top: calc(100cqw / var(--w) * 4);
+  font-size: calc(100cqw / var(--w) * 13);
+  line-height: calc(100cqw / var(--w) * 17);
+  color: var(--danger);
+}
+
+.dnode-actor {
+  border-style: dashed;
+}
+
+.dnode-gate {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dnode-model {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.dnode-note {
+  border-style: dotted;
+  background: var(--surface-2);
+}
+
+.dnode:hover {
+  border-color: var(--accent);
+}
+
+.dnode.is-lit,
+.dnode[aria-pressed='true'] {
+  border-color: var(--accent);
+  border-width: 3px;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.diagram-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.diagram-caption {
+  flex: 1;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.diagram-title {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.diagram-text {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.diagram-text summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.diagram-text pre {
+  font-size: 0.8rem;
+}
+
+/* The tree explorer. */
+.tree-list {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  list-style: none;
+  border-left: 1px solid var(--line);
+}
+
+.tree > .tree-list {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.tree-list li {
+  margin: 0.15rem 0;
+}
+
+.tree-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  min-height: 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.tree-toggle {
+  min-height: 2rem;
+  padding: 0.2rem 0.6rem;
+  border-color: transparent;
+  background: transparent;
+  font: 650 0.95rem var(--font-mono);
+}
+
+.tree-toggle::before {
+  content: '▸';
+  margin-right: 0.3rem;
+  color: var(--text-muted);
+}
+
+.tree-toggle[aria-expanded='true']::before {
+  content: '▾';
+}
+
+.tree-name {
+  padding: 0.2rem 0.6rem;
+}
+
+.tree-icon::before {
+  content: '▫';
+  margin-right: 0.4rem;
+  color: var(--text-muted);
+}
+
+.tree-dir > .tree-row .tree-icon::before {
+  content: '▪';
+  color: var(--accent);
+}
+
+.tree-note {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * The interactions, as the screens show them
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+#main [role='group'][aria-describedby] {
+  margin: 1.25rem 0;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+#main [role='group'][aria-describedby] > p:last-child {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+#main [role='group'] > [role='timer'] {
+  font: 650 2.4rem/1 var(--font-mono);
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+#main [role='group'] > [role='timer'] + span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+[role='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+  padding: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--surface-2);
+}
+
+[role='tab'] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1rem;
+}
+
+[role='tab']:hover {
+  background: var(--surface);
+  border-color: transparent;
+}
+
+[role='tab'][aria-selected='true'] {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+[role='tabpanel'] {
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--surface);
+  font-size: 1.1rem;
+}
+
+[role='tabpanel'] > :last-child {
+  margin-bottom: 0;
+}
+
+#main [role='group']:has(> .screen) {
+  display: contents;
+}
+
+.screen > h2 > button[aria-expanded] {
+  font-size: inherit;
+}
+
+h2 > button[aria-expanded] {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  text-align: left;
+}
+
+h2 > button[aria-expanded]::after {
+  content: '+';
+  flex: none;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+h2 > button[aria-expanded='true']::after {
+  content: '−';
+}
+
+h2:has(> button[aria-expanded]) + div {
+  margin: 0.5rem 0 0.75rem 0.75rem;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 2px solid var(--line);
+}
+
+h2:has(> button[aria-expanded]) + div > :last-child {
+  margin-bottom: 0;
+}
+
+[aria-roledescription='carousel'] > div:first-child > span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+[aria-roledescription='slide'] {
+  font-size: 1.15rem;
+}
+
+#main [role='group']:not([aria-describedby]):has(> button + span) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: auto;
+  margin: 1.25rem auto 1.25rem 0;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+#main [role='group']:not([aria-describedby]):has(> button + span) > span {
+  padding: 0 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+#main [role='slider'] ~ button,
+#main button:has(+ [role='slider']) {
+  font-size: 0.88rem;
+  padding-inline: 0.7rem;
+}
+
+#main div:has(> [role='slider']) > span:first-child {
+  flex: 1 1 40%;
+  font-weight: 600;
+}
+
+#main div:has(> [role='slider']) > span:nth-child(2) {
+  flex: 0 1 45%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+[role='slider'] {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+[role='slider'] > div {
+  border-radius: inherit;
+}
+
+#main dl {
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+}
+
+#main dl > div > dt {
+  flex: 0 0 9rem;
+  font-weight: 600;
+}
+
+#main dd {
+  flex: 1 1 14rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#main dd > div[aria-hidden='true'] {
+  min-width: 100%;
+  min-height: 1rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+button[aria-pressed] {
+  border-radius: var(--radius-sm);
+}
+
+div:has(> button[aria-expanded] + div[tabindex='-1']) {
+  position: relative;
+  margin: 0.25rem 0 1rem;
+}
+
+button[aria-expanded] + div[tabindex='-1'] {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 17rem;
+  margin-top: 0.4rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 0.95rem;
+}
+
+button[aria-expanded] + div[tabindex='-1'] > :last-child {
+  margin-bottom: 0;
+}
+
+/* Dialogs: the backdrop and the panel travel inline (modal.ts); this is the panel's face. */
+[role='dialog'] > div {
+  position: relative;
+  padding: 1.25rem 1.5rem 1.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+[role='dialog'] h2 {
+  margin: 0 0 1rem;
+  padding-right: 5.5rem;
+  font-size: 1.4rem;
+}
+
+[role='dialog'] > div > button,
+.dialog-close {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.25rem;
+}
+
+[role='dialog'] table {
+  font-size: 0.95rem;
+}
+
+[role='dialog'] > div > p:last-child {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* The cover, which is the agenda. */
+.cover {
+  padding: 2rem clamp(1.25rem, 4vw, 3rem) 2.5rem;
+}
+
+.cover-kicker {
+  margin: 0;
+  font: 700 0.8rem/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cover-title {
+  margin: 0.75rem 0 0.5rem !important;
+  padding-right: 0 !important;
+  font-size: clamp(2rem, 4vw, 3.4rem) !important;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.cover-tagline {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+  color: var(--text);
+}
+
+.cover-tagline:empty {
+  display: none;
+}
+
+.cover-stats {
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.cover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+
+.cover-start {
+  padding-inline: 1.4rem;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.cover-start:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
+.cover-label {
+  margin: 0 0 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.agenda-list {
+  list-style: none;
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+}
+
+.agenda-item {
+  margin: 0;
+  padding: 0.7rem 1rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.agenda-item[aria-current='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.agenda-link {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  min-height: 1.6rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.agenda-link:hover .agenda-name {
+  text-decoration: underline;
+}
+
+.agenda-code {
+  padding: 0.25rem 0.4rem;
+  border-radius: 0.4rem;
+  background: var(--accent-soft);
+  font: 700 0.8rem/1 var(--font-mono);
+  text-align: center;
+  color: var(--accent);
+}
+
+.agenda-name {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.agenda-minutes {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.agenda-sections {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0.5rem 0 0 4rem;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.agenda-sections li {
+  margin: 0;
+}
+
+.agenda-sections a {
+  display: inline-block;
+  min-height: 24px;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.agenda-sections a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * The pager under the module
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+#segment-pager {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 2rem clamp(1.25rem, 5vw, 5rem) 3rem;
+}
+
+#segment-pager:empty {
+  display: none;
+}
+
+.pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 4.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.pager-link:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.pager-next {
+  grid-column: -2;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.pager-kicker {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pager-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.pager-end {
+  grid-column: -2;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * The speaker script surface (#/script)
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+#speaker-script {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 3vw, 2rem) 3rem;
+}
+
+#speaker-title {
+  margin: 0.25rem 0 0.5rem;
+  font-size: clamp(1.7rem, 2.4vw, 2.2rem);
+  line-height: 1.15;
+}
+
+#speaker-title::before {
+  content: 'Speaker script';
+  display: block;
+  margin-bottom: 0.5rem;
+  font: 700 0.8rem/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+#speaker-position {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+#speaker-sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#speaker-sync-status::before {
+  content: '';
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+[data-sync-state='synchronized'] #speaker-sync-status::before {
+  background: var(--success);
+}
+
+[data-sync-state='not-synchronized'] #speaker-sync-status::before {
+  background: var(--danger);
+}
+
+#speaker-timer {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+#speaker-script:not([data-timer-state='none']) #speaker-timer {
+  font: 650 1.6rem/1.2 var(--font-mono);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+#speaker-reveal {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+#speaker-script [role='group'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 2rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+#speaker-controls-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+#speaker-body {
+  font-size: 1.1rem;
+  line-height: 1.65;
+}
+
+#speaker-body > h1:first-child {
+  display: none;
+}
+
+#speaker-body h2 {
+  margin: 2.5rem 0 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  font-size: 1.45rem;
+}
+
+#speaker-body h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+#speaker-body blockquote {
+  padding: 1rem 1.25rem;
+  border-left-width: 4px;
+  background: var(--accent-soft);
+  font-size: 1.15rem;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * Presenting (fullscreen): the root is the scroller, the bar sticks to its top, the setup row is gone, the type grows.
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+[data-spa-root='presentation']:fullscreen {
+  display: block;
+  overflow: auto;
+  background: var(--bg);
+  color: var(--text);
+  scroll-padding-top: calc(var(--bar-h) + 0.5rem);
+}
+
+[data-spa-root='presentation']:fullscreen #journey {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-spa-root='presentation']:fullscreen .present-guidance {
+  display: block;
+}
+
+[data-spa-root='presentation']:fullscreen #present-setup-toggle,
+[data-spa-root='presentation']:fullscreen .bar-setting,
+[data-spa-root='presentation']:fullscreen #segment-pager {
+  display: none;
+}
+
+[data-spa-root='presentation']:fullscreen #main {
+  font-size: 1.2rem;
+}
+
+[data-spa-root='presentation']:fullscreen .screen > * {
+  max-width: 76rem;
+}
+
+[data-spa-root='presentation']:fullscreen .screen > h2 {
+  font-size: clamp(2.2rem, 3.6vw, 3.4rem);
+}
+
+[data-spa-root='presentation']:fullscreen .screen > p,
+[data-spa-root='presentation']:fullscreen .screen > ul:not(.cards),
+[data-spa-root='presentation']:fullscreen .screen > ol:not(.cards) {
+  max-width: 52rem;
+  font-size: clamp(1.25rem, 1.7vw, 1.6rem);
+}
+
+[data-spa-root='presentation']:fullscreen .card-face {
+  font-size: 1.25rem;
+}
+
+[data-spa-root='presentation']:fullscreen .card-detail {
+  font-size: 1.15rem;
+}
+
+[data-spa-root='presentation']:fullscreen pre {
+  font-size: 1.1rem;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * Narrower viewports
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+@media (max-width: 1540px) {
+  .brand-title {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .brand-title {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bar-present,
+  .bar-keys,
+  .bar-position {
+    flex-wrap: wrap;
+  }
+
+  .bar-setting {
+    white-space: normal;
+  }
+
+  .strip a {
+    max-width: none;
+  }
+
+  .screen {
+    min-height: 0;
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------
+ * Preferences
+ * ---------------------------------------------------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  .strip a[aria-current='page'],
+  .card-face[aria-expanded='true'] {
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button,
+  input,
+  select,
+  [role='tab'],
+  [role='slider'] {
+    transition: outline-offset 120ms ease-out;
+  }
+}

@@ -9,3 +9,16 @@
 packaging/core/**/*.sh text eol=lf
 packaging/core/lab-core text eol=lf
 packaging/core/copilot text eol=lf
+
+# Every other executable script has the same requirement, and the narrow rule
+# above left them exposed: with core.autocrlf=true a Windows checkout gives them
+# CRLF, and bash then fails on the first line it reads --
+#   scripts/preflight.sh: line 22: $'\r': command not found
+# That breaks the repo for any learner on Git Bash, or on WSL2 with the clone
+# under /mnt/c/, and preflight.sh is the first script a learner runs.
+*.sh text eol=lf
+.githooks/* text eol=lf
+solutions/lab-gh-extensions/gh-clab/gh-clab text eol=lf
+scripts/workshop/*.mjs text eol=lf
+scripts/generate-lab12-fixture.py text eol=lf
+workshop/site/hackathon.html -text

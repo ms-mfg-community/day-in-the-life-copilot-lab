@@ -11,6 +11,7 @@ import {
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, execSync } from 'node:child_process';
+import { execScript, hasCommand, isCommittedExecutable } from '../helpers/platform';
 
 // Phase C.2 / Finding 2.1 — the pre-commit-strip-notebook-outputs.sh script
 // works, but nothing in .devcontainer/, Makefile, or README auto-installs it.
@@ -73,10 +74,10 @@ describe('hooks: strip-outputs install path is wired (not Lab-12-only)', () => {
   });
 
   it('.githooks/pre-commit is executable', () => {
-    const mode = statSync(GITHOOKS_PRECOMMIT).mode;
+    // Git's recorded mode, not the local filesystem's — see the hook tests.
     expect(
-      (mode & 0o111) !== 0,
-      `expected ${GITHOOKS_PRECOMMIT} to be executable`,
+      isCommittedExecutable(GITHOOKS_PRECOMMIT),
+      `expected ${GITHOOKS_PRECOMMIT} to be committed with mode 100755`,
     ).toBe(true);
   });
 
@@ -107,7 +108,7 @@ describe('hooks: strip-outputs install path is wired (not Lab-12-only)', () => {
     expect(out).toBe('.githooks');
   });
 
-  it('wrapper strips outputs when invoked on a staged .ipynb path', () => {
+  it.skipIf(!hasCommand('jq'))('wrapper strips outputs when invoked on a staged .ipynb path', () => {
     // We invoke the wrapper with an explicit argv so the strip path is
     // exercised without needing a real `git commit` dance. This is the
     // contract Lab 12 teaches: the wrapper forwards .ipynb paths to the
@@ -119,7 +120,7 @@ describe('hooks: strip-outputs install path is wired (not Lab-12-only)', () => {
     // will refuse to run otherwise).
     expect(existsSync(STRIP_SCRIPT)).toBe(true);
 
-    execFileSync(GITHOOKS_PRECOMMIT, [nbPath], { stdio: 'pipe' });
+    execScript(GITHOOKS_PRECOMMIT, [nbPath]);
 
     const cleaned = JSON.parse(readFileSync(nbPath, 'utf8'));
     for (const cell of cleaned.cells) {

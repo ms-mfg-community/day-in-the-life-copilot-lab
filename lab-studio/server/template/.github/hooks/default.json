@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "./scripts/hooks/pre-tool-use-secret-scan.sh",
+        "timeoutSec": 10,
+        "comment": "Block file changes that contain hardcoded secrets"
+      }
+    ]
+  }
+}

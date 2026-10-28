@@ -56,7 +56,7 @@ EOF
 fi
 
 if ! command -v tmux >/dev/null 2>&1; then
-  echo "tmux is not installed; install tmux >= 3.0 (Lab 14 §14.1)" >&2
+  echo "tmux is not installed; install tmux >= 3.0 (Lab 14 §14.2)" >&2
   exit 2
 fi
 

@@ -1,8 +1,13 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 
 export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
+    // A lab's contract test is written RED, before the lab is edited, and is parked
+    // here until that lab's pass starts. Without this the whole wave's red tests
+    // would sink `npm test` for every lab, making AC1 meaningless.
+    // See specs/labs/README.md, "Pending contract tests".
+    exclude: [...configDefaults.exclude, 'tests/lab-structure/pending/**'],
     testTimeout: 20000,
     reporters: ['default'],
     coverage: {

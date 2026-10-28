@@ -8,7 +8,31 @@ demo app).
 
 ## [Unreleased]
 
+### Added
+
+- **Copilot Lab Studio** (`lab-studio/`) — a browser-based guided runner for
+  **all 20 labs**. A React SPA walks the learner through each lab against a
+  sandboxed mini-ContosoUniversity workspace, with a terminal "bench" that
+  drives a **live Copilot session via `@github/copilot-sdk`** (agents, skills,
+  instruction discovery, hooks, subagent delegation, and MCP tool calls are
+  real) and a **simulated GitHub tab** (issues, PRs, Actions runs, rulesets)
+  for everything that needs a remote — where the AI inside each simulated
+  workflow (PRD generation, the coding agent, code review, @copilot
+  iteration) is itself a real Copilot session. Governance labs (16, 17, 20)
+  verify authored config shapes server-side and use knowledge-check quizzes.
+  Each step has a Verify check against actual workspace/session/platform
+  state. Sandbox containment: a write-scoping permission handler plus a
+  per-workspace git repo. `cd lab-studio && npm install --include=dev &&
+npm start`.
+- **Lab Studio sync tooling** — deterministic drift detection between
+  `labs/*.md` and the studio's adapted content (`npm run drift` /
+  `npm run drift:accept` against a hash baseline in
+  `lab-studio/lab-sources.json`), plus a `lab-studio-maintainer` custom
+  agent and `lab-studio-sync` skill in `.github/` that encode the
+  markdown-to-studio adaptation rules for agent-assisted repair.
+
 ### Changed
+
 - Retired `tests/meta/phase-a-findings-schema.test.ts` — modernize-arc
   Phase A audit instrumentation. The one-time findings report has
   been moved to `docs/archive/phase-A-findings.md` for historical
@@ -18,6 +42,7 @@ demo app).
   longer needed.
 
 ### Corrections
+
 - The v2.1.0-workshop release notes listed "19 pre-existing vitest
   failures in tests/meta/phase-a-findings-schema.test.ts" as a known
   issue. That was inaccurate: canonical HEAD at tag time passed
@@ -57,22 +82,22 @@ deliver the session end-to-end.
 - **Handout PDF path** — opt-in `make handout-pdf` Makefile target (pandoc +
   wkhtmltopdf) produces `workshop/dist/attendee-handout.pdf`.
 - **Readiness slice (Phase 0, ships independently)** — `scripts/preflight.sh`
-  + `scripts/preflight.ps1` with fail/warn/pass classification, `README.md`
-  top-of-file **Pre-Workshop Setup Checklist** with 1-week-ahead share
-  callout, and a **Lab 14 WSL compatibility matrix** in `labs/lab14.md`
-  (supported / recommended / degraded / unsupported / not-tested).
+  - `scripts/preflight.ps1` with fail/warn/pass classification, `README.md`
+    top-of-file **Pre-Workshop Setup Checklist** with 1-week-ahead share
+    callout, and a **Lab 14 WSL compatibility matrix** in `labs/lab14.md`
+    (supported / recommended / degraded / unsupported / not-tested).
 
 ### Phase summary
 
-| Phase | Theme | Outcome |
-|------:|-------|---------|
-| Phase 0 | Attendee readiness release (ships first) | `scripts/preflight.{sh,ps1}`, README prework section, Lab 14 compatibility matrix. |
-| Phase 1 | Curriculum finalization + pacing audit | `workshop/curriculum.md` 6-module plan, time-budget test (≤ 240 min, ≥ 15% contingency). |
-| Phase 2 | Slide framework (lowest maintenance) | Plain HTML+CSS build pipeline, outcome-based tests (build, asset resolution, demo-command resolution). |
-| Phase 3 | Module authoring (3 sub-phases × 2 modules) | All 6 slide decks + speaker scripts, demo-density + cue-ladder tests. |
-| Phase 4 | Three-artifact split + timing plan + handout-pdf | Facilitator / preread / handout split, timing-plan YAML, opt-in PDF target. |
-| Phase 5 | Rehearsal + accessibility + fallback screenshots | Rehearsal checklist, a11y notes, fallback-screenshot index with M1–M6 stubs. |
-| Phase 6 | Release prep | Final test sweep, rubber-duck review, this changelog, annotated tag. |
+|   Phase | Theme                                            | Outcome                                                                                                |
+| ------: | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Phase 0 | Attendee readiness release (ships first)         | `scripts/preflight.{sh,ps1}`, README prework section, Lab 14 compatibility matrix.                     |
+| Phase 1 | Curriculum finalization + pacing audit           | `workshop/curriculum.md` 6-module plan, time-budget test (≤ 240 min, ≥ 15% contingency).               |
+| Phase 2 | Slide framework (lowest maintenance)             | Plain HTML+CSS build pipeline, outcome-based tests (build, asset resolution, demo-command resolution). |
+| Phase 3 | Module authoring (3 sub-phases × 2 modules)      | All 6 slide decks + speaker scripts, demo-density + cue-ladder tests.                                  |
+| Phase 4 | Three-artifact split + timing plan + handout-pdf | Facilitator / preread / handout split, timing-plan YAML, opt-in PDF target.                            |
+| Phase 5 | Rehearsal + accessibility + fallback screenshots | Rehearsal checklist, a11y notes, fallback-screenshot index with M1–M6 stubs.                           |
+| Phase 6 | Release prep                                     | Final test sweep, rubber-duck review, this changelog, annotated tag.                                   |
 
 ### Added
 
@@ -130,41 +155,41 @@ token-conscious model selection, and a complete TDD/meta-test discipline.
 
 ### Phase summary
 
-| Phase | Theme | Outcome |
-|------:|-------|---------|
-| Phase 0 | Foundations & guardrails | Registry (`docs/_meta/registry.yaml`), devcontainer hardening, lab-structure tests. |
-| Phase 1 | Currency refresh + plugin marketplace lab | New Lab 11 + `plugin-template/`. |
-| Phase 2 | Memory & learning for local environments | Memory MCP wiring, instinct lifecycle, hooks. |
-| Phase 3 | .NET consolidation + Node parity track | Move .NET under `dotnet/`, add `node/` Fastify+Drizzle stack, `make test-all`. |
-| Phase 4 | Weekly staleness audit | gh-aw `weekly-content-audit` workflow + audit-report template. |
-| Phase 5 | Fabric MCP + Fabric notebooks | New Lab 12 with offline Parquet simulator fallback. |
-| Phase 6 | A2A/ACP orchestration + tmux pattern | New Labs 13 & 14, `scripts/orchestrator/` scripts, orchestrator-rubric prompt. |
-| Phase 7 | Token optimization & model selection | `docs/token-and-model-guide.md`, `/cost-check` prompt, Cost Budget sidebars. |
-| Phase 8 | Integration, polish, release | README/TROUBLESHOOTING/CHANGELOG, registry CLI bump, meta-tests, release tag. |
+|   Phase | Theme                                     | Outcome                                                                             |
+| ------: | ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Phase 0 | Foundations & guardrails                  | Registry (`docs/_meta/registry.yaml`), devcontainer hardening, lab-structure tests. |
+| Phase 1 | Currency refresh + plugin marketplace lab | New Lab 11 + `plugin-template/`.                                                    |
+| Phase 2 | Memory & learning for local environments  | Memory MCP wiring, instinct lifecycle, hooks.                                       |
+| Phase 3 | .NET consolidation + Node parity track    | Move .NET under `dotnet/`, add `node/` Fastify+Drizzle stack, `make test-all`.      |
+| Phase 4 | Weekly staleness audit                    | gh-aw `weekly-content-audit` workflow + audit-report template.                      |
+| Phase 5 | Fabric MCP + Fabric notebooks             | New Lab 12 with offline Parquet simulator fallback.                                 |
+| Phase 6 | A2A/ACP orchestration + tmux pattern      | New Labs 13 & 14, `scripts/orchestrator/` scripts, orchestrator-rubric prompt.      |
+| Phase 7 | Token optimization & model selection      | `docs/token-and-model-guide.md`, `/cost-check` prompt, Cost Budget sidebars.        |
+| Phase 8 | Integration, polish, release              | README/TROUBLESHOOTING/CHANGELOG, registry CLI bump, meta-tests, release tag.       |
 
 ### Added
 
 - **Labs 11–14.**
-  - Lab 11 — *Building & Distributing a Copilot Plugin* (Phase 1): enterprise
+  - Lab 11 — _Building & Distributing a Copilot Plugin_ (Phase 1): enterprise
     marketplace, private registry, SBOM, allowlist policy. Ships
     `plugin-template/` scaffold with manifest schema + tests.
-  - Lab 12 — *Fabric MCP with Copilot CLI & VS Code* (Phase 5): lakehouse
+  - Lab 12 — _Fabric MCP with Copilot CLI & VS Code_ (Phase 5): lakehouse
     enumeration, inline-chat & agent-mode notebook editing, **offline Parquet
     simulator fallback** for Codespaces learners without Fabric auth, notebook
     hygiene hook (`strip-notebook-outputs`).
-  - Lab 13 — *A2A Concepts with Copilot CLI ACP* (Phase 6a): two-agent
+  - Lab 13 — _A2A Concepts with Copilot CLI ACP_ (Phase 6a): two-agent
     (implementer + critic) walkthrough on the Node app, `task` /
     `write_agent` / `read_agent` primitives, three failure modes with
     mitigations.
-  - Lab 14 — *Orchestrator + tmux Pattern (Deep-Dive)* (Phase 6b): long-lived
+  - Lab 14 — _Orchestrator + tmux Pattern (Deep-Dive)_ (Phase 6b): long-lived
     orchestrator pane + short-lived worker panes, prescribed
     `plan → implement → handoff → clear → qa → clear` cycle,
     `scripts/orchestrator/{tmux-start,handoff,clear-context}.sh`,
     `orchestrator-rubric` prompt, worked example on Node `/api/courses`.
 - **Node track (Phase 3):** complete `node/` workspace (Fastify 5 + Drizzle ORM
-  + Vitest + Playwright) with parity domain (Student / Course / Instructor),
-  in-memory SQLite via `better-sqlite3`, SSR pages, and integration tests
-  reaching ≥80% line coverage (validated by `tests/meta/coverage-threshold.test.ts`).
+  - Vitest + Playwright) with parity domain (Student / Course / Instructor),
+    in-memory SQLite via `better-sqlite3`, SSR pages, and integration tests
+    reaching ≥80% line coverage (validated by `tests/meta/coverage-threshold.test.ts`).
 - **Per-track appendices** under `labs/appendices/dotnet/` and
   `labs/appendices/node/` — labs themselves stay language-agnostic.
 - **Top-level `Makefile`** with `test-all`, `test-dotnet`, `test-node`,
@@ -315,7 +340,7 @@ closed. Annotated tag was re-pointed at the cleanup HEAD; see the
     Labs 11 & 12; Lab 14's cross-references include Labs 11 & 12; the
     README Lab Modules table carries a one-line learning-path note
     (`01–10 core sequence / 11 standalone / 12 standalone (Fabric) /
-    13 → 14 sequential`).
+13 → 14 sequential`).
   - **Finding #9 (coverage-threshold refactor):**
     `tests/meta/coverage-threshold.test.ts` now reads
     `node/coverage/coverage-summary.json` directly and skips with a

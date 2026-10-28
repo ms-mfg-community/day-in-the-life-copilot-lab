@@ -75,7 +75,10 @@ describe('workflows: weekly-content-audit gh-aw schema', () => {
         );
       }
       const combined = `${stdout}\n${stderr}`;
-      expect(combined).toMatch(/0 error\(s\)/);
+      // gh-aw v0.86.2 reports success as "N succeeded" and only prints
+      // "error(s)" when a workflow fails; it never emits "0 error(s)".
+      expect(combined).toMatch(/1 succeeded/);
+      expect(combined).not.toMatch(/error\(s\)/);
       expect(existsSync(join(targetDir, 'weekly-content-audit.lock.yml'))).toBe(true);
     } finally {
       rmSync(work, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+import { cpSync, mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -63,8 +63,8 @@ describe('plugin-template: install.mjs CLI entry point', () => {
     // the template and dry-run locally") actually works for a downstream
     // consumer, not just against the in-repo path.
     const scratch = join(workdir, 'my-plugin');
-    const res0 = spawnSync('cp', ['-r', TEMPLATE_DIR, scratch]);
-    expect(res0.status).toBe(0);
+    // cpSync rather than spawning `cp`, which does not exist on Windows.
+    cpSync(TEMPLATE_DIR, scratch, { recursive: true });
 
     const res = spawnSync('node', [INSTALL_SCRIPT, scratch], {
       cwd: workdir,

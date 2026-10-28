@@ -1,5 +1,5 @@
 ---
-module: M5
+module: M5c
 title: "Copilot CLI extensions × hooks — deterministic gate, probabilistic body"
 anchor_labs: ["lab-copilot-cli-extensions"]
 minutes: 12
@@ -34,8 +34,8 @@ Anchor lab: [`labs/lab-copilot-cli-extensions.md`](../../labs/lab-copilot-cli-ex
             └───│ (deterministic gate)       │◀───────────────────┘
                 │ → emits permissionDecision │     runtime offers tool call
                 │   "deny" if size>10KB      │     to all preToolUse hooks
-                │ ⚠ deny-only; allow/ask     │
-                │   accepted but ignored     │
+                │ ⚠ deny only, by design;    │
+                │   allow/ask exist, unused  │
                 └────────────┬───────────────┘
                              │ no deny → call proceeds
                              ▼
@@ -53,7 +53,7 @@ The dashed line is the deterministic ↔ probabilistic boundary. Everything abov
 ## Three rules to remember
 
 - **`gh extension` ≠ Copilot CLI extension ≠ MCP server.** Different processes, different triggers, different auth. Lab §1 has the table.
-- **`preToolUse` is veto-only.** `deny` is honored; `allow`/`ask` are accepted but ignored. *Absence of `deny` is allow.* This is restated verbatim in `labs/lab-hardening.md`.
+- **`preToolUse` is veto-only here, by design.** `permissionDecision` accepts `allow`, `deny` and `ask` (`ask` is denied in CLI autopilot mode and under cloud agent); this lab's hook emits only `deny`, so it can only narrow what a session may do. *Absence of `deny` is not an `allow`: the call goes on to the normal permission flow.* Lab §4.2 and `labs/lab-hardening.md` say why.
 - **`userPromptSubmitted` cannot mutate the prompt.** The JSON-config hook surface is detection-only. If you need the trigger to actually invoke a tool, use the SDK-side `onUserPromptSubmitted` inside `joinSession({ hooks })` — that surface has access to `session.send()` and `session.sendAndWait()`. The runtime authoring guide documents both surfaces; defaulting to JSON for auditability and SDK-side for behavior is the working rule.
 
 ---

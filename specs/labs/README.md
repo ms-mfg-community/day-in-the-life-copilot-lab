@@ -1,0 +1,142 @@
+# `specs/labs/` — the per-lab working agreement
+
+One lab at a time. Each lab is **two stories that close together**: a dev story that
+changes the lab, and a QA story that proves it. The dev story cannot close until the QA
+story closes it, the same way a sprint works.
+
+## The artifacts a lab needs
+
+| # | Artifact | Who writes it | Cost |
+|---|---|---|---|
+| 1 | `specs/labs/<lab>.md` | a person, from `_lab-template.md` | minutes |
+| 2 | `tests/lab-structure/<lab>-contract.test.ts` | a person, from the lab10/12/13/14 pattern | minutes |
+| 3 | the lab edit itself | `lab-forge`, one call | measured per run |
+
+Read `specs/labs/lab10.md` and `tests/lab-structure/lab10-contract.test.ts` before writing
+your first pair. They are the worked example, and they are deliberately small.
+
+## Pending contract tests
+
+A contract test is written **RED, before** its lab is edited — that is what makes it a
+contract rather than a description of what someone already did. But `npm test` is one
+global `vitest run`, so a wave of RED tests sitting in the default run would fail AC1
+("the repo's own gate passes") for *every* lab at once, including labs whose own work is
+finished. A run gate that is red for someone else's reasons is not a gate, and it invites
+the editing stage to wander into other labs to "fix" them.
+
+So a contract test lives in `tests/lab-structure/pending/` until its lab's pass begins.
+That directory is excluded in `vitest.config.ts`.
+
+The first step of a lab's pass — before `lab-forge` is called — is to un-park it:
+
+```sh
+git mv tests/lab-structure/pending/<lab>-contract.test.ts tests/lab-structure/
+npx vitest run tests/lab-structure/<lab>-contract   # MUST be red. If it is green, the
+                                                    # test is describing the lab, not
+                                                    # constraining it. Fix the test.
+```
+
+The rename is deliberate: it shows up in the worktree's diff, so "this lab's contract was
+activated" is an auditable event rather than a silent state change. A lab is closed when
+its test is out of `pending/` **and** green.
+
+## The dev story
+
+> **As the curriculum owner, I want `labs/<lab>.md` to be current and teachable, so that a
+> learner following it in 2026 succeeds without a correction from the presenter.**
+>
+> **Done when:** `npx vitest run tests/lab-structure/<lab>-contract` is green, `npm test`
+> is green, and `git status` shows only the lab, its spec, its contract test and any
+> registry/AGENTS.md change the spec's §6 required.
+
+Steps:
+
+1. Write the spec from `_lab-template.md`. Its §3 acceptance criteria must each name the
+   command that observes them, and its §4 must dispose of every outside-world claim as
+   `free-check`, `cite F-nn`, `research`, or `cut`.
+
+   **Declared duration is a guideline, and it is never a reason to fail anything.**
+   Every pacing number in this curriculum — the spec's, the registry's, the teachability
+   gate's — is an estimate produced by reading the material, not a measurement taken from
+   a learner. Most of them are an AI's guess. Treat them accordingly:
+
+   - A pacing number may be changed at any time, by anyone, without ceremony or a re-run.
+     It is the one field that needs no evidence to move.
+   - A disagreement about pacing is **not a finding**. A gate that reports one reports it
+     as advice; it may not block, escalate, or lower a verdict on that basis, and a lab is
+     never returned for it. If the teachability gate's number looks better, take it —
+     because it is probably the more considered guess, not because it wins.
+   - The only pacing rule with teeth is **internal consistency**: frontmatter,
+     `docs/_meta/registry.yaml` and the inline `⏱️` callout must state the same number.
+     That is all a contract test may assert — never that a particular number is right.
+     Asserting an estimate freezes one author's guess into a gate nothing can get past.
+2. Write the contract test. **It must fail before the edit.** A test written after the
+   edit proves nothing — it was fitted to what you already did.
+3. Triage §4. Only a claim that is load-bearing *and* unsettleable by a free check earns a
+   `spec-forge` run (`maxRounds: 2`). Most claims are `free-check` or `cut`.
+4. One `lab-forge` call: `labPath`, `specPath`, `maxRounds: 2`, absolute paths with forward
+   slashes, and a `scope` that restates the spec's §5 non-goals and §7 execution boundary.
+   Follow the spec's §2 **`lab-forge` verdict** — it is stated, not inferred.
+
+## The QA story
+
+> **As the curriculum owner, I want an independent check that `labs/<lab>.md` actually
+> changed what the spec said it would, so that a green test is not mistaken for a correct
+> lab.**
+>
+> **Done when:** QA has re-derived the verdict from the spec rather than from the dev
+> story's summary, and has either accepted or returned it with reproductions.
+
+QA does not read the implementer's report first. It checks:
+
+1. Every §3 acceptance criterion, by running the command named in the row — not by reading
+   the diff.
+2. Every §6 known defect, by looking at the location named and confirming it is gone.
+3. That nothing in §5 non-goals moved.
+4. That the contract test **would have failed** before the change — `git stash` the lab,
+   run the test, confirm red, restore. A contract test that passes against the old lab is
+   not a contract.
+5. That `git status` is confined to the files the spec's scope allows.
+
+QA closes the dev story. The dev story does not close itself.
+
+## Roles
+
+| Role | Model | Why |
+|---|---|---|
+| Spec + contract test author | a reasoning model | This is the judgement step: deciding what is `free-check` versus `research` is where money is saved or wasted. |
+| Implementer | `claude-sonnet-5.5` / `gpt-6.1-sol` | The spec and the red test remove the ambiguity, so the work is mechanical. |
+| QA | `lab-forge`'s own gate (Wayne + Hoid), then a person | Executable evidence, not opinion. |
+| Judge | a reasoning model | Re-derives criteria from the spec; never sees the implementer's summary. |
+
+## Stopping rules
+
+- **One lab at a time.** Report credits and the verdict after each; wait for the go.
+- **A `lab-forge` run carries no `limits.maxAiCredits`, and `maxRounds` is 2.** A
+  ceiling-killed run is not recoverable: run `701f2e9f` hit a 2,500 cap and then vanished
+  (`workflow_run_not_found`, empty runs list), so there was nothing to resume.
+- **New ideas go to the plan's parked list.** They never reorder or enlarge the lab in hand.
+- **If a stage fails twice for the same reason, stop and report.** Do not re-run hoping.
+
+## Labs that `lab-forge` must not run
+
+A lab's spec §2 states one of three **`lab-forge` verdicts**. It is stated, never inferred —
+the earlier blanket rule ("a lab with write steps is rehearsed by a person") was contradicted
+by the first lab it was applied to: Lab 10 declares write steps, was run under `lab-forge`
+anyway, and that was correct, because the *edit* was prose and the write steps were fenced
+in §7.
+
+| Verdict | When | What the run gate does |
+|---|---|---|
+| `run` | §2 declares no write steps | Executes the lab's commands |
+| `run with §7 fenced` | Write steps exist and every one is enumerated in §7 | Reports each §7 item UNVERIFIED; executes none. Anything **not** in §7 it may execute |
+| `do not run — rehearse by hand` | The lab cannot be meaningfully edited without executing something in §7 | Not invoked; a person rehearses it |
+
+A write step is any command that writes to GitHub, installs globally, needs a GUI, or
+**mutates state outside the repository working tree** — plus anything inside the tree that
+overwrites a committed file or changes git config. Read the lab's commands; do not trust a
+keyword count. Lab 10 is the warning: a regex looking only for GitHub writes and global
+installs called it safe, while it creates, fills and deletes `~/.copilot/lessons/` in the
+maintainer's home directory. Lab 12 is the sharper case — §12.2 overwrites a **committed**
+Parquet fixture that a committed test pins, and §12.5.4 redirects `core.hooksPath` for the
+whole repository. Neither contains the word "GitHub".
