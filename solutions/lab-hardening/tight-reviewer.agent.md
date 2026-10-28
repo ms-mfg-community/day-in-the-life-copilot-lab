@@ -4,7 +4,7 @@ description: Read-only code reviewer that cites Microsoft Learn. Cannot shell, c
 tools:
   - read
   - microsoft-learn/microsoft_docs_search
-model: claude-sonnet-4.5
+model: claude-sonnet-5
 disable-model-invocation: true
 user-invocable: false
 metadata:
@@ -38,8 +38,10 @@ future edit to this frontmatter accidentally broadens the scope.
   [Custom agents configuration § Tools](https://docs.github.com/en/copilot/reference/custom-agents-configuration);
   unknown names would be silently ignored, so typos here fail closed.
 - `model:` is pinned so reviews are reproducible across sessions. The
-  default `claude-sonnet-4.5` is documented in the CLI README; swap only
-  with an explicit migration plan.
+  template pins `claude-sonnet-5` (from `models.standard` in
+  [`docs/_meta/registry.yaml`](../../docs/_meta/registry.yaml)); because
+  frontmatter cannot read the registry dynamically, update this pin
+  explicitly when the registry tier changes.
 - `disable-model-invocation: true` means the main agent cannot pick this
   one on its own — a human must request it. Replaces the retired `infer:`
   field.

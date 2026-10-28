@@ -80,8 +80,12 @@ mcp_servers:
     last_verified: "2026-06-15"
     note: >-
       This pin targets the LOCAL/open-source Fabric.Mcp.Server
-      (github.com/microsoft/mcp/tree/main/servers/Fabric.Mcp.Server), used by
-      Lab 12's offline/Codespaces path. A separate REMOTE "Fabric Core MCP
+      (github.com/microsoft/mcp/tree/main/servers/Fabric.Mcp.Server), which is
+      what Lab 12's LIVE path configures — "local" describes where the server
+      process runs, not that it works without a tenant; it still authenticates
+      through your Azure CLI session. Lab 12's offline/Codespaces path reads the
+      committed Parquet fixture and does not run this server at all.
+      A separate REMOTE "Fabric Core MCP
       Server" also exists (https://api.fabric.microsoft.com/v1/mcp/core,
       Entra ID auth + RBAC, public preview since 2026-03) for live-tenant
       work — Lab 12 should make explicit which variant each exercise uses.
@@ -121,28 +125,46 @@ prepared_core:
   gh_aw_sha256: "b8fd100d1d56a77b842ad28375ff361215a5aa1277db6b9a05d70054cde7260e"
 
 models:
+  # Curated model tiers. Labs MUST reference the tier names
+  # (`models.cheap` / `models.standard` / `models.premium`) rather than
+  # hardcoding an id — see tests/lab-structure/lab10-contract.test.ts,
+  # which fails any lab that names a model this block does not list.
+  #
+  # Re-verified 2026-10-10 against the installed Copilot CLI (1.0.96-2).
+  # Dropped `claude-sonnet-4.6`, `claude-opus-4.7` and `gpt-5.2`: the CLI
+  # no longer serves them, so a lab that pinned one was sending learners
+  # to a model they cannot select. `gpt-5.4` takes the standard-tier GPT
+  # slot and is the id the CLI's own `--help` uses in its `--model`
+  # example. These are CURATED tiers, not the full catalog — an
+  # enterprise default-availability policy (see
+  # model_default_availability_policy below) can make more models
+  # selectable than are listed here.
   default: auto
   cheap:
     - claude-haiku-4.5
     - gpt-5-mini
     - gpt-5.4-mini
   standard:
-    - claude-sonnet-4.6
     - claude-sonnet-5
-    - gpt-5.2
+    - gpt-5.4
   premium:
-    - claude-opus-4.7
     - claude-opus-5
     - gpt-5.3-codex
     - grok-4.6
 
 # Enterprise AI governance policy this registry assumes labs teach against.
 # Confirmed via https://github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise/ :
-# rollout began 2026-08-26, enforced org-wide by 2026-09-01. Any newly-GA
-# model an admin has NOT explicitly configured is now available to users by
-# default org-wide (a change from the prior implicit-hold behavior). Admins
-# who want the old curated-allowlist behavior must explicitly disable the
-# global "default availability" policy. Labs 14, 17, and 20 reference this.
+# announced 2026-07-29, then configurable-but-inert for 28 days; the policy
+# TOOK EFFECT 2026-08-26 ("On August 26, the policy takes effect"). That is
+# the ONLY date the changelog publishes. A previous note here read "enforced
+# org-wide by 2026-09-01" -- that date appears nowhere in the source and was
+# re-verified absent on 2026-10-12. labs/lab14.md:45 and labs/lab20.md:50
+# still carry it; each is corrected in its own spec'd pass, not here.
+# Any newly-GA model an admin has NOT explicitly configured is now available
+# to users by default org-wide (a change from the prior implicit-hold
+# behavior). Admins who want the old curated-allowlist behavior must
+# explicitly disable the global "default availability" policy.
+# Labs 14, 17, and 20 reference this.
 model_default_availability_policy: "default-on-unless-disabled"
 
 # Enterprise-managed settings. Confirmed via
@@ -221,7 +243,7 @@ labs:
     title: "MCP Server Configuration"
     pace_presenter_minutes: 3
     pace_workshop_minutes: 10
-    pace_self_minutes: 15
+    pace_self_minutes: 50
   lab06:
     title: "Hooks"
     pace_presenter_minutes: 3
@@ -236,27 +258,27 @@ labs:
     title: "GitHub Agentic Workflows: PRD Generation"
     pace_presenter_minutes: 5
     pace_workshop_minutes: 12
-    pace_self_minutes: 15
+    pace_self_minutes: 75
   lab09:
     title: "Copilot Coding Agent & Code Review"
     pace_presenter_minutes: 5
     pace_workshop_minutes: 13
-    pace_self_minutes: 20
+    pace_self_minutes: 55
   lab10:
-    title: "Context, Memory & Learning"
+    title: "Agent Memory: Personalities, Lessons, and Consolidation"
     pace_presenter_minutes: 5
     pace_workshop_minutes: 7
-    pace_self_minutes: 20
+    pace_self_minutes: 75
   lab11:
     title: "Building & Distributing a Copilot Plugin (Enterprise Marketplace Pattern)"
     pace_presenter_minutes: 6
     pace_workshop_minutes: 20
-    pace_self_minutes: 25
+    pace_self_minutes: 45
   lab12:
     title: "Fabric MCP with Copilot CLI & VS Code"
     pace_presenter_minutes: 8
     pace_workshop_minutes: 20
-    pace_self_minutes: 30
+    pace_self_minutes: 120
   lab13:
     title: "A2A Concepts with Copilot CLI ACP"
     pace_presenter_minutes: 10

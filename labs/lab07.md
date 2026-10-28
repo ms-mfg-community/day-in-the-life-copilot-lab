@@ -13,15 +13,19 @@ In this lab you will create an orchestrator agent that coordinates a development
 
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 20 minutes
 
+**Prerequisite:** finish [Setup](setup.md) and [Lab 03](lab03.md) first — §7.1 builds on the `dotnet-dev` agent that Lab 03's .NET track creates in `.github/agents/`.
+
 > 💰 **Cost Budget**
 > - Expected token footprint: ~30k in / ~10k out for the full lab.
 >   Most of the spend is the orchestrator agent re-reading agent
 >   definitions on every delegation.
-> - Cheaper alternative: keep the top-level chat on `auto`, but pin
->   any `task` tool sub-agent dispatches in §7.4 to
->   `claude-haiku-4.5` for the simple delegations and reserve
->   `claude-opus-4.6` (the repo default) only for the planner /
->   reviewer roles.
+> - Cheaper alternative: keep the top-level chat on `auto` (the
+>   registry default), but pin any `task` tool sub-agent dispatches in
+>   §7.4 to a `models.cheap` model for the simple delegations and
+>   reserve a `models.premium` model only for the planner / reviewer
+>   roles. Read the current ids from
+>   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) instead
+>   of hardcoding one.
 > - Compaction trigger: after §7.3 (orchestrator built and tested),
 >   run `/clear` before §7.4's multi-agent rehearsal so you don't
 >   re-send the agent-definition diffs every turn.
@@ -29,7 +33,7 @@ In this lab you will create an orchestrator agent that coordinates a development
 
 References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
-- [Agent handoffs](https://docs.github.com/en/copilot/reference/custom-agents-configuration#handoffs)
+- [Tool aliases — the `agent` tool that lets one agent call another](https://docs.github.com/en/copilot/reference/custom-agents-configuration#tool-aliases)
 
 ## 7.0 Copilot CLI currency (2026 refresh)
 
@@ -40,9 +44,9 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` | Pulling a packaged multi-agent plugin (e.g. dev + QA + reviewer bundle). |
 | **Parallel subagents** | `/fleet` | Running dev and QA agents in parallel when tasks are independent. |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) vs autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Upshift the orchestrator to `models.premium`; keep workers on `models.cheap` to save tokens. |
-| **Local tool discovery** | `extensions_manage` operation `list` | Discovering which bundled agents are available before wiring a handoff. |
+| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode vs `/autopilot` to toggle autopilot mode | The orchestrator runs in plan mode; worker agents often run in autopilot mode. Autopilot is a toggle you switch on — it is not the default. |
+| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto` to let Copilot choose) | Pick an id from the registry's `models.premium` for the orchestrator; keep workers on an id from `models.cheap` to save tokens. The tier names are registry keys, not `/model` arguments. |
+| **Local tool discovery** | `/agent` to browse and select custom agents; `extensions_manage` operation `list` for extensions (a model-side tool call, **not** a slash command) | Use `/agent` to see which custom agents are available before wiring a delegation. `extensions_manage` lists extensions, not agents. |
 
 ## 7.1 Design the Orchestration Flow
 
@@ -62,17 +66,16 @@ ls .github/agents/ | grep -E "dotnet|code-review|orchestrator"
 Get-ChildItem .github/agents/ | Where-Object { $_.Name -match "dotnet|code-review|orchestrator" }
 ```
 
-You should see:
-- `dotnet-dev.agent.md` — implements code (created in Lab 03)
-- `dotnet-qa.agent.md` — writes tests
-- `code-reviewer.agent.md` — reviews code
-- `lab-orchestrator.agent.md` — the orchestrator (we'll create this)
+The filter above looks for four agents, but they do not all exist yet. On a fresh checkout it lists only `code-reviewer.agent.md`; once you have finished Lab 03 it also lists `dotnet-dev.agent.md`. Here is where each of the four comes from:
 
-> 💡 `dotnet-qa.agent.md` is created later in section 7.5 as a bonus exercise. The orchestrator will work with just `dotnet-dev` and `code-reviewer` agents.
+- `dotnet-dev.agent.md` — implements code; created in **Lab 03** (the prerequisite above)
+- `dotnet-qa.agent.md` — writes tests; created **later, in §7.5** (it is labelled a bonus, but see the note below)
+- `code-reviewer.agent.md` — reviews code; **ships with the starter repo** in `.github/agents/`
+- `lab-orchestrator.agent.md` — the orchestrator; you create it in **§7.2**
 
-> This agent ships with the starter repo in `.github/agents/code-reviewer.agent.md`.
+> 💡 The orchestrator you build in §7.2 always delegates testing to `dotnet-qa` (its Phase 3) before it reviews, so it needs all three worker agents — `dotnet-dev`, `dotnet-qa` and `code-reviewer`. It has no two-worker fallback, so create `dotnet-qa` in §7.5 before you run the delegation test in §7.4: jump ahead to §7.5, then come back.
 
-2. The orchestration flow is:
+2. The orchestration flow has five phases — the same five that the orchestrator's agent body in §7.2 defines (Planning, Implementation, Testing, Review, Summary):
 
 ```
 User Request
@@ -80,19 +83,23 @@ User Request
     ▼
 lab-orchestrator (coordinates)
     │
-    ├──→ Phase 1: @dotnet-dev (implement feature)
+    ├──→ Phase 1: Planning (tasks, affected files, acceptance criteria)
+    │         │
+    │         ▼ (plan ready)
+    │
+    ├──→ Phase 2: @dotnet-dev (implement feature)
     │         │
     │         ▼ (implementation complete)
     │
-    ├──→ Phase 2: @dotnet-qa (write tests)
+    ├──→ Phase 3: @dotnet-qa (write tests)
     │         │
     │         ▼ (tests passing)
     │
-    └──→ Phase 3: @code-reviewer (review code)
-              │
-              ▼ (feedback provided)
-    
-    Summary returned to user
+    ├──→ Phase 4: @code-reviewer (review code)
+    │         │
+    │         ▼ (feedback provided)
+    │
+    └──→ Phase 5: Summary returned to user
 ```
 
 3. The key tool that enables this is `agent` — it allows one agent to invoke other agents:
@@ -323,32 +330,49 @@ Delegate to @dotnet-qa with context about what was implemented.
 
 ## 7.4 Test Multi-Agent Delegation
 
-Let's test the orchestrator with a small feature request.
+Let's test the orchestrator with a small feature request. It delegates to three worker agents — `dotnet-dev`, `dotnet-qa` and `code-reviewer` — so before you start, make sure `dotnet-qa.agent.md` exists: §7.5 has the check and the instructions for creating it. If it is missing, do §7.5 first, then come back here.
 
 🖥️ **In your terminal:**
 
-1. Start Copilot CLI:
+1. Start Copilot CLI. If `copilot` was already open when you created the agent files in §7.2 or §7.5, exit it (type `/exit`) and start it again — as in Lab 03, agent files are read when a session starts:
 ```bash
 copilot
 ```
 
-2. Invoke the orchestrator with a feature request:
+2. Select the orchestrator, then give it a feature request. In Copilot CLI, `@` adds a file to the context — it does not pick an agent — so choose the agent with the `/agent` command:
 ```
-@lab-orchestrator Add a "FullName" computed property to the Student model that returns "LastName, FirstMidName". Update the Students/Index view to use it.
+/agent lab-orchestrator
+```
+   (Alternatively, start the session in step 1 with `copilot --agent lab-orchestrator` instead of plain `copilot`, and skip the `/agent` command.) Then type the request:
+```
+The Student model already has a FullName property (inherited from Person) that returns "LastName, FirstMidName". Update the Students/Index view to use it.
 ```
 
-3. Observe the orchestrator's behavior:
+3. Observe the orchestrator's behavior — these are the five phases from the diagram in §7.1:
    - **Phase 1**: It should analyze the request and identify files to change
-   - **Phase 2**: It should delegate to `@dotnet-dev` to add the property and update the view
-   - **Phase 3**: It should delegate to `@dotnet-qa` to write tests for the new property
-   - **Phase 4**: It should delegate to `@code-reviewer` to review the changes
+   - **Phase 2**: It should delegate to `dotnet-dev` to update the view
+   - **Phase 3**: It should delegate to `dotnet-qa` to write tests for the change
+   - **Phase 4**: It should delegate to `code-reviewer` to review the changes
+   - **Phase 5**: It should return a summary of what was done
 
-4. If time permits, try a more complex request:
+   Seeing those names is not the test. An orchestrator can write "Delegating to `dotnet-dev`…" in its own text without dispatching anything, so **phase narration alone is not a completed delegation test**. A real delegation leaves a *dispatch entry*: a separate tool-call item in the response timeline (it may be labelled as a task or a sub-agent) that names the worker. When the run finishes, look for those entries:
+   - press `Ctrl+O` with the prompt empty to expand the recent timeline entries ([timeline shortcuts](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#timeline-shortcuts-in-the-interactive-interface)); or
+   - type `/tasks` to list the sub-agents and shell commands the session ran — press `f` to include finished ones, `Enter` to open one, and `Esc` to close the list ([tasks dialog](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#tasks-dialog-shortcuts)).
+
+   Then work down this checklist. Check off a box only when **all three** of its parts are true:
+
+   - [ ] **`dotnet-dev` (Phase 2)** — a dispatch entry names `dotnet-dev`; you can read the result it sent back (the file or files it changed); and the request sent on to `dotnet-qa` mentions what it changed.
+   - [ ] **`dotnet-qa` (Phase 3)** — a dispatch entry names `dotnet-qa`; you can read the result it sent back (the tests it wrote); and the request sent on to `code-reviewer` mentions the change or those tests.
+   - [ ] **`code-reviewer` (Phase 4)** — a dispatch entry names `code-reviewer`; you can read the review it sent back; and the Phase 5 summary repeats at least one point from that review.
+
+   If a box stays unchecked, treat that phase as narrated, not delegated — the delegation test is not complete. One likely cause is that the worker agent was not loaded: check that `/agent` lists it (create `dotnet-qa` in §7.5 if it is missing), restart `copilot`, and run the request again.
+
+4. If time permits, try a second request. Students/Index already pages its results (10 per page, with Previous and Next controls in the view), so ask for something that builds on that:
 ```
-@lab-orchestrator Add pagination to the Students/Index page. Support page size of 10 with next/previous navigation.
+Add a "Page X of Y" label to the Students/Index view, using the PageIndex and TotalPages values that PaginatedList already provides. Leave the existing paging (10 per page, Previous and Next) unchanged.
 ```
 
-> 💡 **What you should see:** The orchestrator analyzes the task, then delegates to @dotnet-dev (you'll see its name appear). After implementation, it delegates to @code-reviewer for feedback. The full cycle may take 1-2 minutes.
+> 💡 **What you should see:** The orchestrator plans, then hands work to `dotnet-dev`, then `dotnet-qa`, then `code-reviewer` — each as its own dispatch entry, not just a name in its text — and finishes with a summary built from what those workers returned. The first request counts as a delegation test only when every box in step 3 is checked off; apply the same check to the optional request in step 4. The testing phase relies on the `dotnet-qa` agent from §7.5. The full cycle may take a few minutes.
 
 > 💡 **Real-world use**: In production, orchestration enables complex workflows — feature development, code review, deployment. Each agent is an expert in its domain, and the orchestrator ensures they work together.
 

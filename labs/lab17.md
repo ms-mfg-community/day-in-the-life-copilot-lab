@@ -24,13 +24,9 @@ shift of 2026: the move to **default-on model availability**.
 References:
 - [Agents and enterprise management](https://docs.github.com/copilot/concepts/agents/enterprise-management)
 - [Reviewing audit logs for Copilot](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/review-audit-logs)
+- [Audit log events for agents](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/agentic-audit-log-events)
 - [Default model enablement for Copilot Business and Enterprise](https://github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise/) — confirmed via direct fetch
 - [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) `model_default_availability_policy`
-
-## 17.0 Copilot CLI currency (2026 refresh)
-
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
 
 ## 17.1 The AI Controls Nav
 
@@ -48,20 +44,28 @@ area (not merely "Copilot settings") that covers:
   `managed-settings.json`.
 - **Global model availability policy** — see §17.2.
 
-## 17.2 The Default-On Model Policy (Confirmed, Sept 2026)
+## 17.2 The Default-On Model Policy
 
 Per GitHub's own changelog (fetched directly): a new single global
 **"Default availability for released models"** policy replaced the
 previous per-model implicit-hold behavior.
 
-- **Rollout timeline:** began 2026-08-26, enforced org-wide by 2026-09-01.
+- **Rollout timeline:** announced 2026-07-29; for the following 28 days the
+  policy was configurable but had no effect on model availability; it took
+  effect on 2026-08-26.
 - **What changed:** previously, a newly-GA'd model was effectively *off*
   for an org until an admin explicitly enabled it. Now, **any newly-GA
   model an admin has not explicitly configured is available to users by
   default.**
-- **What's still off by default (exceptions):** open-weight models (e.g.
-  DeepSeek, Kimi), models outside GitHub's data retention agreement, pre-GA
-  models, and FedRAMP-restricted models.
+- **Scope:** the policy governs *generally available* models.
+- **What's still off by default (exceptions):** two categories are excluded
+  from default enablement regardless of the policy — open-weight models (e.g.
+  DeepSeek, Kimi K2.7) and models not covered by GitHub's data retention
+  agreement (e.g. Fable 5). The model names are the changelog's examples, not
+  a definition. In plain terms, an *open-weight* model is one whose trained
+  weights are published so others can download it and run it on their own
+  infrastructure, as opposed to one you can only reach through its
+  developer's hosted service.
 - **How to restore the old behavior:** an admin can flip the global switch
   to "disabled," which restores the curated-allowlist model.
 
@@ -90,18 +94,28 @@ governance step follows from flipping it?
 
 ## 17.3 Audit Logs for AI Activity
 
-Per GitHub's enterprise audit-log docs, Copilot/agent-relevant audit events
-include:
+GitHub's *Reviewing audit logs for Copilot* guide says the audit log records
+changes to your Copilot plan — such as changes to settings and policies — and
+agent activity on the GitHub website. The full event lists are in the
+enterprise and organization audit-log event references that guide links to.
+Areas worth reviewing as an admin (confirm the exact event names in those
+references before you build alerts on them):
 
 - Access changes (who can use Copilot, plan changes)
 - Content-exclusion policy changes
 - Coding-agent configuration changes
 - MCP policy changes (including managed-settings.json commits, per Lab 16)
 - Firewall allowlist changes (for coding-agent network access)
-- An `actor_is_agent` field distinguishing human-initiated vs. agent-
-  initiated audit events
-- `agent_session.task` lifecycle events (session start/end, task
-  completion)
+
+For agent activity, the
+[Audit log events for agents](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/agentic-audit-log-events)
+reference documents the key fields. Two of them:
+
+- `actor_is_agent` — always `true` for agentic audit log events, so it
+  separates agent-initiated events from human-initiated ones.
+- `agent_session_id` — a unique identifier linking an event to the specific
+  agent session that generated it (present when the event is the result of an
+  agent session). Use it to correlate the events of one session.
 
 Retention is **180 days** in the standard audit log; enterprises that need
 longer retention stream to a SIEM.
@@ -133,8 +147,9 @@ us, and what does it NOT give us?
 ✅ You can name three things the **AI Controls** nav covers beyond
 per-repo Copilot settings.
 
-✅ You can explain the default-on model policy in one sentence and name
-the four exception categories that remain off by default.
+✅ You can explain the default-on model policy in one sentence, name the two
+exception categories that stay off regardless of the policy, and say what the
+policy's scope is.
 
 ✅ You can state what the Copilot audit log does and does NOT capture
 about local CLI/IDE session content.
@@ -147,10 +162,10 @@ about local CLI/IDE session content.
 | Concept | Details |
 |---------|---------|
 | **AI Controls nav** | Custom admin roles, agent session activity, managed-settings source-org selection, global model policy |
-| **Default-on model policy** | GA models are on by default unless disabled; enforced org-wide since 2026-09-01 |
-| **Exceptions still off by default** | Open-weight models, non-data-retention models, pre-GA models, FedRAMP-restricted models |
+| **Default-on model policy** | GA models are on by default unless disabled; took effect 2026-08-26 |
+| **Exceptions still off by default** | Open-weight models and models not covered by GitHub's data retention agreement (the policy's scope is generally available models) |
 | **Audit log retention** | 180 days standard, longer via SIEM streaming |
-| **Audit log scope** | Config/policy/session-lifecycle events, NOT local IDE/CLI conversation content |
+| **Audit log scope** | Copilot plan config/policy changes and agent activity on github.com, NOT local IDE/CLI conversation content |
 
 </details>
 

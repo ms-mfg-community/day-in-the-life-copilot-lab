@@ -19,17 +19,56 @@ without losing the plot.
 
 > ⏱️ Presenter pace: 15 minutes | Self-paced: 45 minutes
 
+> 🧭 **Two routes through this lab.** The pace above is fixed, so each
+> audience spends it differently.
+>
+> - **Presenter route (15 min).** Talk through §14.0–§14.3 (about 8
+>   minutes), show the §14.4 `--help` and `--dry-run` forms (about 2),
+>   and *narrate* the §14.5 worked example from the page (about 5). Do
+>   not run it live: standing up tmux, two Copilot sessions and a real
+>   TDD pass does not fit in 15 minutes.
+> - **Learner route (45 min).** Read §14.0–§14.3, treat §14.4 as a
+>   reference tour (only its `--help` and `--dry-run` examples are worth
+>   running), then do §14.5 Steps 0–5 hands-on and finish with §14.8.
+>   Suggested budget: about 10 minutes reading §14.0–§14.4, 25 on
+>   Steps 0–5, and the last 10 for everything else: one recovery (a
+>   BOUNCE from the rubric, a test to re-run, a pane to fix), then
+>   §14.8 and the teardown. Do not plan on a first-try PROMOTE.
+> - **Untimed extension.** §14.5 Step 6, the optional QA pane, sits
+>   outside both routes. If you want it, do it after Step 5 and before
+>   the §14.8 teardown — the teardown kills the session and deletes the
+>   hand-off docs Step 6 needs.
+>
+> **Prepare before the clock starts.** None of this is counted in the
+> 45 minutes:
+>
+> 1. Your environment is a row of the §14.0 matrix that is not ❌, and
+>    `tmux -V` reports 3.0 or later (if it is missing, install it as
+>    shown in §14.2).
+> 2. Copilot CLI is installed and signed in, so `copilot` starts from the
+>    repo root.
+> 3. Node dependencies are installed and the suite starts green:
+>    `pnpm -C node install`, then `pnpm -C node test`.
+> 4. `git status` is clean, so the two commits in Step 3 are the only
+>    changes you make.
+> 5. You can open two terminals at the repo root in the same
+>    environment — the same WSL distro or the same Codespace. Step 0
+>    explains why.
+
 > 💰 **Cost Budget**
 > - Expected token footprint: ~80k in / ~25k out across a full
 >   plan → implement → handoff → clear → qa → clear cycle.
 >   That's the highest budget in the lab suite because the
 >   orchestrator pane stays alive across many phases.
-> - Cheaper alternative: pin the **orchestrator pane** to
->   `claude-opus-4.6` (it does the heavy judging once per phase)
->   and keep **worker panes** on `auto` so they downshift to
->   `claude-haiku-4.5` / `gpt-5-mini` for the mechanical
->   implement / test phases. Reserve `claude-opus-4.7` for the
->   one-off architecture phase only.
+> - Cheaper alternative: pin the **orchestrator pane** to a
+>   `models.premium` entry (it does the heavy judging once per phase,
+>   and the one-off architecture phase is the only other place premium
+>   is worth the spend) and keep **worker panes** on `auto` or a
+>   `models.cheap` entry for the mechanical implement / test phases.
+>   Read the current ids from the tiers in
+>   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) instead
+>   of copying them from a lab, and run `/model` to see what your own
+>   account can serve.
 > - Compaction trigger: this is the canonical home for the
 >   discipline — every worker pane runs
 >   `scripts/orchestrator/clear-context.sh` after each phase, and
@@ -38,43 +77,49 @@ without losing the plot.
 >   two completed phases. The whole pattern is
 >   designed to keep per-turn context bounded.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md)
->   and the `/cost-check` prompt to verify your footprint between
->   phases.
+>   to verify your footprint between phases. The repo's
+>   `.github/skills/cost-check/SKILL.md` is a command skill: run it
+>   as `/cost-check` in any CLI pane. It is not a built-in command,
+>   so it appears in `/skills list`, not in `copilot help commands`.
 
 > ⚠️ **Enterprise model policy changed — pinning tiers no longer holds
-> automatically.** As of the org-wide rollout completed 2026-09-01, any
-> newly-GA model an admin has **not** explicitly configured is available to
+> automatically.** Since the org-wide policy took effect on 2026-08-26
+> (announced 2026-07-29 in the
+> [GitHub changelog](https://github.blog/changelog/2026-07-29-default-model-enablement-for-copilot-business-and-enterprise/)),
+> any newly-GA model an admin has **not** explicitly configured is available to
 > users **by default** (`model_default_availability_policy:
 > "default-on-unless-disabled"` in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml)).
 > This replaces the old implicit-hold/curated-allowlist behavior. Practical
-> effect for this lab: the model names pinned above (`claude-opus-4.6`,
-> `auto`, `claude-haiku-4.5` / `gpt-5-mini`, `claude-opus-4.7`) are still
-> valid choices, but a new model can silently show up as selectable in a
-> worker or orchestrator pane's `/model` picker even though nobody added it
-> to the registry's tiers. Don't assume "if it's not in the registry, it's
-> not available" — if you want a hard ceiling on cost, explicitly pin the
-> model per pane (as shown below) rather than relying on the org's model
+> effect for this lab: the tiers named above (`auto`, `models.cheap`,
+> `models.premium`) are still the curated choices, but a new model can
+> silently show up as selectable in a worker or orchestrator pane's
+> `/model` picker even though nobody added it to the registry's tiers.
+> Don't assume "if it's not in the registry, it's not available" — if
+> you want a hard ceiling on cost, explicitly pin the model per pane (as
+> the Cost Budget above does) rather than relying on the org's model
 > list being curated for you. Org admins who want the old curated-allowlist
 > behavior must explicitly disable the global default-availability policy.
 
 > 🪞 **Meta callout — this lab teaches the pattern that built this lab.**
 > The repo you are reading was modernized using exactly the loop below.
-> The hand-off contracts under `.orchestrator/session.md` (see Lab 13
-> §B.2 for the schema) are real artefacts from that build-out — Lab 14
-> is the operational manual for what you've already been seeing.
+> Each hand-off in the loop is a markdown document that follows the
+> schema in Lab 13 §13.4.2; `scripts/orchestrator/handoff.sh` writes
+> them into `.copilot/orchestrator-handoffs/`, a directory it creates on
+> first use (a fresh checkout ships none). Lab 14 is the operational
+> manual for that loop.
 
 References:
 
-- [Lab 13 §B.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalises
+- [Lab 13 §13.4.2 — A2A hand-off schema](lab13.md) — the contract Lab 14 operationalises
 - [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki that preserves decisions across the `/clear` boundary (Lab 10)
-- [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md) — the judging rubric the orchestrator pane uses
+- [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md) — the judging rubric the orchestrator pane uses
 - [`scripts/orchestrator/`](../scripts/orchestrator/) — `tmux-start.sh`, `handoff.sh`, `clear-context.sh`
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the in-process orchestrator → dev → QA flow this lab generalises across panes
 - [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + consolidation primitives the orchestrator pane relies on
 
 ---
 
-## Compatibility matrix
+## 14.0 Compatibility matrix
 
 Lab 14's orchestrator pattern is a thin layer over tmux, `send-keys`,
 and the POSIX filesystem. That makes it fast and hackable — and it
@@ -90,7 +135,7 @@ environment fits the matrix below.
 | ⚠️ **Allowed but degraded** | WSL2 with the repo under `/mnt/c/…` or another Windows drive mount | Expect pain | Cross-boundary file I/O is ~10× slower, file-watchers drop events, `inotify` is unreliable, and `tmux send-keys` round-trips can stall. Works for exploration; unsafe for a timed demo. |
 | ❌ **Unsupported for the live workshop** | Windows PowerShell-only (no WSL) | Do not attempt | No tmux, no POSIX filesystem semantics; every script under `scripts/orchestrator/` assumes a Unix shell. `preflight.ps1 -Lab14` will FAIL this configuration on purpose. |
 | ❌ **Not tested / unsupported** | WSL1 | Do not attempt | tmux + interop behaviour under WSL1 is not validated; we have seen silent `send-keys` drops. Upgrade: `wsl --set-version <distro> 2`. `preflight.sh --lab14` will FAIL this on purpose. |
-| ✅ **Supported** | GitHub Codespaces (default devcontainer) | Run as-is | Linux VM with tmux available via `apt-get install -y tmux` in `post-create.sh`. Best choice when local setup is blocked. |
+| ✅ **Supported** | GitHub Codespaces (default devcontainer) | Check for tmux, then run | Linux VM, but this repo's devcontainer does **not** install tmux — run `tmux -V` and, if it is missing, install it as shown in §14.2 before you start. Best choice when local setup is blocked. |
 
 Run `scripts/preflight.sh --lab14` (or `pwsh scripts/preflight.ps1
 -Lab14` where PowerShell is the only option) before starting this lab.
@@ -108,7 +153,7 @@ Two non-obvious rules that the matrix encodes:
 
 ---
 
-## 14.0 Why panes, why tmux, why now
+## 14.1 Why panes, why tmux, why now
 
 A single Copilot CLI session is one big context window. As a phased
 modernization grows, that window fills up with:
@@ -130,14 +175,14 @@ and using tmux as the cheap multiplexer that keeps both alive without a
 heavyweight scheduler. It's intentionally low-magic: there is no daemon,
 no broker, no queue — just panes, files, and `/clear`.
 
-This is the same separation Lab 13 §13.2 calls **trust boundaries** for
+This is the same separation Lab 13 §13.1 calls **trust boundaries** for
 A2A peers. Lab 14 makes it physical: each pane is a process, each
 process is its own context window, and `clear-context.sh` is the
 boundary you draw on purpose.
 
 ---
 
-## 14.1 tmux primer (5-minute version)
+## 14.2 tmux primer (5-minute version)
 
 Skip ahead if you already speak tmux. If not, this is enough to drive
 Lab 14:
@@ -156,9 +201,12 @@ Two non-obvious tips that matter for this lab:
 
 1. **`tmux send-keys` is how scripts talk to panes.** That's the entire
    mechanism behind `clear-context.sh`. There's no IPC magic.
-2. **Pane titles are addressable.** `tmux-start.sh` titles the worker
-   panes `worker` and `qa` so other scripts don't depend on numeric
-   indices changing if you re-split.
+2. **Panes are addressed by index, not by title.** `tmux-start.sh` titles
+   the two panes in the `work` window `worker` and `qa`, but those titles
+   are only labels. `clear-context.sh` maps `worker` to pane 0 and `qa`
+   to pane 1, and `handoff.sh --to-pane N` types into
+   `copilot-orch:work.N`, so if you re-split or reorder the panes the
+   scripts will hit the wrong one. Leave the layout alone.
 
 If your environment doesn't have tmux:
 
@@ -175,7 +223,7 @@ brew install tmux
 
 ---
 
-## 14.2 The pattern, in one diagram
+## 14.3 The pattern, in one diagram
 
 ```
 ┌─────────────────────────── tmux session: copilot-orch ────────────────────────────┐
@@ -214,66 +262,89 @@ Three rules make the diagram work:
 
 ---
 
-## 14.3 The deliver scripts
+## 14.4 The deliver scripts
 
-You already have everything in `scripts/orchestrator/`. Quick tour:
+You already have everything in `scripts/orchestrator/`. This section is a
+**reference tour — read it, don't run it.** The live commands need a
+Copilot session already running in a pane, and none exists yet, so each
+one is run at the §14.5 step that needs it. The only commands worth
+running here are the read-only `--help` and `--dry-run` forms shown
+below.
 
 | Script | What it does | Idempotent? |
 |--------|--------------|-------------|
 | `tmux-start.sh` | Provisions the layout above. Re-runs are safe. | Yes — re-uses existing session |
-| `handoff.sh <phase>` | Writes a Lab 13 §B.2 hand-off doc into the session workspace and prints its path. | Yes — every call writes a new timestamped doc |
+| `handoff.sh <phase>` | Writes a Lab 13 §13.4.2 hand-off doc into `.copilot/orchestrator-handoffs/` by default and prints its path. | Yes — every call writes a new timestamped doc |
 | `clear-context.sh` | Sends `/clear` to a named worker pane. `--dry-run` prints instead of sending. | Yes — `/clear` is itself a no-op on a clean pane |
 
-All three honour `--help`. They are exercised by
-`tests/orchestrator/*` so you can trust the contracts above without
-reading the source.
+All three print a usage summary for `--help`, and `tests/orchestrator/*`
+exercises them, so you can trust the contracts above without reading
+the source. One quirk: `handoff.sh` takes the phase slug **first**, so
+ask it for help as `handoff.sh 14-demo --help` — a leading `--help` is
+rejected with "first arg must be a phase slug, not a flag" and exit
+status 1.
 
 ### Bring up the layout
 
-```bash
-# Detached — recommended; you'll attach explicitly when you're ready.
-./scripts/orchestrator/tmux-start.sh --no-attach
+`tmux-start.sh` builds the layout from §14.3: an `orch` window with one
+pane, and a `work` window whose two panes — `worker` (pane 0) and `qa`
+(pane 1) — sit side by side. With `--no-attach` it leaves the session
+detached, so you choose when to join it with `tmux attach`. You'll do
+both in §14.5 Step 0; for now, read its usage text:
 
-# Attach when you want to drive it
-tmux attach -t copilot-orch
+```bash
+./scripts/orchestrator/tmux-start.sh --help
 ```
 
-You should see two windows: `orch` (one pane) and `work` (split
-horizontally into `worker` and `qa`). Move between windows with
-`Ctrl-b n` and panes with `Ctrl-b ←/→`.
+Once you are attached, move between windows with `Ctrl-b n` and between
+panes with `Ctrl-b ←/→`.
 
 ### Write a hand-off
 
-```bash
-./scripts/orchestrator/handoff.sh 14-demo \
-  --role dev \
-  --input  "lab plan §14.4 worked example" \
-  --output "GET /api/courses?department=… implemented + tested" \
-  --question "do we paginate?  carry-forward: defer to phase 7" \
-  --accept "node test suite green; new endpoint covered"
-```
+`handoff.sh <phase>` takes the phase slug first, then `--role` and the
+repeatable `--input`, `--output`, `--question` and `--accept` flags,
+which fill the sections of the Lab 13 §13.4.2 schema. It writes a new
+timestamped document under `.copilot/orchestrator-handoffs/` and prints
+that document's path on stdout (relative to the directory you ran it
+from, so run it from the repo root). Add `--to-pane N --session NAME`
+and it also types `cat <doc>` into pane N of the `work` window. You'll
+write real hand-offs in §14.5 Steps 2 and 4; for now, read its usage
+text — phase slug first:
 
-You'll get a path on stdout. Open the doc in your editor — that's the
-contract the next pane will read.
+```bash
+./scripts/orchestrator/handoff.sh 14-demo --help
+```
 
 ### Clear a worker between phases
 
-```bash
-# Show what would happen without sending — useful in CI / dry-runs.
-./scripts/orchestrator/clear-context.sh --pane worker --dry-run
+`clear-context.sh --pane worker` types `/clear` into pane 0 of the `work`
+window (`--pane qa` is pane 1); the orchestrator pane is never a target.
+A real run needs the §14.5 layout and a Copilot session already running
+in that pane, so **don't run it here** — it waits for §14.5 Step 5.
+`--dry-run` prints what would be sent and sends nothing, so it is safe
+anywhere:
 
-# Actually send /clear into the worker pane.
-./scripts/orchestrator/clear-context.sh --pane worker
+```bash
+./scripts/orchestrator/clear-context.sh --help
+./scripts/orchestrator/clear-context.sh --pane worker --dry-run
 ```
 
 ---
 
-## 14.4 Worked example — `GET /api/courses?department=…` end-to-end
+## 14.5 Worked example — `GET /api/courses?departmentId=…` end-to-end
 
 The Phase 3 Node app already has `GET /api/courses` returning the full
-list. You're going to add a `department` query-string filter using the
-full pattern. We'll narrate each step in terms of *which pane is
-talking to whom*.
+list. You're going to add an optional `departmentId` query-string filter
+using the full pattern. (Courses carry a numeric `departmentId`; the app
+has no department names, so that is the field to filter on.) We'll
+narrate each step in terms of *which pane is talking to whom* — and every
+block below says which process receives it:
+
+- **Bash — control shell** blocks are typed into an ordinary terminal
+  (Step 0 sets one up), never into a Copilot pane.
+- **Prompt — orchestrator session**, **Prompt — worker session** and
+  **Prompt — QA session** blocks are pasted into the Copilot CLI session
+  running in that pane.
 
 > 🛤️ This is intentionally a different slice from the Lab 13 worked
 > example so you don't repeat work — pick this lab if you want a fresh
@@ -282,105 +353,313 @@ talking to whom*.
 
 ### Step 0 — bring up the layout (once)
 
+Open **two terminals** at the repo root, both in the same environment —
+the same WSL distro or the same Codespace, because a tmux session lives
+inside one environment and a terminal in another can't see it. Then keep
+their jobs apart:
+
+- The **control shell** is an ordinary terminal. Every **Bash** block in
+  this section runs here: the helper scripts, `pnpm` and `git`.
+- The **tmux terminal** is the one you attach to the session. It only
+  hosts the interactive Copilot CLI sessions; every **Prompt** block is
+  pasted into one of them.
+
+The split matters because whatever you type into a pane goes to the
+process running there. A pane running Copilot CLI hands your text to the
+model, not to a shell, so Bash typed into it is just another prompt. The
+Copilot sessions stay running throughout; you never leave one to run a
+command.
+
+**Bash — control shell:**
+
 ```bash
 ./scripts/orchestrator/tmux-start.sh --no-attach
+```
+
+**Bash — tmux terminal:**
+
+```bash
 tmux attach -t copilot-orch
 ```
 
-In the `orch` window, start your orchestrator Copilot CLI session.
-Paste the rubric prompt:
+You land in the `orch` window. Every pane starts in the repo root,
+because `tmux-start.sh` ran there, and starts as an ordinary shell — the
+only thing you type into one is `copilot`, to start the session that will
+live there. Start your orchestrator session in the `orch` pane, then
+paste the rubric prompt:
 
-> Use [`.github/prompts/orchestrator-rubric.prompt.md`](../.github/prompts/orchestrator-rubric.prompt.md)
+**Prompt — orchestrator session:**
+
+> Use [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md)
 > as your judging contract for every hand-off you receive.
 
-Switch to the `work` window (`Ctrl-b n`) and start a Copilot CLI
-session in the `worker` pane. Leave `qa` empty for now — we'll spin it
-up after the dev pass.
+Switch to the `work` window (`Ctrl-b n`). It opens on the `worker` pane
+(pane 0); start a Copilot CLI session there the same way. Leave the `qa`
+pane (pane 1, to its right) empty for now — Step 6 starts it. The
+orchestrator and worker sessions stay running from here on, and the
+control shell does all the Bash.
 
-### Step 1 — plan (orchestrator pane)
+### Step 1 — plan (orchestrator session)
 
-In the orchestrator pane, ask Copilot to draft the phase plan:
+In the orchestrator session, ask Copilot to draft the phase plan and to
+tell you where it saved it:
 
-> Plan a single-phase change: add an optional `department` filter to
-> `GET /api/courses` in `node/web/routes/courses-api.ts`. Strict TDD
-> (RED test first). Hand-off back to me when GREEN. Acceptance: new
-> integration test plus existing tests green.
+**Prompt — orchestrator session:**
 
-Save the plan to `.copilot/session-state/<id>/plan.md` (the session
-folder Copilot CLI exposes).
+> Plan a single-phase change: add an optional `departmentId` filter to
+> `GET /api/courses` in `node/web/routes/courses-api.ts`. The
+> query-string value arrives as a string and the stored `departmentId` is
+> an integer; with no filter the route must behave as it does today.
+> Strict TDD (RED test first, committed before the implementation).
+> Hand-off back to me when GREEN. Acceptance: one new integration test in
+> `node/tests/integration/courses-api.test.ts` plus the existing tests
+> green. Save the plan as your session's `plan.md` and reply with its
+> full absolute path.
+
+Copilot CLI keeps session files under `~/.copilot/session-state/<id>/` in
+your home directory (or under `$COPILOT_HOME` if you have set it) — not
+inside this repo, and under a session id you can't guess, which is why
+the prompt asks for the path. Copy the absolute path it reports: Step 2
+hands it to the worker. Check it from the control shell with
+`ls <that-path>`; if the file isn't there, ask again.
 
 ### Step 2 — dispatch to dev (orchestrator → worker)
 
-From the orchestrator pane, write the input hand-off and send it to
-the worker pane in one go:
+The worker starts with an empty context, so its brief has to carry
+everything it needs — including where the plan is. In the control shell,
+write the input hand-off and send it to the worker pane in one go,
+replacing `<absolute-plan-path>` with the path from Step 1:
+
+**Bash — control shell:**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-dev \
   --role orchestrator \
-  --input  "plan above; node/web/routes/courses-api.ts" \
-  --output "RED integration test then GREEN impl for ?department=…" \
-  --question "URL-decode case-fold? carry-forward: yes, lower-case both sides" \
-  --accept "make test-node green; new test asserts filtering by 'Mathematics'" \
+  --input  "Read the plan at <absolute-plan-path> first; the code to change is node/web/routes/courses-api.ts" \
+  --output "RED integration test committed, then GREEN implementation of ?departmentId=" \
+  --question "_none_" \
+  --accept "pnpm -C node test green; the new test asserts departmentId=1 returns only the matching course" \
   --to-pane 0 --session copilot-orch
 ```
 
-The `--to-pane 0` flag types `cat <doc>` into the worker pane so the
-worker just sees the brief without you copy-pasting.
+The `--to-pane 0` flag types `cat <doc>` into pane 0 of the `work` window
+and presses Enter. That pane is running Copilot CLI, not a shell, so the
+line arrives as a prompt rather than a command. Tell the worker what to
+do with it:
 
-### Step 3 — implement (worker pane)
+**Prompt — worker session:**
 
-In the worker pane, drive a strict TDD pass:
+> The line you just received names a hand-off document. Read it, and the
+> plan file it points to, then wait — I'll give you the work one step at
+> a time.
 
-1. **RED**: add a failing integration test in
-   `node/tests/integration/courses-api.test.ts` that posts two courses
-   in different departments and asserts
-   `GET /api/courses?department=Mathematics` returns only the
-   Mathematics one.
-2. Confirm it fails for the right reason (`pnpm -C node test`).
-3. **GREEN**: extend the route handler in `courses-api.ts` to accept
-   `req.query.department` (lower-cased, optional) and filter the
-   in-memory result.
-4. Re-run `pnpm -C node test` until green.
-5. Per-file `git add` + a `feat(node-api):` commit.
+If the worker can't open the plan path, paste the plan's text into that
+prompt instead.
 
-### Step 4 — hand back to QA (worker → orchestrator)
+### Step 3 — implement (worker session + control shell)
+
+A strict TDD pass leaves two commits: the failing test, then the code
+that fixes it. The worker session writes the code; you run the tests and
+make the commits from the control shell, so the evidence in Step 4 is
+something you saw yourself.
+
+**RED.** Ask the worker for the test only:
+
+**Prompt — worker session:**
+
+> RED step only — don't touch `node/web/routes/courses-api.ts`. In
+> `node/tests/integration/courses-api.test.ts`, add one test that POSTs
+> two courses — `{ title: 'Calculus I', credits: 4, departmentId: 1 }`
+> and `{ title: 'History 101', credits: 3, departmentId: 2 }` — then
+> calls `GET /api/courses?departmentId=1` and asserts: status 200,
+> exactly one course in `data`, its title is `Calculus I`, and
+> `meta.total` is 1.
+
+Run the suite and read the failure:
+
+**Bash — control shell:**
+
+```bash
+pnpm -C node test
+```
+
+Exactly one test should fail — the new one, on its count assertion —
+because the route ignores the query string and returns both courses. A
+failure for any other reason (an import error, a typo, a 400 from one of
+the POSTs) isn't a RED yet: have the worker fix the test first. Once the
+failure is the right one, commit the test on its own:
+
+**Bash — control shell:**
+
+```bash
+git add node/tests/integration/courses-api.test.ts
+git commit -m "test(node-api): failing test for the departmentId filter"
+```
+
+**GREEN.** Now ask for the implementation:
+
+**Prompt — worker session:**
+
+> GREEN step: in `node/web/routes/courses-api.ts`, make
+> `GET /api/courses` accept an optional `departmentId` query parameter.
+> It arrives as a string and the stored value is an integer. When it is
+> present, return only the matching courses, with `meta.total` set to the
+> filtered count. With no parameter, behave exactly as today. Change
+> nothing else.
+
+Run the suite again; the commit only happens if it is fully green. If
+anything fails, paste the failure output into the worker session and ask
+for a fix.
+
+**Bash — control shell:**
+
+```bash
+pnpm -C node test && git add node/web/routes/courses-api.ts \
+  && git commit -m "feat(node-api): filter GET /api/courses by departmentId"
+```
+
+### Step 4 — hand back to the orchestrator (worker → orchestrator)
+
+The rubric grades evidence, not claims, so collect it first. From the
+control shell:
+
+**Bash — control shell:**
+
+```bash
+git log --oneline -2
+pnpm -C node test
+```
+
+`git log` lists the GREEN commit first and the RED commit below it — note
+both SHAs. The test run ends with a `Tests … passed (…)` summary line;
+copy it exactly as printed. Now write the return hand-off, replacing
+`<red-sha>`, `<green-sha>` and `<summary-line>` with what you just
+collected (and `<absolute-plan-path>` as in Step 2):
+
+**Bash — control shell:**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-dev \
   --role dev \
-  --input  "the orchestrator brief above" \
-  --output "RED commit <sha>; GREEN commit <sha>; pnpm test summary appended" \
+  --input  "Orchestrator brief for 14-courses-dev; plan at <absolute-plan-path>" \
+  --output "RED commit <red-sha>; GREEN commit <green-sha>; ran pnpm -C node test: <summary-line>" \
   --question "_none_" \
-  --accept "make test-node green; new endpoint behaviour test passes"
+  --accept "pnpm -C node test green; the departmentId test passes"
 ```
 
-### Step 5 — promote, then clear (orchestrator pane)
+Unlike Step 2 there is no `--to-pane`: that flag can only reach the
+`work` window, never the orchestrator's pane. The command prints the new
+document's path (relative to the repo root). Copy it — the hand-off
+reaches the orchestrator when you give it that path in Step 5.
 
-In the orchestrator pane, apply the rubric. Either:
+### Step 5 — judge, then clear (orchestrator session)
 
-- **PROMOTE** → run `./scripts/orchestrator/clear-context.sh --pane worker`
-  to free the worker for the next phase, then re-dispatch with a new
-  hand-off; or
-- **BOUNCE** → re-issue a tighter brief into the (still-warm) worker
-  pane; do **not** clear it.
+Give the orchestrator the path you copied in Step 4 and have it apply
+the rubric — clearing nothing yet:
 
-For the worked example you'll PROMOTE on the first try. The point is
-that the worker now has zero memory of the courses change — and that's
-what you want before phase N+1.
+**Prompt — orchestrator session:**
 
-### Step 6 — optional QA pane
+> Read the hand-off at `<printed-path>` and apply the orchestrator rubric
+> to it. Give me the verdict block. Don't clear anything yet.
 
-For higher-stakes phases, repeat steps 2–5 with the `qa` pane:
+It returns one of three verdicts:
+
+- **PROMOTE** → free the worker for the next phase (the command below),
+  then re-dispatch with a new hand-off;
+- **BOUNCE** → fix what the rubric names and re-send a tighter brief into
+  the (still-warm) worker pane by re-running the Step 2 command with the
+  corrected text; do **not** clear it; or
+- **STOP-AND-ASK** → the hand-off schema is intact, but one of the
+  §14.7 stop-and-ask triggers fired: surface it to the human in the
+  orchestrator session and wait for their answer.
+
+A BOUNCE is an ordinary outcome, not a failed exercise: the rubric is
+strict about evidence — both SHAs, the exact test command, its summary
+line — and the learner route budgets time for one. Only on PROMOTE, clear
+the worker from the control shell:
+
+**Bash — control shell:**
 
 ```bash
-# orchestrator → qa
+./scripts/orchestrator/clear-context.sh --pane worker
+```
+
+This is the first live run of the script. It types `/clear` into pane 0
+of the `work` window, so the worker session there starts over with zero
+memory of the courses change — and that's what you want before phase
+N+1.
+
+### Step 6 — optional QA pane (untimed extension)
+
+For higher-stakes phases, add an independent reviewer in the `qa` pane.
+Step 0 left that pane empty, so this step starts its session itself — it
+is not just Steps 2–5 again.
+
+**Start QA.** In the tmux terminal, switch to the `work` window
+(`Ctrl-b n`), move to the right-hand pane (`Ctrl-b →`) — pane 1, `qa` —
+and start a Copilot CLI session there.
+
+**Brief it.** From the control shell, write the QA brief and send it with
+the same pane mapping as before (worker = 0, qa = 1). The QA session
+started empty, so its brief has to name the rubric as well — the
+orchestrator was handed it back in Step 0, this pane never was, and a
+reviewer that hasn't read the rubric just invents its own bar. Replace
+`<printed-path>` with the Step 4 hand-off's path and
+`<absolute-plan-path>` as in Step 2:
+
+**Bash — control shell:**
+
+```bash
 ./scripts/orchestrator/handoff.sh 14-courses-qa \
-  --role orchestrator --input "dev hand-off above" \
+  --role orchestrator \
+  --input  "Judge against .github/skills/orchestrator-rubric/SKILL.md; read the dev hand-off at <printed-path> and the plan at <absolute-plan-path>" \
   --output "rubric verdict + spot-checked tests" \
   --question "_none_" \
-  --accept "verdict recorded; carry-forwards logged"
+  --accept "verdict recorded; carry-forwards logged" \
+  --to-pane 1 --session copilot-orch
+```
 
-# When QA is done, /clear it too
+As in Step 2, the typed `cat <doc>` arrives as a prompt, so tell QA what
+to do with it and what to hand back:
+
+**Prompt — QA session:**
+
+> Read the hand-off you were just sent, then the rubric and the dev
+> hand-off it points to. Spot-check the two commits that dev hand-off
+> names and re-run `pnpm -C node test` yourself. Reply with the rubric's
+> verdict block — PROMOTE, BOUNCE or STOP-AND-ASK — and one line of
+> reasons.
+
+**Return the verdict as a doc, then clear.** Rule 3 in §14.3 binds this
+pane too: QA's verdict reaches the orchestrator on disk, the way dev's
+did in Step 4 — don't retype it from one pane into the other. From the
+control shell, write it down, replacing `<verdict>` and `<reasons>` with
+what QA replied:
+
+**Bash — control shell:**
+
+```bash
+./scripts/orchestrator/handoff.sh 14-courses-qa \
+  --role qa \
+  --input  "Orchestrator brief for 14-courses-qa; dev hand-off at <printed-path>" \
+  --output "verdict <verdict>; reasons: <reasons>" \
+  --question "_none_" \
+  --accept "verdict recorded against the rubric; carry-forwards logged"
+```
+
+As in Step 4 there is no `--to-pane`. Copy the path this prints and give
+it to the pane that remembers:
+
+**Prompt — orchestrator session:**
+
+> Read the QA hand-off at `<qa-printed-path>` and record its verdict on
+> the 14-courses-dev phase as a carry-forward.
+
+Only then clear QA from the control shell:
+
+**Bash — control shell:**
+
+```bash
 ./scripts/orchestrator/clear-context.sh --pane qa
 ```
 
@@ -388,7 +667,7 @@ That's the whole loop.
 
 ---
 
-## 14.5 Token discipline — why `clear` and `.copilot/lessons/` complement each other
+## 14.6 Token discipline — why `clear` and `.copilot/lessons/` complement each other
 
 The [`.copilot/lessons/`](../.copilot/lessons/) markdown wiki (Lab 10)
 exists because, even *inside* a single pane, you sometimes need to
@@ -408,7 +687,7 @@ hand-off summaries) that it doesn't need compaction.
 
 ---
 
-## 14.6 Stop-and-ask triggers
+## 14.7 Stop-and-ask triggers
 
 The orchestrator pane is the human's eyes. These are the situations
 where the rubric tells it to **STOP-AND-ASK** instead of promoting or
@@ -429,7 +708,7 @@ bouncing on its own:
 
 ---
 
-## 14.7 Wrap-up & next steps
+## 14.8 Wrap-up & next steps
 
 What you should now be able to do:
 
@@ -437,10 +716,10 @@ What you should now be able to do:
 - [ ] Explain why the orchestrator pane is never cleared and why
       worker panes always are.
 - [ ] Write a hand-off doc that passes the rubric in
-      `.github/prompts/orchestrator-rubric.prompt.md`.
+      `.github/skills/orchestrator-rubric/SKILL.md`.
 - [ ] Drive a phase end-to-end without losing the plan to
       context-window pressure.
-- [ ] Recognise the four stop-and-ask triggers above.
+- [ ] Recognise the five stop-and-ask triggers in §14.7.
 
 Cross-references:
 
@@ -460,3 +739,26 @@ Recap: a tmux session, three short shell scripts, one rubric prompt,
 and one rule — *the orchestrator remembers, the workers forget* — are
 all you need to drive a multi-phase Copilot project without losing the
 plot. The rest is discipline.
+
+### Teardown
+
+Lab 14 leaves a detached tmux session running and, if you ran
+`handoff.sh`, a folder of hand-off docs. From the repo root:
+
+```bash
+# Closes every pane in the session, including any Copilot CLI session still
+# running in one. "can't find session" just means it is already gone.
+tmux kill-session -t copilot-orch
+
+# The hand-off docs are untracked and not git-ignored, so list them first.
+git status --short .copilot/orchestrator-handoffs
+
+# Delete them. -f keeps this quiet if the folder was never created.
+rm -rf .copilot/orchestrator-handoffs
+```
+
+The two commits from the worked example (§14.5 Step 3 — `test(node-api):`
+then `feat(node-api):`) are your own work, so the teardown leaves them
+alone — keep them, or undo them with `git revert` on each, newest first.
+Your `~/.copilot/session-state/` folder is Copilot CLI's own state; leave
+it in place.

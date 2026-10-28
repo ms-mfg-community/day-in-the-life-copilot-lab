@@ -53,7 +53,7 @@ consolidation command periodically:
 ```
 
 The prompt lives at
-[`.github/prompts/consolidate-lessons.prompt.md`](../../.github/prompts/consolidate-lessons.prompt.md).
+[`.github/skills/consolidate-lessons/SKILL.md`](../../.github/skills/consolidate-lessons/SKILL.md).
 It merges duplicates, promotes project→global, and flags contradictions
 for human review. Lab 10 §10.4 walks through a live consolidation.
 

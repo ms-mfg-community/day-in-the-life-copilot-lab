@@ -13,8 +13,16 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 
 > ⏱️ Presenter pace: 3 minutes | Self-paced: 10 minutes
 
+> 📋 **Before you start.**
+> - Finish [Lab 01](lab01.md) and [Setup](setup.md) first. §6.4 builds `dotnet/ContosoUniversity.sln`, so that solution must already build cleanly.
+> - Open your terminal at the **repository root** (the folder that contains `scripts/` and `.github/`). Every path in this lab is relative to it.
+> - Pick **one** shell and stay in it: the one your platform uses natively (PowerShell on Windows, Bash on macOS, Linux or WSL). **WSL/Bash** needs `jq`: the hook scripts use it to read the event and stop with an error if it is missing. **PowerShell** needs PowerShell 7 (the `pwsh` command, not Windows PowerShell 5.1), because §6.4 launches `pwsh`.
+
+> ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), and the Copilot CLI currency table.
+
 References:
-- [Copilot hooks](https://docs.github.com/en/copilot/using-github-copilot/using-hooks)
+- [Using hooks with Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
+- [Hooks reference: events, payloads and exit codes](https://docs.github.com/en/copilot/reference/hooks-reference)
 
 > 🧭 **Track appendices** — the post-tool-use build hook recipe per stack lives in
 > [`labs/appendices/dotnet/lab06.md`](appendices/dotnet/lab06.md) and
@@ -29,7 +37,7 @@ References:
 > live in the registry — labs reference it rather than hardcoding values, so a
 > single registry update propagates everywhere.
 
-> 🆕 **Terminal UX refresh (confirmed GA, ~Aug 2026):** `/plugin`, `/mcp`, and
+> 🆕 **Terminal UX refresh (GA June 23, 2026):** `/plugin`, `/mcp`, and
 > `/skills` are real interactive commands backed by an in-terminal dashboard —
 > you can discover, install, and configure plugins, MCP servers, and skills
 > without hand-editing config files. The terminal also gained tabs for
@@ -41,10 +49,10 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` (or the `/plugin` dashboard) | Pulling a packaged multi-agent or skill bundle from a marketplace or org-internal plugin source. |
 | **Parallel subagents** | `/fleet` | Fanning work out across multiple short-lived workers under one orchestrator (see [Lab 14 — Orchestrator + tmux](../labs/lab14.md)). |
-| **Plan mode vs autopilot mode** | `Shift+Tab` toggles plan mode; autopilot mode is the default | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. Note: an enterprise's global model-default-availability policy (see [Lab 17](../labs/lab17.md)) may make additional models selectable here even if the registry's curated tiers don't list them. |
+| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode vs `/autopilot` to toggle autopilot mode | Plan-heavy work (design, decomposition) runs in plan mode; well-scoped execution runs in autopilot mode. Autopilot is a toggle you switch on — it is not the default. |
+| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto` to let Copilot choose) | Upshift to `models.premium` (per [`registry.yaml`](../docs/_meta/registry.yaml)) for hard reasoning; downshift to `models.cheap` for tool-heavy loops. Note: an enterprise's global model-default-availability policy (see [Lab 17](../labs/lab17.md)) may make additional models selectable here even if the registry's curated tiers don't list them. The tier names are registry keys, not `/model` arguments. |
 | **Local tool discovery (model-side)** | `extensions_manage` MCP tool, `operation: "list"` / `"inspect"` / `"guide"` / `"scaffold"` | The agent enumerating which agents, skills, hooks, and extensions are contributing to the session before wiring a handoff. Invoke as a tool call (e.g. `extensions_manage({operation: "list"})`), **not** as `/extensions_manage` — there is no such slash command. |
-| **Local tool discovery (user-side)** | `/skills`, `/plugin`, `/mcp` | The human listing or managing skills, plugins, and MCP servers from the prompt via the in-terminal dashboard. These are real built-in slashes; `/extensions manage` and `/extensions mode` are **not** — use `Shift+Tab` to toggle plan/autopilot modes. |
+| **Local tool discovery (user-side)** | `/skills`, `/plugin`, `/mcp` | The human listing or managing skills, plugins, and MCP servers from the prompt via the in-terminal dashboard. These are real built-in slashes; `/extensions manage` and `/extensions mode` are **not** — use `Shift+Tab` to switch modes. |
 | **LSP-backed code intelligence** | Automatic — no slash command | Copilot CLI transparently prefers a configured language server over text search for go-to-definition, find references, rename, and call hierarchy. See [Lab 15 — LSP & Code Intelligence](../labs/lab15.md). |
 <!-- @end-include docs/_partials/currency.md -->
 
@@ -66,11 +74,10 @@ cat .github/hooks/default.json
 Get-Content .github/hooks/default.json
 ```
 
-2. The configuration defines hooks for these lifecycle events:
+2. This repository's `default.json` registers seven hooks on the four lifecycle events below. The table is **non-exhaustive**: Copilot supports more events (for example `sessionStart` and `sessionEnd`) — see the [full event catalogue](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events).
 
 | Event | When It Fires |
 |-------|--------------|
-| `sessionStart` | When a Copilot session begins |
 | `userPromptSubmitted` | After the user sends a message |
 | `preToolUse` | Before Copilot executes a tool (edit, execute, etc.) |
 | `postToolUse` | After Copilot executes a tool |
@@ -89,9 +96,20 @@ Get-Content .github/hooks/default.json
 
 > 💡 Hooks run in both bash (Linux/Mac) and PowerShell (Windows). Always provide both for cross-platform support.
 
+> 💡 **Where hooks load from:** `.github/hooks/*.json` is the project-level location this lab uses, but it is not the only one. Copilot CLI loads hooks from several sources, in this order: **policy hooks** (installed by an administrator and machine-wide; they load first and `disableAllHooks` cannot turn them off), **user hooks** in `~/.copilot/hooks/` (`%USERPROFILE%\.copilot\hooks\` on Windows), **project hooks** in `.github/hooks/*.json` (or an inline `hooks` block in `.github/copilot/settings.json`), then hooks contributed by **plugins**. They are combined: if the same event appears in more than one source, every entry from every source runs. Details: [hooks locations](https://docs.github.com/en/copilot/reference/hooks-reference#hooks-locations).
+
 ## 6.2 Read Existing Hooks
 
 This repository ships with several hooks. Let's understand what they do.
+
+Hooks for the GitHub Copilot CLI receive their event payload **as a JSON object on stdin** — they do **not** receive `TOOL_NAME` or `FILE_PATH` environment variables. This is a common trap: blog posts written for older shapes show env-var reads, and those scripts silently no-op against current Copilot CLI because the vars are never set.
+
+> 💡 **Words you'll meet in the scripts.**
+> - **IPC** (inter-process communication): how Copilot and a hook script talk to each other.
+> - **stdin**: the input stream a script reads. Copilot writes the JSON event into it.
+> - **stdout**: the output stream a script prints to. Copilot reads it, for example to get a JSON allow/deny decision.
+> - **exit status**: the number a script ends with. `0` means success; anything else means failure.
+> - **cwd**: the current working directory, the folder Copilot was working in when the event fired.
 
 🖥️ **In your terminal:**
 
@@ -149,13 +167,11 @@ Get-Content scripts/hooks/post-tool-use-format.sh
 
 This hook auto-formats files after Copilot edits them.
 
-> 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. A non-zero exit from any hook is logged and **silently ignored** by the runtime; only the stdout JSON contract blocks. Post-hooks report only — their stdout is debug-logged but cannot rewrite or veto the tool call.
+> 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. Command `preToolUse` hooks are also **fail-closed**: if the script crashes or exits non-zero (including `exit 2`), Copilot denies the tool call even when the stdout JSON says `allow`, so a pre-hook that has no objection must `exit 0` — a non-zero exit is a denial, not a harmless skip. The one exception is a timeout, which is fail-open: Copilot surfaces a warning and lets the tool call proceed through the normal permission flow. Post-hooks run after the tool has finished, so they cannot stop it.
 
-### 6.2.1 The hook IPC contract (Copilot CLI 1.0.37+, re-verified on 1.0.83)
+### 6.2.1 The hook IPC contract (Copilot CLI at or above the registry's `copilot_cli_version_floor`)
 
-Hooks for the GitHub Copilot CLI receive their event payload **as a JSON object on stdin** — they do **not** receive `TOOL_NAME` or `FILE_PATH` environment variables. This is a common trap: blog posts written for older shapes show env-var reads, and those scripts silently no-op against current Copilot CLI because the vars are never set.
-
-**What the runtime actually sets:**
+**What the runtime actually sets** (the idea from §6.2, written out as a contract):
 
 | Surface | Value |
 |---|---|
@@ -180,7 +196,7 @@ Hooks for the GitHub Copilot CLI receive their event payload **as a JSON object 
 
 Other events (`sessionStart`, `userPromptSubmitted`, `preToolUse`, `errorOccurred`, `agentStop`, `subagentStop`, `sessionEnd`) follow the same on-stdin pattern with event-specific keys. **Asymmetry to remember:** in `preToolUse`, `toolArgs` is a JSON-encoded string; in `postToolUse`, `toolArgs` is already a parsed object.
 
-**Read it like this:**
+**Read it like this** — these are excerpts from *inside* a hook script. Read them; don't type them into a terminal (on its own, `INPUT="$(cat)"` just waits for input):
 
 **WSL/Bash** (uses `jq`):
 ```bash
@@ -208,6 +224,8 @@ $ProjectDir = if ($env:CLAUDE_PROJECT_DIR)      { $env:CLAUDE_PROJECT_DIR }
 ## 6.3 Create a .NET Build Hook
 
 Let's create a `postToolUse` hook that automatically verifies the .NET build after Copilot edits a C# file.
+
+> 💡 **PowerShell route.** The `cat > … << 'HOOK'` blocks below are Bash heredocs, so don't paste them into PowerShell. Instead, in VS Code create `scripts/hooks/post-tool-use-dotnet-build.ps1`, paste in only the script from step 2 (the lines between the `cat > …` line and the closing `HOOK` line, not those two lines themselves) and save it. Skip `chmod +x`: Windows has no execute bit. Step 1's `.sh` is optional on this route, because Windows runs the `powershell` entry. §6.4 step 3 has the PowerShell version of the non-matching test.
 
 🖥️ **In your terminal:**
 
@@ -338,6 +356,8 @@ cat .github/hooks/default.json | grep dotnet-build
 Get-Content .github/hooks/default.json | Select-String dotnet-build
 ```
 
+> 💡 **Nothing printed?** That means the step 4 entry isn't saved in `default.json` yet. `grep` exits with status `1` when it finds no match (`Select-String` just prints nothing), so read it as "not found", not as a crash.
+
 > 💡 **Timeout**: Set `timeoutSec` to 30 for build hooks — `dotnet build` can take time. If the hook times out, it won't block Copilot but the result won't be reported.
 
 ## 6.4 Test the Hook
@@ -369,10 +389,20 @@ $evt | pwsh -NoProfile -File scripts/hooks/post-tool-use-dotnet-build.ps1
 
 3. Simulate a **non-matching** event (e.g. `toolName: "Bash"`, or an `.md` edit) and confirm the script exits `0` without running `dotnet build`:
 
+**WSL/Bash:**
 ```bash
 echo '{"toolName":"Bash","toolArgs":{"command":"ls"},"cwd":"."}' \
   | bash scripts/hooks/post-tool-use-dotnet-build.sh && echo "(early-return OK)"
 ```
+
+**PowerShell:**
+```powershell
+$evt = @{ cwd = (Get-Location).Path; toolName = "Bash"; toolArgs = @{ command = "ls" } } | ConvertTo-Json -Compress -Depth 5
+$evt | pwsh -NoProfile -File scripts/hooks/post-tool-use-dotnet-build.ps1
+if ($LASTEXITCODE -eq 0) { Write-Host "(early-return OK)" }
+```
+
+If `(early-return OK)` doesn't appear, the check failed before the script could exit `0`. On the Bash route the usual cause is a missing `jq` (the script prints `ERROR: jq is required for hooks.`); on PowerShell it is usually that `pwsh` (PowerShell 7) isn't installed, as covered in **Before you start**.
 
 4. In a real Copilot session, this hook fires automatically every time Copilot edits a `.cs` file. If the build breaks, Copilot sees the error output and can fix it.
 
@@ -387,23 +417,26 @@ echo '{"toolName":"Bash","toolArgs":{"command":"ls"},"cwd":"."}' \
 
 | Concept | Details |
 |---------|---------|
-| **Config file** | `.github/hooks/default.json` |
+| **Config file** | `.github/hooks/default.json` (project level; hooks also load from policy, user and plugin sources) |
 | **Script location** | `scripts/hooks/` (bash + PowerShell) |
-| **Lifecycle events** | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` |
-| **Blocking** | Pre-hooks block by `exit 0` + stdout JSON `{"permissionDecision":"deny",…}`. Non-zero exits are silently ignored. Post-hooks report only. |
+| **Lifecycle events** | This repo registers `userPromptSubmitted`, `preToolUse`, `postToolUse` and `errorOccurred`. The list is non-exhaustive: see the [event catalogue](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events). |
+| **Blocking** | Pre-hooks block by `exit 0` + stdout JSON `{"permissionDecision":"deny",…}`. Command `preToolUse` hooks are **fail-closed**: a crash or non-zero exit (including `2`) also denies the call, while a timeout is fail-open. Post-hooks run after the tool and cannot stop it. |
 | **IPC** | Event payload arrives as **JSON on stdin**. Only `COPILOT_PROJECT_DIR` and `CLAUDE_PROJECT_DIR` env vars are set; `TOOL_NAME`/`FILE_PATH` are **not** exported. Parse stdin with `jq` (bash) or `ConvertFrom-Json` (PowerShell). |
 
 **Hooks in this repository:**
 
-| Hook | Type | Purpose |
-|------|------|---------|
+| **Hook** | Type | Purpose |
+|:-----|:-----|:--------|
+| user-prompt-submitted | userPromptSubmitted | Log user prompts for an audit trail |
 | secret-scan | preToolUse | Block commits with hardcoded secrets |
 | doc-blocker | preToolUse | Prevent unnecessary documentation files |
 | long-running | preToolUse | Warn about long-running commands |
 | format | postToolUse | Auto-format files after edit |
-| typecheck | postToolUse | TypeScript type check after edit |
 | console-warn | postToolUse | Warn about console.log statements |
+| error-occurred | errorOccurred | Log errors with context for debugging |
 | dotnet-build | postToolUse | Verify .NET build after C# edit (you created this!) |
+
+`scripts/hooks/` also contains `post-tool-use-typecheck` (bash and PowerShell), which ships with the repo but is not registered in `default.json`, so it does not run here, and `pre-commit-strip-notebook-outputs.sh`, a git pre-commit hook rather than a Copilot hook.
 
 **Best practices:**
 - Always provide both bash and PowerShell scripts
@@ -424,6 +457,12 @@ See [`solutions/lab06-hooks/post-tool-use-dotnet-build.sh`](../solutions/lab06-h
 **Next:** [Lab 07 — Multi-Agent Orchestration](lab07.md)
 
 ## 6.6 Cleanup
+
+> 💡 **Reading this checklist after Lab 06.** This lab only writes the hook scripts and the `default.json` entry from §6.3. It creates nothing under `~/.copilot/lessons/`, `node/.a2a/` or `.git/`, it never sets `core.hooksPath`, and it starts no background jobs. So a clean result is mostly empty output:
+> - The `ls … 2>/dev/null` sweep exits non-zero (`2` with Linux and WSL `ls`) when a path doesn't exist. That is expected here. It is Bash syntax, so skip it in PowerShell.
+> - `git config --get core.hooksPath` exits `1` and prints nothing when the setting isn't set. This lab never sets it, so there is nothing to revert.
+> - `git status --short` will list the hook script(s) and the edited `default.json` from §6.3. That is expected: the checklist's last line allows files you intentionally kept.
+> - If a `git` line exits `128`, this shell's `git` can't use the checkout (for example WSL `git` on a folder that Windows `git` created). Run the `git` lines from the shell you cloned in.
 
 <!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
 > 🧹 **Cleanup — leave the machine the way you found it.**

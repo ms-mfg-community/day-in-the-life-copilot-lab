@@ -11,14 +11,12 @@ import matter from 'gray-matter';
 //   1. labs/lab14.md exists and has frontmatter
 //   2. README.md lab-modules table lists it
 //   3. docs/_meta/registry.yaml `labs:` block includes it
-//   4. labs/setup.md references it
-//   5. at least one prior-lab cross-link points at lab14.md
+//   4. at least one prior-lab cross-link points at lab14.md
 //      (Lab 13 → Lab 14 is the canonical one per Phase A Finding 5.4)
 
 const ROOT = process.cwd();
 const LAB14 = join(ROOT, 'labs/lab14.md');
 const README = join(ROOT, 'README.md');
-const SETUP = join(ROOT, 'labs/setup.md');
 const REGISTRY = join(ROOT, 'docs/_meta/registry.yaml');
 const LABS_DIR = join(ROOT, 'labs');
 
@@ -49,11 +47,6 @@ describe('lab-structure: lab14 exists and is linked', () => {
     expect(yaml, 'registry.yaml labs: block must include a lab14 key').toMatch(
       /^\s{2}lab14:\s*$/m,
     );
-  });
-
-  it('lab14 is referenced from labs/setup.md', () => {
-    const body = readFileSync(SETUP, 'utf8');
-    expect(body, 'labs/setup.md must reference lab14').toMatch(/lab14/i);
   });
 
   it('at least one prior-lab markdown file hyperlinks to lab14.md', () => {

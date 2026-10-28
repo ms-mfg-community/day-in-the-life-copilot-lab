@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/workshop/spa/schema/diagrams.schema.json",
+  "title": "Teaching SPA diagrams",
+  "description": "The drawn form of a diagram a slide carries as a block of box-drawing text. A diagram names the segment it belongs to and a `match`, a phrase its text block contains; the shell draws it in place of that block and keeps the block as the text version. A block no diagram matches stays as it is. Labels are short: the slide, not this file, is where a diagram is explained.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["diagrams"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+\\.json$"
+    },
+    "diagrams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagram" }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "diagram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "segment", "match", "title", "nodes", "edges"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "segment": { "description": "The segment whose slide holds the text block.", "$ref": "#/$defs/id" },
+        "match": { "description": "A phrase the text block contains, so that an edited block that no longer says it is left as text.", "type": "string", "minLength": 4 },
+        "title": { "description": "The accessible name of the drawing.", "type": "string", "minLength": 1 },
+        "steps": { "description": "A cycle of steps drawn as a row of chips above the nodes.", "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 1 } },
+        "bands": {
+          "description": "Horizontal bands behind rows of nodes, each with a label.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "rows"],
+            "properties": {
+              "label": { "type": "string", "minLength": 1 },
+              "rows": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } },
+              "tone": { "enum": ["calm", "hot"] }
+            }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "col", "row"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "description": "The lines of the node's text, the first one its name.", "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+              "col": { "type": "integer", "minimum": 0 },
+              "row": { "type": "integer", "minimum": 0 },
+              "kind": { "enum": ["box", "actor", "gate", "model", "note"] },
+              "warn": { "description": "A caveat drawn under the label.", "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "$ref": "#/$defs/id" },
+              "to": { "$ref": "#/$defs/id" },
+              "label": { "type": "string", "minLength": 1 },
+              "dashed": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

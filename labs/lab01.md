@@ -13,11 +13,13 @@ In this lab you will discover and understand the Copilot configuration files tha
 
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 10 minutes
 
+**Prerequisite:** finish [Setup](setup.md) first — `copilot --version` prints a version number, and you are signed in to GitHub Copilot.
+
 References:
 - [Custom agents configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
 - [Custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
-- [Prompt files](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files)
+- [Add skills to Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
 
 ## 1.0a Copilot CLI currency (2026 refresh)
 
@@ -30,8 +32,8 @@ References:
 |------------|-------------------|----------|
 | **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
 | **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
-| **Plan mode vs autopilot mode** | `Shift+Tab` (plan mode) (review each step) vs autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. |
-| **Mid-session model switch** | `/model <tier-or-id>` | Downshift to `models.cheap` in the registry for routine edits; upshift to `models.premium` for deep reasoning. |
+| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode (review each step) vs `/autopilot` to toggle autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. Autopilot is a toggle you switch on — it is not the default. |
+| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto` to let Copilot choose) | Pick an id from the registry's `models.cheap` for routine edits; pick one from `models.premium` for deep reasoning. |
 | **Local tool discovery** | `extensions_manage` MCP tool — operation one of `list` \| `inspect` \| `scaffold` \| `guide` (model-side tool call, **not** a slash command) | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. Ask Copilot e.g. *"run `extensions_manage` with operation `list`"*. |
 
 *Lab 11 builds an enterprise plugin that publishes to a private
@@ -57,18 +59,20 @@ Browse the available plugins and look for ones related to **.NET**, **testing**,
 
 ### Install a plugin
 
-You can install plugins by name from a marketplace or directly from a GitHub repository:
+You can install a plugin by name from a marketplace, or directly from a GitHub repository that contains a plugin:
 
 ```bash
-# Install from a GitHub repo (most reliable method)
+# From a GitHub repo that contains a plugin (generic form)
 copilot plugin install OWNER/REPO
 
-# Concrete worked example used later in Lab 11 — safe to install now:
-copilot plugin install github/awesome-copilot
+# Worked example: the plugin named awesome-copilot, from the built-in awesome-copilot marketplace
+copilot plugin install awesome-copilot@awesome-copilot
 
-# Or install from a marketplace by name
+# Or install any other marketplace plugin by name
 copilot plugin install PLUGIN-NAME@awesome-copilot
 ```
+
+> 💡 **Marketplace, not plugin.** `github/awesome-copilot` is a *marketplace* — a catalog of plugins — so it is not something you install as a whole. The CLI includes that marketplace out of the box (that is why `browse awesome-copilot` works above), and a plugin also named `awesome-copilot` lives inside it. The `plugin@marketplace` form above installs exactly that plugin.
 
 > ⏭️ **Skip this step if** you're on a restricted network, you don't have a
 > GitHub auth token wired up yet, or this is a presenter-led run where the
@@ -88,17 +92,21 @@ You should see your installed plugin listed with its name, version, and source.
 
 ### Use the plugin
 
-Once installed, plugins are available in your Copilot conversations. Invoke them by name:
+Installing a plugin does not create a command named after the plugin. A plugin adds *components* — custom agents, skills, hooks, MCP servers and LSP servers — and you use each one by its own name:
+
+- **Custom agents** — type `/agent` in a session to see the agents available to you and pick one, or start the session with `copilot --agent AGENT-NAME`.
+- **Skills** — type `/skills` to see and manage them. Copilot uses a skill on its own when your request matches the skill's description.
 
 ```bash
-# Interactive: start a session, then reference the plugin
+# Interactive: start a session, then pick the plugin's agent with /agent
 copilot
-> /plugin-name help me with my task
 ```
 
+Inside the session, type `/agent`, choose an agent from the list, then type your request.
+
 ```bash
-# Non-interactive (CI / scripted / headless): same call in one shot
-copilot --prompt "/plugin-name help me with my task" --allow-all-tools
+# Non-interactive (CI / scripted / headless): replace AGENT-NAME with a name from the /agent list
+copilot --agent AGENT-NAME --prompt "help me with my task" --allow-all-tools
 ```
 
 > 💡 **Key insight:** Marketplace plugins give you a head start for common workflows — but they're just the beginning. In Lab 03, you'll learn to **create your own agents** tailored to your team's specific needs. Think of marketplace plugins as patterns you can study and customize.
@@ -117,15 +125,14 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 
 | Directory | What | Count | Lab |
 |-----------|------|-------|-----|
-| `.github/agents/` | Specialized AI personas (`.agent.md`) | 3 (+ more in Lab 03) | Lab 03 |
-| `.github/skills/` | Auto-activating knowledge packs (`SKILL.md`) | 6 | Lab 04 |
-| `.github/prompts/` | Reusable command templates (`.prompt.md`) | 19 | Lab 04 |
+| `.github/agents/` | Specialized AI personas (`.agent.md`) | 4 (+ more in Lab 03) | Lab 03 |
+| `.github/skills/` | Reusable command templates and auto-activating knowledge packs (`SKILL.md`) | 26 | Labs 04, 10, 14 |
 | `.github/instructions/` | Path-specific rules (`.instructions.md`) | 4 | Lab 02 |
 | `.github/copilot-instructions.md` | Repository-wide rules (always loaded) | 1 | Lab 02 |
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
 | `.github/hooks/` | Lifecycle guardrails (`default.json`) | 4 lifecycle hook events (`preToolUse`, `postToolUse`, `userPromptSubmitted`, `errorOccurred`) | Lab 06 |
 | `.copilot/mcp-config.json` | External tool integrations | 4 servers | Lab 05 |
-| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 3 | Labs 08-09 |
+| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 4 | Labs 08-09 |
 
 🖥️ **Quick look — pick any one:**
 
@@ -149,18 +156,20 @@ Get-Content .github/agents/planner.agent.md
 
 ## 1.2 The Instruction Hierarchy
 
-Copilot loads configuration in a specific priority order. Understanding this is the single most important concept:
+Copilot **combines** every instruction source that applies to what you are doing — it does not rank them or pick a winner. What matters is *what loads when*, and understanding that is the single most important concept:
 
-| Priority | Source | When Loaded |
+| Scope | Source | When Loaded |
 |----------|--------|-------------|
-| 1 | `.github/copilot-instructions.md` | **Always** — every interaction |
-| 2 | `AGENTS.md` | **Always** — every interaction |
-| 3 | `.github/instructions/*.instructions.md` | When `applyTo` glob matches files in context |
-| 4 | `.github/skills/*/SKILL.md` | When description matches the conversation topic |
-| 5 | Agent profile (`.agent.md`) | When explicitly invoked with `@agent-name` |
-| 6 | Prompt (`.prompt.md`) | When invoked with `/prompt-name` |
+| Whole repository | `.github/copilot-instructions.md` | **Always** — every interaction |
+| Whole repository | `AGENTS.md` | **Always** — every interaction |
+| Files matching `applyTo` | `.github/instructions/*.instructions.md` | Only when the file's `applyTo` glob matches files in context |
+| Matching topics | `.github/skills/*/SKILL.md` | When description matches the conversation topic |
+| The selected agent | Agent profile (`.agent.md`) | When you select the agent with `/agent` (or start with `copilot --agent NAME`) |
+| The command you run | Command skill (`SKILL.md` with `disable-model-invocation: true`) | Only when you type `/skill-name` — never from topic matching (see Lab 04) |
 
-> 💡 **Key insight:** Instructions cascade and stack. If `copilot-instructions.md` says "use immutable patterns" and `dotnet.instructions.md` says "use async/await", **both** apply when editing `.cs` files.
+In a session, type `/instructions` to see which instruction files Copilot found and to turn them on or off.
+
+> 💡 **Key insight:** Instructions cascade and stack. If `copilot-instructions.md` says "use immutable patterns" and `dotnet.instructions.md` says "use async/await", **both** apply when editing `.cs` files. Copilot does not resolve conflicts between them, so avoid writing instructions that contradict each other.
 
 ## 1.3 How Copilot Finds Your Code
 
@@ -168,8 +177,8 @@ Copilot doesn't just do keyword text search — it uses multiple layers of code 
 
 | Layer | How It Works | Scope |
 |-------|-------------|-------|
-| **Semantic indexing** | Builds a meaning-based index of your codebase. Near-instant (seconds). Understands intent, not just keywords. | Local repo |
-| **LSP integration (GA)** | When a language server is configured (project `.github/lsp.json` or personal `~/.copilot/lsp-config.json`), Copilot CLI automatically prefers it over text search for go-to-definition, find references, hover, rename, workspace symbol search, go-to-implementation, and call hierarchy — no slash command needed. See [Lab 15 — LSP & Code Intelligence](lab15.md). | Local repo |
+| **Semantic indexing** | Builds a meaning-based index of your codebase. Understands intent, not just keywords. | Local repo |
+| **LSP integration** | When a language server is configured (a project `.github/lsp.json` that you add — this repo doesn't ship one — or a personal `~/.copilot/lsp-config.json`), Copilot CLI automatically prefers it over text search for go-to-definition, find references, hover, rename, workspace symbol search, go-to-implementation, and call hierarchy — no slash command needed. See [Lab 15 — LSP & Code Intelligence](lab15.md). | Local repo |
 | **ripgrep + glob** | Fast pattern-based search for exact matches across files — the fallback when no LSP server is configured for a language | Local repo |
 | **GitHub MCP** | Semantic code search across **any GitHub repo** you have access to — remotely. The agent can scan codebases it's never seen locally. | Remote (GitHub) |
 
@@ -180,14 +189,17 @@ Copilot doesn't just do keyword text search — it uses multiple layers of code 
 🖥️ **In your terminal:**
 
 ```bash
-# Interactive: start Copilot CLI, then invoke the planner agent
+# Interactive: start Copilot CLI, then select the planner agent
 copilot
 ```
 
-Then try:
+Inside the session, select the planner with `/agent planner` (or type `/agent` on its own and pick it from the list), then ask:
+
+```text
+How should I add a student search feature to ContosoUniversity?
 ```
-@planner How should I add a student search feature to ContosoUniversity?
-```
+
+> 💡 In the CLI, `@` mentions a *file* (for example `@AGENTS.md`) — it does not select an agent. Pick an agent with `/agent` in a session, or with `--agent` when you start `copilot`.
 
 **Non-interactive equivalent** (handy for CI, smoke checks, or shared
 workstations where you'd rather not leave a TTY session open):
@@ -220,7 +232,7 @@ copilot --agent planner `
 | **Instructions** | `.github/copilot-instructions.md` | Always-on repo-wide rules |
 | **Path Instructions** | `.github/instructions/*.instructions.md` | Rules for specific file types |
 | **AGENTS.md** | `AGENTS.md` (repo root) | Non-obvious project context (keep minimal) |
-| **Prompts** | `.github/prompts/*.prompt.md` | Reusable prompt templates |
+| **Command skills** | `.github/skills/*/SKILL.md` (`disable-model-invocation: true`) | Reusable commands, run as `/name` |
 | **Hooks** | `.github/hooks/default.json` | Lifecycle guardrails |
 | **MCP** | `.copilot/mcp-config.json` | External tool integrations |
 

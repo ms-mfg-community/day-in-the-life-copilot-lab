@@ -7,11 +7,11 @@ parent_lab: lab04.md
 
 # .NET Appendix — Lab 04
 
-This appendix supplies the **.NET-track** content for [Lab 04 — Skills & Prompts](../../lab04.md): the full `dotnet-testing` skill body and the `create-dotnet-test` prompt body. The parent lab covers the conceptual skill/prompt pattern; this file gives you the .NET-flavored payload to paste in.
+This appendix supplies the **.NET-track** content for [Lab 04 — Skills & Prompts](../../lab04.md): the full `dotnet-testing` skill body and the `create-dotnet-test` command-skill body. The parent lab covers the knowledge-skill / command-skill pattern; this file gives you the .NET-flavored payload to paste in.
 
 > Pair with: [`labs/appendices/node/lab04.md`](../node/lab04.md) for the Node-track equivalent.
 
-> ⚠️ **Note (2026-04-24):** Per [docs.github.com](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file), prompt files (`.prompt.md`) are an **IDE-only** Copilot feature; the `@create-dotnet-test` invocation below works in Copilot Chat (VS Code / Visual Studio / JetBrains), not in Copilot CLI. The skill portion of this appendix is unaffected — skills run in CLI as written.
+> ℹ️ `create-dotnet-test` used to be a VS Code prompt file (`.prompt.md`), which only runs in an IDE chat view. It is now a skill with `disable-model-invocation: true`, so `/create-dotnet-test` runs in Copilot CLI as well as in VS Code's Copilot harness.
 
 ## `.github/skills/dotnet-testing/SKILL.md`
 
@@ -91,16 +91,19 @@ Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsSt
 > truth for the full pattern set — keeping the appendix short avoids drift
 > between this file and the production skill.
 
-## `.github/prompts/create-dotnet-test.prompt.md`
+## `.github/skills/create-dotnet-test/SKILL.md`
+
+This command skill **already ships** in the repository; the block below overwrites it with a shorter version. A skill is a directory with a `SKILL.md` inside — never a flat `.md` file under `.github/skills/`.
 
 **WSL/Bash:**
 
 ```bash
-cat > .github/prompts/create-dotnet-test.prompt.md << 'PROMPT'
+mkdir -p .github/skills/create-dotnet-test
+cat > .github/skills/create-dotnet-test/SKILL.md << 'SKILL'
 ---
+name: create-dotnet-test
 description: "Generate xUnit tests for a ContosoUniversity class. Creates unit tests with Moq mocks following MethodName_Condition_ExpectedResult naming."
-mode: "agent"
-tools: ["read", "edit", "execute", "search"]
+disable-model-invocation: true
 ---
 
 # Create .NET Test
@@ -133,7 +136,7 @@ Use `MethodName_Condition_ExpectedResult`:
 1. Build: `dotnet build dotnet/ContosoUniversity.Tests/`
 2. Run: `dotnet test dotnet/ContosoUniversity.Tests/ --filter "{ClassName}"`
 3. Report results
-PROMPT
+SKILL
 ```
 
 ## Try it
@@ -145,7 +148,7 @@ How should I write unit tests for the StudentsController in ContosoUniversity?
 The `dotnet-testing` skill should auto-activate; you should see references to `MethodName_Condition_ExpectedResult` naming, Moq for mocking `IRepository<Student>`, and Arrange-Act-Assert.
 
 ```
-@create-dotnet-test for dotnet/ContosoUniversity.Web/Controllers/CoursesController.cs
+/create-dotnet-test for dotnet/ContosoUniversity.Web/Controllers/CoursesController.cs
 ```
 
-The prompt generates a complete test class for the `CoursesController`.
+The command skill generates a complete test class for the `CoursesController`.
