@@ -46,6 +46,7 @@ A separate, portable gh-aw workflow (`.github/workflows/self-improving-agents.md
 |-------|---------|
 | `agentic-workflows` | GitHub Agentic Workflows (gh-aw) — create, debug and upgrade AI-powered workflows |
 | `code-reviewer` | Code review with high signal-to-noise ratio |
+| `lab-studio-maintainer` | Keeps Lab Studio in sync with lab markdown |
 | `planner` | Feature planning and architecture |
 
 ## MCP Servers
