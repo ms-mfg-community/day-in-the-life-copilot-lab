@@ -7,41 +7,24 @@ const ROOT = process.cwd();
 const LABS_DIR = join(ROOT, 'labs');
 const REGISTRY_PATH = join(ROOT, 'docs', '_meta', 'registry.yaml');
 const README_PATH = join(ROOT, 'README.md');
-const SETUP_PATH = join(ROOT, 'labs', 'setup.md');
 
 /**
  * Allowlist of lab IDs deliberately omitted from a given enumeration source.
  * Each entry MUST include a comment justifying the exemption. Phase A ships
  * with an EMPTY allowlist on purpose — the test is RED at end of Phase A and
  * Phase B closes the gaps. If Phase B decides a particular omission is
- * intentional (e.g., setup.md grouping convention), add an entry here with
- * justification.
+ * intentional (e.g., a lab deliberately absent from the registry), add an
+ * entry here with justification.
  */
-const ALLOWLIST: Record<'registry' | 'readme' | 'setup', Set<string>> = {
+const ALLOWLIST: Record<'registry' | 'readme', Set<string>> = {
   registry: new Set<string>(),
   readme: new Set<string>(),
-  // labs/setup.md is an intentionally-grouped narrative redirect page, not a
-  // per-lab manifest: labs 01-10 are summarised as "the core agentic surface"
-  // and lab11 is named-but-not-hyperlinked per the same grouping convention.
-  // The authoritative per-lab index lives in README.md's Lab Modules table
-  // (already asserted by the README block above). Labs 12-14 ARE individually
-  // linked from setup.md because they are post-core standalones and stay
-  // outside this allowlist so any future regression (e.g., a removed link)
-  // still fails the parity check.
-  setup: new Set<string>([
-    'lab01',
-    'lab02',
-    'lab03',
-    'lab04',
-    'lab05',
-    'lab06',
-    'lab07',
-    'lab08',
-    'lab09',
-    'lab10',
-    'lab11',
-  ]),
 };
+
+// labs/setup.md is deliberately NOT an enumeration source: it is a grouped
+// narrative, not a manifest (docs/archive/phase-A-findings.md:136;
+// specs/labs/setup.md AC4 forbids it from enumerating the lab catalogue).
+// README.md's Lab Modules table is the single authoritative per-lab index.
 
 function listLabIds(): string[] {
   if (!existsSync(LABS_DIR)) return [];
@@ -93,16 +76,6 @@ describe('meta: enumeration parity (every lab listed in every canonical enumerat
       expect(
         fileMentionsLab(README_PATH, labId),
         `${labId} is missing from README.md`,
-      ).toBe(true);
-    });
-  });
-
-  describe('labs/setup.md catalogue', () => {
-    it.each(labs)('%s is referenced in labs/setup.md', (labId) => {
-      if (ALLOWLIST.setup.has(labId)) return;
-      expect(
-        fileMentionsLab(SETUP_PATH, labId),
-        `${labId} is missing from labs/setup.md`,
       ).toBe(true);
     });
   });

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import yaml from 'js-yaml';
+import { splitFrontMatter } from '../helpers/platform';
 
 /**
  * Phase 3a — Speaker-script outcome tests.
@@ -112,12 +113,11 @@ const REQUIRED_SECTIONS = [
 ];
 
 function parseFrontMatterMinutes(slideFile: string): number {
-  const raw = readFileSync(slideFile, 'utf8');
-  if (!raw.startsWith('---\n')) {
+  const parsed = splitFrontMatter(readFileSync(slideFile, 'utf8'));
+  if (parsed === null) {
     throw new Error(`no front-matter: ${slideFile}`);
   }
-  const end = raw.indexOf('\n---\n', 4);
-  const fm = yaml.load(raw.slice(4, end)) as { minutes?: number };
+  const fm = yaml.load(parsed.yaml) as { minutes?: number };
   if (typeof fm.minutes !== 'number') {
     throw new Error(`missing minutes: ${slideFile}`);
   }

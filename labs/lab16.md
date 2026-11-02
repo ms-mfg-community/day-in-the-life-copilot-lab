@@ -32,11 +32,6 @@ References:
 - [Lab 11 — Building & Distributing a Copilot Plugin](lab11.md)
 - [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) `enterprise_managed_settings:` block
 
-## 16.0 Copilot CLI currency (2026 refresh)
-
-> 💡 Commands are current as of this refresh; versions, model tiers, and MCP
-> pins live in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml).
-
 ## 16.1 The `managed-settings.json` Mechanism
 
 Confirmed from GitHub's own changelog (fetched directly, 2026-07-01 GA
@@ -148,9 +143,10 @@ version-controlled key list. Save it as `copilot/managed-settings.json`:
 This repo doesn't have live enterprise admin access to demonstrate against
 a real GitHub Enterprise Cloud tenant, so model the same decision logic
 using the `plugin-template/scripts/policy.mjs` evaluator from Lab 11 —
-treat `strictKnownMarketplaces: true` as equivalent to
-`default_action: deny` plus an allowlist of exactly the marketplaces named
-in `extraKnownMarketplaces`:
+treat a **populated `strictKnownMarketplaces` array** as equivalent to
+`default_action: deny` plus an allowlist of exactly the marketplaces
+listed in that array (in the §16.1 example, the same marketplace that
+`extraKnownMarketplaces` registers):
 
 ```sh
 node -e 'import("./plugin-template/scripts/policy.mjs").then(m => {

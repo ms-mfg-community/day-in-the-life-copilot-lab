@@ -66,3 +66,4 @@ docs/setup-dryrun-report.md
 .lab-state/
 .lab-hydrate-*/
 packaging/core/out/
+workshop/spa/dist/

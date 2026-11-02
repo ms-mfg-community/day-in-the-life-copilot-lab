@@ -165,7 +165,7 @@ Project MCP config wins over user MCP config for the same server name. This lets
 
 ## 4. Hooks
 
-> ⚠️ **`preToolUse` only acts on `deny`. Outputs of `allow` and `ask` are accepted but ignored by the current CLI.** Do not design hook logic whose correctness depends on `allow` or `ask` being honored — write your rules as "deny everything that is not explicitly permitted" and let absence-of-deny be the allow. This is the single most frequently misunderstood hook semantic.
+> ⚠️ **`preToolUse` accepts `allow`, `deny`, and `ask` as `permissionDecision` values.** The [hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#pretooluse-decision-control) documents all three as controlling whether the tool runs, and empty output uses default behavior (the normal permission flow). `ask` needs a person to answer, so it is treated as `deny` under the cloud agent and in Copilot CLI autopilot mode. The example hooks in this repo emit **only** `deny`: that is a deliberate default-deny, blast-radius design choice (a hook that only denies can only narrow what a session may do), not a runtime limitation. Whatever such a hook does not deny goes through the normal permission flow.
 
 Hooks apply to both the Copilot cloud agent and Copilot CLI. Locations:
 
@@ -198,29 +198,31 @@ Hooks apply to both the Copilot cloud agent and Copilot CLI. Locations:
 
 | Field | Type | Required | Behavior | Cite |
 |---|---|---|---|---|
-| `type` | string | Yes | Must be `"command"`. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
-| `bash` | string | Yes on Unix | Path to a script, or an inline bash command. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
-| `powershell` | string | Yes on Windows | Path to a script, or an inline PowerShell command. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
-| `cwd` | string | No | Working directory, relative to repo root. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
-| `env` | object | No | Extra env vars merged with the process env. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
-| `timeoutSec` | integer | No | Defaults to 30. | [hooks-configuration](https://docs.github.com/en/copilot/reference/hooks-configuration) |
+| `type` | string | Yes | Must be `"command"`. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| `bash` | string | Yes on Unix | Path to a script, or an inline bash command. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| `powershell` | string | Yes on Windows | Path to a script, or an inline PowerShell command. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| `cwd` | string | No | Working directory, relative to repo root. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| `env` | object | No | Extra env vars merged with the process env. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| `timeoutSec` | integer | No | Defaults to 30. | [hooks-reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
 
 ### 4.3 Event catalogue
 
 | Event | Fires when | Input JSON payload | Output honored? |
 |---|---|---|---|
-| `sessionStart` | A new session begins or a saved session resumes. | `timestamp`, `cwd`, `source` (`new` / `resume` / `startup`), `initialPrompt` | No |
+| `sessionStart` | A new session begins or a saved session resumes. | `timestamp`, `cwd`, `source` (`new` / `resume` / `startup`), `initialPrompt` | Yes — can inject `additionalContext` into the session |
 | `sessionEnd` | Session terminates. | `timestamp`, `cwd`, `reason` (`complete` / `error` / `abort` / `timeout` / `user_exit`) | No |
 | `userPromptSubmitted` | Each prompt the user submits. | `timestamp`, `cwd`, `prompt` | No (prompt mutation is not supported) |
-| `preToolUse` | Before any tool call is executed. | `timestamp`, `cwd`, `toolName`, `toolArgs` (JSON string) | **Partial.** Emit `{"permissionDecision":"deny","permissionDecisionReason":"…"}` to block the call. **Only `deny` is currently acted on; `allow` / `ask` outputs are accepted but ignored.** |
-| `postToolUse` | After a tool call finishes. | Documented on the hooks-configuration reference page. | No |
-| `agentStop` | Main agent finishes responding. | — | No |
-| `subagentStop` | A subagent finishes. | — | No |
+| `preToolUse` | Before any tool call is executed. | `timestamp`, `cwd`, `toolName`, `toolArgs` (JSON string) | **Yes.** Emit `{"permissionDecision":"deny","permissionDecisionReason":"…"}` to block the call. `permissionDecision` also accepts `allow` and `ask`; empty output uses default behavior (the normal permission flow), and `ask` is treated as `deny` under the cloud agent and in CLI autopilot mode. |
+| `postToolUse` | After a tool call finishes. | See the [hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-event-input-payloads). | Yes — can modify the tool result or inject additional context for the model |
+| `agentStop` | Main agent finishes responding. | — | Yes — can block and force continuation |
+| `subagentStop` | A subagent finishes. | — | Yes — can block and force continuation |
 | `errorOccurred` | An error occurs during agent execution. | — | No |
 
-> ⚠️ **Design implication.** Because `preToolUse` is effectively deny-only, write hooks so that any non-denied tool call is allowed by default. "Approve-list" hooks that emit `allow` for permitted tools and expect everything else to be blocked will silently permit everything — the `allow` is a no-op, and there is no deny.
+This table is not exhaustive. The hooks reference also documents `permissionRequest` (Copilot CLI only), `postToolUseFailure`, `subagentStart`, `userPromptTransformed`, `notification`, and `preCompact`; see [Hook events](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events).
 
-**Sources:** https://docs.github.com/en/copilot/reference/hooks-configuration, https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-hooks
+> ⚠️ **Design implication.** An "approve-list" hook that emits `allow` for permitted tools and says nothing about the rest does not block the rest: empty output follows the normal permission flow, so an unlisted call gets a prompt, or runs unattended under `--allow-all-tools`. To block everything that is not explicitly permitted, emit `deny` for it (default-deny). Doing that with `deny` alone is a design choice — a hook that only denies can only narrow what a session may do — not a limitation of the runtime.
+
+**Sources:** https://docs.github.com/en/copilot/reference/hooks-reference, https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-hooks
 
 ---
 
@@ -303,7 +305,7 @@ Every tool call in Copilot CLI passes through **two independent allow-lists**. B
 - **Layer 1 — MCP config `tools` (server-side exposure):** what the MCP server even exposes to the CLI client. Declared per-server in `mcp-config.json` / `.mcp.json`. If a tool is not in this list, the client never sees it.
 - **Layer 2 — Agent/skill `tools` / `allowed-tools` (client-side allow-list):** what *this particular agent or skill* is allowed to invoke out of what layer 1 exposed. Declared in the agent frontmatter or the skill frontmatter.
 
-**Two layers of `deny`, no implicit allow.** A tool call succeeds only if it is *exposed by layer 1* **and** *permitted by layer 2*. Removing a tool from either layer blocks the call. This is the deterministic-control story: scope at the MCP config for coarse, repo-wide boundaries; scope at the agent/skill frontmatter for fine, per-role boundaries; layer a deny-only `preToolUse` hook (§4) on top for defense-in-depth.
+**Two layers of `deny`, no implicit allow.** A tool call succeeds only if it is *exposed by layer 1* **and** *permitted by layer 2*. Removing a tool from either layer blocks the call. This is the deterministic-control story: scope at the MCP config for coarse, repo-wide boundaries; scope at the agent/skill frontmatter for fine, per-role boundaries; layer a default-deny `preToolUse` hook (§4) on top of both layers for additional defense-in-depth.
 
 Source attribution:
 
@@ -325,6 +327,6 @@ Source attribution:
 | 7 | `infer:` is the current way to control auto-delegation | ❌ Retired. Use `disable-model-invocation` + `user-invocable`. | §2.1 |
 | 8 | `~/.copilot/config.json` is the CLI settings file | ⚠️ Renamed to `settings.json`; legacy file auto-migrated. | §4 |
 | 9 | MCP `type: sse` is current | ⚠️ Deprecated in the MCP spec; prefer `http`. | §3.2 |
-| 10 | `preToolUse` hooks support `allow` / `deny` / `ask` | ⚠️ Only `deny` is acted on; `allow` / `ask` are accepted but ignored. | §4 |
+| 10 | `preToolUse` hooks support `allow` / `deny` / `ask` | ⚠️ Accurate, with caveats: all three are documented `permissionDecision` values, but `ask` is treated as `deny` under the cloud agent and in CLI autopilot mode, and empty output follows the normal permission flow. This repo's hooks emit only `deny` by design (a default-deny blast-radius choice), not because `allow` / `ask` are unsupported. | §4 |
 
-**Sources:** https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference, https://docs.github.com/en/copilot/reference/customization-cheat-sheet
+**Sources:** https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference, https://docs.github.com/en/copilot/reference/customization-cheat-sheet, https://docs.github.com/en/copilot/reference/hooks-reference

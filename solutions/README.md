@@ -10,7 +10,7 @@ This directory contains reference implementations for each lab exercise.
 |-----|----------|-------------|
 | Lab 02 | `lab02-instructions/` | Razor view custom instruction |
 | Lab 03 | `lab03-dotnet-dev-agent/` | Custom .NET development agent |
-| Lab 04 | `lab04-skill-and-prompt/` | .NET testing skill and prompt |
+| Lab 04 | `lab04-skill-and-prompt/` | .NET testing skill and the `/create-dotnet-test` command skill |
 | Lab 05 | `lab05-mcp-config/` | MCP server configuration with fetch server |
 | Lab 06 | `lab06-hooks/` | .NET build verification hook |
 | Lab 07 | `lab07-orchestrator/` | Multi-agent orchestrator |

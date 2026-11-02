@@ -93,8 +93,8 @@ Concrete, checkable signals (not vibes):
   longer exists, a broken internal link inside an agent/skill/prompt file.
 - **Do NOT rewrite an agent's core instructions, tone, or scope** — that is
   a design decision for a human, not something this workflow should do
-  unattended. If an agent looks meaningfully wrong (not just stale), open an
-  **issue** describing the problem instead of editing the file.
+  unattended. If an agent looks meaningfully wrong (not just stale), flag it
+  in the report for human review instead of editing the file.
 - **Do NOT delete an agent/skill/prompt**, even if it looks unused — flag it
   in the report for human review instead. Removal is a one-way decision this
   workflow must not make alone.
@@ -106,8 +106,8 @@ Generate a report (attach in the PR body, and optionally as
 convention) with:
 
 - `## Summary` — counts: agents/skills/prompts scanned, drift signals found
-  per category above, mechanical fixes applied, issues opened for
-  non-mechanical concerns.
+  per category above, mechanical fixes applied, non-mechanical concerns
+  flagged for human review.
 - `## Findings` — one subsection per drift-signal category, listing the
   specific file and what was found.
 - `## Consolidation Candidates` — duplicated-responsibility pairs, named but
