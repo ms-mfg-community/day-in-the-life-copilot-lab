@@ -1,3 +1,4 @@
+import { isAbsolute } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   fileExists,
@@ -80,7 +81,7 @@ describe("readMcpConfig", () => {
     );
     const servers = readMcpConfig() as Record<string, { args: string[] }>;
     const arg = servers["lab-docs"]?.args[0] ?? "";
-    expect(arg.startsWith("/")).toBe(true);
+    expect(isAbsolute(arg)).toBe(true);
     expect(arg).toContain("lab-docs.mjs");
   });
 

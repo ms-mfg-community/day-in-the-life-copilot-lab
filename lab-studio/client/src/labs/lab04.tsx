@@ -40,11 +40,13 @@ it("getStudent.withUnknownId.returns404", async () => { … });
 - IDs that are zero, negative, or non-integer
 `;
 
-const EXAMPLE_PROMPT_FILE = `---
-description: "Generate a Vitest test file for a ContosoUniversity module"
-mode: "agent"
-tools: ["read", "edit", "search"]
+const EXAMPLE_COMMAND_SKILL = `---
+name: create-contoso-test
+description: "Generate a Vitest test file for a ContosoUniversity module, following the contoso-testing naming convention and edge-case checklist."
+disable-model-invocation: true
 ---
+
+# Create Contoso Test
 
 Generate a complete Vitest test file for the module the user names. Follow the contoso-testing
 skill's naming convention and edge-case checklist. Place it under tests/.
@@ -55,7 +57,7 @@ export const lab04: Lab = {
   number: "04",
   title: "Skills & Prompts",
   tagline:
-    "Write an auto-activating knowledge pack, watch Copilot pick it up on its own, and learn where prompt files fit.",
+    "Write an auto-activating knowledge pack, watch Copilot pick it up on its own, and learn when a skill should be a /name command instead.",
   steps: [
     {
       key: "lab04/anatomy",
@@ -144,58 +146,75 @@ export const lab04: Lab = {
     },
     {
       key: "lab04/prompts",
-      title: "Prompts vs skills",
+      title: "Knowledge skills vs command skills",
       kind: "read",
       body: (
         <>
           <p>
-            Prompt files (<code>.prompt.md</code>) are the other reusable
-            template. The difference that trips everyone up:{" "}
-            <strong>prompt files are IDE-only.</strong> They run in Copilot Chat
-            in VS Code, Visual Studio, or JetBrains IDEs — typed as{" "}
-            <code>/prompt-name</code> — and have no CLI equivalent. A prompt
-            file for this track would look like:
+            A skill can also be a reusable <strong>command</strong>: one you
+            run yourself as <code>/name</code>, and that Copilot never loads on
+            its own. Same folder layout, one extra frontmatter key —{" "}
+            <code>disable-model-invocation: true</code>. This is also what
+            replaced IDE-only prompt files (<code>.prompt.md</code>): as skills
+            in <code>.github/skills/</code>, commands run in Copilot CLI, VS
+            Code's Copilot harness and the coding agent. A test-generator
+            command for this track would look like:
           </p>
-          <Snippet title=".github/prompts/create-contoso-test.prompt.md — runs in IDE chat only">
-            {EXAMPLE_PROMPT_FILE}
+          <Snippet title=".github/skills/create-contoso-test/SKILL.md — a command skill">
+            {EXAMPLE_COMMAND_SKILL}
           </Snippet>
           <table>
             <thead>
               <tr>
                 <th></th>
-                <th>Skills</th>
-                <th>Prompts</th>
+                <th>Knowledge skill</th>
+                <th>Command skill</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Carry</td>
-                <td>Knowledge — patterns, conventions</td>
-                <td>Actions — generate, run, review</td>
+                <td>Carries</td>
+                <td>Knowledge — patterns, conventions, gotchas</td>
+                <td>A fixed workflow — generate, run, commit, hand off</td>
               </tr>
               <tr>
-                <td>Invoked</td>
+                <td>Runs</td>
                 <td>
-                  Automatically by description match, or{" "}
-                  <code>/skill-name</code> in a prompt
+                  When your prompt matches its <code>description</code>, or you
+                  name it
                 </td>
                 <td>
-                  Always by you, as <code>/prompt-name</code>
+                  Only when you type <code>/name</code> — never from topic
+                  matching
                 </td>
               </tr>
               <tr>
-                <td>Works in</td>
-                <td>CLI and IDE agent mode</td>
-                <td>IDE chat only</td>
+                <td>Frontmatter</td>
+                <td>
+                  <code>name</code>, <code>description</code>
+                </td>
+                <td>
+                  …plus <code>disable-model-invocation: true</code>
+                </td>
               </tr>
             </tbody>
           </table>
+          <Note>
+            <strong>Which kind should you write?</strong> Leave the flag off when
+            being picked up unprompted is the point (like{" "}
+            <code>contoso-testing</code>). Set it when the skill has side
+            effects or a cost — writes files, runs tests, commits — or is a
+            fixed step-by-step workflow. When in doubt, make it a command: you
+            can always type the name, but you can't un-run a skill the model
+            chose for you.
+          </Note>
           <Note tone="sim">
-            Lab Studio's bench is a CLI session, so there is nothing live to run
-            here — exactly the lesson. In the full workshop you'd open the repo
-            in VS Code and type{" "}
-            <code>/create-contoso-test for src/repos/course-repo.ts</code> in
-            Copilot Chat.
+            Lab Studio's bench terminal doesn't route <code>/name</code> to
+            skills, so this step is read-only here (later labs translate a
+            command skill into "follow <code>.github/skills/…/SKILL.md</code>").
+            In the full workshop you'd type{" "}
+            <code>/create-contoso-test for src/repos/course-repo.ts</code> in a
+            Copilot CLI session.
           </Note>
         </>
       ),
