@@ -23,7 +23,32 @@ Reach for the wrong surface and you pay twice — in tokens on every turn *and* 
 - **Skills** (`.github/skills/<name>/SKILL.md`) — knowledge packs that **auto-activate** by description match; you do not invoke them.
 - **Prompts** (`.github/prompts/*.prompt.md`) — user-invoked slash commands; deterministic playbooks the human triggers.
 - **Hooks** (`.github/hooks/default.json`) — lifecycle scripts: `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `stop`, `notification`. Run every time.
-- **Memory** — three Karpathy layers, covered in `labs/lab10.md`: **Layer 1 Raw sources** (`plan.md`, SQL todos, `~/.copilot/session-state/`), **Layer 2 The Wiki** (`.copilot/lessons/` + `~/.copilot/lessons/`, promoted via `/consolidate-lessons`), **Layer 3 The Schema** (`AGENTS.md`, `.github/instructions/*.md`, agent personalities). Promotion goes Raw → Wiki → Schema.
+- **Memory** — three layers, covered in `labs/lab10.md`: **Layer 1 Raw sources** (`plan.md`, SQL todos, `~/.copilot/session-state/`), **Layer 2 Recall** (GitHub Copilot Memory, the `.copilot/lessons/` wiki, or a custom memory service), **Layer 3 The Schema** (`AGENTS.md`, `.github/instructions/*.md`, agent personalities). Promotion goes Raw → Recall → Schema.
+
+---
+
+## Memory — three layers, three ways to recall
+
+Memory is not one feature. `labs/lab10.md` lays it out as three layers, and Layer 2 comes in three flavours.
+
+```text
+Layer 1  Raw sources   plan.md · SQL todos · ~/.copilot/session-state/
+            │  promote what proves durable
+            ▼
+Layer 2  Recall        native   GitHub Copilot Memory
+         (advisory)             repository-level facts · user-level preferences
+                                Copilot Dreaming curates (preview, AI credits)
+                       DIY      .copilot/lessons/ wiki · /consolidate-lessons
+                       custom   your own service, e.g. SCNS (alpha)
+            │  promote what must hold every time
+            ▼
+Layer 3  Schema        AGENTS.md · .github/instructions/*.md   (binding)
+```
+
+- **Native** — no setup. Copilot also stores memories on its own; delete them in settings. "Forget" only downvotes.
+- **DIY** — memory you can `cat`, diff and revert, in git.
+- **Custom** — for semantic retrieval, your own retention, or many agents and repos, if you will run it.
+- Every flavour is **advisory**. A rule that must hold every time belongs in Layer 3.
 
 ---
 
@@ -34,7 +59,7 @@ Reach for the wrong surface and you pay twice — in tokens on every turn *and* 
 - **Domain knowledge the model should load on its own when a topic comes up?** → Skill. Its `description` is the activation key.
 - **Playbook the *human* wants to invoke with a slash?** → Prompt file.
 - **Cross-cutting side effect or guardrail (audit log, format check, build verification)?** → Hook.
-- **Cross-turn state (decisions, entities, follow-ups)?** → Memory — pick one of the three Karpathy layers from `labs/lab10.md` (Raw sources / Wiki / Schema). Don't spread state across more than one layer; promote Raw → Wiki → Schema instead.
+- **Cross-turn state (decisions, entities, follow-ups)?** → Memory. Pick a layer from `labs/lab10.md`; for Layer 2, pick a flavour with `docs/memory-decision-tree.md`. Don't keep the same fact in two layers; promote Raw → Recall → Schema instead.
 
 ---
 
@@ -81,7 +106,7 @@ Disable a misbehaving surface fast: `copilot --no-custom-instructions` or `/inst
 
 ## Live demo — build one coherent profile
 
-Anchor labs: `labs/lab01.md` (topology), `labs/lab02.md` (AGENTS.md), `labs/lab03.md` (custom agents), `labs/lab04.md` (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md` (agent memory: Raw sources → Wiki → Schema).
+Anchor labs: `labs/lab01.md` (topology), `labs/lab02.md` (AGENTS.md), `labs/lab03.md` (custom agents), `labs/lab04.md` (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md` (agent memory: Raw sources → Recall → Schema).
 
 ```bash
 # See what's loaded right now.
@@ -104,7 +129,7 @@ copilot --agent code-reviewer --no-custom-instructions -p "review the last commi
 - **Skill description too broad** — "general coding help" activates constantly. Narrow the description or it will double-load on every turn.
 - **Hook doing real work** — hooks should be observability and guardrails, not business logic. They block the turn and have `timeoutSec` budgets.
 - **Prompt that should be a skill** — if the model should load it *automatically* when a topic comes up, it's a skill. Prompts are for humans.
-- **Memory layer sprawl** — pick one of the three Karpathy layers from `labs/lab10.md` per kind of state (Raw sources, Wiki, or Schema). Do not duplicate; promote Raw → Wiki → Schema via `/consolidate-lessons`.
+- **Memory layer sprawl** — keep each kind of state in one layer from `labs/lab10.md` (Raw sources, Recall, or Schema), and each fact in one Layer 2 flavour. Don't store the same rule in Copilot Memory *and* the wiki *and* AGENTS.md; promote it upward instead.
 
 ---
 
