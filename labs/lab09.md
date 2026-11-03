@@ -443,7 +443,7 @@ The file above is the working version — it's the one wired into `.github/workf
 > applied to **every layer of a stacked pull request chain**, so each small
 > layer gets reviewed before the next one is built on top of it.
 
-**Next:** [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md)
+**Next:** [Lab 10 — Agent Memory: Copilot Memory, Lessons, and Custom Memory Services](lab10.md)
 
 ## 9.12 Cleanup
 

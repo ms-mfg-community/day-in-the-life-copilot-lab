@@ -115,7 +115,7 @@ References:
 - [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md) — the judging rubric the orchestrator pane uses
 - [`scripts/orchestrator/`](../scripts/orchestrator/) — `tmux-start.sh`, `handoff.sh`, `clear-context.sh`
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the in-process orchestrator → dev → QA flow this lab generalises across panes
-- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + consolidation primitives the orchestrator pane relies on
+- [Lab 10 — Agent Memory: Copilot Memory, Lessons, and Custom Memory Services](lab10.md) — the wiki + consolidation primitives the orchestrator pane relies on
 
 ---
 

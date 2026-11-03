@@ -148,5 +148,5 @@ Do not commit on the user's behalf unless explicitly asked.
 This prompt is **command-only** by design. If you want consolidation
 on autopilot, add a cron/launchd/Task Scheduler entry that invokes
 `copilot /consolidate-lessons` on a cadence that matches how quickly
-your wiki grows (weekly is a reasonable default). Lab 10 §10.4 shows
+your wiki grows (weekly is a reasonable default). Lab 10 §10.5 shows
 a one-line cron example; no cron is shipped in this repo.

@@ -6,11 +6,12 @@ Date: 2026-04-24T16:30:00Z
 
 ### Context
 
-Finished the exercises in all 10 labs of the workshop; Lab 10's §10.6
+Finished the exercises in all 10 labs of the workshop; Lab 10's §10.8
 cleanup is still to do. Lab 10 wrapped the **three-layer
-agent memory** model: raw sources (Layer 1) → the wiki in
-`.copilot/lessons/` (Layer 2) → the schema in `AGENTS.md` and
-`.github/instructions/` (Layer 3). Memory is plain markdown the agent
+agent memory** model: raw sources (Layer 1) → recall (Layer 2: Copilot
+Memory, the wiki in `.copilot/lessons/`, or a custom service such as
+SCNS) → the schema in `AGENTS.md` and `.github/instructions/` (Layer 3).
+This repo's recall layer is the wiki: plain markdown the agent
 maintains itself — diffable, revertable, and committed alongside the
 code.
 
@@ -26,11 +27,11 @@ code.
 - [x] Lab 07 — Orchestrated a multi-agent development pipeline
 - [x] Lab 08 — Automated PRD generation with GitHub Agentic Workflows
 - [x] Lab 09 — Used Copilot Code Review for AI-powered pull request reviews
-- [x] Lab 10 §10.0–§10.5 — Three-layer agent memory: raw sources, the wiki, the schema, and the `consolidate-lessons` prompt file
+- [x] Lab 10 §10.0–§10.7 — Three-layer agent memory: raw sources, recall (Copilot Memory, the wiki, a custom service), the schema, and the `consolidate-lessons` prompt file
 
 **🚧 In Progress:**
-- [ ] Lab 10 §10.6 cleanup — revert the files the lab changed and remove any
-      lab-created global wiki (not started)
+- [ ] Lab 10 §10.8 cleanup — revert the files the lab changed, remove any
+      lab-created global wiki, and delete the lab's Copilot memories in settings (not started)
 
 **⏸️ Not Started:**
 - [ ] Seed `.copilot/lessons/` in your own repo with one real lesson
@@ -39,11 +40,11 @@ code.
 ### Current Position
 
 **Where We Stopped:**
-- Finished the §10.5 wrap-up: printed the three-layer loop diagram and
-  saved this handoff. The §10.6 cleanup has not been done.
+- Finished the §10.7 wrap-up: printed the three-layer loop diagram and
+  saved this handoff. The §10.8 cleanup has not been done.
 
 **Why We Stopped:**
-- Lab 10 exercises finished; the §10.6 cleanup is still to do.
+- Lab 10 exercises finished; the §10.8 cleanup is still to do.
 
 ### Key Discoveries
 
@@ -73,18 +74,19 @@ It stays on disk where you saved it until you delete it.
 - `.github/skills/dotnet-testing/SKILL.md` — Testing skill (Lab 04)
 - `.github/prompts/create-dotnet-test.prompt.md` — Test prompt (Lab 04)
 - `.copilot/mcp-config.json` — MCP server configuration (Lab 05)
-- `.copilot/lessons/log.md` — Appended a lesson during Lab 10 §10.2a
+- `.copilot/lessons/log.md` — Appended a lesson during Lab 10 §10.3a
 - `scripts/hooks/post-tool-use-dotnet-build.sh` — Build hook (Lab 06)
 - `.github/agents/lab-orchestrator.agent.md` — Orchestrator agent (Lab 07)
 
 ### Next Steps
 
-1. **Immediate:** Do the Lab 10 §10.6 cleanup. Revert
+1. **Immediate:** Do the Lab 10 §10.8 cleanup. Revert
    `.github/instructions/dotnet.instructions.md` and `.copilot/lessons/`
    with `git restore --source=HEAD --staged --worktree`, delete the new
    files the scaffold created by name, remove the global wiki only if the
-   §10.2c extension created it, and confirm `git status --short` shows
-   nothing you did not mean to keep.
+   §10.3c extension created it, delete the user preference and repository
+   fact you stored in §10.2 from your GitHub settings, and confirm
+   `git status --short` shows nothing you did not mean to keep.
 2. **Then:** Skim `.copilot/lessons/index.md` and pick one project
    lesson worth promoting — ask the agent to follow
    `.github/skills/consolidate-lessons/SKILL.md` with `--dry-run --scope both`.
@@ -124,12 +126,13 @@ dotnet build dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj
 ### Quick Context
 Finished the exercises in all 10 labs covering the full local Copilot CLI
 surface: agents, skills, prompts, hooks, MCP, orchestration, gh-aw, code
-review, and three-layer agent memory in plain markdown. The Lab 10 §10.6
+review, and three-layer agent memory. The Lab 10 §10.8
 cleanup is still to do.
 
 ### Immediate Next Step
-1. Do the Lab 10 §10.6 cleanup: revert the files the lab changed, remove any
-   lab-created global wiki, and confirm `git status --short` is clean.
+1. Do the Lab 10 §10.8 cleanup: revert the files the lab changed, remove any
+   lab-created global wiki, delete the lab's Copilot memories in settings,
+   and confirm `git status --short` is clean.
 2. Then apply learned patterns to a real project — start by creating an
    AGENTS.md, a copilot-instructions.md, and a `.copilot/lessons/`
    wiki seeded with one real lesson.
@@ -140,8 +143,8 @@ Before doing anything, ask the agent to read:
 - `~/.copilot/lessons/index.md` (global catalog, if present)
 - the most recent entries in `.copilot/lessons/log.md`
 
-That's how this repo persists context across sessions — no server,
-no graph, just markdown the agent wrote to itself last time.
+That's this repo's do-it-yourself recall layer — no server, no graph,
+just markdown the agent wrote to itself last time.
 
 ### Recommended Agents
 - dotnet-dev.agent.md — for .NET development
