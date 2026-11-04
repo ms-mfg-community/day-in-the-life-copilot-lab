@@ -60,7 +60,7 @@ References:
 - [`.github/agents/code-reviewer.agent.md`](../.github/agents/code-reviewer.agent.md)
 - [`.copilot/lessons/`](../.copilot/lessons/) — markdown wiki agents use to preserve decisions across phase boundaries (cited in §13.5)
 - [Lab 07 — Multi-Agent Orchestration](lab07.md) — the orchestrator → dev → QA → review flow you'll extend here
-- [Lab 10 — Agent Memory: Personalities, Lessons, and Consolidation](lab10.md) — the wiki + schema primitives Lab 13 builds on
+- [Lab 10 — Agent Memory: Copilot Memory, Lessons, and Custom Memory Services](lab10.md) — the wiki + schema primitives Lab 13 builds on
 - [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) — CLI version floor for the live ACP path
 
 ---

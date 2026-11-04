@@ -55,7 +55,7 @@ consolidation command periodically:
 The prompt lives at
 [`.github/skills/consolidate-lessons/SKILL.md`](../../.github/skills/consolidate-lessons/SKILL.md).
 It merges duplicates, promotes project→global, and flags contradictions
-for human review. Lab 10 §10.4 walks through a live consolidation.
+for human review. Lab 10 §10.5 walks through a live consolidation.
 
 ## When **not** to use this
 

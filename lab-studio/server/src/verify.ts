@@ -505,7 +505,7 @@ const advancedChecks: Record<string, Check> = {
   "lab10/layer1": () => {
     const hit = bridge.promptHistory.find((p) => /todo/i.test(p.prompt));
     if (!hit) return fail("Try the Layer 1 surfaces: send the todos prompt and watch the session SQL store at work.");
-    return pass("Layer 1 exercised — plan and todos live one task, in the session's own state, not in the wiki.");
+    return pass("Layer 1 exercised — plan and todos live one task, in the session's own state, not in Layer 2 recall.");
   },
   "lab10/wiki": () => {
     if (!fileExists(".copilot/lessons/log.md")) return fail("`.copilot/lessons/log.md` is missing.");
@@ -516,7 +516,7 @@ const advancedChecks: Record<string, Check> = {
     if (!bridge.promptHistory.some((p) => /\.copilot\/lessons/.test(p.prompt) && /check|learned|what/i.test(p.prompt))) {
       return fail("The lesson landed — now prove recall: restart the session (/new) and ask the recall question from the card.");
     }
-    return pass("A fresh session read a lesson an earlier session wrote — markdown memory, no server.");
+    return pass("A fresh session read a lesson an earlier session wrote — the DIY flavour of recall: markdown in git, no server.");
   },
   "lab10/schema": () => {
     if (!fileExists(".github/instructions/repos.instructions.md")) {

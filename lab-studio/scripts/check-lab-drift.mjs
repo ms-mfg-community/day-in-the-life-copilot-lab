@@ -20,7 +20,10 @@ const manifestPath = join(studioRoot, "lab-sources.json");
 const LABS = Array.from({ length: 20 }, (_, i) => String(i + 1).padStart(2, "0"));
 
 function sha256(path) {
-  return createHash("sha256").update(readFileSync(path)).digest("hex").slice(0, 16);
+  // Hash with LF line endings so the baseline is identical on Windows
+  // (core.autocrlf=true checks out CRLF) and on LF checkouts such as CI.
+  const text = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+  return createHash("sha256").update(text).digest("hex").slice(0, 16);
 }
 
 function currentState() {

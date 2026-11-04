@@ -208,10 +208,11 @@ wrote to itself, committed alongside the code.
 
 > 💡 **Why markdown, not a server?** Files are diffable, reviewable,
 > revertable, and ship with the repo. Lab 10 walks through the full
-> three-layer model (raw sources → wiki → schema) and the
+> three-layer model (raw sources → recall → schema), compares this DIY
+> wiki with GitHub Copilot Memory and a custom memory service, and shows the
 > [`consolidate-lessons` skill](../.github/skills/consolidate-lessons/SKILL.md)
 > that promotes durable lessons. It is a command skill, so in Copilot CLI you
-> run it as `/consolidate-lessons` (see [Lab 10](lab10.md) §10.4).
+> run it as `/consolidate-lessons` (see [Lab 10](lab10.md) §10.5).
 
 ## 5.4 Add a New MCP Server
 

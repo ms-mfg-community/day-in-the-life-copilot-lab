@@ -1,7 +1,7 @@
 {
   "lab01": {
     "source": "labs/lab01.md",
-    "sourceHash": "d8241aad2f118aa0",
+    "sourceHash": "f02e216e03fd8650",
     "studio": "client/src/labs/lab01.tsx",
     "studioExists": true
   },
@@ -19,13 +19,13 @@
   },
   "lab04": {
     "source": "labs/lab04.md",
-    "sourceHash": "c683fe93680e639c",
+    "sourceHash": "62cf08e60cc87f34",
     "studio": "client/src/labs/lab04.tsx",
     "studioExists": true
   },
   "lab05": {
     "source": "labs/lab05.md",
-    "sourceHash": "3fb0386c8248f394",
+    "sourceHash": "0a6ff5df10cbcc69",
     "studio": "client/src/labs/lab05.tsx",
     "studioExists": true
   },
@@ -49,13 +49,13 @@
   },
   "lab09": {
     "source": "labs/lab09.md",
-    "sourceHash": "5a37d76b301d830d",
+    "sourceHash": "1cda7d765098d240",
     "studio": "client/src/labs/lab09.tsx",
     "studioExists": true
   },
   "lab10": {
     "source": "labs/lab10.md",
-    "sourceHash": "6ca310fa08a4b47e",
+    "sourceHash": "c087df210830b824",
     "studio": "client/src/labs/lab10.tsx",
     "studioExists": true
   },
@@ -73,13 +73,13 @@
   },
   "lab13": {
     "source": "labs/lab13.md",
-    "sourceHash": "ea2b4d4429431408",
+    "sourceHash": "ebd771f06b391d62",
     "studio": "client/src/labs/lab13.tsx",
     "studioExists": true
   },
   "lab14": {
     "source": "labs/lab14.md",
-    "sourceHash": "61b0ce8abb483d7b",
+    "sourceHash": "b366018c7a4006da",
     "studio": "client/src/labs/lab14.tsx",
     "studioExists": true
   },

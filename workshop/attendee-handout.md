@@ -42,7 +42,8 @@ cat AGENTS.md | head -40
 **Anchor labs.** `labs/lab01.md` (topology), `labs/lab02.md`
 (`AGENTS.md`), `labs/lab03.md` (custom agents), `labs/lab04.md`
 (skills + prompts), `labs/lab06.md` (hooks), `labs/lab10.md`
-(agent memory: Raw sources → Wiki → Schema).
+(agent memory: Raw sources → Recall → Schema, where Recall is Copilot
+Memory, a lessons wiki, or a custom memory service).
 
 ### M2 — MCP servers in anger (30 min)
 

@@ -1,27 +1,29 @@
-# Lab 10 Solutions — Agent Memory: Personalities, Lessons, and Consolidation
+# Lab 10 Solutions — Agent Memory: Copilot Memory, Lessons, and Custom Memory Services
 
 Reference artefacts for [Lab 10](../../labs/lab10.md). Lab 10 teaches
-**three-layer agent memory** built on plain markdown the agent
-maintains itself — no knowledge-graph server, no embeddings, no
-cross-session database.
+**three-layer agent memory**. Layer 2, Recall, is advisory and comes in
+three flavours: GitHub Copilot Memory (native), the `.copilot/lessons/`
+wiki (do-it-yourself, plain markdown), and a custom memory service such as
+[SCNS](https://github.com/johnhain-msft/scns).
 
 | Layer | Surface | Lifetime |
 |-------|---------|----------|
 | 1 — Raw sources | `plan.md`, SQL todos, session transcripts | One task — kept on disk, but not curated or shared |
-| 2 — The Wiki | `.copilot/lessons/` (project) + `~/.copilot/lessons/` (global) | Across sessions, in markdown |
+| 2 — Recall | Copilot Memory (repository-level facts, user-level preferences), the `.copilot/lessons/` wiki, or a custom service | Across sessions, advisory |
 | 3 — The Schema | `AGENTS.md`, `.github/instructions/*.md`, agent personalities | Forever, binding |
 
 ## Files in this directory
 
 | File | Lab section | Purpose |
 |------|-------------|---------|
-| `sample-checkpoint-log.txt` | §10.5 callout | Example of the line the `/checkpoint` skill's `create` action appends to `.github/checkpoints.log` — a git-level safety net, not a Layer 1 snapshot. |
-| `sample-handoff.md` | §10.5 handoff drill | Example of the handoff document the `/handoff` skill produces. In the drill you save your own copy as `lab10-handoff.md` in the session's `files/` folder, outside the repository, and a fresh conversation reads it back and continues from its Fresh Context Prompt section. The sample also shows that prompt sending the fresh conversation to the in-repo wiki (`.copilot/lessons/`) instead of a memory server. |
+| `sample-memories.jsonl` | §10.2 dry-run import | Two sample Copilot Memory records for `copilot memories import --dry-run`. The dry run validates the file and submits nothing; never run the import without `--dry-run` in this lab. |
+| `sample-checkpoint-log.txt` | §10.7 callout | Example of the line the `/checkpoint` skill's `create` action appends to `.github/checkpoints.log` — a git-level safety net, not a Layer 1 snapshot. |
+| `sample-handoff.md` | §10.7 handoff drill | Example of the handoff document the `/handoff` skill produces. In the drill you save your own copy as `lab10-handoff.md` in the session's `files/` folder, outside the repository, and a fresh conversation reads it back and continues from its Fresh Context Prompt section. The sample also shows that prompt sending the fresh conversation to the in-repo wiki (`.copilot/lessons/`) instead of a memory server. |
 
 `checkpoint`, `handoff` and `consolidate-lessons` are **command skills** under
 [`.github/skills/`](../../.github/skills/) (`disable-model-invocation: true`),
 not built-in Copilot CLI commands — `copilot help commands` does not list
-them, `/skills list` does. You run one as `/name`, as Lab 10 §10.4a shows.
+them, `/skills list` does. You run one as `/name`, as Lab 10 §10.5a shows.
 
 ## Where the actual wiki lives
 
@@ -47,9 +49,19 @@ flagged for Layer 3):
 - **Reindex** automatically understands code already in git — structure,
   types, relationships. You don't manage it. Anything answerable from
   the code itself does **not** belong in the wiki.
-- **The wiki (Layer 2)** is for durable findings the code can't tell
+- **Copilot Memory (Layer 2, native)** stores repository-level facts
+  and user-level preferences on GitHub. You scope a memory with your
+  wording, but Copilot also stores memories on its own (approval prompts
+  depend on the surface and your permission settings); delete them in settings.
+  Copilot Dreaming reviews them in the background; Lab 10 explains
+  Dreaming but does not enable it.
+- **The wiki (Layer 2, do-it-yourself)** is for durable findings the code can't tell
   you on its own: gotchas, conventions, decisions, pitfalls. It's
   plain markdown, diffable in PRs, revertable, and committed.
+- **A custom memory service (Layer 2, custom)** such as SCNS earns its
+  keep when you need semantic retrieval, automated retention, search across many repos, or
+  coordination between agents. Lab 10 §10.6 compares it with the
+  other two; the lab does not install it.
 - **The schema (Layer 3)** is binding rules that apply on every task:
   `AGENTS.md`, `.github/instructions/*.md`, and the agent
   personalities in `.github/agents/*.agent.md`.
@@ -58,7 +70,7 @@ flagged for Layer 3):
   reorganize the wiki by hand because agents rely on stable file paths.
 - **Handoff** (the `/handoff` skill) produces a Layer 1 artefact: one
   task's context, written to a file so a fresh conversation can pick the
-  task up. Save it outside the repository (Lab 10 §10.5 uses
+  task up. Save it outside the repository (Lab 10 §10.7 uses
   `lab10-handoff.md` in the session's `files/` folder), then open a fresh
   conversation and have it read that file and continue from its Fresh
   Context Prompt section. Nothing curates it, it stays on disk where you

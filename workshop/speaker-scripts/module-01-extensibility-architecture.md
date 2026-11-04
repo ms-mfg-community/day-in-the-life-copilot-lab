@@ -78,9 +78,13 @@ head -10 .github/prompts/verify.prompt.md
 # Hooks — every turn, every session
 cat .github/hooks/default.json | head -30
 
-# Memory — three Karpathy layers, one lab
+# Memory — three layers; Layer 2 has three flavours
 head -40 labs/lab10.md
 ```
+
+Inside a `copilot` session, `/memory` (no argument) shows whether
+Copilot Memory is on. It is a read-only status check; do **not** run
+`/memory on` or `/memory off` on the presenter machine.
 
 Do **not** edit any of these live. The point is to point at each surface and name its job, then move on.
 
@@ -116,14 +120,15 @@ mechanical rule.
 <!-- total: 35 min -->
 
 - 0:00 — Open with the advanced problem. Name the five surfaces + memory. (2 min)
-- 2:00 — Slide: "Five surfaces, one decision tree." Read each one-liner. (3 min)
-- 5:00 — Slide: "Decision rubric — reach for which?" Ask the room one concrete scenario. (3 min)
-- 8:00 — Slide: "How they compose — one project profile." Show the tree. (2 min)
-- 10:00 — **Demo A** — `/env` in the repo. Ground truth vs recipe. (4 min)
-- 14:00 — Slide: "Cost, latency, reuse — the three-axis check." (3 min)
-- 17:00 — **Demo B** — tour the five surfaces on disk, 30 seconds each. (6 min)
-- 23:00 — Slide: "Loading order and precedence." (2 min)
-- 25:00 — **Demo C** — `--agent code-reviewer --no-custom-instructions`. (4 min)
+- 2:00 — Slide: "Six surfaces, one decision tree." Read each one-liner. (3 min)
+- 5:00 — Slide: "Memory — three layers, three ways to recall." Native, DIY, custom; all advisory. (3 min)
+- 8:00 — Slide: "Decision rubric — reach for which?" Ask the room one concrete scenario. (3 min)
+- 11:00 — Slide: "How they compose — one project profile." Show the tree. (2 min)
+- 13:00 — **Demo A** — `/env` in the repo. Ground truth vs recipe. (4 min)
+- 17:00 — Slide: "Cost, latency, reuse — the three-axis check." (2 min)
+- 19:00 — **Demo B** — tour the surfaces on disk, about 30 seconds each. (5 min)
+- 24:00 — Slide: "Loading order and precedence." (2 min)
+- 26:00 — **Demo C** — `--agent code-reviewer --no-custom-instructions`. (3 min)
 - 29:00 — **Demo D** — decision walk-through on the `dotnet format` example. (4 min)
 - 33:00 — Slide: "Anti-patterns." Read them; invite one from the room; land on the takeaway. (2 min, closes at 35:00)
 
@@ -133,7 +138,8 @@ mechanical rule.
 - **`/env` output is overwhelming on this repo.** It is — this repo has 6 skills, 3 agents, 19 prompts, 17 hook scripts. That *is* the teaching moment: "here's why the decision rubric matters; look how much there is to pay for."
 - **Someone asks 'AGENTS.md vs copilot-instructions.md'.** Both load; AGENTS.md is agent-oriented guidance, `copilot-instructions.md` is Copilot-specific. Cite the repo's own `copilot-instructions.md` as the canonical example. Don't let this eat 5 minutes.
 - **'Why not just put everything in a skill?'** Skills are auto-activated by description — a skill with a broad description activates on every turn and burns tokens like a hook, but silently. Narrow descriptions or it's worse than AGENTS.md.
-- **Memory layer confusion.** If someone asks "which memory layer?", point to `labs/lab10.md` and the `docs/memory-decision-tree.md` flowchart — three Karpathy layers (Raw sources → Wiki → Schema), promotion only ever goes upward. Call out the disambiguation section: reindex, knowledge-graph servers, and instinct loops are *not* memory layers. Don't re-teach lab 10 inside this module — 5 minutes, tops.
+- **Memory layer confusion.** If someone asks "which memory?", point to `labs/lab10.md` and the `docs/memory-decision-tree.md` flowchart. There are three layers (Raw sources → Recall → Schema), and promotion only ever goes upward. Q3 in the flowchart picks the Layer 2 flavour: native Copilot Memory, the DIY wiki, or a custom service. Call out the disambiguation section: reindex, a bare knowledge-graph store and instinct loops are *not* memory layers. Don't re-teach Lab 10 inside this module — 5 minutes, tops.
+- **"Should we just turn on Dreaming?"** It's an admin decision, not a presenter one. Every run costs AI credits, even a run that changes nothing. Memory changes it makes apply without per-change approval, and its memory and instruction curation need session sync. Lab 10 explains it and deliberately doesn't enable it. Don't switch it on live.
 - **Live demo fails — session won't start.** Fallback: `copilot --no-custom-instructions` to rule out a broken instruction file; `copilot --log-level debug --log-dir /tmp/copilot-logs` and tail the log. Worst case: show the screenshot in `workshop/fallback-screenshots/` (Phase 5 artifact — refer out).
 
 ## 5. Q&A prompts
@@ -145,6 +151,7 @@ Seed these if the room is quiet:
 - "Anyone running `--agent` flags routinely? What's your shortlist?"
 - "Has anyone hit the skill-description-too-broad problem? What was the activation signal?"
 - "If you had to cut your extension surface in half, which half survives?"
+- "Where does your team's memory live today: Copilot Memory, a wiki in the repo, or nowhere? Which fact would you least like an agent to forget?"
 
 ## 6. Advanced-tip callouts
 
@@ -156,3 +163,4 @@ Drop these between slides as time permits. Each is ~30 seconds.
 - **Hooks have `timeoutSec` budgets** — see `.github/hooks/default.json`. A hook that tries to run a full test suite will time out and be silently skipped. Keep hooks mechanical: log, check, refuse — not "do work."
 - **Custom agents inherit from `AGENTS.md` by default.** Opting into an agent does not opt out of repo instructions unless you also pass `--no-custom-instructions`. Combine them deliberately.
 - **The `mcp-index` skill in this repo is the meta-tip** — it tells Copilot to check which MCP tools are available *before* complex reasoning. That's the shape of a good skill: cheap, declarative, self-scoped.
+- **Scope a memory with your words.** Say "in this repository, …" for a repository-level fact and "in all my projects, …" for a user-level preference. Don't rely on "always" or "going forward". If the scope is unclear, Copilot asks.

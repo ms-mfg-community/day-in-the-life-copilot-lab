@@ -171,7 +171,8 @@ export const lab05: Lab = {
             The new session reads the lesson the old one wrote — no
             knowledge-graph server, no embeddings, just markdown committed next
             to the code. Lab 10 of the full workshop builds the complete
-            three-layer model on this foundation.
+            three-layer model on this foundation and compares this wiki with
+            GitHub Copilot Memory and a custom memory service.
           </Note>
         </>
       ),
