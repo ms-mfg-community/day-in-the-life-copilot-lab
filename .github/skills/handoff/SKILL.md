@@ -196,11 +196,12 @@ the agent wrote to itself, governed by
 ### Recommended Agents
 [List 2-3 most relevant agents for this work]
 - planner.agent.md — for planning the next phase
-- code-reviewer.agent.md — for review
-- tdd-guide.agent.md — for test-first implementation
+- code-reviewer.agent.md — for reviewing .NET changes (an ASP.NET Core MVC checklist; not for Node work)
+- dotnet-qa.agent.md — for writing xUnit tests first on the .NET track (only if it exists in `.github/agents/`)
 
-### Recommended Prompts
-[List 2-3 most relevant prompts]
+### Recommended Commands
+Command skills in .github/skills/ — run them as /name:
+[List 2-3 most relevant command skills]
 - /tdd — for test-driven development
 - /code-review — after implementation
 - /consolidate-lessons — when the wiki accumulates entropy
@@ -211,10 +212,10 @@ the agent wrote to itself, governed by
 To generate relevant agent recommendations:
 1. Read `.github/agents/*.agent.md` files
 2. Match agents to current work domain
-3. Suggest 2-3 most relevant agents
+3. Suggest 2-3 most relevant agents, and only ones that exist: a fresh clone ships `planner`, `code-reviewer`, `lab-studio-maintainer` and `agentic-workflows`, while `dotnet-dev`, `node-dev` and `dotnet-qa` appear after Labs 03 and 07. `code-reviewer` and `dotnet-qa` are .NET-only, so do not suggest them for Node work
 
-To generate relevant prompt recommendations:
-1. List `.github/prompts/*.prompt.md` files
-2. Match prompts to the next planned step
-3. Suggest 2-3 most relevant prompts (always include
+To generate relevant command recommendations:
+1. List `.github/skills/*/SKILL.md` files; the command skills (`disable-model-invocation: true`) are the ones you run as `/name`
+2. Match command skills to the next planned step
+3. Suggest 2-3 most relevant command skills (always include
    `/consolidate-lessons` if durable findings were captured this session)

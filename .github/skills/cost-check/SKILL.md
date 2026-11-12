@@ -9,7 +9,7 @@ You are running mid-session and the user wants to know **what their
 Copilot CLI session has cost so far** and **how to keep the next
 phase cheaper**. Treat this as a short, decision-oriented report —
 not a tutorial. Reference
-[`docs/token-and-model-guide.md`](../../docs/token-and-model-guide.md)
+[`docs/token-and-model-guide.md`](../../../docs/token-and-model-guide.md)
 for the underlying mental model; do **not** restate it here.
 
 Produce the three sections below, in this order, using the data you
@@ -70,22 +70,31 @@ only the §3 summary").
 
 ## Model recommendation
 
+Model ids live in one place: the `models:` block of
+[`docs/_meta/registry.yaml`](../../../docs/_meta/registry.yaml). Pick a
+**tier** and read the concrete id out of the registry. Do not quote an
+id from memory: the CLI retires models, and a pinned id can send the
+user to one they can no longer select.
+
 Based on the footprint and the work the user is currently doing,
 recommend one of:
 
 - **Stay on `auto`** — current mix looks balanced.
-- **Downshift** to `claude-haiku-4.5` / `gpt-5-mini` / `gpt-5.4-mini`
-  — current work is mechanical and the model tier is overpaying.
-- **Hold on standard** (`claude-sonnet-4.6` / `gpt-5.4`) — work is
-  normal coding; pin for predictability.
-- **Upshift** to `claude-opus-4.7` / `claude-opus-4.6` /
-  `gpt-5.3-codex` — current work is hard reasoning or a large
-  refactor and a cheaper model is round-tripping too much.
+- **Downshift** to a `models.cheap` entry — current work is mechanical
+  and the model tier is overpaying.
+- **Hold on standard** (a `models.standard` entry) — work is normal
+  coding; pin for predictability.
+- **Upshift** to a `models.premium` entry — current work is hard
+  reasoning or a large refactor and a cheaper model is round-tripping
+  too much.
 
-Justify the pick in one sentence with a pointer to which evidence
-from the previous two sections drove the call. If the user is about
-to dispatch sub-agents via the `task` tool, remind them that this
-repo pins those to `claude-opus-4.6` (per `copilot-instructions.md`).
+Name the specific id you suggest, read from the registry, and tell the
+user to run `/model` to switch. Justify the pick in one sentence with a
+pointer to which evidence from the previous two sections drove the call.
+If the user is about to dispatch sub-agents via the `task` tool, remind
+them that `AGENTS.md` ("Token discipline") reserves `models.premium` for
+sub-agent dispatches where quality matters more than speed, and that
+simple, mechanical delegations can use `models.cheap`.
 
 End with a one-line "next action" the user can take immediately
 (e.g., `/clear`, archive plan §1–4, switch model, or "no action
