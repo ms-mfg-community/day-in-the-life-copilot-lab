@@ -156,3 +156,178 @@ describe('lab02 contract: AC10 — sources are combined, not ranked', () => {
     expect(lab()).not.toMatch(/\|\s*Priority\s*\|/i);
   });
 });
+
+/** Contents of each fenced block in `text`, in order, fence lines excluded. */
+function fencedBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  let current: string[] | null = null;
+  for (const l of text.replace(/\r\n/g, '\n').split('\n')) {
+    if (/^\s*(```|~~~)/.test(l)) {
+      if (current === null) current = [];
+      else {
+        blocks.push(current.join('\n'));
+        current = null;
+      }
+    } else if (current) current.push(l);
+  }
+  return blocks;
+}
+
+/** The contiguous `>` blockquote that contains `marker`, `> ` prefixes removed. */
+function blockquoteContaining(text: string, marker: string): string {
+  const all = text.replace(/\r\n/g, '\n').split('\n');
+  const at = all.findIndex((l) => l.startsWith('>') && l.includes(marker));
+  expect(at, `no blockquote callout containing "${marker}"`).toBeGreaterThanOrEqual(0);
+  let from = at;
+  while (from > 0 && all[from - 1].startsWith('>')) from--;
+  let to = at;
+  while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+  return all
+    .slice(from, to + 1)
+    .map((l) => l.replace(/^>\s?/, ''))
+    .join('\n');
+}
+
+describe('lab02 contract: AC11 — §2.2 spots the bloated-domain-instructions anti-pattern', () => {
+  const TITLE = '🚫 Spot the Anti-Pattern: Bloated Domain Instructions';
+  const EXEMPLAR = '.github/instructions/dotnet.instructions.md';
+  const callout = (): string => blockquoteContaining(section('2.2'), TITLE);
+
+  it('is a blockquote callout titled "🚫 Spot the Anti-Pattern: Bloated Domain Instructions"', () => {
+    expect(section('2.2').replace(/\r\n/g, '\n')).toMatch(new RegExp(`^> \\*\\*${TITLE}\\*\\*`, 'm'));
+  });
+
+  it('contrasts a ~40-line stack-matched file with a ~230-line copy-pasted financial-compliance prompt', () => {
+    const c = callout();
+    expect(c, 'names no ~40-line figure').toMatch(/\b40\b/);
+    expect(c, 'names no ~230-line figure').toMatch(/\b230\b/);
+    expect(c).toMatch(/PCI-DSS/);
+    expect(c).toMatch(/SOX/);
+    expect(c).toMatch(/saga/i);
+  });
+
+  it('says why it costs: it spends context tokens each time a matching file loads it', () => {
+    const c = callout();
+    expect(c).toMatch(/token/i);
+    expect(c).toMatch(/match/i);
+  });
+
+  it('points at the real concise exemplar, which is still far smaller than the 230-line prompt', () => {
+    expect(callout()).toContain(EXEMPLAR);
+    expect(existsSync(join(ROOT, EXEMPLAR)), `${EXEMPLAR} is not on disk`).toBe(true);
+    const n = readFileSync(join(ROOT, EXEMPLAR), 'utf8').split(/\r?\n/).length;
+    expect(n, `${EXEMPLAR} is ${n} lines — the lab calls it concise`).toBeLessThanOrEqual(60);
+  });
+});
+
+describe('lab02 contract: AC12 — §2.3 teaches AGENTS.md by contrast: an ADR-001 anti-pattern box, then non-discoverable context', () => {
+  const TITLE = '🚫 Spot the Anti-Pattern: What Does NOT Belong in AGENTS.md';
+  const sec = (): string => section('2.3').replace(/\r\n/g, '\n');
+  const adrBlock = (): string | undefined => fencedBlocks(sec()).find((b) => b.includes('### ADR-001'));
+  const notesBlock = (): string | undefined => fencedBlocks(sec()).find((b) => b.includes('52379'));
+
+  it('titles the box "🚫 Spot the Anti-Pattern: What Does NOT Belong in AGENTS.md"', () => {
+    expect(sec()).toMatch(new RegExp(`^> \\*\\*${TITLE}\\*\\*`, 'm'));
+  });
+
+  it('keeps ### ADR-001 inside a fenced block that follows the box title — never as a live heading', () => {
+    expect(adrBlock(), '§2.3 has no fenced block containing "### ADR-001"').toBeDefined();
+    expect(sec().indexOf(TITLE)).toBeGreaterThanOrEqual(0);
+    expect(sec().indexOf(TITLE)).toBeLessThan(sec().indexOf('### ADR-001'));
+    const live = lines().filter((l) => !l.inFence && l.text.includes('### ADR-001'));
+    expect(live.map((l) => l.text), '### ADR-001 appears outside a code fence').toEqual([]);
+  });
+
+  it('no longer has the learner paste the ADR: the anti-pattern block and the block to add are different blocks', () => {
+    expect(notesBlock(), '§2.3 has no fenced block with the operational notes (port 52379)').toBeDefined();
+    expect(notesBlock()).not.toBe(adrBlock());
+    expect(adrBlock() as string).not.toMatch(/52379|lock\.yml|lab-sources/);
+  });
+
+  it('the block the learner adds states SQLite seed behavior, ports 52379/52380, and never hand-editing .lock.yml or lab-sources.json', () => {
+    const notes = notesBlock() ?? '';
+    expect(notes).toMatch(/SQLite/i);
+    expect(notes).toMatch(/seed/i);
+    expect(notes).toContain('52379');
+    expect(notes).toContain('52380');
+    expect(notes).toContain('.lock.yml');
+    expect(notes).toContain('lab-sources.json');
+    expect(notes).toMatch(/never/i);
+  });
+
+  it('explains the box with its two reasons — it duplicates copilot-instructions.md and lists discoverable structure — and cites arXiv 2602.11988', () => {
+    const s = sec();
+    expect(s).toMatch(/duplicat/i);
+    expect(s).toMatch(/discover/i);
+    expect(s).toContain('copilot-instructions.md');
+    expect(s).toContain('2602.11988');
+  });
+
+  it('the notes only state what the repository really does (ports, SQLite dev config, seed-only-when-empty)', () => {
+    const launch = readFileSync(join(ROOT, 'dotnet/ContosoUniversity.Web/Properties/launchSettings.json'), 'utf8');
+    expect(launch).toContain('52379');
+    expect(launch).toContain('52380');
+    const dev = readFileSync(join(ROOT, 'dotnet/ContosoUniversity.Web/appsettings.Development.json'), 'utf8');
+    expect(dev).toMatch(/Data Source=/);
+    const seed = readFileSync(join(ROOT, 'dotnet/ContosoUniversity.Infrastructure/Data/DbInitializer.cs'), 'utf8');
+    expect(seed, 'DbInitializer no longer skips seeding when Students exist').toMatch(/Students\.AnyAsync/);
+    expect(existsSync(join(ROOT, 'lab-studio/lab-sources.json'))).toBe(true);
+  });
+});
+
+describe('lab02 contract: AC13 — §2.2.3 carries a Debug It callout: did the rule reach the model?', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (text: string): string[] => {
+    const all = text.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('2.2.3'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §2.2.3, the verification step', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('2.2.3')).length, 'the callout is not inside §2.2.3').toBe(1);
+  });
+
+  it('goes beyond /instructions: /env for what the session loaded and /context for the Custom Instructions share', () => {
+    expect(callout()).toContain('`/env`');
+    expect(callout()).toContain('`/context`');
+    expect(callout()).toContain('Custom Instructions');
+    expect(callout()).toMatch(/inside a running `copilot` session/);
+  });
+
+  it('names the VS Code route: Chat: Open Customizations, Show Agent Debug Logs with Discovery events, and the System prompt in Show Chat Debug View', () => {
+    expect(callout()).toContain('Chat: Open Customizations');
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toContain('Discovery');
+    expect(callout()).toContain('Show Chat Debug View');
+    expect(callout()).toContain('System prompt');
+  });
+
+  it('separates loaded and included from followed, and links the guide', () => {
+    expect(callout()).toMatch(/follow/i);
+    expect(callout()).toContain('debugging-and-observability.md');
+  });
+
+  it('does not disturb the §2.2 anti-pattern callout: the two stay separate blockquotes', () => {
+    const sec = section('2.2').replace(/\r\n/g, '\n');
+    const anti = sec.split('\n').findIndex((l) => l.startsWith('> **🚫 Spot the Anti-Pattern: Bloated Domain Instructions**'));
+    const debug = sec.split('\n').findIndex((l) => l.startsWith(`> **${TITLE}**`));
+    expect(anti).toBeGreaterThanOrEqual(0);
+    expect(debug).toBeGreaterThan(anti);
+    const between = sec.split('\n').slice(anti, debug);
+    expect(between.some((l) => !l.startsWith('>')), 'the callouts run together').toBe(true);
+  });
+});
+
+describe('lab02 contract: spec alignment — specs/labs/lab02.md records the Phase 4 criterion', () => {
+  it('has AC13 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC13\s*\|[^\n]*lab02-contract/m);
+  });
+});

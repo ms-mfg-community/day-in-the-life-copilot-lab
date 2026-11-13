@@ -19,28 +19,30 @@ Invoke this skill:
 
 ### Phase 1: Build Verification
 ```bash
-# Check if the solution builds
-dotnet build ContosoUniversity.sln 2>&1 | tail -20
+# Check if the solution builds (run from the repo root)
+dotnet build dotnet/ContosoUniversity.sln 2>&1 | tail -20
 ```
 
 If build fails, STOP and fix before continuing.
 
 ### Phase 2: Code Analysis
 ```bash
-# Run .NET analyzers (built into the build process)
-dotnet build ContosoUniversity.sln -warnaserror 2>&1 | head -30
+# Run .NET compiler & Roslyn analyzers as errors (NuGet advisories NU1901-NU1904 are checked in Phase 4)
+dotnet build dotnet/ContosoUniversity.sln -warnaserror -warnnotaserror:NU1901,NU1902,NU1903,NU1904 2>&1 | head -30
 ```
 
 Report all warnings and errors. Fix critical ones before continuing.
 
 ### Phase 3: Test Suite
 ```bash
-# Run tests with coverage
-dotnet test ContosoUniversity.sln --collect:"XPlat Code Coverage" 2>&1 | tail -50
+# Run unit and integration tests with coverage
+dotnet test dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj --collect:"XPlat Code Coverage" 2>&1 | tail -50
 
 # Check coverage threshold
 # Target: 80% minimum
 ```
+
+The solution also holds the Playwright E2E project (`dotnet/ContosoUniversity.PlaywrightTests/`). It needs a running web app and browsers, so it is not part of this loop; run it separately with `make test-dotnet-e2e`.
 
 Report:
 - Total tests: X
@@ -55,10 +57,10 @@ grep -rn "password\s*=" --include="*.cs" . 2>/dev/null | grep -v "test\|Test\|mo
 grep -rn "api[_-]key" --include="*.cs" --include="*.json" . 2>/dev/null | head -10
 
 # Check for vulnerable packages
-dotnet list package --vulnerable 2>&1 | head -20
+dotnet list dotnet/ContosoUniversity.sln package --vulnerable 2>&1 | head -20
 
 # Check for Console.WriteLine in production code (not tests)
-grep -rn "Console.WriteLine" --include="*.cs" ContosoUniversity.Web/ ContosoUniversity.Core/ ContosoUniversity.Infrastructure/ 2>/dev/null | head -10
+grep -rn "Console.WriteLine" --include="*.cs" dotnet/ContosoUniversity.Web/ dotnet/ContosoUniversity.Core/ dotnet/ContosoUniversity.Infrastructure/ 2>/dev/null | head -10
 ```
 
 ### Phase 5: Diff Review

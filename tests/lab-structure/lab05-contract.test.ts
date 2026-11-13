@@ -200,3 +200,113 @@ describe('lab05 contract: AC11 — cited paths resolve', () => {
     expect(missing, `lab05 cites path(s) that do not exist: ${missing.join(', ')}`).toEqual([]);
   });
 });
+
+describe('lab05 contract: AC12 — §5.3 frames the lessons exercise as a preview of Lab 10', () => {
+  const sec = (): string => section('5.3').replace(/\r\n/g, '\n');
+  const firstStep = (): number => sec().search(/^1\.\s+Inspect the wiki/m);
+
+  it('links Lab 10 by its title before the first step, so the framing is read first', () => {
+    const link = '[Lab 10 — Agent Memory](lab10.md)';
+    expect(sec()).toContain(link);
+    expect(firstStep(), '§5.3 step 1 ("Inspect the wiki") not found').toBeGreaterThan(0);
+    expect(sec().indexOf(link)).toBeLessThan(firstStep());
+  });
+
+  it('calls the exercise a preview, and says MCP is for live tools while memory layers hold cross-session state', () => {
+    const intro = sec().slice(0, firstStep());
+    expect(intro).toMatch(/preview/i);
+    expect(intro).toMatch(/live tools?/i);
+    expect(intro).toMatch(/cross-session/i);
+    expect(intro).toMatch(/memory/i);
+  });
+
+  it('ties the distinction to the stateless 2026-07-28 MCP spec revision', () => {
+    expect(sec()).toContain('2026-07-28');
+    expect(sec()).toMatch(/stateless|protocol-level sessions/i);
+  });
+});
+
+describe('lab05 contract: AC13 — §5.4 carries a Debug It callout: where does a silent MCP failure leave its reason?', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (body: string): string[] => {
+    const all = body.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('5.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §5.4, after the server is added', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('5.4')).length, 'the callout is not inside §5.4').toBe(1);
+  });
+
+  it('uses /mcp list for live status (failed: <reason>) and /mcp get for one server, and says copilot mcp list at the shell shows configuration, not live status', () => {
+    expect(callout()).toContain('`/mcp list`');
+    expect(callout()).toMatch(/failed: <reason>/);
+    expect(callout()).toContain('`/mcp get <server-name>`');
+    expect(callout()).toMatch(/copilot mcp list[^.]*configuration, not live status/);
+    expect(callout()).toMatch(/inside (?:a|your) (?:running |restarted )?`copilot` session|in your restarted `copilot` session/);
+  });
+
+  it('is honest about the spelling in the earlier steps: they write /mcp show, this build documents get, and /help shows what the build accepts', () => {
+    expect(callout()).toContain('/mcp show');
+    expect(callout()).toContain('`/help`');
+  });
+
+  it('teaches process logs with copilot --log-level debug --log-dir ./logs, in both shells, and says the process logs are git-ignored through *.log, not the logs/ folder', () => {
+    expect(callout()).toContain('copilot --log-level debug --log-dir ./logs');
+    expect(callout()).toMatch(/process-<timestamp>-<pid>\.log/);
+    expect(callout()).toMatch(/\bgrep\b/);
+    expect(callout()).toContain('Select-String');
+    // This repository's .gitignore has a *.log rule and no rule for a logs/ folder (`git check-ignore` reports a file in
+    // it that does not end in .log as not ignored), so the callout may promise only that the process logs are ignored.
+    const aboutIgnoring = callout()
+      .replace(/\s+/g, ' ')
+      .split(/(?<=[.!?])\s+/)
+      .filter((s) => /git-ignored|\.gitignore|\bignor(?:e|es|ed)\b/i.test(s));
+    expect(
+      aboutIgnoring.some((s) => s.includes('`*.log`')),
+      'the callout does not say which rule ignores the process logs: *.log',
+    ).toBe(true);
+    expect(
+      aboutIgnoring.filter((s) => /`(?:\.\/)?logs\/?`/.test(s)),
+      'the callout says the logs/ folder is ignored, and .gitignore has no rule for it',
+    ).toEqual([]);
+  });
+
+  it('names the VS Code route: MCP: List Servers, Show Output, and the tool definitions in Show Chat Debug View', () => {
+    expect(callout()).toContain('MCP: List Servers');
+    expect(callout()).toContain('Show Output');
+    expect(callout()).toContain('Show Chat Debug View');
+    expect(callout()).toMatch(/tool definitions/i);
+  });
+
+  it('links the guide', () => {
+    expect(callout()).toContain('debugging-and-observability.md');
+  });
+});
+
+describe('lab05 contract: spec alignment — specs/labs/lab05.md records the Phase 4 criterion', () => {
+  it('has AC13 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC13\s*\|[^\n]*lab05-contract/m);
+  });
+
+  it('records the *.log rule in AC13 and C9, and no longer says the logs/ folder is git-ignored', () => {
+    const spec = readFileSync(SPEC, 'utf8').replace(/\r\n/g, '\n');
+    const row = (id: string): string => spec.split('\n').find((l) => l.startsWith(`| ${id} |`)) ?? '';
+    for (const id of ['AC13', 'C9']) {
+      expect(row(id), `${id} does not name the *.log rule`).toContain('`*.log`');
+    }
+    // The statements the first draft made. .gitignore has no rule for a logs/ folder, and `git check-ignore -v logs/`
+    // printed `.gitignore:64:`, an empty pattern, before the path: it was misread as a rule named logs/.
+    for (const wrong of [/ignores `logs\/`/, /`logs\/` is git-ignored/, /`logs\/` folder \(git-ignored\)/, /\.gitignore:64:logs\//]) {
+      expect(spec).not.toMatch(wrong);
+    }
+  });
+});

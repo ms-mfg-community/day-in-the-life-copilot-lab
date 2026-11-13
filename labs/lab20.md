@@ -20,14 +20,16 @@ model policy from [Lab 17](lab17.md).
 
 > 🧭 **Two routes through this lab.** The pace above is fixed, so each
 > audience spends it differently. Neither route runs anything: this is a
-> read-and-discuss lab, and the one 🖥️ block in §20.2 is a question to
-> answer, not a command.
+> read-and-discuss lab, so none of the three surfaces (🐚 OS Terminal,
+> 🤖 Copilot CLI, 💠 VS Code) is needed, and the one 💬 block in §20.2 is a
+> question to answer, not a command (see the
+> [Three Surfaces Legend](lab01.md#the-three-surfaces-legend-where-am-i-typing)).
 >
 > - **Presenter route (6 min).** Talk it through; the only discussion is
 >   in §20.2. Spend about 1 minute on §20.1 (items 1 and 2; mention item 3
 >   only as the bridge to §20.3 and §20.4). Spend about 2 minutes on the
 >   one source-choice exchange in §20.2: name the three sources, ask the
->   🖥️ question, take one answer, then give the expected answer. Take
+>   💬 question, take one answer, then give the expected answer. Take
 >   §20.3 and §20.4 together in about 2 minutes, one sentence per
 >   mechanism, with one through-line: anything shared org-wide needs an
 >   owner, a review, and a version history. Use the last minute to read
@@ -121,7 +123,7 @@ and only one of them is where the aggregate usage numbers come from:
   to self-report. It repackages usage data; it is not a second place the
   numbers come from.
 
-🖥️ **Discuss/answer:**
+💬 **Discuss/answer:**
 
 ```
 Our finance team wants a monthly view of how many Copilot seats are in

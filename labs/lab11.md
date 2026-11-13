@@ -125,7 +125,7 @@ is a directory with:
 > not author a plugin shaped like `plugin-template/`, so this section
 > scaffolds by copying the template instead.
 
-🖥️ **From the repo root, in a terminal:**
+🐚 **In your OS Terminal — from the repo root:**
 
 1. Copy the template to `./my-plugin`. If `my-plugin/` already exists, remove
    it first: copying onto an existing directory nests the template inside it.
@@ -175,7 +175,7 @@ is a directory with:
 
 The canonical enterprise pattern is a **private org repo** named something
 like `contoso-internal/contoso-copilot-plugins` that hosts one or more
-plugins. Consumers install with:
+plugins. Consumers install with (🐚 **in your OS Terminal**):
 
 ```sh
 copilot plugin install contoso-internal/contoso-copilot-plugins
@@ -192,7 +192,7 @@ describes.
 
 To pin the org registry so developers cannot accidentally install from
 elsewhere, set the environment variable at the org onboarding layer
-(devcontainer, CI image, shell profile):
+(devcontainer, CI image, shell profile). 🐚 **In your OS Terminal:**
 
 **WSL/Bash:**
 ```bash
@@ -253,17 +253,20 @@ $env:COPILOT_PLUGIN_REGISTRIES = "contoso-internal/contoso-copilot-plugins"
 > plugin through a `plugin.json` (see the note in §11.1), which this template
 > does not ship, so add one to the repo you publish.
 
-🖥️ **In a clean directory (simulating a consumer machine):**
+In a clean directory (simulating a consumer machine), you can install and
+verify from either surface; each step below names the one it uses.
 
-1. Install the plugin. Inside a Copilot CLI session, run:
+1. Install the plugin.
+
+   🤖 **In Copilot CLI (`copilot>`):** run
    ```
    /plugin install contoso-internal/contoso-copilot-plugins
    ```
-   From a terminal, the equivalent is the `copilot plugin install` command
-   from §11.3.
+   🐚 **In your OS Terminal:** the equivalent is the `copilot plugin install`
+   command from §11.3.
 
-2. Verify it loaded: run `copilot plugin list` in a terminal, or `/plugin list`
-   inside a session, and look for your plugin's name
+2. Verify it loaded. 🐚 **In your OS Terminal**, run `copilot plugin list`, or
+   🤖 **in Copilot CLI**, run `/plugin list`, and look for your plugin's name
    (`contoso-copilot-starter` if you kept the template's name) with its
    version and status.
 
@@ -311,7 +314,7 @@ installing a plugin on their own machine.
 > carries no signature and no SBOM. Enforce signing and SBOMs in the release
 > pipeline (see **Release workflow** in §11.3), not in this evaluator.
 
-🖥️ **Try it, from the repo root:**
+🐚 **In your OS Terminal — try it, from the repo root:**
 
 The same command runs unchanged in WSL/Bash and PowerShell: the outer quotes
 are double and the inner quotes are single. It needs the `js-yaml` package
@@ -387,7 +390,7 @@ From the repo root, delete the `my-plugin/` copy you made in §11.2 (skip this i
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

@@ -18,6 +18,8 @@ variant: [`labs/appendices/node/lab-hardening.md`](../node/lab-hardening.md).
 for reviewing a .NET controller against current EF Core / ASP.NET guidance
 without letting the agent run `dotnet build` or edit source.
 
+🐚 **In your OS Terminal:**
+
 ```bash
 copilot --allow-all-tools \
         --agent=tight-reviewer \
@@ -36,6 +38,8 @@ the hyphen-joined runtime name). No build ran. No file was modified.
 spellings — **not** in the `deny-unlisted-tools.json` hook's allow-list
 either. (The hook is keyed on concrete runtime tool names; see the namespace
 callout in [`labs/lab-hardening.md`](../../lab-hardening.md) §2.)
+
+🐚 **In your OS Terminal:**
 
 ```bash
 copilot --allow-all-tools \

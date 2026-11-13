@@ -16,6 +16,8 @@ variant: [`labs/appendices/dotnet/lab-gh-extensions.md`](../dotnet/lab-gh-extens
 `gh-clab/package.json` declares `engines.node = ">=20"`. If your Node track
 uses `nvm`, pin the same floor locally so the shebang resolves consistently:
 
+🐚 **In your OS Terminal:**
+
 ```bash
 echo "20" > .nvmrc
 nvm use        # or: corepack use node@20
@@ -25,6 +27,8 @@ node --version # v20.x or newer
 ## 2 — Chain with the Node workspace test
 
 Run the Node workspace tests, then summarize the delta:
+
+🐚 **In your OS Terminal:**
 
 ```bash
 npm run -s test --workspaces --if-present \
@@ -39,6 +43,8 @@ to let `pickMode()` pick `gh models` (preferred) or the OpenAI fallback.
 
 Constrain the diff to the `node/` subtree by invoking `gh models run` directly
 with a tailored prompt:
+
+🐚 **In your OS Terminal:**
 
 ```bash
 gh models run openai/gpt-4o-mini \

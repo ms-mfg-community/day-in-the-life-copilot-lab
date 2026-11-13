@@ -7,8 +7,10 @@ Analyze all my uncommitted changes and organize them into logical, coherent comm
 
 ## Context
 
-Feature/work context: ${input:context:What feature or work were you doing?}
-Grouping preference: ${input:preference:Any specific grouping preferences? (leave empty for automatic grouping)}
+Take these two optional values from the text after `/commit`. Do not block if they are missing: infer the work from the diff and group automatically.
+
+- **Work context** — what feature or work were you doing?
+- **Grouping preference** — any specific grouping preferences? (leave empty for automatic grouping)
 
 ## Task
 
@@ -55,7 +57,7 @@ Present a structured plan:
 
 ---
 
-### Commit 1: [PREFIX]: [description]
+### Commit 1: [type]: [description]
 **Files ([N]):**
 - `path/to/file1.ts` (new)
 - `path/to/file2.ts` (modified, +50/-20 lines)
@@ -66,7 +68,7 @@ Present a structured plan:
 
 ---
 
-### Commit 2: [PREFIX]: [description]
+### Commit 2: [type]: [description]
 **Files ([N]):**
 - `path/to/file4.ts` (modified, +10/-5 lines)
 
@@ -122,7 +124,7 @@ If user approves with "proceed", "yes", "approve", or "go ahead":
 
 2. Create commit with proper message format:
    ```bash
-   git commit -m "[PREFIX]: [description]
+   git commit -m "[type]: [description]
 
    [Optional body with details]"
    ```
@@ -141,33 +143,27 @@ git log --oneline -n [number_of_commits_created]
 
 ## Commit Message Guidelines
 
-### Semantic Prefixes
+### Conventional Commit Types
 
-Use these prefixes based on change type:
+Format: `<type>: <description>`, the format `AGENTS.md` and `.github/copilot-instructions.md` require. Use these types based on change type:
 
-| Prefix | Use For | Example |
-|--------|---------|---------|
-| `ADD` | New files, features, functionality | `ADD: user authentication service` |
-| `UP` | Updates, enhancements to existing code | `UP: improve error handling in API` |
-| `FIX` | Bug fixes | `FIX: correct off-by-one error in pagination` |
-| `DEL` | Deletions (files, features, dead code) | `DEL: remove deprecated payment methods` |
-| `REFACTOR` | Code restructuring without behavior change | `REFACTOR: extract validation to utility` |
-| `MOVE` | File renames or relocations | `MOVE: relocate auth utils to shared directory` |
-| `CONFIG` | Configuration file changes | `CONFIG: add production database settings` |
-| `TEST` | Test additions or updates | `TEST: add integration tests for auth flow` |
-| `DOCS` | Documentation changes | `DOCS: update API endpoint documentation` |
-| `PERF` | Performance improvements | `PERF: optimize query with database indexing` |
-| `STYLE` | Code formatting, linting | `STYLE: apply prettier to TypeScript files` |
-| `BUILD` | Build system or tooling changes | `BUILD: update webpack configuration` |
-| `CI` | Continuous integration changes | `CI: add GitHub Actions workflow` |
-| `CHORE` | Maintenance tasks | `CHORE: update dependencies` |
+| Type | Use For | Example |
+|------|---------|---------|
+| `feat` | New files, features, functionality | `feat: add user authentication service` |
+| `fix` | Bug fixes | `fix: correct off-by-one error in pagination` |
+| `refactor` | Code restructuring, file moves or dead-code removal without behavior change | `refactor: extract validation to utility` |
+| `docs` | Documentation changes | `docs: update API endpoint documentation` |
+| `test` | Test additions or updates | `test: add integration tests for auth flow` |
+| `perf` | Performance improvements | `perf: optimize query with database indexing` |
+| `ci` | Continuous integration changes | `ci: add GitHub Actions workflow` |
+| `chore` | Maintenance: dependencies, configuration, build tooling, formatting, removing deprecated features | `chore: update dependencies` |
 
 ### Message Format
 
 - ✅ Use imperative mood: "add feature" not "added feature"
 - ✅ Be specific and descriptive
 - ✅ Subject line under 72 characters
-- ✅ Capitalize subject line
+- ✅ Start the description in lowercase after the `type:` prefix, as this repo's history does
 - ✅ No period at end of subject line
 - ❌ No vague messages: "fix stuff", "update code"
 - ❌ No AI attribution: "Co-Authored-By: Claude"
@@ -202,7 +198,7 @@ Use these prefixes based on change type:
 
 ---
 
-### Commit 1: ADD: JWT authentication service
+### Commit 1: feat: add JWT authentication service
 **Files (3):**
 - `src/auth/jwt.service.ts` (new, +150 lines)
 - `src/auth/auth.middleware.ts` (modified, +45/-10 lines)
@@ -213,7 +209,7 @@ New JWT authentication feature - service implementation, middleware integration,
 
 ---
 
-### Commit 2: UP: improve Button component accessibility
+### Commit 2: fix: improve Button component accessibility
 **Files (1):**
 - `src/ui/Button.tsx` (modified, +20/-5 lines)
 
@@ -222,7 +218,7 @@ Unrelated UI improvement - separate from auth work.
 
 ---
 
-### Commit 3: DOCS: document authentication endpoints
+### Commit 3: docs: document authentication endpoints
 **Files (1):**
 - `docs/API.md` (modified, +30/-0 lines)
 

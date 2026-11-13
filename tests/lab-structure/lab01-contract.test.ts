@@ -139,3 +139,98 @@ describe('lab01 contract: AC11 — code-intelligence claims', () => {
     expect(sec).not.toMatch(/\(seconds\)/i);
   });
 });
+
+describe('lab01 contract: AC12 — the configuration concepts come before the marketplace', () => {
+  /** Every `## ` heading outside a fenced block, in file order, as { text, line }. */
+  const headings = (): Array<{ text: string; line: number }> => {
+    let inFence = false;
+    const out: Array<{ text: string; line: number }> = [];
+    lab()
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .forEach((l, line) => {
+        if (/^\s*(```|~~~)/.test(l)) inFence = !inFence;
+        else if (!inFence && /^## /.test(l)) out.push({ text: l.slice(3).trim(), line });
+      });
+    return out;
+  };
+
+  /** Line of the heading numbered exactly `num`, so `1.0` does not match `1.0a`. */
+  const lineOf = (num: string): number =>
+    headings().find((h) => h.text.split(/\s/)[0] === num)?.line ?? -1;
+
+  const ORDER = ['1.1', '1.2', '1.3', '1.4', '1.0a', '1.0', '1.5'];
+
+  it('keeps every numbered heading the other contracts and external references use', () => {
+    for (const num of ORDER) {
+      expect(lineOf(num), `heading "## ${num}" not found`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('teaches 1.1 → 1.2 → 1.3 → 1.4 first, then the 1.0a CLI table and the 1.0 marketplace, then 1.5', () => {
+    const lineNumbers = ORDER.map(lineOf);
+    expect(
+      lineNumbers,
+      `heading order is ${ORDER.join(' → ')}; their line numbers must increase, got ${lineNumbers.join(', ')}`,
+    ).toEqual([...lineNumbers].sort((a, b) => a - b));
+  });
+
+  it('ends on the takeaway: the last ## heading is "1.5 Takeaway"', () => {
+    expect(headings().at(-1)?.text).toBe('1.5 Takeaway');
+  });
+
+  it('the marketplace section does not tell the learner to "skip ahead" to a section that now comes before it', () => {
+    expect(section('1.0 ')).not.toMatch(/skip ahead/i);
+  });
+});
+
+describe('lab01 contract: AC13 — §1.4 carries a Debug It callout: what Copilot loaded, in the CLI and in VS Code', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+
+  /** Every contiguous `>` blockquote that opens with the Debug It title, `> ` prefixes removed. */
+  const callouts = (text: string): string[] => {
+    const all = text.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('1.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §1.4 (not in the optional §1.0a / §1.0 extensions)', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('1.4')).length, 'the callout is not inside §1.4').toBe(1);
+  });
+
+  it('names /instructions and /env as the Copilot CLI checks, typed inside a running copilot session', () => {
+    expect(callout()).toContain('`/instructions`');
+    expect(callout()).toContain('`/env`');
+    expect(callout()).toMatch(/inside a running `copilot` session/);
+  });
+
+  it('names the VS Code route: Show Agent Debug Logs, its Discovery events, and the System prompt in Show Chat Debug View', () => {
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toContain('Discovery');
+    expect(callout()).toContain('Show Chat Debug View');
+    expect(callout()).toContain('System prompt');
+  });
+
+  it('says VS Code is optional and links the guide\'s capture-settings section', () => {
+    expect(callout()).toMatch(/If you use VS Code/);
+    expect(callout()).toContain('debugging-and-observability.md#21-turn-capture-on-before-you-reproduce');
+  });
+
+  it('does not claim that a good answer proves the files loaded', () => {
+    expect(callout()).toMatch(/does not prove|doesn't prove|not proof/i);
+  });
+});
+
+describe('lab01 contract: spec alignment — specs/labs/lab01.md records the Phase 4 criterion', () => {
+  it('has AC13 observed by this contract test', () => {
+    expect(read(SPEC)).toMatch(/^\|\s*AC13\s*\|[^\n]*lab01-contract/m);
+  });
+});

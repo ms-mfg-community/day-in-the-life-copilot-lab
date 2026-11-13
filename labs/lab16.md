@@ -17,6 +17,12 @@ locks down where plugins can come from.
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 25 minutes
 
+> 🧭 **Surfaces in this lab.** §16.2 has one command to run, at 🐚 **your OS
+> Terminal**; no step needs 🤖 Copilot CLI or 💠 VS Code. The 💬 blocks are
+> discussion questions to answer aloud or on paper, not something you type
+> into any of the three surfaces (see the
+> [Three Surfaces Legend](lab01.md#the-three-surfaces-legend-where-am-i-typing)).
+
 > 💡 **Enterprise context:** Lab 11's `COPILOT_PLUGIN_REGISTRIES` env var and
 > `org-policy.example.yaml` allowlist are *local, opt-in* patterns any repo
 > can adopt. `managed-settings.json` is different: it's centrally configured
@@ -138,7 +144,7 @@ version-controlled key list. Save it as `copilot/managed-settings.json`:
 > `deniedMcpServers` — don't carry it across to marketplaces. If you need
 > GitHub's marketplace available, list it explicitly.
 
-🖥️ **Model the policy locally (this repo's illustrative harness):**
+🐚 **In your OS Terminal — model the policy locally (this repo's illustrative harness):**
 
 This repo doesn't have live enterprise admin access to demonstrate against
 a real GitHub Enterprise Cloud tenant, so model the same decision logic
@@ -181,7 +187,7 @@ your own enterprise:
 4. **Wait for propagation** — up to an hour for already-signed-in users, or
    immediately for users who sign in fresh.
 
-🖥️ **Discuss/answer (no live tenant needed):**
+💬 **Discuss/answer (no live tenant needed):**
 
 ```
 If our enterprise wanted to lock developers to only the

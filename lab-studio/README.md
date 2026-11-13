@@ -8,7 +8,7 @@ browser — a guided SPA with a **live GitHub Copilot session** on the right-han
 
 | Pane                | What it is                                                                                                                                            |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Rail** (left)     | Labs 01–20 with per-step punch-holes that fill green as steps verify                                                                                  |
+| **Rail** (left)     | Labs 01–20 grouped under four learning-track headers, with per-step punch-holes that fill green as steps verify                                       |
 | **Manual** (center) | The teaching content — prose, concept tables, and action cards                                                                                        |
 | **Bench** (right)   | A terminal that emulates the Copilot CLI against a sandboxed workspace, a Files editor, and the simulated GitHub tab (issues, PRs, Actions, settings) |
 
@@ -207,17 +207,34 @@ The studio keeps that behavior on purpose: labs 02–05 teach the
 edit → restart (`/exit` + `copilot`, or `/new`) → verify loop, and the
 `/instructions` command flags files created after the running session started.
 
+## Learning tracks
+
+The 20 labs are grouped into four learning tracks — the same grouping as the
+repository README's _Lab Modules_ section (`client/src/labs/tracks.ts` is the
+data; a test keeps the two in step). The rail, the home screen, and the
+Back/Next buttons all follow the track order, so Track 2 runs Lab 10 → 12 → 15
+and Lab 11 belongs to Track 3. Lab ids (`lab01`–`lab20`), step keys and the
+order of the `labs` array never change, so saved progress and location stay
+valid.
+
+| Track                                                    | Labs          |
+| -------------------------------------------------------- | ------------- |
+| 1 · Core Customizations & Guardrails                     | 01–07         |
+| 2 · Cloud Agents, Memory & Context Engineering           | 08–10, 12, 15 |
+| 3 · Multi-Agent Orchestration, A2A & Extensions          | 11, 13–14, 16 |
+| 4 · Enterprise Governance, Spec-Driven Delivery & FinOps | 17–20         |
+
 ## Lab map
 
 | Lab                                 | Steps                                                                                                      | Live / simulated                                                     |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 01 Exploring Copilot Configuration  | config map · marketplace · hierarchy · ask the planner                                                     | marketplace simulated, planner live                                  |
-| 02 Custom Instructions & AGENTS.md  | repo rules · path rule · ADR · restart + `/instructions`                                                   | all live                                                             |
+| 01 Exploring Copilot Configuration  | config map · hierarchy · ask the planner · marketplace (an optional extension)                             | marketplace simulated, planner live                                  |
+| 02 Custom Instructions & AGENTS.md  | repo rules · path rule (+ bloated-instructions anti-pattern) · AGENTS.md operational notes (ADR as the anti-pattern) · restart + `/instructions` | all live                                                             |
 | 03 Creating a Dev Agent             | anatomy · create `contoso-dev` · discover + select · analyze                                               | all live                                                             |
-| 04 Skills & Prompts                 | anatomy · create `contoso-testing` · auto-activation · knowledge vs command skills                         | activation live (`skill.invoked`), command skills explained          |
-| 05 MCP Server Configuration         | inspect config · add `lab-docs` stdio server · live MCP tool call · markdown lessons                       | all live                                                             |
-| 06 Hooks                            | config + load order · stdin IPC contract · create + pipe-test a hook · live firing (incl. a pre-hook deny) | hook scripts execute for real; firing is live                        |
-| 07 Multi-Agent Orchestration        | design · workers (`contoso-qa`) · orchestrator · delegation run                                            | live — real `task` dispatches with subagent chips                    |
+| 04 Skills & Prompts                 | anatomy · create `contoso-testing` · auto-activation · knowledge vs command skills (+ anti-patterns)       | activation live (`skill.invoked`), command skills explained          |
+| 05 MCP Server Configuration         | inspect config · add `lab-docs` stdio server · live MCP tool call · markdown lessons (a Lab 10 preview)    | all live                                                             |
+| 06 Hooks                            | config + all 15 lifecycle events · stdin IPC contract · hook types (command, http, prompt) · create + pipe-test a hook · live firing (incl. a pre-hook deny) · debugging & observability | hook scripts execute for real; firing is live; the hook-types and debugging steps are reading + a check |
+| 07 Multi-Agent Orchestration        | design · workers (`contoso-qa`, before the orchestrator runs) · orchestrator · delegation run              | live — real `task` dispatches with subagent chips                    |
 | 08 gh-aw: PRD Generation            | md+frontmatter format · compile to .lock.yml · issue backlog · branch-triggered run · PRD review           | GitHub plumbing simulated; the PRD agent is a live Copilot session   |
 | 09 Coding Agent & Code Review       | ruleset · issue → draft PR · automated review · @copilot iteration                                         | platform simulated; coding agent + reviewer are live sessions        |
 | 10 Agent Memory                     | layer 1 (todos) · Copilot Memory quiz · wiki + recall · schema rule firing · consolidation (+ Dreaming explained) · custom memory service quiz | layers 1–3 + consolidation live; Copilot Memory, Dreaming and SCNS taught + quizzed (never run — they touch your GitHub account or need an install) |
@@ -229,7 +246,7 @@ edit → restart (`/exit` + `copilot`, or `/new`) → verify loop, and the
 | 16 Enterprise Managed Settings      | mechanism + key shapes · strictKnownMarketplaces · admin walkthrough                                       | shape verification server-side; quiz                                 |
 | 17 GitHub Admin Controls            | AI Controls + default-on model policy · audit log scope                                                    | quizzes                                                              |
 | 18 Spec-Driven Design & Stacked PRs | write a spec · spec→PRD check · 2-layer stack · review per layer                                           | spec + reviews live; stack simulated                                 |
-| 19 Self-Improving Agents            | the bounded workflow · local drift-scan dry run · why the bounds matter                                    | drift scan live                                                      |
+| 19 Self-Improving Agents            | the bounded workflow · local drift-scan dry run (+ the three classic drift signals) · why the bounds matter | drift scan live                                                      |
 | 20 Enterprise Token Optimization    | the right usage source · prompt/knowledge governance                                                       | quizzes                                                              |
 
 The **GitHub tab** on the bench is the simulated platform surface (issues,

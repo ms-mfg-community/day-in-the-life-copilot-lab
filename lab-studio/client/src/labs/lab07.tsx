@@ -128,6 +128,15 @@ lab-orchestrator (coordinates)
           />
           <p>Check all three exist:</p>
           <Cmd lines={["ls .github/agents"]} />
+          <Note tone="warn">
+            <strong>
+              Create <code>contoso-qa</code> before you run the pipeline.
+            </strong>{" "}
+            The orchestrator you build next always hands testing to{" "}
+            <code>contoso-qa</code> (its Phase 3) before it reviews, and it has
+            no two-worker fallback — so all three workers must exist before you
+            run the delegation test. That is why this step comes first.
+          </Note>
           <Note>
             Skipped Lab 03? The verify will tell you <code>contoso-dev</code> is
             missing — hop back to Lab 03 step 2, insert it, and return here.
@@ -187,6 +196,39 @@ lab-orchestrator (coordinates)
             <code>code-reviewer</code> (read-only). The Phase 5 summary should
             repeat something the reviewer actually said.
           </p>
+          <Note>
+            <strong>
+              🔍 Debug It — did the work really move between agents?
+            </strong>{" "}
+            The dispatch chips are the first check; two more views show the same
+            hand-offs as data and as a diagram.
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type <code>/tasks</code> inside
+                the same <code>copilot</code> session (press <code>f</code> to
+                include finished ones, <code>Enter</code> to open one,{" "}
+                <code>Esc</code> to close the list) to list the subagents it ran
+                and read a transcript. For a trace, start Copilot with{" "}
+                <code>COPILOT_OTEL_FILE_EXPORTER_PATH</code> set to a file
+                outside your repository (each run appends to it), run the
+                request and read the spans: for a built-in subagent, an{" "}
+                <code>invoke_agent</code> span nested under the{" "}
+                <code>execute_tool task</code> span that launched it (observed
+                on a current build). The bench doesn't emulate{" "}
+                <code>/tasks</code> — its green ⇄ dispatch chips are the same
+                evidence.
+              </li>
+              <li>
+                <strong>VS Code:</strong> run{" "}
+                <strong>Show Agent Debug Logs</strong>, select the session
+                description in the breadcrumb to open the Summary view, then
+                choose <strong>Agent Flow Chart</strong>. It shows which agent
+                delegated an action and where the workflow stopped, and the Logs
+                view can group events into a tree by subagent. Lab 06's last
+                step walks through the panel.
+              </li>
+            </ul>
+          </Note>
           <Note>
             <strong>Going further:</strong> this pipeline is sequential inside
             one session. For true parallelism the workshop's answer is git

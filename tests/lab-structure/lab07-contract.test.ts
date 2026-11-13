@@ -167,3 +167,107 @@ describe('lab07 contract: AC10 — prerequisites are stated up front', () => {
     expect(head).toMatch(/\]\((?:\.\/)?lab03\.md\)/);
   });
 });
+
+describe('lab07 contract: AC11 — dotnet-qa is created before the delegation test that needs it', () => {
+  /** Every `## ` heading outside a fenced block, in file order. */
+  const headings = (): Array<{ text: string; line: number }> => {
+    let inFence = false;
+    const out: Array<{ text: string; line: number }> = [];
+    lab()
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .forEach((l, line) => {
+        if (/^\s*(```|~~~)/.test(l)) inFence = !inFence;
+        else if (!inFence && /^## /.test(l)) out.push({ text: l.slice(3).trim(), line });
+      });
+    return out;
+  };
+
+  /** Line of the heading numbered exactly `num`. */
+  const lineOf = (num: string): number => headings().find((h) => h.text.split(/\s/)[0] === num)?.line ?? -1;
+
+  it('keeps every numbered heading 7.0–7.6 — sections are moved, not renumbered', () => {
+    for (const num of ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6']) {
+      expect(lineOf(num), `heading "## ${num}" not found`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('places "## 7.5" (create the QA worker) after 7.3 and before "## 7.4" (the delegation test), then 7.6', () => {
+    expect(lineOf('7.3')).toBeLessThan(lineOf('7.5'));
+    expect(lineOf('7.5'), '§7.5 must come before the §7.4 delegation test that needs dotnet-qa').toBeLessThan(
+      lineOf('7.4'),
+    );
+    expect(lineOf('7.4')).toBeLessThan(lineOf('7.6'));
+  });
+
+  it('retitles 7.5 "Create the QA Worker Agent" — it is a required step, not a Bonus', () => {
+    expect(headings().find((h) => h.text.startsWith('7.5'))?.text).toBe('7.5 Create the QA Worker Agent');
+    expect(lab()).not.toMatch(/bonus/i);
+  });
+
+  it('drops the "jump ahead" workaround: no sentence sends the learner away to §7.5 and back', () => {
+    expect(lab()).not.toMatch(/jump ahead/i);
+    expect(lab()).not.toMatch(/then come back/i);
+    expect(lab()).not.toMatch(/come back here/i);
+  });
+
+  it('now that dotnet-qa is required, §7.5 points at the reference agent so the step is achievable', () => {
+    const rel = 'solutions/lab07-orchestrator/dotnet-qa.agent.md';
+    expect(existsSync(join(ROOT, rel)), `${rel} is not on disk`).toBe(true);
+    expect(section('7.5')).toContain(rel);
+  });
+});
+
+describe('lab07 contract: AC12 — §7.4 carries a Debug It callout: did the work really move between agents?', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (body: string): string[] => {
+    const all = body.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('7.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §7.4, the delegation test', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('7.4')).length, 'the callout is not inside §7.4').toBe(1);
+  });
+
+  it('uses /tasks for the Copilot CLI and the Agent Flow Chart for VS Code', () => {
+    expect(callout()).toContain('`/tasks`');
+    expect(callout()).toContain('Agent Flow Chart');
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toMatch(/inside (?:a|your|the same) (?:running |restarted )?`copilot` session|in the same `copilot` session/);
+  });
+
+  it('teaches the OpenTelemetry view: one trace, each delegated worker an invoke_agent span nested under the execute_tool task span that launched it', () => {
+    expect(callout()).toContain('COPILOT_OTEL_FILE_EXPORTER_PATH');
+    expect(callout()).toContain('invoke_agent');
+    expect(callout()).toContain('execute_tool task');
+    expect(callout()).toMatch(/same trace/);
+  });
+
+  it('keeps the trace file outside the repository, because the lab is run in a checkout and the file is not git-ignored', () => {
+    expect(callout()).toMatch(/outside the repository/i);
+  });
+
+  it('links the guide', () => {
+    expect(callout()).toContain('debugging-and-observability.md');
+  });
+
+  it('names no model id: the callout adds nothing for AC4 to reject', () => {
+    // MODEL_ID is a global regex, whose lastIndex would carry over between calls: use a fresh copy.
+    expect(callout()).not.toMatch(new RegExp(MODEL_ID.source, 'i'));
+  });
+});
+
+describe('lab07 contract: spec alignment — specs/labs/lab07.md records the Phase 4 criterion', () => {
+  it('has AC12 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC12\s*\|[^\n]*lab07-contract/m);
+  });
+});

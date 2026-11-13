@@ -71,7 +71,11 @@ export function Cmd({
           <span>restarts the session — /new if one is running</span>
         ) : null}
       </div>
-      <pre>{lines.map((l) => `$ ${l}`).join("\n")}</pre>
+      <pre>
+        {lines
+          .map((l) => (l.trimStart().startsWith("/") ? `copilot> ${l}` : `$ ${l}`))
+          .join("\n")}
+      </pre>
       <div className="card-actions">
         <button className="action run" disabled={busy} onClick={run}>
           Run it ▸

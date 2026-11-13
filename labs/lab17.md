@@ -16,6 +16,12 @@ shift of 2026: the move to **default-on model availability**.
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 25 minutes
 
+> 🧭 **Surfaces in this lab.** You read and discuss; you run nothing, so none
+> of 🐚 OS Terminal, 🤖 Copilot CLI or 💠 VS Code is needed. The 💬 blocks are
+> discussion questions to answer aloud or on paper, not something you type
+> into any of the three surfaces (see the
+> [Three Surfaces Legend](lab01.md#the-three-surfaces-legend-where-am-i-typing)).
+
 > 💡 **Enterprise context:** Labs 01–16 taught you what an individual
 > developer or repo can configure. This lab is the admin's-eye view: what
 > an enterprise/org owner sees, what they can restrict, and what they're
@@ -77,7 +83,7 @@ previous per-model implicit-hold behavior.
 > their org hasn't explicitly disabled the global policy. That's expected
 > and not a bug in the labs; it's the new default platform behavior.
 
-🖥️ **Discuss/answer:**
+💬 **Discuss/answer:**
 
 ```
 Our enterprise wants engineers to only ever pick from a small,
@@ -127,7 +133,7 @@ longer retention stream to a SIEM.
 > touched, not the literal conversation content. Don't design a compliance
 > story that assumes otherwise.
 
-🖥️ **Discuss/answer:**
+💬 **Discuss/answer:**
 
 ```
 A security reviewer asks: "Can we see exactly what a developer asked

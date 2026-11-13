@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Lab** | `labs/lab19.md` (148 lines, 8.0 KB) — "Self-Improving Agents & Skills (gh-aw Template)" |
+| **Lab** | `labs/lab19.md` (295 lines) — "Self-Improving Agents & Skills (gh-aw Template)" |
 | **Spec state** | `ready` |
 | **Author** | John (authored 2026-10-13) |
-| **Last updated** | 2026-10-13 |
+| **Last updated** | 2026-10-13 · amended 2026-11-12 (Phase 2: §19.3 safe drift rehearsal — AC12, §2, §7; guarded setup — AC12) |
 
 ---
 
@@ -22,7 +22,11 @@ GitHub product.
 After the refresh the lab teaches the same thing with its internal references pointing at
 the right places, its one genuinely remote step flagged as such, and a short teardown for
 the draft PR and regenerated lock file it leaves behind. No section is added or reordered;
-this is the smallest lab in the batch and the lightest pass.
+this is the smallest lab in the batch and the lightest pass. (**Amended 2026-11-12, Phase 2:**
+§19.3 gains a safe local rehearsal — still no section added or reordered — because the repo's
+shipped `.github/` files are now clean, so a scan of the real checkout has little drift to
+find. The rehearsal plants three classic signals in a throwaway worktree instead of shipping
+broken configs on `main`.)
 
 ## 2. Declared surface
 
@@ -33,8 +37,8 @@ this is the smallest lab in the batch and the lightest pass.
 | **Presenter minutes** | 7 (unchanged) |
 | **Self-paced minutes** | 25 (unchanged) |
 | **Prerequisites** | Lab 08 (gh-aw fundamentals — the lab says so itself and `gh aw compile` is step one) and Lab 11 (the plugin-template conventions §19.6's bundle is built on). Labs 04 and 07 are useful background. `gh aw` must be installed. |
-| **Write steps** | **Yes — three, of which one is remote.** (a) §19.2 `gh aw compile self-improving-agents` **regenerates `.github/workflows/self-improving-agents.lock.yml`, a committed file**. (b) §19.4 `gh workflow run self-improving-agents.lock.yml` triggers a real Actions run that opens a draft PR — a GitHub write, and the teardown that follows it closes that PR and deletes its branch. (c) §19.4's fork checklist offers `gh repo set-default`, which **writes repository-local git config** — the same write `specs/labs/lab09.md` §7 fences. §19.6's `node modernization-bundle/scripts/install.mjs` is **not** a write step: it is a read-only dry-run simulator (`readFileSync`/`existsSync` only). See §7. |
-| **`lab-forge` verdict** | **`run with §7 fenced`.** Only the two items above are fenced. Notably `node modernization-bundle/scripts/install.mjs` is **outside** §7 and the run gate **may and should** execute it — AC7 depends on it. |
+| **Write steps** | **Yes — four, of which one is remote.** (a) §19.2 `gh aw compile self-improving-agents` **regenerates `.github/workflows/self-improving-agents.lock.yml`, a committed file**. (b) §19.4 `gh workflow run self-improving-agents.lock.yml` triggers a real Actions run that opens a draft PR — a GitHub write, and the teardown that follows it closes that PR and deletes its branch. (c) §19.4's fork checklist offers `gh repo set-default`, which **writes repository-local git config** — the same write `specs/labs/lab09.md` §7 fences. (d) §19.3's safe rehearsal (added 2026-11-12) is local-only but still writes: it creates a throwaway git worktree and scratch branch (`git worktree add ../drift-rehearsal -b scratch/drift-rehearsal`), has Copilot create a scratch skill under `.github/skills/` **inside that worktree**, and removes both afterwards (`git worktree remove --force`, `git branch -d`). §19.6's `node modernization-bundle/scripts/install.mjs` is **not** a write step: it is a read-only dry-run simulator (`readFileSync`/`existsSync` only). See §7. |
+| **`lab-forge` verdict** | **`run with §7 fenced`.** Only the write steps above are fenced. Notably `node modernization-bundle/scripts/install.mjs` is **outside** §7 and the run gate **may and should** execute it — AC7 depends on it. |
 
 ## 3. Acceptance criteria
 
@@ -51,6 +55,7 @@ this is the smallest lab in the batch and the lightest pass.
 | AC9 | §19.4 is marked as a step that writes to GitHub, and the lab says how to clean up the draft PR it opens | `npx vitest run tests/lab-structure/lab19-contract` |
 | AC10 | Every model identifier in the lab appears in the `models:` block of the registry | `npx vitest run tests/lab-structure/lab19-contract` |
 | AC11 | Frontmatter, registry and the inline `⏱️` callout state the same pacing numbers | `npx vitest run tests/lab-structure/lab19-contract` |
+| AC12 | §19.3 carries a safe local rehearsal for the three classic drift signals — a stale path, a contradictory convention and a retired model ID — run in a throwaway worktree on a `scratch/` branch (never on `main`), cleaned up with `git worktree remove` and `git branch -d`, with no push, PR or workflow run. The retired id is looked up in the registry's dropped-ids comment, never written into the lab (AC10), and the planted stale path appears only inside a prompt fence (AC6). The "stale path" must still be stale (`.github/prompts/` absent) and the contradicted convention must still be in `AGENTS.md`. The setup block is guarded: `git worktree add`, `cd` and `copilot` are joined with `&&`, so a failed worktree creation (for instance a leftover `scratch/drift-rehearsal` branch or `../drift-rehearsal` folder) or a failed `cd` can never launch Copilot in the original checkout, and the section tells the learner what to do when the block stops | `npx vitest run tests/lab-structure/lab19-contract tests/lab-structure/lab19-rehearsal-execution` |
 
 ## 4. Outside-world claims
 
@@ -126,6 +131,12 @@ The run gate must report these UNVERIFIED and execute none:
   contract test already covers — and is the only thing that prevents the false escalation,
   since the detector is hardcoded and does not read this spec. `specs/labs/lab09.md` §7
   permits `--view`; that is the weaker precedent and this supersedes it.
+- **The §19.3 safe rehearsal (added 2026-11-12)** — `git worktree add ../drift-rehearsal -b scratch/drift-rehearsal`,
+  starting `copilot` inside that worktree, the prompt that has Copilot create a scratch skill under
+  `.github/skills/`, `git worktree remove --force ../drift-rehearsal` and `git branch -d scratch/drift-rehearsal`.
+  It never touches GitHub, but it creates a sibling directory, a branch and a file, and `lab-forge`
+  runs in the live working tree. (The plain §19.3 dry-run prompt above it, which edits nothing,
+  stays safe to execute.)
 
 > `npx vitest run tests/workflows/all-workflows-compile` already proves the workflow
 > compiles, from the repo root, without the lab's targeted invocation and without leaving a

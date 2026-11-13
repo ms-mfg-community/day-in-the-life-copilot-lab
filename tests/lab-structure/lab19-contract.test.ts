@@ -234,3 +234,48 @@ describe('lab19 contract: AC11 — pacing agrees across frontmatter, registry an
     expect(lab()).toMatch(new RegExp(`Presenter pace:\\s*${declared}\\s*minutes`));
   });
 });
+
+describe('lab19 contract: AC12 — §19.3 has a safe local rehearsal for the three classic drift signals', () => {
+  const sec = (): string => section('19.3').replace(/\r\n/g, '\n');
+
+  it('rehearses in a throwaway worktree on a scratch branch, and says nothing reaches main', () => {
+    expect(sec()).toMatch(/git worktree add/);
+    expect(sec()).toMatch(/scratch\//);
+    expect(sec()).toMatch(/\bmain\b/);
+  });
+
+  it('plants the three classic signals: a stale path, a contradictory convention and a retired model ID', () => {
+    expect(sec()).toMatch(/stale path/i);
+    expect(sec()).toMatch(/contradict/i);
+    expect(sec()).toMatch(/retired model/i);
+  });
+
+  it('cleans up after itself: removes the worktree and deletes the scratch branch', () => {
+    expect(sec()).toMatch(/git worktree remove/);
+    expect(sec()).toMatch(/git branch -d scratch\//);
+  });
+
+  it('stays local: no push, no PR and no workflow run inside §19.3', () => {
+    expect(sec()).not.toMatch(/git push|gh pr |gh workflow run|gh repo /);
+  });
+
+  it('plants drift that is genuinely drift today: the stale path is absent and the contradicted convention is in AGENTS.md', () => {
+    expect(existsSync(join(ROOT, '.github/prompts')), 'the "stale path" would no longer be stale').toBe(false);
+    expect(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8')).toContain('<type>: <description>');
+  });
+
+  it('sends the learner to the registry for a retired id instead of hardcoding one (lab19 stays model-free)', () => {
+    expect(sec()).toContain('docs/_meta/registry.yaml');
+    const registryText = readFileSync(REGISTRY, 'utf8');
+    expect(registryText, 'the registry no longer records which model ids it dropped').toMatch(/\bDropped\b/);
+  });
+
+  it('says what to do when the guarded setup stops: do not start copilot by hand, clear the leftovers, run it again', () => {
+    // Prose only: the executable behaviour of the guard is proven in lab19-rehearsal-execution.test.ts.
+    const advice = sec().replace(/```[\s\S]*?```/g, '');
+    expect(advice).toMatch(/\b(?:don['’]t|do not|never)\b[^.\n]*`copilot`/i);
+    expect(advice).toMatch(/left\s?over/i);
+    expect(advice).toContain('git worktree remove --force ../drift-rehearsal');
+    expect(advice).toContain('git branch -d scratch/drift-rehearsal');
+  });
+});

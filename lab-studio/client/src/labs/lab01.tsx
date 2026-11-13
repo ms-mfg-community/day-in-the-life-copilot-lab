@@ -6,7 +6,7 @@ export const lab01: Lab = {
   number: "01",
   title: "Exploring Copilot Configuration",
   tagline:
-    "Map the configuration ecosystem, browse the plugin marketplace, and ask a custom agent for a plan.",
+    "Map the configuration ecosystem, learn how Copilot combines it, and ask a custom agent for a plan — then, optionally, browse the plugin marketplace.",
   steps: [
     {
       key: "lab01/map",
@@ -50,6 +50,15 @@ export const lab01: Lab = {
               </tr>
               <tr>
                 <td>
+                  <code>.github/instructions/</code>
+                </td>
+                <td>
+                  Path-specific rules (<code>.instructions.md</code>)
+                </td>
+                <td>02</td>
+              </tr>
+              <tr>
+                <td>
                   <code>.github/copilot-instructions.md</code>
                 </td>
                 <td>Repo-wide rules — always loaded</td>
@@ -59,8 +68,17 @@ export const lab01: Lab = {
                 <td>
                   <code>AGENTS.md</code>
                 </td>
-                <td>Project context — always loaded</td>
+                <td>Non-obvious project context — always loaded</td>
                 <td>02</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>.github/hooks/</code>
+                </td>
+                <td>
+                  Lifecycle guardrails (<code>default.json</code>)
+                </td>
+                <td>06</td>
               </tr>
               <tr>
                 <td>
@@ -83,53 +101,6 @@ export const lab01: Lab = {
             The terminal on the right is your workspace shell. You can type any
             of these yourself — the Run button just saves you the keystrokes.{" "}
             <code>help</code> lists what the shell understands.
-          </Note>
-        </>
-      ),
-    },
-    {
-      key: "lab01/marketplace",
-      title: "Discover agents from the marketplace",
-      kind: "sim",
-      verifyId: "lab01/marketplace",
-      body: (
-        <>
-          <p>
-            The Copilot CLI has a <strong>plugin marketplace</strong> — a
-            registry of community and first-party plugins you install from the
-            terminal. A plugin is not a command: it adds <em>components</em> —
-            agents, skills, hooks, MCP servers — that you use by their own
-            names.
-          </p>
-          <Note tone="sim">
-            <Badge kind="sim" /> &nbsp;Marketplace commands normally reach
-            GitHub over the network. Lab Studio answers them from a local
-            catalog instead, so this works offline and never touches a remote.
-            The command surface is identical to the real CLI.
-          </Note>
-          <p>List the registered marketplaces, then browse the catalog:</p>
-          <Cmd
-            lines={[
-              "copilot plugin marketplace list",
-              "copilot plugin marketplace browse awesome-copilot",
-            ]}
-          />
-          <p>
-            Install one. <code>github/awesome-copilot</code> is a{" "}
-            <em>marketplace</em> — a catalog — and a plugin that happens to
-            share its name lives inside it. The <code>plugin@marketplace</code>{" "}
-            form picks that plugin precisely:
-          </p>
-          <Cmd
-            lines={[
-              "copilot plugin install awesome-copilot@awesome-copilot",
-              "copilot plugin list",
-            ]}
-          />
-          <Note>
-            <strong>Key insight:</strong> marketplace plugins are a head start,
-            not the ceiling. In Lab 03 you build your own agent from scratch —
-            think of installed plugins as patterns to study and customize.
           </Note>
         </>
       ),
@@ -201,6 +172,17 @@ export const lab01: Lab = {
                   When you select it with <code>/agent</code>
                 </td>
               </tr>
+              <tr>
+                <td>The command you run</td>
+                <td>
+                  Command skill (<code>SKILL.md</code> with{" "}
+                  <code>disable-model-invocation: true</code>)
+                </td>
+                <td>
+                  Only when you type <code>/skill-name</code> — never from topic
+                  matching (Lab 04)
+                </td>
+              </tr>
             </tbody>
           </table>
           <Note>
@@ -265,6 +247,95 @@ export const lab01: Lab = {
             host must pass those directories explicitly — Lab Studio does that
             for you at session start.
           </p>
+          <Note>
+            <strong>🔍 Debug It — did Copilot really load those files?</strong>{" "}
+            A good answer doesn't prove the configuration loaded: Copilot may
+            simply have guessed well. Check what it found instead of asking it
+            to describe itself.
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type these inside a running
+                session, not at the shell prompt. <code>/instructions</code>{" "}
+                lists the instruction files Copilot found (in the real CLI you
+                can also switch each one on or off), and <code>/env</code> shows
+                everything the session loaded: instructions, MCP servers,
+                skills, agents, hooks, plugins, LSPs and extensions. The bench
+                terminal answers both from the live session once you've sent the
+                prompt above.
+              </li>
+              <li>
+                <strong>VS Code:</strong> open the Chat view's{" "}
+                <strong>...</strong> menu and choose{" "}
+                <strong>Show Agent Debug Logs</strong>, then read the{" "}
+                <strong>Discovery</strong> events to see whether a file was
+                loaded, skipped or rejected.{" "}
+                <strong>Show Chat Debug View</strong> shows the{" "}
+                <strong>System prompt</strong> that reached the model. Turn
+                capture on first — it isn't retroactive (
+                <code>chat.agentHost.agentDebugLog.enabled</code>); Lab 06 walks
+                through it.
+              </li>
+            </ul>
+          </Note>
+          <Cmd
+            lines={["/env", "/instructions"]}
+            label="inside the session you just started"
+          />
+        </>
+      ),
+    },
+    {
+      key: "lab01/marketplace",
+      title: "Discover agents from the marketplace",
+      kind: "sim",
+      verifyId: "lab01/marketplace",
+      body: (
+        <>
+          <Note>
+            <strong>An optional extension.</strong> The core concepts are done:
+            what the configuration files are, how Copilot combines them, and an
+            agent answering from them. Plugins come after the concepts on
+            purpose — learn what these files are before you install more of
+            them. Labs 02–10 run without a single plugin installed, and Lab 11
+            has you build and install your own.
+          </Note>
+          <p>
+            The Copilot CLI has a <strong>plugin marketplace</strong> — a
+            registry of community and first-party plugins you install from the
+            terminal. A plugin is not a command: it adds <em>components</em> —
+            agents, skills, hooks, MCP servers — that you use by their own
+            names.
+          </p>
+          <Note tone="sim">
+            <Badge kind="sim" /> &nbsp;Marketplace commands normally reach
+            GitHub over the network. Lab Studio answers them from a local
+            catalog instead, so this works offline and never touches a remote.
+            The command surface is identical to the real CLI.
+          </Note>
+          <p>List the registered marketplaces, then browse the catalog:</p>
+          <Cmd
+            lines={[
+              "copilot plugin marketplace list",
+              "copilot plugin marketplace browse awesome-copilot",
+            ]}
+          />
+          <p>
+            Install one. <code>github/awesome-copilot</code> is a{" "}
+            <em>marketplace</em> — a catalog — and a plugin that happens to
+            share its name lives inside it. The <code>plugin@marketplace</code>{" "}
+            form picks that plugin precisely:
+          </p>
+          <Cmd
+            lines={[
+              "copilot plugin install awesome-copilot@awesome-copilot",
+              "copilot plugin list",
+            ]}
+          />
+          <Note>
+            <strong>Key insight:</strong> marketplace plugins are a head start,
+            not the ceiling. In Lab 03 you build your own agent from scratch —
+            think of installed plugins as patterns to study and customize.
+          </Note>
         </>
       ),
     },

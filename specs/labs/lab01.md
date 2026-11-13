@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Lab** | `labs/lab01.md` (229 lines) — "Exploring Copilot Configuration" |
+| **Lab** | `labs/lab01.md` (245 lines) — "Exploring Copilot Configuration" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 concept ordering — AC12 and §5; Phase 4 Debug It callout — AC13, C13–C14, D9, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC14, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -24,7 +24,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 
 | | |
 |---|---|
-| **Surface** | `cli` — `copilot plugin …`, `copilot --agent … --prompt …`, plus reading files in the repo. Nothing here needs VS Code. |
+| **Surface** | `mixed` — **Amended 2026-11-13 (Phase 5):** was `cli` ("Nothing here needs VS Code"). The lab teaches the Three Surfaces Legend and badges every step 🐚 / 🤖 / 💠; the commands (`copilot plugin …`, `copilot --agent … --prompt …`, reading files) stay terminal-driven, and §1.1 and §1.4 gain 💠 VS Code counterparts (open the file in the Explorer; pick `planner` from the **Agent** dropdown; **Chat: Open Customizations**). VS Code is an alternative route, not a prerequisite. |
 | **Tier** | `beginner` |
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 10 (unchanged — see §5) |
@@ -46,6 +46,9 @@ count, command and claim in them is true against the repo and the installed CLI 
 | AC9 | The plan/autopilot row names `/autopilot`; the `/model` row no longer says `<tier-or-id>` and still points at the registry | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC10 | A setup prerequisite links `setup.md` before the first `##` heading | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC11 | The code-intelligence table no longer says "(GA)" or "(seconds)", and still names both LSP config paths | `npx vitest run tests/lab-structure/lab01-contract` |
+| AC12 | Concepts come before extensions: §1.1 → §1.2 → §1.3 → §1.4 are taught first, then the optional §1.0a CLI table and §1.0 marketplace, and the lab ends on `## 1.5 Takeaway`. Every numbered heading is kept, and the marketplace section no longer says "skip ahead" to a section that now precedes it | `npx vitest run tests/lab-structure/lab01-contract` |
+| AC13 | §1.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), outside the optional §1.0a / §1.0 extensions. It says a good answer does not prove the configuration loaded; names `/instructions` and `/env` as the Copilot CLI checks, typed inside a running `copilot` session; names VS Code's **Show Agent Debug Logs** (its **Discovery** events) and **Show Chat Debug View** (the **System prompt**); says VS Code capture must be turned on before the problem is reproduced, with a link to `docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce` | `npx vitest run tests/lab-structure/lab01-contract tests/lab-structure/debugging-observability-contract` |
+| AC14 | **Phase 5.** The lab carries an unnumbered `## The Three Surfaces Legend: where am I typing?` section before `## 1.1`, with the three canonical badges, what belongs on each surface, `three-surfaces-guide.svg`, and the "badge names what you type into" rule. §1.1 and §1.4 badge every command 🐚 or 🤖 and add a 💠 counterpart (open the file from the Explorer; the **Agent** dropdown; **Chat: Open Customizations**), with `vscode-customizations-and-hooks.svg` and `cli-env-context-diagnose.svg` embedded around the `🔍 Debug It` callout. The numbered headings, their order (AC12) and the single callout (AC13) are unchanged | `npx vitest run tests/lab-structure/lab01-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -63,15 +66,19 @@ count, command and claim in them is true against the repo and the installed CLI 
 | C10 | Semantic index is "near-instant (seconds)" | `cut` | The docs attribute "near-instant" to LSP indexing, not to a semantic index. Drop the parenthetical and the speed claim. |
 | C11 | Six reference links under *References* and two under plugins | `free-check` | All eight returned HTTP 200 on 2026-10-12. |
 | C12 | `copilot --agent planner --prompt … --allow-all-tools` | `free-check` for the flags; **parked** for the advice | `copilot --help`: `--agent`, `-p/--prompt`, `--allow-all-tools` exist. Whether a first lab should teach blanket tool approval for a read-only planning question is a safety/product question — see §5. |
+| C13 | Phase 4: "`/instructions` lists the instruction files Copilot found and lets you switch each on or off; `/env` shows everything the session loaded: instructions, MCP servers, skills, agents, hooks, plugins, LSPs and extensions" | `free-check` | `copilot help commands` (1.0.111-0): `/instructions` "View and toggle custom instruction files"; `/env` "Show loaded environment details (instructions, MCP servers, skills, agents, hooks, plugins, LSPs, extensions)". Same text in the CLI built-in docs, `command:/instructions` and `command:/env` (1.0.110-3). |
+| C14 | Phase 4: "**Show Agent Debug Logs** shows **Discovery** events — whether a file was loaded, skipped or rejected; **Show Chat Debug View** shows the **System prompt** that reached the model, where request details are available; capture is not retroactive, so turn it on before you reproduce" | `free-check` | VS Code, [Debug chat interactions](https://code.visualstudio.com/docs/agents/agent-troubleshooting/chat-debug-view) (dated 11/11/2026), read 2026-11-12: "Check **Discovery** events in the Agent Debug Logs to see whether a customization was loaded, skipped, or rejected"; "Where request details are available, inspect the Chat Debug view … For Local sessions, check the **System prompt** for custom instructions"; "Capture is not retroactive." The panel is in Preview, so the callout names menu items and not a version. |
 
 ## 5. Non-goals
 
 - Do not change pacing (`presenter_minutes: 4`, `self_paced_minutes: 10`) or the registry's `lab01` pace rows. If a gate reports the 10 is wrong, that finding is **recorded, not fixed**.
-- Do not renumber sections. The `1.0a` / `1.0` / `1.1` order is cosmetic and `#11-the-configuration-ecosystem` is linked from inside the lab.
+- Do not renumber sections. **Amended 2026-11-12 (Phase 2):** the old "the `1.0a` / `1.0` / `1.1` order is cosmetic" reasoning no longer holds — it taught plugin installation before the learner knew what an agent, skill or instruction file is. Sections were **moved, not renumbered**: the lab now runs `1.1` → `1.2` → `1.3` → `1.4`, then the optional `1.0a` and `1.0`, then `1.5` (retitled "Takeaway"). AC12 pins that order. The in-lab link to `#11-the-configuration-ecosystem` is gone — the marketplace section's offline callout now points forward to §1.5, because §1.1 comes first.
 - Do not add or remove a section, a table, or a plugin command. Do not add WinGet/Brew/other install paths.
 - Do not change `--allow-all-tools` in §1.4 (C12). Recorded for John; teaching a narrower approval flag is a design change.
 - Do not keep `/fleet`, `/model`, plan/autopilot, `extensions_manage` or the registry reference out of the lab — AC4 requires them.
 - Do not edit any file other than `labs/lab01.md`, this spec and `tests/lab-structure/lab01-contract.test.ts`. No other lab, no registry, no `AGENTS.md`, no other test.
+- **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout at the end of §1.4 (AC13) and nothing else. It is a callout, not a section: it is not renumbered, not timed, and not moved into the optional §1.0a / §1.0 extensions, and `self_paced_minutes` stays 10. It carries no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new, the guide the callout links), `TROUBLESHOOTING.md`, and `tests/lab-structure/debugging-observability-contract.test.ts`. The callout teaches `/instructions` and `/env` as *checks*; it does not teach hooks, MCP, OpenTelemetry or session data, which belong to Labs 05–07 and the guide.
+- **Amended 2026-11-13 (Phase 5):** "do not add or remove a section" gains one exception: the **unnumbered** `## The Three Surfaces Legend: where am I typing?` section before `## 1.1` (AC14). It is not numbered, so no numbered heading moves (AC12), it is not timed, and `self_paced_minutes` stays 10. The lab also gains the 🐚 / 🤖 / 💠 badges, two 💠 counterparts and three images, and nothing else: the plugin commands, the single `🔍 Debug It` callout and `--allow-all-tools` (C12) are untouched. The "do not edit any file other than" bullet also allows the Phase 5 files named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -85,6 +92,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 | D6 | §1.0a table, `/model` row | `/model <tier-or-id>` — `/model` takes a model id or `auto` (C6). Say: pick an id from the registry's `models.cheap` / `models.premium`. |
 | D7 | Top of the lab | No prerequisite despite needing an installed, authenticated CLI (§2). Add one line before the first `##` heading linking `setup.md`. |
 | D8 | §1.3 table | "(GA)" on the LSP row and "(seconds)" on semantic indexing (C9, C10). |
+| D9 | §1.4 "Try It" | **Added 2026-11-12 (Phase 4).** The lab shows an agent answering from the configuration files and teaches learners to judge by whether the answer sounds right. It never shows how to see what Copilot actually loaded (plan §2.1 finding 4). `/instructions` is named in §1.2 but not as a check. Fixed by the `🔍 Debug It` callout (AC13); see C13, C14. |
 
 ## 7. Out of scope for `lab-forge`
 
@@ -94,6 +102,8 @@ reports each UNVERIFIED — not "could not run":
 - `copilot plugin install …`, `copilot plugin uninstall/update/enable/disable`, `copilot plugin marketplace add/remove`;
 - interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation (these call a model and may use tools);
 - `/plugin …`, `/fleet`, `/model`, `/autopilot` typed into any session;
+- **Phase 4:** the `🔍 Debug It` callout's commands (`/instructions`, `/env`) are typed into a Copilot session, and its VS Code steps (**Show Agent Debug Logs**, **Show Chat Debug View**, the capture setting) need a running VS Code. No stage executes them: UNVERIFIED, the same as the other session commands;
+- **Phase 5:** the 💠 steps (open the file from the Explorer, the **Agent** dropdown, **Chat: Open Customizations**) need a running VS Code: UNVERIFIED;
 - every GitHub-side write.
 
 **May** be executed, because they are read-only and local: `npm test`, the vitest

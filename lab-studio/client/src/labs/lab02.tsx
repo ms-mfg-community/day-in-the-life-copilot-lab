@@ -1,4 +1,4 @@
-import { Cmd, FileCard, Note, PromptCard } from "./content";
+import { Cmd, FileCard, Note, PromptCard, Snippet } from "./content";
 import type { Lab } from "./types";
 
 const INSTRUCTIONS_WITH_CONVENTIONS = `# ContosoUniversity — Repository Instructions
@@ -36,28 +36,10 @@ applyTo: '**/src/routes/*.ts'
 - No direct entity-array access — handlers depend on repository interfaces only.
 `;
 
-const AGENTS_WITH_ADR = `# ContosoUniversity — Agent Context
-
-ContosoUniversity is a small university administration app: students enroll in
-courses, instructors teach them, enrollments carry grades.
-
-## Layout
-
-\`\`\`
-src/entities/   # Domain types: Student, Course, Instructor
-src/repos/      # Repository interfaces + in-memory implementations
-src/routes/     # HTTP route handlers (framework-agnostic)
-tests/          # Vitest unit tests
-\`\`\`
-
-## Non-obvious context
-
-- Repositories return **immutable copies** — callers must never see shared state.
-- IDs are assigned by the repository, not the caller.
-- \`enrollmentDate\` is always stored as an ISO date string, never a \`Date\` object,
-  because the original data import produced strings and the app round-trips them.
-
-## Architecture Decisions
+// The anti-pattern the lab shows and then declines to add: an ADR that repeats
+// a rule copilot-instructions.md already carries and describes folders Copilot
+// can list for itself. Display-only — no card writes it.
+const ADR_ANTI_PATTERN = `## Architecture Decisions
 
 ### ADR-001: Repository Pattern for Data Access
 
@@ -74,6 +56,34 @@ concrete storage mechanism or share mutable state.
 - Handlers are testable with in-memory repositories
 - Storage can be swapped without touching route handlers
 - Every query goes through a single abstraction layer
+`;
+
+// What the card writes instead: the non-obvious facts the workspace already
+// had, plus operational notes — nothing Copilot can discover by listing src/.
+const AGENTS_WITH_OPERATIONAL_NOTES = `# ContosoUniversity — Agent Context
+
+ContosoUniversity is a small university administration app: students enroll in
+courses, instructors teach them, enrollments carry grades.
+
+## Non-obvious context
+
+- Repositories return **immutable copies** — callers must never see shared state.
+- IDs are assigned by the repository, not the caller.
+- \`enrollmentDate\` is always stored as an ISO date string, never a \`Date\` object,
+  because the original data import produced strings and the app round-trips them.
+
+## Operational Notes
+
+- **No database.** Repositories are in-memory and start empty every time the
+  process starts, so a test that needs students builds its own repo
+  (\`createInMemoryStudentRepo(seed)\`) and nothing persists between runs.
+- **Tests.** \`npm test\` runs Vitest (\`vitest run\`). The package is ESM, so
+  relative imports keep the \`.js\` suffix even though the files are \`.ts\`.
+- **Never hand-edit generated or skill-maintained files.**
+  \`.github/workflows/*.lock.yml\` is compiled from the matching \`.md\` — edit
+  the \`.md\`, then run \`gh aw compile\`. Lessons move from
+  \`.copilot/lessons/log.md\` into topic files and \`index.md\` through the
+  \`consolidate-lessons\` skill, never by hand.
 `;
 
 export const lab02: Lab = {
@@ -151,30 +161,142 @@ export const lab02: Lab = {
             <code>routes.instructions.md</code> — all three at once, no
             precedence. That's why rules must not contradict each other.
           </Note>
+          <Note tone="warn">
+            <strong>
+              🚫 Spot the Anti-Pattern: bloated domain instructions.
+            </strong>{" "}
+            Set the five short rules you just wrote beside the prompt many teams
+            paste into a <code>**/*.ts</code> instruction file:
+            <ul>
+              <li>
+                ✅ <strong>Stack-matched, about 40 lines</strong> — the
+                conventions the app really follows and nothing else (the
+                workshop repository's own <code>dotnet.instructions.md</code>
+                is this size).
+              </li>
+              <li>
+                ❌ <strong>Copy-pasted, about 230 lines</strong> — a "DDD for
+                financial systems" compliance prompt: PCI-DSS and SOX
+                attestations, currency value objects, saga patterns and a
+                mandatory planning ritual before every edit, for a university
+                app that takes no payments.
+              </li>
+            </ul>
+            <code>applyTo</code> decides <em>when</em> a file loads, not what it
+            costs. Every line of a matching file spends context tokens on every
+            file match and steers the model toward rules your code never
+            follows. Before you add a rule, ask whether a reviewer would
+            actually enforce it in this repository.
+          </Note>
         </>
       ),
     },
     {
       key: "lab02/agents-md",
-      title: "AGENTS.md — context, not rules",
+      title: "AGENTS.md — operational notes, not an ADR",
       kind: "mixed",
       verifyId: "lab02/agents-md",
       body: (
         <>
           <p>
-            <code>AGENTS.md</code> carries project <em>context</em> —
-            architecture, decisions, domain knowledge. Use it for the{" "}
-            <em>what</em> and <em>why</em>; use{" "}
-            <code>copilot-instructions.md</code> for the <em>rules</em>. You'll
-            record an Architecture Decision Record:
+            <code>AGENTS.md</code> gives Copilot project context it{" "}
+            <strong>cannot work out by reading the repository</strong> — how the
+            project runs, what is generated, what not to touch. Use it for that
+            operational context; use <code>copilot-instructions.md</code> for
+            the <em>rules</em>.
           </p>
-          <FileCard path="AGENTS.md" mode="replace" content={AGENTS_WITH_ADR} />
+          <Note tone="warn">
+            <strong>
+              🚫 Spot the Anti-Pattern: what does NOT belong in AGENTS.md.
+            </strong>{" "}
+            The most common first entry in an <code>AGENTS.md</code> is an
+            Architecture Decision Record (ADR). Read the one below and mark
+            every line Copilot could learn without it — because step 1 already
+            put it in <code>copilot-instructions.md</code>, or because Copilot
+            can read it straight from the repository. Then do{" "}
+            <strong>not</strong> add it.
+          </Note>
+          <Snippet title="❌ Do not add this — ADR-001 (display only)">
+            {ADR_ANTI_PATTERN}
+          </Snippet>
+          <table>
+            <thead>
+              <tr>
+                <th>Part of ADR-001</th>
+                <th>Why it does not belong in AGENTS.md</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  "All data access goes through the repository interfaces in{" "}
+                  <code>src/repos</code>"
+                </td>
+                <td>
+                  <strong>Duplicated.</strong> The rule you added to{" "}
+                  <code>copilot-instructions.md</code> in step 1 already says
+                  "use the repository pattern via the interfaces in{" "}
+                  <code>src/repos</code>". Two always-loaded files now state the
+                  same thing, so Copilot reads it twice.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  "Implementations live beside them (
+                  <code>in-memory-student-repo.ts</code> today…)"
+                </td>
+                <td>
+                  <strong>Discoverable.</strong> Where the files are is a
+                  repository overview, and Copilot learns it by listing{" "}
+                  <code>src/repos</code>.
+                </td>
+              </tr>
+              <tr>
+                <td>Status, Context, Consequences</td>
+                <td>
+                  <strong>History for people.</strong> Nothing here changes what
+                  the agent does next.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            This is the pattern <em>Evaluating AGENTS.md</em> (arXiv:2602.11988)
+            measured: repository overviews did not help, and context files
+            raised inference cost by over 20% on average. Lines Copilot already
+            has, or can find itself, add cost without adding information.
+          </p>
+          <p>
+            <strong>✅ Add this instead</strong> — operational context Copilot
+            can't discover by reading files, and would otherwise learn by
+            failing. The card writes the complete file: it keeps the non-obvious
+            facts this workspace's <code>AGENTS.md</code> already has, drops its
+            old <code>## Layout</code> block (the same discoverable-overview
+            mistake in miniature — <code>ls src</code> tells Copilot the same
+            thing for free), and adds <code>## Operational Notes</code>:
+          </p>
+          <FileCard
+            path="AGENTS.md"
+            mode="replace"
+            content={AGENTS_WITH_OPERATIONAL_NOTES}
+          />
+          <Note>
+            <strong>AGENTS.md vs copilot-instructions.md:</strong> use{" "}
+            <code>copilot-instructions.md</code> for <em>rules</em> ("always use
+            async"). Use <code>AGENTS.md</code> for{" "}
+            <em>context the agent can't discover</em> ("tests build their own
+            in-memory repo; never hand-edit generated files"). Copilot discovers
+            both automatically and combines them.
+          </Note>
           <Note>
             <strong>What research says:</strong> context files don't generally
-            improve task success and raise inference cost ~20% — agents can
-            discover repo structure themselves. They earn their keep on{" "}
-            <em>non-obvious</em> facts (like this workspace's "enrollmentDate is
-            a string" rule). Keep AGENTS.md short: only things the agent can't
+            improve task success and raise inference cost by over 20% on average
+            — and that held for developer-committed files as well as
+            LLM-generated ones. Agents do follow a context file's instructions,
+            but repository overviews, though popular, weren't helpful. Context
+            files earn their keep on <em>non-standard practices</em> (like this
+            workspace's "enrollmentDate is a string" rule, or "never edit
+            generated files"). Keep AGENTS.md short: only things the agent can't
             discover on its own.
           </Note>
         </>
@@ -210,6 +332,52 @@ export const lab02: Lab = {
             "LastName, FirstMidName" display rule to surface — verbatim from the
             files you just wrote. A generic answer means a stale session: run{" "}
             <code>/new</code> and ask again.
+          </Note>
+          <p>
+            Then probe the notes you added to <code>AGENTS.md</code> with a
+            question only they answer well:
+          </p>
+          <PromptCard prompt="What should I never edit by hand in this workspace, and how are the generated workflow files produced?" />
+          <Note>
+            Expect <code>.lock.yml</code> files compiled from the matching{" "}
+            <code>.md</code> with <code>gh aw compile</code>, and lessons
+            promoted by the <code>consolidate-lessons</code> skill. Copilot can
+            dig some of this out of the repository too, so treat the answer as a
+            hint — <code>/instructions</code> listing <code>AGENTS.md</code> is
+            the proof that it loaded.
+          </Note>
+          <Note>
+            <strong>
+              🔍 Debug It — is the new rule in the request, or only on disk?
+            </strong>{" "}
+            <code>/instructions</code> tells you Copilot <em>found</em> the
+            file. Two questions come after it: did the text reach the model, and
+            did the model follow it? Discovery, inclusion and following are
+            three different checks.
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type these inside a running
+                session. <code>/env</code> lists everything the session loaded,
+                instructions included, and <code>/context</code> splits the
+                context window into System Prompt, Custom Instructions, System
+                Tools, MCP Tools, Messages, Free Space and Buffer, so you can
+                see what your instructions cost. (The bench terminal emulates{" "}
+                <code>/instructions</code> and <code>/env</code>;{" "}
+                <code>/context</code> is real-CLI only.)
+              </li>
+              <li>
+                <strong>VS Code:</strong> run{" "}
+                <strong>Chat: Open Customizations</strong> and select{" "}
+                <strong>Instructions</strong> to see each file's source and any
+                error. Then use <strong>Show Agent Debug Logs</strong> and
+                filter to <strong>Discovery</strong> to see whether the file was
+                loaded, skipped or rejected, and{" "}
+                <strong>Show Chat Debug View</strong> to look for its text in
+                the <strong>System prompt</strong>. If the text reached the
+                model and the answer still ignores it, look for conflicting
+                rules: a rule can be loaded and not followed.
+              </li>
+            </ul>
           </Note>
         </>
       ),

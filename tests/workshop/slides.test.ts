@@ -159,3 +159,77 @@ describe('workshop slides — source cross-references', () => {
     expect(unknown, `slide source references unknown lab ids: ${unknown.join(', ')}`).toEqual([]);
   });
 });
+
+describe('workshop slides — claims about the shipped .github surface stay true', () => {
+  const SCRIPTS_DIR = join(REPO_ROOT, 'workshop', 'speaker-scripts');
+  const read = (rel: string): string => readFileSync(join(REPO_ROOT, rel), 'utf8').replace(/\r\n/g, '\n');
+  const m1Slide = (): string => read('workshop/slides/10-module-1.md');
+  const m1Script = (): string => read('workshop/speaker-scripts/module-01-extensibility-architecture.md');
+  const m4Slide = (): string => read('workshop/slides/40-module-4.md');
+
+  /** Repo-relative paths that `ls`, `head`, `cat` or `tail` name at the start of a line in `dir`'s Markdown files. */
+  function demoPathsThatDoNotExist(dir: string): string[] {
+    const missing: string[] = [];
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.md'))) {
+      readFileSync(join(dir, file), 'utf8')
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .forEach((line, i) => {
+          const m = line.match(/^\s*(?:ls|head|cat|tail)\s+(.+?)\s*(?:[|#].*)?$/);
+          if (!m) return;
+          for (const arg of m[1].split(/\s+/)) {
+            if (!arg.includes('/') || /^-|[<>$*~]/.test(arg)) continue;
+            // `.git/` is the repository's own metadata: a demo can create files there (for example a
+            // pre-commit hook), so a path under it is not a tracked file this check can resolve.
+            if (arg.startsWith('.git/')) continue;
+            if (!existsSync(join(REPO_ROOT, arg))) missing.push(`${file}:${i + 1} ${arg}`);
+          }
+        });
+    }
+    return missing;
+  }
+
+  it('every path a slide demo passes to ls/head/cat exists on disk', () => {
+    expect(demoPathsThatDoNotExist(SLIDES_DIR)).toEqual([]);
+  });
+
+  it('every path a speaker-script demo passes to ls/head/cat exists on disk', () => {
+    expect(demoPathsThatDoNotExist(SCRIPTS_DIR)).toEqual([]);
+  });
+
+  it('M1 teaches command skills, not a .github/prompts directory that was migrated to skills', () => {
+    for (const [name, text] of [['slide', m1Slide()], ['speaker script', m1Script()]] as const) {
+      expect(text, `M1 ${name} still names .github/prompts`).not.toContain('.github/prompts');
+      expect(text, `M1 ${name} still names prompts/*.prompt.md`).not.toContain('prompts/*.prompt.md');
+    }
+    expect(m1Slide()).toContain('disable-model-invocation: true');
+    expect(m1Slide()).toContain('.github/skills/<name>/SKILL.md');
+    expect(m1Slide()).toMatch(/command skills?/i);
+  });
+
+  it('M1 live demo lists the surfaces that exist: agents, skills, instructions and hooks', () => {
+    expect(m1Slide()).toContain('ls .github/agents .github/skills .github/instructions .github/hooks');
+  });
+
+  it('M1 says a skill can be run as /skill-name — it does not say "you do not invoke them"', () => {
+    expect(m1Slide()).not.toMatch(/you do not invoke them/i);
+    expect(m1Slide()).toMatch(/\/skill-name/);
+  });
+
+  it('M1 says instruction files are combined with no precedence — not that a narrower applyTo overrides a broader one', () => {
+    expect(m1Slide()).not.toMatch(/narrower\s+`?applyTo`?\s+overrides\s+broader/i);
+    expect(m1Slide()).toMatch(/no precedence/i);
+  });
+
+  it('M4 does not call weekly-content-audit the only gh-aw workflow, and its count matches the workflows on disk', () => {
+    const onDisk = readdirSync(join(REPO_ROOT, '.github', 'workflows')).filter((f) => f.endsWith('.md'));
+    expect(onDisk.length, 'the claim would be vacuous with fewer than two workflows').toBeGreaterThan(1);
+    expect(m4Slide()).not.toMatch(/only gh-aw workflow/i);
+
+    const words: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6 };
+    const claimed = m4Slide().match(/one of the (\w+) committed gh-aw workflows/i)?.[1]?.toLowerCase();
+    expect(claimed, 'M4 does not say "one of the N committed gh-aw workflows"').toBeDefined();
+    expect(words[claimed as string]).toBe(onDisk.length);
+    for (const f of onDisk) expect(m4Slide(), `M4 never names ${f}`).toContain(f);
+  });
+});
