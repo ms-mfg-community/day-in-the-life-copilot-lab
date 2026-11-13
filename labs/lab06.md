@@ -9,7 +9,7 @@ registry: docs/_meta/registry.yaml
 
 # 6 — Hooks
 
-In this lab you will explore the hook system and create a new hook for .NET build verification.
+In this lab you will explore the hook system and create a new hook for .NET build verification. Two optional extras then widen the picture: a collapsible deep dive on all 15 hook lifecycle events (the end of §6.1), and §6.2.2, which shows hooks written in other languages and hooks that call a web service.
 
 > ⏱️ Presenter pace: 3 minutes | Self-paced: 10 minutes
 
@@ -18,11 +18,13 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 > - Open your terminal at the **repository root** (the folder that contains `scripts/` and `.github/`). Every path in this lab is relative to it.
 > - Pick **one** shell and stay in it: the one your platform uses natively (PowerShell on Windows, Bash on macOS, Linux or WSL). **WSL/Bash** needs `jq`: the hook scripts use it to read the event and stop with an error if it is missing. **PowerShell** needs PowerShell 7 (the `pwsh` command, not Windows PowerShell 5.1), because §6.4 launches `pwsh`.
 
-> ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), and the Copilot CLI currency table.
+> ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), the Copilot CLI currency table, the collapsible 15-event deep dive at the end of §6.1, and all of §6.2.2 (hooks in other languages, shell-free `exec` and `"type": "http"` hooks).
 
 References:
 - [Using hooks with Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
 - [Hooks reference: events, payloads and exit codes](https://docs.github.com/en/copilot/reference/hooks-reference)
+- [Agent hooks in VS Code](https://code.visualstudio.com/docs/agent-customization/hooks) (the Copilot harness in VS Code shares the CLI's hook format)
+- [Config reference §4: every hook type, event and output](../docs/copilot-config-reference.md#4-hooks)
 
 > 🧭 **Track appendices** — the post-tool-use build hook recipe per stack lives in
 > [`labs/appendices/dotnet/lab06.md`](appendices/dotnet/lab06.md) and
@@ -74,7 +76,7 @@ cat .github/hooks/default.json
 Get-Content .github/hooks/default.json
 ```
 
-2. This repository's `default.json` registers seven hooks on the four lifecycle events below. The table is **non-exhaustive**: Copilot supports more events (for example `sessionStart` and `sessionEnd`) — see the [full event catalogue](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events).
+2. This repository's `default.json` registers seven hooks on the four lifecycle events below. The table is **non-exhaustive**: Copilot supports 15 lifecycle events in all (for example `sessionStart`, `sessionEnd` and `agentStop`). Open the collapsed **Deep Dive** at the end of this section for all 15, or read the [full event catalogue](../docs/copilot-config-reference.md#43-event-catalogue). GitHub's own list is the [hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events).
 
 | Event | When It Fires |
 |-------|--------------|
@@ -94,9 +96,57 @@ Get-Content .github/hooks/default.json
 }
 ```
 
-> 💡 Hooks run in both bash (Linux/Mac) and PowerShell (Windows). Always provide both for cross-platform support.
+> 💡 Hooks run in both bash (Linux/Mac) and PowerShell (Windows). Provide both for cross-platform support, or write the hook once in a language that runs everywhere and launch it with a single entry (§6.2.2). `"type"` is `"command"` here; the other two types are `"http"` (send the event to a web service) and `"prompt"` (submit a prompt when a session starts), both in §6.2.2.
 
 > 💡 **Where hooks load from:** `.github/hooks/*.json` is the project-level location this lab uses, but it is not the only one. Copilot CLI loads hooks from several sources, in this order: **policy hooks** (installed by an administrator and machine-wide; they load first and `disableAllHooks` cannot turn them off), **user hooks** in `~/.copilot/hooks/` (`%USERPROFILE%\.copilot\hooks\` on Windows), **project hooks** in `.github/hooks/*.json` (or an inline `hooks` block in `.github/copilot/settings.json`), then hooks contributed by **plugins**. They are combined: if the same event appears in more than one source, every entry from every source runs. Details: [hooks locations](https://docs.github.com/en/copilot/reference/hooks-reference#hooks-locations).
+
+<details>
+<summary>Deep Dive: All 15 Hook Lifecycle Interrupts & Surface Matrix</summary>
+
+Copilot defines **15** hook lifecycle events. This deep dive calls them *interrupts*: each one is a point where Copilot hands control to your hook so it can look, decide or add context. Most run synchronously and make the agent wait; `notification` is fire-and-forget and never blocks. Fourteen are listed in the [GitHub hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events). The fifteenth, `preMcpToolCall`, is documented only in the Copilot CLI's built-in documentation (`/config` lists it under Capabilities > Hooks as `hooks.preMcpToolCall`); it is not in the GitHub hooks reference's event table. Copilot CLI fires all 15.
+
+Write the event name in camelCase (`preToolUse`) to get a camelCase payload, or in PascalCase (`PreToolUse`) to get the VS Code and Claude compatible snake_case payload. Only 11 events document a PascalCase alias, shown in brackets below. `userPromptTransformed`, `preMcpToolCall`, `subagentStart` and `notification` have none, so always write those four in camelCase.
+
+**Session interrupts**
+
+| Event (PascalCase alias) | Fires when | A hook can | Cloud agent | VS Code |
+|---|---|---|---|---|
+| `sessionStart` (`SessionStart`) | A new or resumed session begins | Add context with `additionalContext`, or auto-submit a prompt with a `"type": "prompt"` hook | Once per job, as a new session | ✅ |
+| `preCompact` (`PreCompact`) | Just before manual or automatic context compaction | Observe only: it cannot block compaction. A `matcher` can pick `manual` or `auto` | Only `auto` fires | ✅ |
+| `notification` (no alias) | The CLI emits a system notification, such as a finished background shell, an idle agent or a permission prompt | Inject `additionalContext` as a user message. Fire-and-forget: it never blocks | Does not fire | — |
+| `errorOccurred` (`ErrorOccurred`) | An error occurs. The reference lists four contexts (`model_call`, `tool_execution`, `system`, `user_input`); the CLI's own setting text says it runs when a model call fails | Log or notify only | Fires | — |
+| `sessionEnd` (`SessionEnd`) | The session ends: `complete`, `error`, `abort`, `timeout` or `user_exit` | Clean up or log only | Once per job | ✅ |
+
+**Turn and prompt interrupts**
+
+| Event (PascalCase alias) | Fires when | A hook can | Cloud agent | VS Code |
+|---|---|---|---|---|
+| `userPromptSubmitted` (`UserPromptSubmit`) | The user submits a prompt | Observe or log. A command or HTTP hook's output is dropped here; `modifiedPrompt` is honored only by SDK hooks | At most once per job | ✅ |
+| `userPromptTransformed` (no alias) | After Copilot turns the prompt into model-facing content, before it is saved to history | Rewrite what the model sees with `modifiedTransformedPrompt`. It cannot block the turn | Fires | — |
+| `agentStop` (`Stop`) | The main agent finishes a turn | `{"decision": "block", "reason": "..."}` forces another turn | Fires | ✅ |
+
+**Subagent interrupts**
+
+| Event (PascalCase alias) | Fires when | A hook can | Cloud agent | VS Code |
+|---|---|---|---|---|
+| `subagentStart` (no alias) | A subagent is spawned (the built-in `general-purpose` agent is excluded) | Add `additionalContext` to its first message. It cannot block creation. A `matcher` can pick the agent name | Fires | ✅ |
+| `subagentStop` (`SubagentStop`) | A subagent finishes, before the parent sees its result | `block` plus a `reason` to make it continue, or `modifiedResponse` to redact or reformat the result | Fires | ✅ |
+
+**Tool-execution interrupts**
+
+| Event (PascalCase alias) | Fires when | A hook can | Cloud agent | VS Code |
+|---|---|---|---|---|
+| `permissionRequest` (`PermissionRequest`) | Before Copilot's permission service runs | Allow or deny programmatically with `behavior`. A `matcher` can pick the tool name | Does not apply: tool calls are pre-approved | — |
+| `preToolUse` (`PreToolUse`) | Before each tool runs | `allow`, `deny` or `ask`, or rewrite the arguments with `modifiedArgs`. A `matcher` can pick the tool name | Fires; `ask` becomes `deny` | ✅ |
+| `preMcpToolCall` (no alias) | Before an MCP tool request is sent | Adjust the request's metadata (per the CLI documentation) | Not documented | — |
+| `postToolUse` (`PostToolUse`) | After a tool succeeds | Replace the result with `modifiedResult`, or add `additionalContext` | Fires | ✅ |
+| `postToolUseFailure` (`PostToolUseFailure`) | After a tool fails | Add recovery guidance with `additionalContext` | Fires | — |
+
+**VS Code column:** ✅ means the [VS Code agent hooks page](https://code.visualstudio.com/docs/agent-customization/hooks) names the event for the Copilot harness. — means that page does not name it: the harness shares the CLI runtime, but check that your hook fires before you rely on it. The cloud agent runs a subset of events, only honors `bash` and `command` entries, and has no user to answer an `ask`.
+
+Payload fields, outputs, matchers and exit codes for every event are in the [event catalogue](../docs/copilot-config-reference.md#43-event-catalogue).
+
+</details>
 
 ## 6.2 Read Existing Hooks
 
@@ -167,7 +217,7 @@ Get-Content scripts/hooks/post-tool-use-format.sh
 
 This hook auto-formats files after Copilot edits them.
 
-> 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. Command `preToolUse` hooks are also **fail-closed**: if the script crashes or exits non-zero (including `exit 2`), Copilot denies the tool call even when the stdout JSON says `allow`, so a pre-hook that has no objection must `exit 0` — a non-zero exit is a denial, not a harmless skip. The one exception is a timeout, which is fail-open: Copilot surfaces a warning and lets the tool call proceed through the normal permission flow. Post-hooks run after the tool has finished, so they cannot stop it.
+> 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. Command `preToolUse` hooks are also **fail-closed**: if the script crashes or exits non-zero (including `exit 2`), Copilot denies the tool call even when the stdout JSON says `allow`, so a pre-hook that has no objection must `exit 0` — a non-zero exit is a denial, not a harmless skip. The exceptions fall through to the normal permission flow instead: a timeout is fail-open (Copilot surfaces a warning and lets the tool call proceed), and so is empty or unparseable stdout, which Copilot treats as "no decision". HTTP hooks fail differently; see §6.2.2. Post-hooks run after the tool has finished, so they cannot stop it.
 
 ### 6.2.1 The hook IPC contract (Copilot CLI at or above the registry's `copilot_cli_version_floor`)
 
@@ -194,7 +244,7 @@ This hook auto-formats files after Copilot edits them.
 }
 ```
 
-Other events (`sessionStart`, `userPromptSubmitted`, `preToolUse`, `errorOccurred`, `agentStop`, `subagentStop`, `sessionEnd`) follow the same on-stdin pattern with event-specific keys. **Asymmetry to remember:** in `preToolUse`, `toolArgs` is a JSON-encoded string; in `postToolUse`, `toolArgs` is already a parsed object.
+Other events (for example `sessionStart`, `userPromptSubmitted`, `preToolUse`, `errorOccurred`, `agentStop`, `subagentStop` and `sessionEnd`; all 15 are in the §6.1 deep dive) follow the same on-stdin pattern with event-specific keys. **Asymmetry to remember:** in `preToolUse`, `toolArgs` is a JSON-encoded string; in `postToolUse`, `toolArgs` is already a parsed object.
 
 **Read it like this** — these are excerpts from *inside* a hook script. Read them; don't type them into a terminal (on its own, `INPUT="$(cat)"` just waits for input):
 
@@ -220,6 +270,451 @@ $ProjectDir = if ($env:CLAUDE_PROJECT_DIR)      { $env:CLAUDE_PROJECT_DIR }
 ```
 
 > ⚠️ **Outdated guidance trap:** if you see a hook that reads `$TOOL_NAME` / `$env:TOOL_NAME` from the environment, it is broken against current Copilot CLI — those vars are never exported. Rewrite to the stdin-JSON pattern above.
+
+> 💡 **Event-name casing picks the payload.** Configure `preToolUse` (camelCase) and the hook receives `toolName` and `toolArgs`. Configure `PreToolUse` (PascalCase) and it receives the VS Code and Claude compatible snake_case shape instead: `tool_name`, `tool_input`, and Claude tool names such as `Bash`, `Read` and `Edit`. Pick one per hook and read the matching fields. The [config reference](../docs/copilot-config-reference.md#47-payload-formats-and-tool-names) shows both shapes side by side.
+
+### 6.2.2 Polyglot hooks, shell-free `exec`, and calling external services (`"type": "http"`)
+
+> 🧭 **Optional, and not on the timed route.** The block below is collapsed on purpose. Open it after you finish §6.3 and §6.4, or whenever you need a hook in another language or one that talks to a web service. The build hook you create in §6.3 does not depend on any of it, and nothing here touches this repository's `default.json`. Parts 2 and 3 each offer one live registration, in a scratch file that the clean-up step at the end deletes.
+
+<details>
+<summary>Optional: hooks in four languages, shell-free <code>exec</code>, HTTP and prompt hooks, and the advanced capabilities</summary>
+
+The §6.2.1 contract is **language-neutral**: the event arrives as JSON on stdin, the hook may print one JSON decision on stdout, and its exit code matters. This repository's hooks use Bash with `jq` and PowerShell only because those ship with the two shells. Any program that can read stdin and write stdout is a valid hook.
+
+#### 1. The same hook in four languages
+
+Here is one small `preToolUse` guard, written four ways: it denies writes to `.env`, `.env.local` and the like, and allows `.env.example`. It covers the file-writing tools `edit`, `create`, `write` and `apply_patch`. All four versions follow the same three rules, so the same event gets the same decision in every language:
+
+1. **Tool name first.** For any other tool the guard prints nothing and exits `0` before it looks at the arguments, because those arguments may not be JSON.
+2. **Odd arguments are "no opinion", never a crash.** If the arguments are not in a shape the guard can read (an empty string, an array, `null`, text that is not JSON), it prints nothing and exits `0`. This matters: a crash in a command `preToolUse` hook denies the call (§6.2), so a guard that throws on unexpected arguments blocks tools it was never meant to touch.
+3. **Input that is not JSON at all is an error.** If the event itself cannot be parsed, the script fails with a non-zero exit code.
+
+Node.js 22+ is already a prerequisite for this workshop (see the README's Prerequisites), so the Node version needs no extra install and, unlike the Bash version, no `jq`.
+
+| Language | Reads stdin with | Registers as |
+|---|---|---|
+| **Node.js** (`node`), the same on every OS | `JSON.parse(readFileSync(0, 'utf8'))` | `"exec": "node", "args": ["scripts/hooks/guard-env.mjs"]` |
+| **Python 3** (`python3`, usually `python` on Windows), standard library only | `json.load(sys.stdin)` | `"bash": "python3 scripts/hooks/guard_env.py"` plus `"powershell": "python scripts/hooks/guard_env.py"` |
+| **Bash**, needs `jq` | `INPUT="$(cat)"` then `jq` | `"bash": "./scripts/hooks/guard-env.sh"` |
+| **PowerShell 7** (`pwsh`) | `$input` then `ConvertFrom-Json` | `"powershell": "./scripts/hooks/guard-env.ps1"` |
+| Ruby, Go, Rust, any compiled binary | Its own JSON library | `"exec": "./bin/guard"` |
+
+**Node.js** (zero `jq`, cross-platform):
+```js
+// scripts/hooks/guard-env.mjs: a preToolUse guard in Node.js (no jq, same on every OS)
+import { readFileSync } from 'node:fs';
+
+const event = JSON.parse(readFileSync(0, 'utf8')); // the event arrives as JSON on stdin
+
+// 1. Look at the tool name first. For every other tool the arguments are none of this guard's
+//    business, and they may not even be JSON.
+if (!['edit', 'create', 'write', 'apply_patch'].includes(event?.toolName)) process.exit(0);
+
+// 2. toolArgs is usually a JSON-encoded object, but it can be any text: apply_patch sends the patch itself.
+let args = event.toolArgs;
+if (typeof args === 'string') {
+  try { args = JSON.parse(args); } catch { /* plain text: keep it as text */ }
+}
+
+// 3. Collect the paths this call writes to. Arguments in any other shape give none: "no opinion".
+const patchHeader = /^\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.*\S)\s*$/;
+const paths =
+  typeof args === 'string' ? args.split('\n').map((line) => line.match(patchHeader)?.[1]) // patch text
+  : args !== null && typeof args === 'object' ? [args.file_path, args.path]                // object arguments
+  : [];
+
+const fileName = (path) => path.split(/[\\/]/).pop();
+const isSecretsFile = (name) => {
+  const lower = name.toLowerCase();
+  return lower === '.env' || (lower.startsWith('.env.') && lower !== '.env.example');
+};
+const target = paths.find((path) => typeof path === 'string' && isSecretsFile(fileName(path)));
+
+if (target) {
+  // The decision is one JSON object on stdout. Printing nothing means "no opinion".
+  console.log(JSON.stringify({
+    permissionDecision: 'deny',
+    permissionDecisionReason: `Do not edit ${fileName(target)}: secrets stay out of tool calls.`,
+  }));
+}
+```
+
+**Python** (standard library only):
+```python
+# scripts/hooks/guard_env.py: the same guard in Python (standard library only)
+import json
+import re
+import sys
+
+event = json.load(sys.stdin)  # the event arrives as JSON on stdin
+
+# 1. Look at the tool name first. For every other tool the arguments are none of this guard's
+#    business, and they may not even be JSON.
+if not isinstance(event, dict) or event.get("toolName") not in ("edit", "create", "write", "apply_patch"):
+    sys.exit(0)
+
+# 2. toolArgs is usually a JSON-encoded object, but it can be any text: apply_patch sends the patch itself.
+args = event.get("toolArgs")
+if isinstance(args, str):
+    try:
+        args = json.loads(args)
+    except ValueError:
+        pass  # plain text: keep it as text
+
+# 3. Collect the paths this call writes to. Arguments in any other shape give none: "no opinion".
+patch_header = re.compile(r"\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.*\S)\s*$")
+if isinstance(args, str):  # patch text
+    paths = [m.group(1) for m in map(patch_header.match, args.split("\n")) if m]
+elif isinstance(args, dict):  # object arguments
+    paths = [args.get("file_path"), args.get("path")]
+else:
+    paths = []
+
+def file_name(path):
+    return re.split(r"[\\/]", path)[-1]
+
+def is_secrets_file(name):
+    name = name.lower()
+    return name == ".env" or (name.startswith(".env.") and name != ".env.example")
+
+target = next((p for p in paths if isinstance(p, str) and is_secrets_file(file_name(p))), None)
+
+if target:
+    print(json.dumps({
+        "permissionDecision": "deny",
+        "permissionDecisionReason": f"Do not edit {file_name(target)}: secrets stay out of tool calls.",
+    }, separators=(",", ":")))
+```
+
+**WSL/Bash** (uses `jq`):
+```bash
+#!/usr/bin/env bash
+# scripts/hooks/guard-env.sh: the same guard in Bash (needs jq)
+set -euo pipefail
+
+INPUT="$(cat)"  # the event arrives as JSON on stdin
+
+# 1. Look at the tool name first. For every other tool the arguments are none of this guard's
+#    business, and they may not even be JSON.
+TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName? // ""')
+case "$TOOL_NAME" in edit|create|write|apply_patch) ;; *) exit 0 ;; esac
+
+# 2. toolArgs is usually a JSON-encoded object, but it can be any text: apply_patch sends the patch itself.
+# 3. Print the paths this call writes to, one per line. Arguments in any other shape print nothing: "no opinion".
+PATHS=$(echo "$INPUT" | jq -r '
+  (.toolArgs | . as $raw | try fromjson catch $raw) as $args
+  | if ($args | type) == "string" then
+      $args | split("\n")[]
+      | capture("^\\*\\*\\* (?:Add File|Update File|Delete File|Move to):\\s*(?<path>.*\\S)\\s*$").path
+    elif ($args | type) == "object" then
+      ($args.file_path?, $args.path?) | strings
+    else empty end')
+
+while IFS= read -r FILE_PATH; do
+  NAME=$(printf '%s' "$FILE_PATH" | tr '\\' '/')  # treat Windows separators like /
+  NAME="${NAME##*/}"
+  LOWER=$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]')
+  if [[ "$LOWER" == ".env" || ( "$LOWER" == .env.* && "$LOWER" != ".env.example" ) ]]; then
+    jq -cn --arg name "$NAME" \
+      '{permissionDecision: "deny", permissionDecisionReason: ("Do not edit " + $name + ": secrets stay out of tool calls.")}'
+    exit 0
+  fi
+done <<< "$PATHS"
+```
+
+**PowerShell:**
+```powershell
+# scripts/hooks/guard-env.ps1: the same guard in PowerShell 7
+$ErrorActionPreference = 'Stop'  # input that is not JSON must fail loudly, like the other versions
+
+$evt = ($input | Out-String) | ConvertFrom-Json  # the event arrives as JSON on stdin
+
+# 1. Look at the tool name first. For every other tool the arguments are none of this guard's
+#    business, and they may not even be JSON. (-cnotin is the case-sensitive -notin: Edit is not edit.)
+if ($evt.toolName -cnotin 'edit', 'create', 'write', 'apply_patch') { exit 0 }
+
+# 2. toolArgs is usually a JSON-encoded object, but it can be any text: apply_patch sends the patch itself.
+$toolArgs = $evt.toolArgs
+if ($toolArgs -is [string]) {
+    try { $toolArgs = $toolArgs | ConvertFrom-Json -NoEnumerate } catch { }  # plain text: keep it as text
+}
+
+# 3. Collect the paths this call writes to. Arguments in any other shape give none: "no opinion".
+$paths = if ($toolArgs -is [string]) {
+    $toolArgs -split "`n" | ForEach-Object {
+        if ($_ -cmatch '^\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.*\S)\s*$') { $Matches[1] }
+    }
+} elseif ($toolArgs -is [System.Management.Automation.PSCustomObject]) {  # a JSON object ([pscustomobject] would match every value)
+    $toolArgs.file_path, $toolArgs.path
+}
+
+foreach ($path in $paths) {
+    if ($path -isnot [string]) { continue }
+    $name = ($path -split '[\\/]')[-1]
+    if ($name -eq '.env' -or ($name -like '.env.*' -and $name -ne '.env.example')) {
+        [ordered]@{ permissionDecision = 'deny'; permissionDecisionReason = "Do not edit ${name}: secrets stay out of tool calls." } |
+            ConvertTo-Json -Compress
+        exit 0
+    }
+}
+```
+
+> 💡 **`toolArgs` is not always a JSON object.** The hooks reference types it as `unknown`, so a guard must not assume a shape. You will meet an object that is already parsed, a JSON-encoded string of an object (the `preToolUse` case in §6.2.1), and plain text. `apply_patch`, one of the edit tools, is the plain-text case: its `toolArgs` is the patch itself (`*** Begin Patch` … `*** End Patch`), which is not JSON, and the files it writes are named on `*** Add File:`, `*** Update File:`, `*** Delete File:` and `*** Move to:` lines. That is why every guard above tries to parse a string as JSON, keeps it as text when that fails, and then reads either the `file_path` and `path` fields or those patch headers.
+
+The guard checks the file-writing tools only. A shell command such as `echo X=1 > .env` arrives as a `bash` call (a `powershell` call on Windows), and this guard has no opinion about it.
+
+🖥️ **In your terminal (optional):** save the Node version as `scripts/hooks/guard-env.mjs` and pipe it a sample event, the same way §6.4 tests the build hook. You are testing the script directly. Nothing is registered with Copilot.
+
+**WSL/Bash:**
+```bash
+echo '{"toolName":"edit","toolArgs":"{\"path\":\".env\"}"}' | node scripts/hooks/guard-env.mjs
+```
+
+**PowerShell:**
+```powershell
+@{ toolName = 'edit'; toolArgs = (@{ path = '.env' } | ConvertTo-Json -Compress) } | ConvertTo-Json -Compress | node scripts/hooks/guard-env.mjs
+```
+
+You should see one line: `{"permissionDecision":"deny","permissionDecisionReason":"Do not edit .env: secrets stay out of tool calls."}`. Change `.env` to `.env.example` or `src/Program.cs` and nothing prints: no output means "no opinion", and Copilot carries on with its normal permission flow. All four versions print that same line. To run the Python version on the same event, swap the last command for `python3 scripts/hooks/guard_env.py` (`python` on Windows).
+
+Now the same guard on an `apply_patch` call, whose `toolArgs` is a patch rather than JSON:
+
+**WSL/Bash:**
+```bash
+echo '{"toolName":"apply_patch","toolArgs":"*** Begin Patch\n*** Add File: .env\n+X=1\n*** End Patch"}' | node scripts/hooks/guard-env.mjs
+```
+
+**PowerShell:**
+```powershell
+@{ toolName = 'apply_patch'; toolArgs = "*** Begin Patch`n*** Add File: .env`n+X=1`n*** End Patch" } | ConvertTo-Json -Compress | node scripts/hooks/guard-env.mjs
+```
+
+The patch adds a file named `.env`, so you get the same line. Change `.env` to `src/Program.cs` and nothing prints.
+
+Now break it on purpose by piping something that is not JSON:
+
+**WSL/Bash:**
+```bash
+echo 'not json' | node scripts/hooks/guard-env.mjs; echo "exit code: $?"
+```
+
+**PowerShell:**
+```powershell
+'not json' | node scripts/hooks/guard-env.mjs; "exit code: $LASTEXITCODE"
+```
+
+The script crashes with a non-zero exit code (rule 3). Registered as a command `preToolUse` hook, that crash would **deny the tool call**: command `preToolUse` hooks are fail-closed (§6.2). That is the right response to a broken event and the wrong one to an unusual but valid event, which is why rule 2 turns odd arguments into "no opinion" instead. It is also why you test a hook by piping events into it before you register it.
+
+#### 2. Shell-free `exec` + `args`
+
+A hook entry can launch an executable directly, without a shell. This is a complete hooks file that registers the Node guard on `preToolUse`:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["scripts/hooks/guard-env.mjs"],
+        "matcher": "edit|create|write|apply_patch",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}
+```
+
+`exec` runs an executable **directly, without a shell**, and `args` is its argument list, passed verbatim. That removes a whole class of problems: no shell quoting or injection surface, no pipes, redirection or glob expansion to trip over, and no `bash` versus `powershell` choice to maintain. Do not combine `exec` with `bash`, `powershell` or `command`.
+
+- **`args` are not the event.** They are ordinary command-line arguments. The event still arrives on stdin, exactly as in §6.2.1.
+- **Where it works.** `exec` + `args` work in Copilot CLI and in the Copilot harness in VS Code, which share one hook format. The cloud agent runs its hooks in a Linux sandbox and honors `bash` and `command` entries, so a hook file that must also run there needs a `command` or `bash` entry as well. A single `"command": "node scripts/hooks/guard-env.mjs"` is the cross-platform fallback: it goes through a shell, but it works on every surface where `node` is on the PATH.
+- **Interpreter names.** `node` is the same command on every OS, which is why it suits a single `exec` entry. `python3` is usually just `python` on Windows, so a Python hook normally needs the separate `bash` and `powershell` entries from the table above.
+- **Validate event input.** Tool arguments are untrusted text. Never splice them into a shell command line; parse them as JSON inside a script, as the guards above do.
+- **`matcher`.** It limits the hook to the four tools the guard handles, so Copilot does not start Node for every `view` or `bash` call. The script still checks the tool name itself, so it stays correct without a matcher.
+
+**Registering it (optional).** To watch the guard work for real, create `.github/hooks/guard-env-local.json` with the file above and restart Copilot, because hook files load when it launches. Copilot loads every `.github/hooks/*.json` file together, so you do not need to touch `default.json`. **Never put this entry in `.github/hooks/default.json`:** that file is the repository's committed configuration, and §6.3 already edits it. A scratch file is one you can delete. Then ask Copilot to create a file called `.env`: the call is denied and the agent is shown the reason your guard printed, while a request for `.env.example` is left to the normal permission flow.
+
+> ⚠️ **A registration must never outlive its script.** Command `preToolUse` hooks are fail-closed (§6.2): if `scripts/hooks/guard-env.mjs` is deleted while `guard-env-local.json` still points at it, Node exits with an error and Copilot denies every `edit`, `create`, `write` and `apply_patch` call with `Denied by preToolUse hook (hook errored)`. That is why the clean-up step at the end of this section deletes the registration first. It is also why the file lives in this repository and not in your user hooks folder: the script path is relative to this repository, so a user-level registration would run in every repository you open and deny edits in each one that has no such script. If edits start being denied like that, delete `.github/hooks/guard-env-local.json` from your own terminal (the tools being denied are Copilot's) and restart Copilot.
+
+#### 3. Calling an external service with `"type": "http"`
+
+An `http` hook runs nothing on your machine. Copilot `POST`s the event JSON to a URL, and the JSON in the response body is the hook's output, exactly like stdout from a command hook. Use it to send events to an audit log, a policy service or a webhook relay. The service can be written in any language.
+
+| Field | What it does |
+|---|---|
+| `"type": "http"` | Selects this hook type |
+| `url` | Where Copilot POSTs. Only `https://` is accepted by default |
+| `headers` | Extra request headers, for example a source tag |
+| `allowedEnvVars` | Names of environment variables that may be expanded inside `headers` values, so a token can come from your environment instead of a committed file. Needs an `https://` `url` |
+| `timeoutSec` | Seconds before the call is abandoned. Default `30` |
+
+Two environment variables relax the URL rules. They belong to local experiments, never to shared configuration:
+
+| Variable | Effect |
+|---|---|
+| `COPILOT_HOOK_ALLOW_LOCALHOST=1` | Lets HTTP hooks post to `localhost` and other loopback addresses, which are otherwise blocked, and accepts plain `http://` for them |
+| `COPILOT_HOOK_ALLOW_HTTP_AUTH_HOOKS=1` | Lets `preToolUse`, `preMcpToolCall` and `permissionRequest` HTTP hooks use plain `http://`. Without it those three events must use `https://`, because the response can grant tool permissions |
+
+**Try it locally (optional).** A throwaway listener lets you watch events arrive. A `postToolUse` hook is the safe choice for this: it only observes, and it needs just the first variable.
+
+1. Save this listener as `scripts/hooks/audit-receiver.mjs`:
+
+```js
+// scripts/hooks/audit-receiver.mjs: a throwaway local listener for the http hook
+import { createServer } from 'node:http';
+
+createServer((req, res) => {
+  let body = '';
+  req.on('data', (chunk) => (body += chunk));
+  req.on('end', () => {
+    let event = {};
+    try { event = JSON.parse(body); } catch { /* not JSON: log it anyway */ }
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url} tool=${event.toolName ?? '(none)'}`);
+    res.setHeader('content-type', 'application/json');
+    res.end('{}'); // {} means "no output": change nothing and carry on
+  });
+}).listen(8787, '127.0.0.1', () => console.log('Listening on http://127.0.0.1:8787 (Ctrl+C to stop)'));
+```
+
+2. In a **second terminal** at the repository root, start it: `node scripts/hooks/audit-receiver.mjs`.
+3. Create `audit-local.json` in your **user** hooks folder (`~/.copilot/hooks/`, or `%USERPROFILE%\.copilot\hooks\` on Windows). It lives outside the repository on purpose, so `default.json` stays untouched. It applies to every Copilot session you start until you delete it in the clean-up step below:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "http",
+        "url": "http://127.0.0.1:8787/copilot-audit",
+        "headers": { "X-Source": "copilot-cli" },
+        "timeoutSec": 10
+      }
+    ]
+  }
+}
+```
+
+4. Start Copilot with the variable set. Hook files load when Copilot starts:
+
+**WSL/Bash:**
+```bash
+COPILOT_HOOK_ALLOW_LOCALHOST=1 copilot
+```
+
+**PowerShell:**
+```powershell
+$env:COPILOT_HOOK_ALLOW_LOCALHOST = "1"; copilot
+```
+
+5. Ask Copilot something that uses a tool, such as `Show me the first five lines of README.md`. The listener prints one line for each tool call that succeeds, for example `... POST /copilot-audit tool=view`.
+
+Now the shape you would ship. It uses `https://`, so no override variable is needed. The audit hook reports every tool result. The second hook asks a policy service before each tool runs, and the service answers with the same decision JSON a command hook prints, such as `{"permissionDecision": "deny", "permissionDecisionReason": "..."}`, or `{}` for no opinion:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "http",
+        "url": "https://audit.example.com/copilot-hooks",
+        "headers": { "X-Source": "copilot-cli" },
+        "allowedEnvVars": ["AUDIT_TOKEN"],
+        "timeoutSec": 10
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "http",
+        "url": "https://policy.example.com/copilot-check",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}
+```
+
+- **`allowedEnvVars`.** List only the names you need. The reference shows this field but no placeholder example, so test the expansion against a throwaway `https://` endpoint before you trust it with a real token, and never write a literal token in `headers`.
+- **Failure semantics.** HTTP `preToolUse` hooks are **fail-open**: a network error, a timeout or a non-2xx response falls through to the normal permission flow. Command `preToolUse` hooks are **fail-closed** on a crash or non-zero exit (timeouts and empty or unparseable output fall through instead). If an outage of your policy service must not silently allow everything, enforce the rule in a command hook, or in both.
+- **Cloud agent.** A cloud agent job runs in an ephemeral sandbox that is destroyed when the job ends, so a log file written by a command hook disappears with it, and the job's firewall reaches only GitHub and Copilot hosts by default. GitHub's reference says to retain hook output by sending it through an `http` hook entry: treat `"type": "http"` as the recommended built-in hook type for persistent audit logs from ephemeral cloud agent jobs, once an admin has allow-listed the destination host.
+
+#### 4. Submitting a prompt with `"type": "prompt"`
+
+A prompt hook types for you. It is allowed on `sessionStart` only, and it fires only when a new **interactive** Copilot CLI session starts: not on resume, and not in non-interactive `-p` mode. Cloud agent jobs are non-interactive, so a prompt entry may not fire there.
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "type": "prompt", "prompt": "Summarize the git status of this repository" }
+    ]
+  }
+}
+```
+
+#### 5. More than allow or deny
+
+A hook can do more than block. These are the output fields worth knowing, each for a specific event:
+
+| What you want | Event | The hook prints |
+|---|---|---|
+| Rewrite the tool's arguments | `preToolUse` | `{"permissionDecision": "allow", "modifiedArgs": {...}}` |
+| Replace the tool's result | `postToolUse` | `{"modifiedResult": {"resultType": "success", "textResultForLlm": "..."}}` |
+| Add context for the model | `sessionStart`, `subagentStart`, `postToolUse`, `postToolUseFailure`, `notification` | `{"additionalContext": "..."}`. For `postToolUse` the combined context is capped at 10 KB; `sessionStart` and `subagentStart` accumulate up to 10 MiB |
+| Make the agent keep working | `agentStop`, `subagentStop` | `{"decision": "block", "reason": "..."}`. After 8 consecutive blocks Copilot ends the turn anyway; `agentStop` input carries `stop_hook_active` so a hook can stop itself sooner |
+| Redact a subagent's answer | `subagentStop` | `{"modifiedResponse": "..."}` |
+
+Two more capabilities are not output fields:
+
+- **Progress messages.** A command hook can stream status lines to the timeline before it prints its decision. Each progress object must be a single line, and the hook must print exactly one final JSON object:
+
+```bash
+echo '{"type": "progress", "message": "Checking policy...", "temporary": true}'
+# ... do the work ...
+echo '{"permissionDecision": "allow"}'
+```
+
+- **Matchers and agent scope.** A regex `matcher` limits a hook to some tool names (`preToolUse`, `postToolUse`, `permissionRequest`), agent names (`subagentStart`), compaction triggers (`preCompact`) or notification types (`notification`). It must match the whole value. A hook declared under `hooks:` in a custom agent's `.agent.md` frontmatter runs only while that agent is selected:
+
+```json
+{ "type": "command", "matcher": "bash|edit", "bash": "./scripts/log-tool.sh" }
+```
+
+```yaml
+---
+name: formatter
+description: Formats changed files
+hooks:
+  PostToolUse:
+    - type: command
+      command: ./scripts/format-changed-files.sh
+      windows: ./scripts/format-changed-files.ps1
+---
+```
+
+The [config reference](../docs/copilot-config-reference.md#4-hooks) documents every field above, with limits and failure rules.
+
+**Clean up.** Undo this section in order. Exit Copilot and stop the listener with `Ctrl+C`. Delete the **registration files first**, then the scripts they point at, and (in PowerShell) clear the variable. A registration that outlives its script denies calls, as the warning in part 2 explains. Hook files load when Copilot starts, so a deleted file stops mattering at your next launch.
+
+**WSL/Bash:**
+```bash
+rm -f .github/hooks/guard-env-local.json ~/.copilot/hooks/audit-local.json
+rm -f scripts/hooks/guard-env.mjs scripts/hooks/guard_env.py scripts/hooks/guard-env.sh scripts/hooks/guard-env.ps1 scripts/hooks/audit-receiver.mjs
+```
+
+**PowerShell:**
+```powershell
+Remove-Item .github/hooks/guard-env-local.json, "$HOME\.copilot\hooks\audit-local.json" -ErrorAction SilentlyContinue
+Remove-Item scripts/hooks/guard-env.mjs, scripts/hooks/guard_env.py, scripts/hooks/guard-env.sh, scripts/hooks/guard-env.ps1, scripts/hooks/audit-receiver.mjs -ErrorAction SilentlyContinue
+Remove-Item Env:COPILOT_HOOK_ALLOW_LOCALHOST -ErrorAction SilentlyContinue
+```
+
+</details>
 
 ## 6.3 Create a .NET Build Hook
 
@@ -418,10 +913,11 @@ If `(early-return OK)` doesn't appear, the check failed before the script could 
 | Concept | Details |
 |---------|---------|
 | **Config file** | `.github/hooks/default.json` (project level; hooks also load from policy, user and plugin sources) |
-| **Script location** | `scripts/hooks/` (bash + PowerShell) |
-| **Lifecycle events** | This repo registers `userPromptSubmitted`, `preToolUse`, `postToolUse` and `errorOccurred`. The list is non-exhaustive: see the [event catalogue](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events). |
-| **Blocking** | Pre-hooks block by `exit 0` + stdout JSON `{"permissionDecision":"deny",…}`. Command `preToolUse` hooks are **fail-closed**: a crash or non-zero exit (including `2`) also denies the call, while a timeout is fail-open. Post-hooks run after the tool and cannot stop it. |
-| **IPC** | Event payload arrives as **JSON on stdin**. Only `COPILOT_PROJECT_DIR` and `CLAUDE_PROJECT_DIR` env vars are set; `TOOL_NAME`/`FILE_PATH` are **not** exported. Parse stdin with `jq` (bash) or `ConvertFrom-Json` (PowerShell). |
+| **Script location** | `scripts/hooks/` (bash + PowerShell, or one Node.js or Python script launched with `exec`, §6.2.2) |
+| **Hook types** | `command` (a shell command, or a shell-free `exec` + `args`), `http` (POST the event to a web service) and `prompt` (`sessionStart` only). See §6.2.2. |
+| **Lifecycle events** | This repo registers `userPromptSubmitted`, `preToolUse`, `postToolUse` and `errorOccurred`. The list is non-exhaustive: Copilot defines 15 lifecycle events. See the §6.1 deep dive and the [event catalogue](../docs/copilot-config-reference.md#43-event-catalogue). |
+| **Blocking** | Pre-hooks block by `exit 0` + stdout JSON `{"permissionDecision":"deny",…}`. Command `preToolUse` hooks are **fail-closed**: a crash or non-zero exit (including `2`) also denies the call, while a timeout is fail-open. HTTP `preToolUse` hooks are fail-open. Post-hooks run after the tool and cannot stop it. |
+| **IPC** | Event payload arrives as **JSON on stdin**. Only `COPILOT_PROJECT_DIR` and `CLAUDE_PROJECT_DIR` env vars are set; `TOOL_NAME`/`FILE_PATH` are **not** exported. Parse stdin with `jq` (bash), `ConvertFrom-Json` (PowerShell), or `JSON.parse` / `json.load` (Node.js / Python, §6.2.2). |
 
 **Hooks in this repository:**
 
@@ -439,7 +935,7 @@ If `(early-return OK)` doesn't appear, the check failed before the script could 
 `scripts/hooks/` also contains `post-tool-use-typecheck` (bash and PowerShell), which ships with the repo but is not registered in `default.json`, so it does not run here, and `pre-commit-strip-notebook-outputs.sh`, a git pre-commit hook rather than a Copilot hook.
 
 **Best practices:**
-- Always provide both bash and PowerShell scripts
+- Provide both bash and PowerShell scripts, or one cross-platform script launched with `exec` (§6.2.2)
 - Set appropriate timeouts (5s for quick checks, 30s for builds)
 - Use pre-hooks for guardrails (block bad actions)
 - Use post-hooks for verification (check results)
@@ -458,10 +954,10 @@ See [`solutions/lab06-hooks/post-tool-use-dotnet-build.sh`](../solutions/lab06-h
 
 ## 6.6 Cleanup
 
-> 💡 **Reading this checklist after Lab 06.** This lab only writes the hook scripts and the `default.json` entry from §6.3. It creates nothing under `~/.copilot/lessons/`, `node/.a2a/` or `.git/`, it never sets `core.hooksPath`, and it starts no background jobs. So a clean result is mostly empty output:
+> 💡 **Reading this checklist after Lab 06.** This lab writes the hook scripts and the `default.json` entry from §6.3, plus the optional §6.2.2 scratch files if you saved any. It creates nothing under `~/.copilot/lessons/`, `node/.a2a/` or `.git/`, it never sets `core.hooksPath`, and it starts no background jobs of its own (the optional §6.2.2 listener runs in a second terminal that you stop yourself with `Ctrl+C`). So a clean result is mostly empty output:
 > - The `ls … 2>/dev/null` sweep exits non-zero (`2` with Linux and WSL `ls`) when a path doesn't exist. That is expected here. It is Bash syntax, so skip it in PowerShell.
 > - `git config --get core.hooksPath` exits `1` and prints nothing when the setting isn't set. This lab never sets it, so there is nothing to revert.
-> - `git status --short` will list the hook script(s) and the edited `default.json` from §6.3. That is expected: the checklist's last line allows files you intentionally kept.
+> - `git status --short` will list the hook script(s) and the edited `default.json` from §6.3, plus any §6.2.2 scratch files you chose not to delete. That is expected: the checklist's last line allows files you intentionally kept.
 > - If a `git` line exits `128`, this shell's `git` can't use the checkout (for example WSL `git` on a folder that Windows `git` created). Run the `git` lines from the shell you cloned in.
 
 <!-- @include docs/_partials/cleanup.md — do not edit inline; edit the partial and re-sync. -->
