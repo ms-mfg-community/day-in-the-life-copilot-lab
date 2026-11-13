@@ -1066,7 +1066,7 @@ describe('phase 4 contract: Lab 06 §6.4.1 one-liners run against fixture logs',
       encoding: 'utf8',
       timeout: 30_000,
       env: {
-        ...process.env, TEMP: cleanupDir, TMP: cleanupDir,
+        ...process.env, TMPDIR: cleanupDir, TEMP: cleanupDir, TMP: cleanupDir,
         COPILOT_OTEL_FILE_EXPORTER_PATH: trace,
         OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT: 'SPAN_ONLY',
         PHASE4_KEEP: 'keep me',
