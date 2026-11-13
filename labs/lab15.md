@@ -532,7 +532,7 @@ two answered.
 
 </details>
 
-**Next:** [Lab 16 — Enterprise Marketplace & Plugin Governance](lab16.md)
+**Next:** [Lab 11 — Building & Distributing a Copilot Plugin](lab11.md) (start of Track 3) · or in numerical order: [Lab 16 — Enterprise Marketplace & Plugin Governance](lab16.md)
 
 ## 15.7 Cleanup
 

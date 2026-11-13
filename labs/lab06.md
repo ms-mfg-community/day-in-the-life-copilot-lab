@@ -1010,9 +1010,9 @@ if ($LASTEXITCODE -eq 0) { Write-Host "(early-return OK)" }
 
 If `(early-return OK)` doesn't appear, the check failed before the script could exit `0`. On the Bash route the usual cause is a missing `jq` (the script prints `ERROR: jq is required for hooks.`); on PowerShell it is usually that `pwsh` (PowerShell 7) isn't installed, as covered in **Before you start**.
 
-4. 🤖 **In Copilot CLI (`copilot>`):** in a real session, this hook fires automatically every time Copilot edits a `.cs` file. If the build breaks, Copilot sees the error output and can fix it.
+4. 🤖 **In Copilot CLI (`copilot>`):** in a real session, this hook fires automatically every time Copilot edits a `.cs` file. Note that this starter script prints plain text (`✅ Build succeeded` / `⚠️ BUILD FAILED`) for your terminal pipe test; to feed build failure text directly back into the model's next turn on `postToolUse`, emit a single JSON line `{"additionalContext": "⚠️ BUILD FAILED: ..."}` on stdout and exit `0` (or use `postToolUseFailure` when the tool itself failed, as covered in §6.2.2).
 
-> 💡 **Expected output:** You should see `✅ Build succeeded` in the Copilot output after editing a .cs file. If you see `⚠️ BUILD FAILED`, check the build errors. If you see nothing, verify permissions: `ls -la scripts/hooks/post-tool-use-dotnet-build.sh`.
+> 💡 **Expected output:** In your pipe test you should see `✅ Build succeeded` after editing a `.cs` file, or `⚠️ BUILD FAILED` if the build fails. If you see nothing, verify permissions: `ls -la scripts/hooks/post-tool-use-dotnet-build.sh`.
 
 💠 **In VS Code:** confirm the new hook is registered: run **Chat: Open Customizations**, select **Hooks**, and look for the new `postToolUse` entry under **Workspace**. Its runs show up in **Show Agent Debug Logs**, as the callout below explains.
 

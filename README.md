@@ -117,8 +117,10 @@ Copilot agentic surface against the stack you actually work in:
 
 Both tracks share the same domain (Student / Course / Instructor / Enrollment), the same lab
 narrative, and the same `.github/` Copilot configuration. Lab bodies are language-agnostic;
-each lab links a per-track appendix under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
-and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands.
+Labs 03–06 link per-track appendices under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
+and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands (Lab 07 walks
+through a 3-worker `.NET` orchestration pipeline with a Node-track adaptation note, and Labs
+13–14 walk through multi-agent A2A and tmux orchestration on the `Node` track).
 
 Run **both** tracks with a single command:
 
@@ -604,7 +606,7 @@ The 20 labs are organized into **four learning tracks**. Lab numbers and file na
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
-**Total: ~7 hours** (20 labs — self-paced or presenter-led)
+**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across all 20 modules, or ~13 hours of self-paced hands-on execution across all 20 labs)
 
 > 🧭 **Learning path.** Take the tracks in order: each one assumes the one before it. Because a track is a reading order, Track 2 runs Lab 10 → 12 → 15 and Lab 11 sits in Track 3.
 >
@@ -624,7 +626,7 @@ This repo ships with a rich set of configurations for you to explore and extend:
 | **Agents** | 4 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows`, `lab-studio-maintainer` — learners create more in Labs 03, 07 |
 | **Skills** | 7 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
 | **Command skills** | 19 | `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/cost-check` |
-| **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
+| **Hooks** | 7 handlers across 4 events | `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — prompt logging, secret/doc/force-push blocking, build/format verification, error logging |
 | **MCP Servers** | 4 | Context7 (library docs), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 

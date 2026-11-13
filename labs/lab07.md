@@ -13,7 +13,7 @@ In this lab you will create an orchestrator agent that coordinates a development
 
 > ⏱️ Presenter pace: 4 minutes | Self-paced: 20 minutes
 
-**Prerequisite:** finish [Setup](setup.md) and [Lab 03](lab03.md) first — §7.1 builds on the `dotnet-dev` agent that Lab 03's .NET track creates in `.github/agents/`.
+**Prerequisite:** finish [Setup](setup.md) and [Lab 03](lab03.md) first — §7.1 builds on the `dotnet-dev` agent that Lab 03's .NET track creates in `.github/agents/`. *(Node-track note: if you created `node-dev` in Lab 03, either create `dotnet-dev.agent.md` from [Lab 03's .NET appendix](appendices/dotnet/lab03.md) to run this 3-worker `.NET` pipeline, or adapt `lab-orchestrator` to delegate implementation and Vitest tests to `node-dev` and perform the review in the main agent as shown in `.github/skills/orchestrate/SKILL.md`; Labs 13–14 also cover Node-native multi-agent orchestration.)*
 
 > 💰 **Cost Budget**
 > - Expected token footprint: ~30k in / ~10k out for the full lab.

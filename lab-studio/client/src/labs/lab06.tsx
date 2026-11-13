@@ -157,7 +157,7 @@ export const lab06: Lab = {
               </tr>
             </tbody>
           </table>
-          <details open>
+          <details>
             <summary>Deep dive: all 15 hook lifecycle interrupts</summary>
             <p>
               Copilot defines <strong>15 hook lifecycle events</strong>. Think

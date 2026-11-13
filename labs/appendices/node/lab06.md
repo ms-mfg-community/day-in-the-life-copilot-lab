@@ -130,12 +130,11 @@ pnpm -C node test --run
 
 </details>
 
-> ⚠️ **Outdated guidance trap:** if you see a hook that reads `$COPILOT_TOOL_NAME` / `$COPILOT_TOOL_PATH` / `$env:TOOL_NAME` from the environment, it is broken against current Copilot CLI (contract unchanged from 1.0.37 through 1.0.83) — those vars are never exported. Hook events arrive as JSON on stdin with camelCase `toolName` / `toolArgs` fields (see the canonical pattern above).
+> ⚠️ **Outdated guidance trap:** if you see a hook that reads `$COPILOT_TOOL_NAME` / `$COPILOT_TOOL_PATH` / `$env:TOOL_NAME` from the environment, it is broken against current Copilot CLI — those vars are never exported. Hook events arrive as JSON on stdin with camelCase `toolName` / `toolArgs` fields (see the canonical pattern above).
 
 ## C. Wire it up
 
-Register the hook in `.github/copilot-config.json` (or your tool's hooks file) under the
-`post_tool_use` array, pointing at the platform-appropriate script.
+Add an entry under the `"postToolUse"` array in `.github/hooks/default.json` (or a separate `.github/hooks/*.json` file) with `"type": "command"`, `"bash": "bash .github/hooks/post-tool-use-node-build.sh"`, and `"powershell": "pwsh -NoProfile -File .github/hooks/post-tool-use-node-build.ps1"`. Reference solution: [`solutions/lab06-hooks/hook-registration.json`](../../../solutions/lab06-hooks/hook-registration.json).
 
 ## D. Verify
 

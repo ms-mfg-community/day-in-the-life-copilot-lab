@@ -1656,9 +1656,7 @@ through the three memory layers this lab teaches:
 - ✅ **Lab 10** — three-layer agent memory: raw sources, the three
   flavours of recall (Copilot Memory, the wiki, a custom service), the
   schema, and the curation that keeps them clean.
-- ⏭ **Lab 11** — building and distributing a Copilot plugin
-  (enterprise marketplace pattern) so the lessons and schema you curated
-  above ship to other teams.
+- ⏭ **Next in Track 2:** [Lab 12 — Fabric MCP](lab12.md) *(or [Lab 11 — Building & Distributing a Copilot Plugin](lab11.md) in Track 3 / numerical order, so the lessons and schema you curated above ship to other teams)*.
 
 ### What's next?
 

@@ -47,10 +47,9 @@ integration tests.
 
 Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsStudent`).
 
-> 📚 **Full pattern library:** see the canonical
-> [`dotnet-testing` skill](../../../.github/skills/dotnet-testing/SKILL.md) for the
-> complete 9-section reference (controller mocking, integration fixtures,
-> Playwright E2E, edge-case checklist, common commands).
+> 📚 **Full pattern library:** see the reference copy at
+> [`solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md`](../../../solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md)
+> (or run `git checkout -- .github/skills/dotnet-testing/SKILL.md` after the lab to restore the shipped 9-section version).
 ```
 
 <details>
@@ -80,10 +79,9 @@ integration tests.
 
 Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsStudent`).
 
-> 📚 **Full pattern library:** see the canonical
-> [`dotnet-testing` skill](../../../.github/skills/dotnet-testing/SKILL.md) for the
-> complete 9-section reference (controller mocking, integration fixtures,
-> Playwright E2E, edge-case checklist, common commands).
+> 📚 **Full pattern library:** see the reference copy at
+> [`solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md`](../../../solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md)
+> (or run `git checkout -- .github/skills/dotnet-testing/SKILL.md` after the lab to restore the shipped 9-section version).
 SKILL
 ````
 
@@ -111,8 +109,9 @@ integration tests.
 
 Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsStudent`).
 
-> 📚 **Full pattern library:** see the canonical `dotnet-testing` skill at
-> `.github/skills/dotnet-testing/SKILL.md` for the complete 9-section reference.
+> 📚 **Full pattern library:** see the reference copy at
+> `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md`
+> (or run `git checkout -- .github/skills/dotnet-testing/SKILL.md` after the lab to restore the shipped 9-section version).
 '@ | Out-File -FilePath .github/skills/dotnet-testing/SKILL.md -Encoding utf8
 ````
 
@@ -120,9 +119,9 @@ Use `MethodName_Condition_ExpectedResult` (e.g., `GetByIdAsync_ValidId_ReturnsSt
 
 > 💡 **Why a stub here?** The lab's pedagogic goal is the skill-authoring
 > *workflow* (create dir, write frontmatter + activation triggers, point at it
-> from an agent). Once you've done that, the live skill is the source of
-> truth for the full pattern set — keeping the appendix short avoids drift
-> between this file and the production skill.
+> from an agent). Read the shipped 9-section `.github/skills/dotnet-testing/SKILL.md`
+> before overwriting it (or inspect `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md`
+> and run `git checkout -- .github/skills/dotnet-testing/SKILL.md` when you finish).
 
 ## `.github/skills/create-dotnet-test/SKILL.md`
 
