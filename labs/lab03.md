@@ -249,6 +249,13 @@ What would I need to change to add a search feature to the students API routes?
       - **Node track — "Validation"** (Zod schemas at the route boundary): does the agent validate the search input with a Zod schema, for example `z.object(...)` or `safeParse`?
    3. If you can't find it, that isn't a failure — a model doesn't apply every line of its instructions every time. Back in your Copilot session, ask: `Which of the coding standards in your instructions apply to this change?` Then put its list next to the bullets in your file and find each one it names.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Was my agent loaded, and what does it cost?*
+>
+> If the agent seems to ignore its file, find out whether Copilot loaded it before you rewrite the prompt.
+>
+> - **Copilot CLI:** with the session from step 2 still open, type these inside the same `copilot` session. `/env` lists the custom agents the session loaded, and `/context` splits the context window into System Prompt, Custom Instructions, System Tools, MCP Tools, Messages, Free Space and Buffer, so you can see how much room the agent's prompt takes. In experimental mode `/context` also breaks usage down per skill, subagent, MCP server, tool and plugin.
+> - **VS Code:** run **Show Agent Debug Logs**, open the **Logs view** and filter to **Discovery** to see whether the agent file was loaded, skipped or rejected. **Show Chat Debug View** shows the **System prompt** for a request, which is where the agent's definition should appear. Turn capture on before you reproduce the problem, because it is not retroactive: see [the guide](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce).
+
 When you're done, type `/exit` to leave Copilot and return to your shell prompt.
 
 > 💡 **Tip**: If the agent doesn't seem to follow its instructions, check that the YAML frontmatter is valid (no syntax errors) and that the file is in `.github/agents/`.

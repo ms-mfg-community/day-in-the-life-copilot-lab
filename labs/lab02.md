@@ -180,6 +180,15 @@ A correctly loaded instruction should surface `asp-validation-summary="ModelOnly
 
 > 💡 **Deterministic check — `/instructions`:** In your restarted `copilot` session, type `/instructions`. It lists the instruction files Copilot CLI discovered for the session — `razor-views.instructions.md` should be among them — and lets you toggle each one on or off (a file you switch off is not included). `/env` shows everything the session loaded: instructions, MCP servers, skills, agents, and more. Unlike the model probe above, these commands report what Copilot found rather than asking a model to describe it.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Is the new rule in the request, or only on disk?*
+>
+> `/instructions` tells you Copilot found the file. Two questions come after it: did the text reach the model, and did the model follow it? Discovery, inclusion and following are three different checks.
+>
+> - **Copilot CLI:** type these inside a running `copilot` session. `/env` lists everything the session loaded, instructions included, and `/context` splits the context window into System Prompt, Custom Instructions, System Tools, MCP Tools, Messages, Free Space and Buffer, so you can see what your instructions cost.
+> - **VS Code:** run **Chat: Open Customizations** and select **Instructions** to see each file's source and any error. Then use **Show Agent Debug Logs** and filter to **Discovery** to see whether the file was loaded, skipped or rejected, and **Show Chat Debug View** to look for its text in the **System prompt**. If the text reached the model and the answer still ignores it, look for conflicting rules: a rule can be loaded and not followed.
+>
+> The [guide](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce) explains how to turn VS Code capture on, which you must do before you reproduce the problem.
+
 ## 2.3 Edit AGENTS.md
 
 `AGENTS.md` gives Copilot project context it **cannot work out by reading the repository** — how the project runs, what is generated, what not to touch. Use it for that operational context; use `copilot-instructions.md` for the *rules*.

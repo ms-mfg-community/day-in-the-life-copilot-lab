@@ -122,6 +122,15 @@ copilot --agent planner `
 
 > 💡 Copilot loads agents from `.github/agents/` in the current working directory. You can also place personal agents in `~/.copilot/agents/`.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Did Copilot really load those files?*
+>
+> A good answer does not prove the configuration loaded: Copilot may simply have guessed well. Check what it found instead of asking it to describe itself.
+>
+> - **Copilot CLI:** type these inside a running `copilot` session, not at your shell prompt. `/instructions` lists the instruction files Copilot found and lets you switch each one on or off, and `/env` shows everything the session loaded: instructions, MCP servers, skills, agents, hooks, plugins, LSPs and extensions.
+> - **VS Code:** open the Chat view's **...** menu and choose **Show Agent Debug Logs**, then look at the **Discovery** events to see whether a file was loaded, skipped or rejected. **Show Chat Debug View** shows the **System prompt** that reached the model, where request details are available.
+>
+> If you use VS Code, turn capture on before you reproduce the problem, because it is not retroactive: [the guide shows how](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce). The Copilot CLI checks need no setup.
+
 ---
 
 ## 1.0a Copilot CLI currency (2026 refresh)

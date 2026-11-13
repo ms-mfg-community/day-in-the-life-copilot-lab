@@ -9,7 +9,7 @@ registry: docs/_meta/registry.yaml
 
 # 6 — Hooks
 
-In this lab you will explore the hook system and create a new hook for .NET build verification. Two optional extras then widen the picture: a collapsible deep dive on all 15 hook lifecycle events (the end of §6.1), and §6.2.2, which shows hooks written in other languages and hooks that call a web service.
+In this lab you will explore the hook system and create a new hook for .NET build verification. Three optional extras then widen the picture: a collapsible deep dive on all 15 hook lifecycle events (the end of §6.1), §6.2.2, which shows hooks written in other languages and hooks that call a web service, and §6.4.1, which shows how to see what Copilot did: debug logs, session data and OpenTelemetry.
 
 > ⏱️ Presenter pace: 3 minutes | Self-paced: 10 minutes
 
@@ -18,13 +18,14 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 > - Open your terminal at the **repository root** (the folder that contains `scripts/` and `.github/`). Every path in this lab is relative to it.
 > - Pick **one** shell and stay in it: the one your platform uses natively (PowerShell on Windows, Bash on macOS, Linux or WSL). **WSL/Bash** needs `jq`: the hook scripts use it to read the event and stop with an error if it is missing. **PowerShell** needs PowerShell 7 (the `pwsh` command, not Windows PowerShell 5.1), because §6.4 launches `pwsh`.
 
-> ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), the Copilot CLI currency table, the collapsible 15-event deep dive at the end of §6.1, and all of §6.2.2 (hooks in other languages, shell-free `exec` and `"type": "http"` hooks).
+> ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 (without its optional §6.4.1) and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), the Copilot CLI currency table, the collapsible 15-event deep dive at the end of §6.1, all of §6.2.2 (hooks in other languages, shell-free `exec` and `"type": "http"` hooks) and all of §6.4.1 (debug logs, session data, `/diagnose` and OpenTelemetry).
 
 References:
 - [Using hooks with Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
 - [Hooks reference: events, payloads and exit codes](https://docs.github.com/en/copilot/reference/hooks-reference)
 - [Agent hooks in VS Code](https://code.visualstudio.com/docs/agent-customization/hooks) (the Copilot harness in VS Code shares the CLI's hook format)
 - [Config reference §4: every hook type, event and output](../docs/copilot-config-reference.md#4-hooks)
+- [Debugging and observability: VS Code debug views, CLI session data, `/diagnose` and OpenTelemetry](../docs/debugging-and-observability.md)
 
 > 🧭 **Track appendices** — the post-tool-use build hook recipe per stack lives in
 > [`labs/appendices/dotnet/lab06.md`](appendices/dotnet/lab06.md) and
@@ -903,7 +904,195 @@ If `(early-return OK)` doesn't appear, the check failed before the script could 
 
 > 💡 **Expected output:** You should see `✅ Build succeeded` in the Copilot output after editing a .cs file. If you see `⚠️ BUILD FAILED`, check the build errors. If you see nothing, verify permissions: `ls -la scripts/hooks/post-tool-use-dotnet-build.sh`.
 
-> 💡 **Verifying hooks in VS Code:** To confirm whether a hook fired and see its output, open the **Output** panel (`Cmd+Shift+U` / `Ctrl+Shift+U`), then select **"GitHub Copilot Chat Hooks"** from the dropdown menu. This shows execution logs for all hooks, including exit codes and any stdout/stderr output.
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Did my hook actually run?*
+>
+> A hook file on disk is not proof that its script executed, and a hook that "does nothing" looks the same as one that never started. Check the evidence instead of guessing:
+>
+> - **Copilot CLI:** every hook that runs is recorded in the session's `events.jsonl` as a `hook.start` and a `hook.end` event, with its `hookType` and whether it succeeded. Type `/env` inside a running `copilot` session to list the hooks it loaded, and `/diagnose` to have Copilot analyze the session's logs. Part 2 of §6.4.1 has the one-liner that counts them.
+> - **VS Code:** run **Show Agent Debug Logs** and look at the Discovery events to see whether your hook file was loaded, skipped or rejected. The **GitHub Copilot Chat Hooks** Output channel is for VS Code's legacy Local setup only. **GitHub Copilot Chat** is the general Output channel (`Ctrl+Shift+U` on Windows, `Cmd+Shift+U` on macOS, `Ctrl+K Ctrl+H` on Linux).
+>
+> The full walkthrough is the optional [§6.4.1](#641-debugging-and-observability-see-what-copilot-did), and the reference is [Debugging and observability](../docs/debugging-and-observability.md).
+
+### 6.4.1 Debugging and observability: see what Copilot did
+
+> 🧭 **Optional, and not on the timed route.** The block below is collapsed on purpose. Open it after §6.4, or whenever a hook, an instruction, a skill or an agent does not behave and you want to see why. Nothing here changes the hook you built or this repository's `default.json`. Part 4 writes one scratch file outside the repository, and **Tidy up** at the end deletes it.
+
+<details>
+<summary>Optional: debug logs, session data, <code>/diagnose</code> and OpenTelemetry</summary>
+
+A hook runs without a window of its own, so you cannot tell one that ran and approved from one that never started. Four tools answer that, and the same four answer it for instructions, agents, skills and MCP servers (Labs 01 to 05 and 07 each have a **🔍 Debug It** callout that points here). Use part 1 if you work in VS Code and parts 2 to 4 for Copilot CLI; the [reference guide](../docs/debugging-and-observability.md) has the detail behind each part.
+
+#### 1. VS Code: Agent Debug Logs and the Chat Debug view
+
+1. **Turn capture on before you reproduce the problem**, because capture is not retroactive. For sessions managed by the Agent Host, which is how the Copilot harness runs, set `chat.agentHost.agentDebugLog.enabled`. Local harness sessions need `github.copilot.chat.agentDebugLog.fileLogging.enabled` instead, and a reload of the editor window before you use `/troubleshoot`. VS Code documents the Local harness as deprecated, so most setups need only the first.
+
+   ```jsonc
+   // settings.json
+   { "chat.agentHost.agentDebugLog.enabled": true }
+   ```
+
+2. Repeat something that fires hooks, for example ask Copilot to `List the files in .github/hooks`.
+3. Open the Chat view's **...** menu and choose **Show Agent Debug Logs** (or run **Developer: Open Agent Debug Logs**). The panel has four views:
+   - **Logs view**: every event in order. Filter to **Discovery** to see whether a customization was loaded, skipped or rejected, and to tool calls, model requests and errors. Expand an event for its details.
+   - **Summary view**: tool calls, token usage, errors and total duration. Open it by selecting the session description in the breadcrumb at the top of the panel.
+   - **Agent Flow Chart**: which agent delegated to which. Open it from the Summary view.
+   - **Cache Explorer**: use it only when the Summary view shows low cache reuse.
+
+   The **Export** icon saves a session as an OpenTelemetry JSON file in OTLP format. Review it before you share it.
+4. Run **Show Chat Debug View** (or **Developer: Show Chat Debug View**) to see what reached the model for one request: the **System prompt**, **User prompt**, **Context**, **Response** and **Tool responses**.
+5. For extension-level errors, open the Output panel. **GitHub Copilot Chat** is the general channel: `Ctrl+Shift+U` on Windows, `Cmd+Shift+U` on macOS, `Ctrl+K Ctrl+H` on Linux. The **GitHub Copilot Chat Hooks** channel belongs to the legacy Local hook setup, so a Copilot harness session shows its hooks in the Agent Debug Logs instead.
+
+#### 2. Copilot CLI: the session folder
+
+Every local session leaves a folder at `~/.copilot/session-state/<session-id>/` (under `$COPILOT_HOME` when that is set):
+
+| File | What it holds |
+|---|---|
+| `events.jsonl` | The session's chronological event log |
+| `workspace.yaml` | Session metadata, such as `id`, `cwd`, `repository`, `branch`, `created_at` and `updated_at` |
+| `plan.md` | The session plan, created when the session uses plans |
+| `session.db` | The SQLite database behind the agent's `sql` tool, created when the session uses that tool |
+
+`session-store.db` sits next to the folders in `~/.copilot/`. It indexes your sessions for search, and the `sessions` table in it holds each session's `summary` (`workspace.yaml` does not). These files are not encrypted, and anything that reached a tool result, such as a prompt or the contents of a file, is saved in them.
+
+1. Inside a running `copilot` session, type `/session id` to show and copy the session ID, then ask for something that fires hooks, such as `List the files in .github/hooks`.
+2. In a second terminal, or after `/exit`, count the hooks that ran. Read the result as "hook starts, grouped by hook type":
+
+**WSL/Bash:**
+```bash
+# Which hooks ran in this session? (point EVENTS at your session folder)
+EVENTS=~/.copilot/session-state/<session-id>/events.jsonl
+jq -r 'select(.type=="hook.start") | .data.hookType' "$EVENTS" | sort | uniq -c | sort -rn
+```
+
+**PowerShell:**
+```powershell
+# Which hooks ran in this session? (point $events at your session folder)
+$events = Join-Path $HOME '.copilot/session-state/<session-id>/events.jsonl'
+Get-Content $events | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.type -eq 'hook.start' } | Group-Object { $_.data.hookType } | Sort-Object Count -Descending | Select-Object Count, Name
+```
+
+You should see the hook types this repository registers in `.github/hooks/default.json` (`userPromptSubmitted`, and `preToolUse` and `postToolUse` once a tool ran), plus any hooks from `~/.copilot/hooks/` or plugins. A `hook.end` record carries `success`, so a hook that ended with `success` set to `false` is the one to read first. The CLI documentation names `events.jsonl` but does not publish its fields; these were observed on a current build and can change.
+
+#### 3. Ask Copilot what happened
+
+You do not have to read the logs yourself.
+
+1. Inside a running `copilot` session, `/diagnose [prompt]` analyzes the current session's logs, including why a permission request needed approval. Try `/diagnose Why did that tool call ask me for approval?`.
+2. `/collect-debug-logs` collects debug logs to a local `.tgz` file, shares them with GitHub after you consent, or creates a secret GitHub gist. Choose the local file; `*.tgz` is git-ignored in this repository. Debug logs can contain prompts and source code, so review a bundle before you send it anywhere.
+3. Ask Copilot to read its own history: `Using session_store_sql, show my five most recent sessions with their summaries.` The tool has two stores. The cloud store (the default) has the materialized views `sessions`, `turns`, `checkpoints`, `session_files`, `session_refs`, `session_usage`, `tool_executions` and `events`. The local store (`source: "local"`) is the SQLite file `~/.copilot/session-store.db`, with `sessions`, `turns`, `checkpoints`, `session_files`, `session_refs` and `search_index`. Token totals and tool failures are only in the cloud views.
+4. In VS Code, attach the session's events to chat with the sparkle icon in the Agent Debug Logs panel or by typing `#debugEventsSnapshot`, then ask `#debugEventsSnapshot which customization files were loaded?`. Or run `/troubleshoot Which customizations were loaded, and did any fail?`. For a session in the Agents window, use `/troubleshoot #session` and select the session.
+
+#### 4. OpenTelemetry: traces from a real session
+
+OpenTelemetry (OTel) is off until you set one of three things: `COPILOT_OTEL_ENABLED=true`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` (it sends to a collector that you run), or `COPILOT_OTEL_FILE_EXPORTER_PATH` (it writes one JSON record per line to a file, so it needs no collector). This part uses the file, in your operating system's temp folder, outside the repository. `copilot-otel.jsonl` is **not** git-ignored in this repository, so a file inside the checkout could be committed by a stray `git add .`, and with content capture on it holds your prompts.
+
+1. Start Copilot with the exporter on:
+
+**WSL/Bash:**
+```bash
+# Run Copilot with the file exporter on. The variable applies to this one run.
+COPILOT_OTEL_FILE_EXPORTER_PATH=/tmp/copilot-otel.jsonl copilot
+```
+
+**PowerShell:**
+```powershell
+# Run Copilot with the file exporter on. The variable lasts until you remove it (Tidy up).
+$env:COPILOT_OTEL_FILE_EXPORTER_PATH = Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl'
+copilot
+```
+
+   Inside that session, ask for something that uses a tool, then type `/exit`:
+
+```text
+List the files in .github/hooks. Marker: PINEAPPLE-7431.
+```
+
+2. After `/exit`, list the spans the run recorded:
+
+**WSL/Bash:**
+```bash
+# Span names, in file order (children finish before their parent)
+OTEL=/tmp/copilot-otel.jsonl
+jq -r 'select(.type=="span") | .name' "$OTEL"
+```
+
+**PowerShell:**
+```powershell
+# Span names, in file order (children finish before their parent)
+$otel = Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl'
+Get-Content $otel | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.type -eq 'span' } | ForEach-Object { $_.name }
+```
+
+   Expect `invoke_agent`, a `chat <model>` span for each model call and, because a tool ran, an `execute_tool <tool>` span. The documented tree is `invoke_agent`, then `plan` in plan mode only, then `chat` and `execute_tool` beneath it. Spans are written as they finish, so children come before their parent, and spans outside the tree (a `permission` span, for one) can appear. Each span names its parent in `parentSpanId`.
+3. Count the hook events recorded on the spans:
+
+**WSL/Bash:**
+```bash
+# Hooks in the OTel file, by hook type
+OTEL=/tmp/copilot-otel.jsonl
+jq -r 'select(.type=="span") | .events[]? | select(.name=="github.copilot.hook.start") | .attributes["github.copilot.hook.type"]' "$OTEL" | sort | uniq -c | sort -rn
+```
+
+**PowerShell:**
+```powershell
+# Hooks in the OTel file, by hook type
+$otel = Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl'
+Get-Content $otel | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.type -eq 'span' } | ForEach-Object { $_.events } | Where-Object { $_.name -eq 'github.copilot.hook.start' } | Group-Object { $_.attributes.'github.copilot.hook.type' } | Sort-Object Count -Descending | Select-Object Count, Name
+```
+
+   This is the same question as part 2, answered from the trace. The span names and the metric names are documented; these event and attribute names were observed on a current build and can change.
+4. By default OTel records metadata only, so your prompt is not in the file. Count the lines that contain the marker word. `0` means no prompt content was recorded:
+
+**WSL/Bash:**
+```bash
+# Marker check: how many lines of the file contain the marker?
+OTEL=/tmp/copilot-otel.jsonl
+grep -c 'PINEAPPLE-7431' "$OTEL"
+```
+
+**PowerShell:**
+```powershell
+# Marker check: how many lines of the file contain the marker?
+$otel = Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl'
+@(Select-String -Path $otel -SimpleMatch 'PINEAPPLE-7431').Count
+```
+
+   Now delete the file and run Copilot again with content capture on:
+
+**WSL/Bash:**
+```bash
+# Run again with prompts, responses and tool arguments captured
+rm -f /tmp/copilot-otel.jsonl
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT=SPAN_ONLY COPILOT_OTEL_FILE_EXPORTER_PATH=/tmp/copilot-otel.jsonl copilot
+```
+
+**PowerShell:**
+```powershell
+# Run again with prompts, responses and tool arguments captured
+Remove-Item (Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl')
+$env:OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT = 'SPAN_ONLY'
+copilot
+```
+
+   Ask the same prompt, type `/exit`, and run the marker check again: with `SPAN_ONLY` the count is no longer `0`. `OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT=SPAN_ONLY` adds the full prompt and response messages, the system instructions, tool call arguments and results, and sandbox decisions to the spans. `SPAN_AND_EVENT` also enables span content capture, because separate content events are not exported. The file is now sensitive: it holds the system prompt, your prompts and tool output. Use content capture only in a trusted environment.
+
+**Tidy up.** Delete the trace file and clear the variables. Each run **appends** to the file, so deleting it also stops the next run from mixing with this one. The VS Code settings from part 1 can stay on; turn them off if you do not want the extra logging.
+
+**WSL/Bash:**
+```bash
+rm -f /tmp/copilot-otel.jsonl
+```
+
+**PowerShell:**
+```powershell
+Remove-Item (Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl') -ErrorAction SilentlyContinue
+Remove-Item Env:COPILOT_OTEL_FILE_EXPORTER_PATH, Env:OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT -ErrorAction SilentlyContinue
+```
+
+Before you share any session folder, debug bundle, exported log or trace file, read it: they can hold prompts, source code, file paths and secrets. The [guide](../docs/debugging-and-observability.md#7-before-you-share-anything) lists what to check.
+
+</details>
 
 ## 6.5 Final
 

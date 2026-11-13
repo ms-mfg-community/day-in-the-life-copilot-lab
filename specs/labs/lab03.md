@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab03.md` (201 lines) — "Creating a .NET Development Agent" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: §3.3 forward-reference preview — AC11) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: §3.3 forward-reference preview — AC11; Phase 4: Debug It callout — AC12, C12–C13, D9, §5, §7) |
 
 ---
 
@@ -45,6 +45,7 @@ published reference does not support.
 | AC9 | `name` is no longer described as how users invoke the agent | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC10 | The tools table still lists all six documented aliases | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC11 | §3.3 is a read-only forward-reference preview of Lab 05: it links `[Lab 05 — MCP Server Configuration](lab05.md)`, says the `mcp-servers:` block is wired up **after** completing Lab 05 and not in this lab, and says so inside the YAML block too; the hands-on sections (§3.2, §3.4) and both appendices' agent bodies use built-in tool aliases only | `npx vitest run tests/lab-structure/lab03-contract` |
+| AC12 | §3.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), before the instruction to `/exit`. It uses `/env` for the agents the session loaded and `/context` for the split of the context window, typed inside the same `copilot` session, and ties per-skill and per-agent usage to experimental mode; and in VS Code the **Discovery** events in the **Logs view** of **Show Agent Debug Logs** and the **System prompt** in **Show Chat Debug View**. It adds no MCP wiring (AC11 still holds for §3.2 and §3.4) and links `docs/debugging-and-observability.md` | `npx vitest run tests/lab-structure/lab03-contract tests/lab-structure/debugging-observability-contract` |
 
 ## 4. Outside-world claims
 
@@ -61,6 +62,8 @@ published reference does not support.
 | C9 | §3.4 `--allow-all-tools` on a read-only analysis prompt | `free-check` for the flag; **parked** for the advice | `copilot --help` documents `--allow-all-tools`. Whether an early lab should teach blanket tool approval is a product/safety question, parked identically in `specs/labs/lab01.md` C12. Keep the dispositions aligned across labs. |
 | C10 | Reference L18: *MCP servers in agents* → `custom-agents-configuration#mcp-servers` | `free-check` — anchor is thin | The page covers `mcp-servers` only as one row of the frontmatter table; there is no `#mcp-servers` section. Low severity, and §3.3 already defers to Lab 05 as canonical. Record, do not chase. |
 | C11 | Solution link `solutions/lab03-dotnet-dev-agent/dotnet-dev.agent.md` | `free-check` | Covered by `links-resolve`; AC2 observes it. |
+| C12 | Phase 4: "`/env` lists the custom agents the session loaded; `/context` splits the context window into System Prompt, Custom Instructions, System Tools, MCP Tools, Messages, Free Space and Buffer; in experimental mode it also breaks usage down per skill, subagent, MCP server, tool and plugin" | `free-check` | `copilot help commands` (1.0.111-0) and the CLI built-in docs `command:/env` and `command:/context` (1.0.110-3): "Experimental mode adds usage per skill, subagent, MCP server, tool and plugin, and the largest messages." `setting:experimental`: "Off by default … Takes effect after a restart." The plan's wording ("`/context` … token usage per skill/agent") omitted the experimental-mode condition; the callout and the contract keep it. |
+| C13 | Phase 4: "the **Discovery** events in the **Logs view** say whether the agent file was loaded, skipped or rejected; the **System prompt** is where the agent's definition should appear" | `free-check` | VS Code, [Debug chat interactions](https://code.visualstudio.com/docs/agents/agent-troubleshooting/chat-debug-view), read 2026-11-12: "Check **Discovery** events … whether a customization was loaded, skipped, or rejected"; the **System prompt** row: "Verify that expected custom instructions and agent definitions appear." |
 
 ## 5. Non-goals
 
@@ -72,6 +75,7 @@ published reference does not support.
 - Do not add `todo` to the tools table or expand it. Six aliases is enough for a beginner lab.
 - Do not turn §3.3 into an MCP lab. It is explicitly a preview that defers to Lab 05.
 - Do not edit any file other than `labs/lab03.md`, this spec and `tests/lab-structure/lab03-contract.test.ts`.
+- **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §3.4 (AC12) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 15. It adds no `mcp-servers` or `context7` text (AC11), no `@` invocation form (AC4) and no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
 
 ## 6. Known defects
 
@@ -85,6 +89,7 @@ published reference does not support.
 | D6 | L116 (§3.3 snippet) | `mcp-servers: ["context7"]` is an array; the published type is an **object** (C3). Show the object shape. |
 | D7 | L108–L120 (§3.3) | Points only at `~/.copilot/mcp-config.json` (C5). Name this repository's `.copilot/mcp-config.json` — the file the learner actually has, and the one `labs/lab01.md` counts — and mention the home-level file as the personal alternative. |
 | D8 | L72 and L87 | "a plain `.md` file **will not be picked up**" / "(not `.md`)" states an absolute the reference contradicts by naming both suffixes (C4). Keep `.agent.md` as the repo convention and the recommendation; drop the unsourced claim that `.md` fails. |
+| D9 | §3.4 | **Added 2026-11-12 (Phase 4).** The lab's only check that the agent loaded is to ask it a question and see whether it answers (plan §2.1 finding 4). A model can answer without the agent's file, and nothing shows what the agent's prompt costs. Fixed by the `🔍 Debug It` callout (AC12); see C12, C13. |
 
 ## 7. Out of scope for `lab-forge`
 
@@ -93,7 +98,8 @@ reports each UNVERIFIED — not "could not run":
 
 - **Any write under `.github/agents/`** — `dotnet-dev.agent.md`, `node-dev.agent.md`, or any other agent definition, including both appendix heredocs;
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the §3.4 smoke test, which carries `--allow-all-tools` and would run with blanket tool approval in the live tree;
-- `/agent`, `/new`, and any slash command typed into a session;
+- `/agent`, `/new`, and any slash command typed into a session (including the Phase 4 callout's `/env` and `/context`);
+- **Phase 4:** the callout's VS Code steps (**Show Agent Debug Logs**, **Show Chat Debug View**, the capture setting), which need a running VS Code;
 - **any read or write of `~/.copilot/`** — `mcp-config.json` or otherwise. It is the maintainer's real home directory, not a lab fixture;
 - every GitHub-side write.
 

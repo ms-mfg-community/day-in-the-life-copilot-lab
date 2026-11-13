@@ -217,3 +217,57 @@ describe('lab07 contract: AC11 — dotnet-qa is created before the delegation te
     expect(section('7.5')).toContain(rel);
   });
 });
+
+describe('lab07 contract: AC12 — §7.4 carries a Debug It callout: did the work really move between agents?', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (body: string): string[] => {
+    const all = body.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('7.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §7.4, the delegation test', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('7.4')).length, 'the callout is not inside §7.4').toBe(1);
+  });
+
+  it('uses /tasks for the Copilot CLI and the Agent Flow Chart for VS Code', () => {
+    expect(callout()).toContain('`/tasks`');
+    expect(callout()).toContain('Agent Flow Chart');
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toMatch(/inside (?:a|your|the same) (?:running |restarted )?`copilot` session|in the same `copilot` session/);
+  });
+
+  it('teaches the OpenTelemetry view: one trace, each delegated worker an invoke_agent span nested under the execute_tool task span that launched it', () => {
+    expect(callout()).toContain('COPILOT_OTEL_FILE_EXPORTER_PATH');
+    expect(callout()).toContain('invoke_agent');
+    expect(callout()).toContain('execute_tool task');
+    expect(callout()).toMatch(/same trace/);
+  });
+
+  it('keeps the trace file outside the repository, because the lab is run in a checkout and the file is not git-ignored', () => {
+    expect(callout()).toMatch(/outside the repository/i);
+  });
+
+  it('links the guide', () => {
+    expect(callout()).toContain('debugging-and-observability.md');
+  });
+
+  it('names no model id: the callout adds nothing for AC4 to reject', () => {
+    // MODEL_ID is a global regex, whose lastIndex would carry over between calls: use a fresh copy.
+    expect(callout()).not.toMatch(new RegExp(MODEL_ID.source, 'i'));
+  });
+});
+
+describe('lab07 contract: spec alignment — specs/labs/lab07.md records the Phase 4 criterion', () => {
+  it('has AC12 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC12\s*\|[^\n]*lab07-contract/m);
+  });
+});

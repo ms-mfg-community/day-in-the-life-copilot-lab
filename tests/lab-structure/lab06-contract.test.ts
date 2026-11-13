@@ -24,6 +24,11 @@ import yaml from 'js-yaml';
  * AC18–AC19 were added after the first independent review of Phase 3. AC18 runs the four
  * `.env` guards from §6.2.2 instead of reading them; AC19 pins where the optional guard
  * registration lives and that Clean up removes it before the script it points at.
+ *
+ * AC20 was added with Phase 4 (debugging and observability, 2026-11-12). It pins the §6.4
+ * Debug It callout and the optional §6.4.1 walkthrough. The guide it links, the
+ * TROUBLESHOOTING.md toolkit and the one-liners it teaches (AC21, AC22) are pinned in
+ * `debugging-observability-contract.test.ts`.
  */
 
 const ROOT = process.cwd();
@@ -1298,11 +1303,169 @@ describe('lab06 contract: Phase 3 executable listings', () => {
   }
 });
 
+describe('lab06 contract: AC20 — §6.4.1 is the Debugging & Observability walkthrough, and §6.4 carries the Debug It callout', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const s64 = (): string => sectionUnder(lab(), /^##\s+6\.4\s/);
+  const s641 = (): string => sectionUnder(lab(), /^###\s+6\.4\.1\s/);
+  const part = (n: number): string => sectionUnder(s641(), new RegExp(`^####\\s+${n}\\.\\s`));
+  const fences = (md: string, lang: string): string[] =>
+    [...lf(md).matchAll(new RegExp('```' + lang + '\\n([\\s\\S]*?)```', 'g'))].map((m) => m[1]);
+  const callouts = (md: string): string[] => {
+    const all = lf(md).split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+
+  it('puts §6.4.1 inside §6.4, before §6.5 Final, so no existing section is renumbered', () => {
+    const body = lf(lab());
+    const at = (re: RegExp): number => body.search(re);
+    expect(at(/^##\s+6\.4\s/m)).toBeGreaterThan(-1);
+    expect(at(/^###\s+6\.4\.1\s/m), '§6.4.1 is missing or comes before §6.4').toBeGreaterThan(at(/^##\s+6\.4\s/m));
+    expect(at(/^##\s+6\.5\s/m), '§6.5 must still follow §6.4.1').toBeGreaterThan(at(/^###\s+6\.4\.1\s/m));
+    expect(s64()).toContain('### 6.4.1');
+  });
+
+  it('replaces the old "Verifying hooks in VS Code" callout with one Debug It callout in §6.4', () => {
+    expect(lab()).not.toMatch(/Verifying hooks in VS Code/);
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(s64()).length, 'the callout is not inside §6.4').toBe(1);
+  });
+
+  it('the §6.4 callout asks "did my hook run?", points at §6.4.1 and the guide, and keeps the Output channel straight', () => {
+    const [c] = callouts(s64());
+    expect(c, 'no Debug It callout inside §6.4').toBeDefined();
+    expect(c).toMatch(/hook/i);
+    expect(c).toContain('§6.4.1');
+    expect(c).toContain('debugging-and-observability.md');
+    expect(c).toContain('`hook.start`');
+    expect(c).toContain('`hook.end`');
+    expect(c).toMatch(/inside a running `copilot` session/);
+    expect(windowHas(c, [/GitHub Copilot Chat Hooks/, /legacy Local|old Local/i], 400)).toBe(true);
+    expect(windowHas(c, [/GitHub Copilot Chat/, /general/i], 400)).toBe(true);
+  });
+
+  it('is optional and untimed: the Timed route callout names §6.4.1, and §6.4.1 opens by saying it is not on the timed route', () => {
+    expect(prose(), 'the Timed route callout must say §6.4.1 is optional and not timed').toMatch(/Timed route\b.{0,1600}6\.4\.1/);
+    expect(s641()).toMatch(/not on the timed route/i);
+  });
+
+  it('keeps the core path as it was: the Timed route callout still counts §6.4 and §6.6 as timed, and pacing is untouched (AC10)', () => {
+    expect(prose()).toMatch(/Timed route\b.{0,300}§6\.3, §6\.4/);
+  });
+
+  it('has four numbered parts: VS Code, session data, asking Copilot, OpenTelemetry', () => {
+    const titles = [...s641().matchAll(/^####\s+(\d)\.\s+(.*)$/gm)].map((m) => `${m[1]}. ${m[2]}`);
+    expect(titles).toHaveLength(4);
+    expect(titles[0]).toMatch(/^1\..*VS Code/);
+    expect(titles[1]).toMatch(/^2\..*session/i);
+    expect(titles[2]).toMatch(/^3\..*Copilot/);
+    expect(titles[3]).toMatch(/^4\..*OpenTelemetry/);
+  });
+
+  it('part 1 (VS Code): both capture settings, enabled before reproducing; the panel and its four views; OTLP export; the Chat Debug view', () => {
+    const p = part(1);
+    expect(windowHas(p, [/chat\.agentHost\.agentDebugLog\.enabled/, /Agent Host|Copilot harness/, /before/i], 600)).toBe(true);
+    expect(windowHas(p, [/github\.copilot\.chat\.agentDebugLog\.fileLogging\.enabled/, /Local/, /reload/i], 600)).toBe(true);
+    for (const t of ['Show Agent Debug Logs', 'Developer: Open Agent Debug Logs', 'Logs view', 'Summary view', 'Agent Flow Chart', 'Cache Explorer', 'OTLP', 'Show Chat Debug View']) {
+      expect(p, `part 1 does not mention ${t}`).toContain(t);
+    }
+    for (const t of ['System prompt', 'User prompt', 'Context', 'Response', 'Tool responses']) {
+      expect(p, `part 1 does not list the Chat Debug section ${t}`).toContain(t);
+    }
+  });
+
+  it('part 1 keeps the Output channels straight: GitHub Copilot Chat Hooks is the legacy Local channel, GitHub Copilot Chat the general one, with all three shortcuts', () => {
+    const p = part(1);
+    expect(windowHas(p, [/GitHub Copilot Chat Hooks/, /legacy Local|old Local/i], 400)).toBe(true);
+    for (const k of ['Ctrl+Shift+U', 'Cmd+Shift+U', 'Ctrl+K Ctrl+H']) expect(p).toContain(k);
+  });
+
+  it('part 2 (session data): the session-state folder and every file in it, /session id, and summary in session-store.db rather than workspace.yaml', () => {
+    const p = part(2);
+    expect(p).toMatch(/~\/\.copilot\/session-state\/<session-id>\//);
+    for (const f of ['events.jsonl', 'workspace.yaml', 'plan.md', 'session.db', 'session-store.db']) {
+      expect(p, `part 2 does not name ${f}`).toContain(`\`${f}\``);
+    }
+    expect(p).toContain('/session id');
+    expect(windowHas(p, [/chronological event log/i], 300)).toBe(true);
+    expect(windowHas(p, [/`plan\.md`/, /`session\.db`/, /\bsql\b/, /only|when|if/i], 600)).toBe(true);
+    expect(windowHas(p, [/summary/, /`session-store\.db`/], 400)).toBe(true);
+  });
+
+  it('part 2 shows both one-liners: which hooks ran, from hook.start events, in PowerShell and in Bash with jq', () => {
+    expect(fences(part(2), 'powershell').some((b) => /^# Which hooks ran/.test(b) && /hook\.start/.test(b))).toBe(true);
+    expect(fences(part(2), 'bash').some((b) => /^# Which hooks ran/.test(b) && /\bjq\b/.test(b) && /hook\.start/.test(b))).toBe(true);
+  });
+
+  it('part 3 (ask Copilot): /diagnose, /collect-debug-logs, session_store_sql, #debugEventsSnapshot and /troubleshoot', () => {
+    const p = part(3);
+    for (const t of ['/diagnose', '/collect-debug-logs', 'session_store_sql', '#debugEventsSnapshot', '/troubleshoot']) {
+      expect(p, `part 3 does not mention ${t}`).toContain(t);
+    }
+    expect(windowHas(p, [/\/diagnose/, /current session/i, /permission request/i], 600)).toBe(true);
+    expect(windowHas(p, [/\/collect-debug-logs/, /\.tgz/, /consent/i, /gist/i], 700)).toBe(true);
+    expect(windowHas(p, [/session_store_sql/, /cloud/i, /local/i], 700)).toBe(true);
+  });
+
+  it('part 4 (OpenTelemetry): the three activation variables, SPAN_ONLY, and the span tree invoke_agent → chat / execute_tool', () => {
+    const p = part(4);
+    for (const t of ['COPILOT_OTEL_FILE_EXPORTER_PATH', 'OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318', 'COPILOT_OTEL_ENABLED', 'OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT=SPAN_ONLY', 'invoke_agent', 'execute_tool']) {
+      expect(p, `part 4 does not mention ${t}`).toContain(t);
+    }
+    expect(p).toMatch(/\bchat\b/);
+    expect(windowHas(p, [/SPAN_ONLY/, /sensitive/i, /prompts?/i], 700)).toBe(true);
+  });
+
+  it('part 4 writes the trace file outside the repository: its commands use the OS temp folder, never ./copilot-otel.jsonl', () => {
+    const code = [...fences(part(4), 'bash'), ...fences(part(4), 'powershell')].join('\n');
+    expect(code).toContain('/tmp/copilot-otel.jsonl');
+    expect(code).toContain('GetTempPath');
+    expect(code, 'the exercise must not write the trace file into the checkout').not.toContain('./copilot-otel.jsonl');
+    // The text may put emphasis between the words ("**not** git-ignored"), so allow a few non-word characters.
+    expect(windowHas(part(4), [/outside the repository|not\W{0,4}git-ignored|\.gitignore/i, /copilot-otel\.jsonl/], 600)).toBe(true);
+  });
+
+  it('part 4 shows the span-name and hook-event one-liners in both shells', () => {
+    for (const re of [/^# Span names/, /^# Hooks in the OTel file/]) {
+      expect(fences(part(4), 'powershell').some((b) => re.test(b)), `no PowerShell block ${re}`).toBe(true);
+      expect(fences(part(4), 'bash').some((b) => re.test(b) && /\bjq\b/.test(b)), `no Bash block ${re}`).toBe(true);
+    }
+  });
+
+  it('Tidy up deletes the trace file and clears the variable, in both shells', () => {
+    const tidy = (): string => {
+      const s = s641();
+      const at = s.indexOf('**Tidy up.**');
+      return at === -1 ? '' : s.slice(at);
+    };
+    expect(tidy(), 'no "**Tidy up.**" step in §6.4.1').not.toBe('');
+    const bash = fences(tidy(), 'bash');
+    const ps = fences(tidy(), 'powershell');
+    expect(bash.some((b) => /rm -f/.test(b) && b.includes('/tmp/copilot-otel.jsonl'))).toBe(true);
+    expect(ps.some((b) => /Remove-Item/.test(b) && b.includes('copilot-otel.jsonl') && b.includes('Env:COPILOT_OTEL_FILE_EXPORTER_PATH'))).toBe(true);
+  });
+
+  it('says what the session folders and the trace file can hold, and to review before sharing', () => {
+    expect(windowHas(s641(), [/not encrypted/i, /prompts?|source code/i], 700)).toBe(true);
+    expect(s641()).toMatch(/review/i);
+  });
+
+  it('never registers a debugging hook in the live config (the walkthrough edits no file in the repository)', () => {
+    expect(readFileSync(HOOK_CONFIG, 'utf8')).not.toMatch(/otel|debug-log|copilot-otel/i);
+  });
+});
+
 describe('lab06 contract: spec alignment — specs/labs/lab06.md matches the Phase 3 scope', () => {
   const criteria = (): string => sectionUnder(spec(), /^##\s+3\.\s+Acceptance criteria\s*$/);
   const nonGoals = (): string => sectionUnder(spec(), /^##\s+5\.\s+Non-goals\s*$/);
 
-  it.each(['AC12', 'AC13', 'AC14', 'AC15', 'AC16', 'AC17', 'AC18', 'AC19'])(
+  it.each(['AC12', 'AC13', 'AC14', 'AC15', 'AC16', 'AC17', 'AC18', 'AC19', 'AC20'])(
     'has acceptance criterion %s observed by this contract test',
     (id) => {
       expect(criteria()).toMatch(new RegExp(`^\\|\\s*${id}\\s*\\|[^\\n]*lab06-contract`, 'm'));

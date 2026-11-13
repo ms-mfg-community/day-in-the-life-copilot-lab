@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab07.md` (436 lines) — "Multi-Agent Orchestration" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: `dotnet-qa` created before the delegation test — AC11, §2, §5) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: `dotnet-qa` created before the delegation test — AC11, §2, §5; Phase 4: Debug It callout — AC12, C13–C15, D8, §5, §7) |
 
 ---
 
@@ -52,6 +52,7 @@ invocation form the CLI does not document.
 | AC9 | §7.1 distinguishes the agent that ships from the ones the learner creates | `npx vitest run tests/lab-structure/lab07-contract` |
 | AC10 | A prerequisite line naming Lab 03 appears before the first `##` heading | `npx vitest run tests/lab-structure/lab07-contract` |
 | AC11 | `dotnet-qa` is created before the delegation test that needs it: `## 7.5 Create the QA Worker Agent` sits after §7.3 and before `## 7.4 Test Multi-Agent Delegation`, every heading `7.0`–`7.6` is kept, the "Bonus" label and every "jump ahead … then come back" workaround are gone, and §7.5 points at the reference agent in `solutions/lab07-orchestrator/` | `npx vitest run tests/lab-structure/lab07-contract` |
+| AC12 | §7.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), after the checklist and "What you should see". It uses `/tasks` inside the same `copilot` session; says to set `COPILOT_OTEL_FILE_EXPORTER_PATH` to a file **outside the repository** (it is not git-ignored here and each run appends to it) and to look, in the same trace the subagent calls are linked into, for an `invoke_agent` span nested under the `execute_tool task` span that launched each worker; and in VS Code uses **Show Agent Debug Logs** → the Summary view → **Agent Flow Chart**. It links `docs/debugging-and-observability.md`, points at Lab 06 §6.4.1 for the commands, and names no model id (AC4) | `npx vitest run tests/lab-structure/lab07-contract tests/lab-structure/debugging-observability-contract` |
 
 ## 4. Outside-world claims
 
@@ -69,6 +70,9 @@ invocation form the CLI does not document.
 | C10 | Reference L31: "[Agent handoffs](…/custom-agents-configuration#handoffs)" | `free-check` — **misleading** | Same doc, note under the frontmatter table: *"The `argument-hint` and `handoffs` properties from VS Code and other IDE custom agents are **currently not supported** for Copilot cloud agent on GitHub.com. They are ignored to ensure compatibility."* `handoffs` is an IDE property, and the page has no `#handoffs` section — the anchor lands nowhere useful. Presenting it as the orchestration mechanism for a CLI lab points learners at the wrong thing; the mechanism this lab actually uses is the `agent` tool (C6). |
 | C11 | `docs/token-and-model-guide.md` and `docs/_meta/registry.yaml` links | `free-check` — correct | Both exist; `links-resolve` covers them. |
 | C12 | §7.6 worktree block: `git worktree add/remove`, `git merge` | `free-check` — correct | Standard `git-worktree` usage; the linked `git-scm.com/docs/git-worktree` is the primary source. |
+| C13 | Phase 4: "`/tasks` lists the subagents the session ran, and opens one to read its transcript" | `free-check` | `copilot help commands` (1.0.111-0) and the CLI built-in docs `command:/tasks` (1.0.110-3): "View running subagents and background shell commands, check their status, and open their live transcript or recent output". §7.4 step 3 already uses `/tasks`; the callout adds no new claim about it. |
+| C14 | Phase 4: "subagent calls are linked into the same trace; look for an `invoke_agent` span nested under the `execute_tool task` span that launched each worker" | `free-check` for "subagent invocations are linked into the same trace"; **observed** for the nesting; **UNVERIFIED for the lab's custom agents** | CLI built-in docs `topic:monitoring#what-gets-exported`: "Subagent invocations are automatically linked into the same trace via context propagation." Observed 2026-11-12, one `copilot -p` run in a scratch folder that delegated to the built-in `explore` agent: one trace id, with `execute_tool task` holding a child `invoke_agent explore` that held its own `chat` and `execute_tool` spans. A run with `lab-orchestrator`, `dotnet-dev`, `dotnet-qa` and `code-reviewer` was **not** made (it is the lab's most expensive step, §7), so the callout says "look for" and does not promise span names. The same probes showed that the file exporter **appends** (17 then 34 lines for two runs) and `git check-ignore -v copilot-otel.jsonl` reports it is not ignored, which is why the callout says to write it outside the repository. |
+| C15 | Phase 4: "in VS Code the Summary view (select the session description in the breadcrumb), then **Agent Flow Chart**, shows which agent delegated an action and where the workflow stopped; the Logs view can group events into a tree by subagent" | `free-check` | VS Code, [Debug chat interactions](https://code.visualstudio.com/docs/agents/agent-troubleshooting/chat-debug-view), read 2026-11-12: "The Agent flow chart view visualizes the sequence of interactions between agents and subagents. Use it to identify which agent delegated an action and where a workflow stopped"; "Switch between a flat list and a tree grouped by subagent." |
 
 ## 5. Non-goals
 
@@ -80,6 +84,7 @@ invocation form the CLI does not document.
 - Do not extend the registry model guard in `tests/lab-structure/lab10-contract.test.ts` to all labs. That is a worthwhile repo-wide change and it is **not this lab's pass** — record it.
 - Do not touch `/plugin install owner/repo` in the §7.0 table. It mirrors `labs/lab01.md:34`, which lab01's judge left open as unverifiable without running a prohibited command. Same disposition here.
 - Do not edit any file other than `labs/lab07.md`, this spec and `tests/lab-structure/lab07-contract.test.ts`.
+- **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §7.4 (AC12) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 20 and the 💰 cost budget alone. It names no model id (AC4), no bare `@lab-orchestrator` (AC8) and no inline Copilot CLI version, and it does not say "bonus" or send the learner away and back (AC11). It does not claim span names for the lab's custom agents (C14). The files Phase 4 adds or edits for the whole lab set are `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
 
 ## 6. Known defects
 
@@ -92,6 +97,7 @@ invocation form the CLI does not document.
 | D5 | §7.1 step 1 and its "You should see" list | Lists four files when one ships (C9). Mark each: `code-reviewer.agent.md` **ships**; `dotnet-dev.agent.md` from **Lab 03**; `dotnet-qa.agent.md` from **§7.5**; `lab-orchestrator.agent.md` from **§7.2**. The existing 💡 note already does this for `dotnet-qa` — extend the same honesty to the rest. |
 | D6 | L31, References | "Agent handoffs" points at an anchor for an IDE-only, cloud-agent-ignored property (C10). Either drop the line or relabel it to the `agent` tool / Tool aliases section, which is what this lab actually teaches. |
 | D7 | Top of the lab, after the ⏱️ pace line | No prerequisite despite §7.1 expecting Lab 03's `dotnet-dev` agent (§2). Add one line linking `setup.md` and `lab03.md`, matching `labs/lab01.md:15`. |
+| D8 | §7.4 | **Added 2026-11-12 (Phase 4).** The lab's hand-off check is the CLI timeline and `/tasks`; it offers no picture of who delegated to whom and no data to inspect afterwards (plan §2.1 finding 4). Fixed by the `🔍 Debug It` callout (AC12); see C13–C15. |
 
 ## 7. Out of scope for `lab-forge`
 
@@ -102,6 +108,7 @@ reports each UNVERIFIED — not "could not run":
 - both §7.2 heredocs (`cat > … << 'AGENT'`, `@' … '@ | Out-File -FilePath …`);
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the §7.4 delegations, which fan out to several agents and are the most expensive steps in the lab;
 - `/agent`, `/fleet`, `/model`, `/plan`, `/autopilot`, `/plugin …`, `/clear`, and `extensions_manage`;
+- **Phase 4, §7.4 callout** — `/tasks` typed into a session; starting `copilot` with `COPILOT_OTEL_FILE_EXPORTER_PATH` set, which writes a trace file and, with the §7.4 request, repeats the lab's most expensive step; and the callout's VS Code steps (**Show Agent Debug Logs**, the Summary view, **Agent Flow Chart**), which need a running VS Code. The nesting claim (C14) was observed once with a built-in agent in a scratch folder outside the tree; the run gate must not repeat it;
 - `git worktree add`, `git worktree remove`, `git merge`, and the §7.6 branch commands — they mutate the repository and the very worktree the run is happening in;
 - every GitHub-side write.
 

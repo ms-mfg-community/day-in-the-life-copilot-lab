@@ -413,6 +413,15 @@ Add a "Page X of Y" label to the Students/Index view, using the PageIndex and To
 
 > 💡 **What you should see:** The orchestrator plans, then hands work to `dotnet-dev`, then `dotnet-qa`, then `code-reviewer` — each as its own dispatch entry, not just a name in its text — and finishes with a summary built from what those workers returned. The first request counts as a delegation test only when every box in step 3 is checked off; apply the same check to the optional request in step 4. The testing phase relies on the `dotnet-qa` agent from §7.5. The full cycle may take a few minutes.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Did the work really move between agents?*
+>
+> Step 3 already asks for dispatch entries. Two more views show the same hand-offs as a diagram and as data.
+>
+> - **Copilot CLI:** type `/tasks` inside the same `copilot` session (press `f` to include finished ones) to list the subagents it ran and open one to read its transcript. For a trace, start Copilot with `COPILOT_OTEL_FILE_EXPORTER_PATH` set to a file outside the repository (the file is not git-ignored here, and each run appends to it), run the request, and read the spans. Subagent calls are linked into the same trace (for a built-in subagent, observed as an `invoke_agent` span nested under the `execute_tool task` span that launched it). [Lab 06 §6.4.1](lab06.md#641-debugging-and-observability-see-what-copilot-did) shows the commands.
+> - **VS Code:** run **Show Agent Debug Logs**, select the session description in the breadcrumb to open the Summary view, then choose **Agent Flow Chart**. It shows which agent delegated an action and where the workflow stopped, and the Logs view can group events into a tree by subagent.
+>
+> Details: [the guide](../docs/debugging-and-observability.md#52-read-the-file).
+
 > 💡 **Real-world use**: In production, orchestration enables complex workflows — feature development, code review, deployment. Each agent is an expert in its domain, and the orchestrator ensures they work together.
 
 ## 7.6 Final

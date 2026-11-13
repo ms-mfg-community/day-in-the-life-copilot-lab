@@ -173,6 +173,13 @@ How should I write unit tests for the student repository in node/infra/repos/stu
 
 > 💡 **What you should see:** The response should reference patterns from your skill — on the .NET track, look for `MethodName_Condition_ExpectedResult()` naming, Moq for mocking, or WebApplicationFactory; on the Node track, look for the `<unit-under-test>.<scenario>.<expected-outcome>` naming, Vitest, or `createInMemoryDb()`. Treat this as corroboration, not proof: Copilot chooses a skill from your prompt and the skill's `description`, and an answer that sounds right does not show the skill loaded — `/skills list` does. If none of the patterns appear, name the skill in your prompt (for example, `Use the /dotnet-testing skill to …` or `Use the /node-testing skill to …`) or mention "testing", "xUnit" or "Vitest" explicitly.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *Was the skill loaded, matched, or skipped?*
+>
+> A skill can be loaded and still go unused: a knowledge skill is picked by comparing your prompt with its `description`, and a command skill (`disable-model-invocation: true`) is never picked that way at all. So check loading first, then use.
+>
+> - **Copilot CLI:** with your session from step 1 still open, type these inside the same `copilot` session. `/skills list` shows what was discovered, `/env` shows the skills loaded alongside agents, MCP servers and hooks, and `/context` shows what the session's context costs. In experimental mode `/context` also breaks usage down per skill, subagent, MCP server, tool and plugin.
+> - **VS Code:** open **Show Agent Debug Logs**, switch to the **Logs view** and filter to **Discovery** to see whether the skill was loaded, skipped or rejected. Then read the model requests and tool calls that follow to see whether the skill's text was used. [Turn capture on first](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce): it is not retroactive.
+
 **Now run the command skill — in the same CLI session:**
 
 5. Type your track's command, followed by what to test:

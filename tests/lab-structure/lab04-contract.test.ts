@@ -186,3 +186,60 @@ describe('lab04 contract: AC11 — a "Spot the Anti-Pattern" callout covers broa
     expect(existsSync(join(ROOT, 'labs', '..', EXEMPLAR))).toBe(true);
   });
 });
+
+describe('lab04 contract: AC12 — §4.4 carries a Debug It callout: was the skill loaded, matched or skipped?', () => {
+  const DEBUG_TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (body: string): string[] => {
+    const all = body.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${DEBUG_TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('4.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §4.4, next to the /skills list check', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('4.4')).length, 'the callout is not inside §4.4').toBe(1);
+  });
+
+  it('keeps it apart from the anti-pattern callout in §4.3 (separate blockquotes, separate sections)', () => {
+    expect(section('4.3')).toContain('Spot the Anti-Pattern');
+    expect(section('4.3')).not.toContain('Debug It');
+  });
+
+  it('uses /skills list and /env to see what was discovered, and /context with per-skill usage tied to experimental mode', () => {
+    expect(callout()).toContain('`/skills list`');
+    expect(callout()).toContain('`/env`');
+    expect(callout()).toContain('`/context`');
+    expect(callout()).toMatch(/experimental/i);
+    expect(callout()).toMatch(/inside (?:the same|a running) `copilot` session|in the same `copilot` session/);
+  });
+
+  it('separates a skill that was loaded from one the model used, and a command skill from a knowledge skill', () => {
+    expect(callout()).toMatch(/description/i);
+    expect(callout()).toContain('disable-model-invocation');
+  });
+
+  it('names the VS Code route: Discovery events (loaded, skipped or rejected) in the Logs view of Show Agent Debug Logs', () => {
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toContain('Logs view');
+    expect(callout()).toContain('Discovery');
+    expect(callout()).toMatch(/loaded, skipped or rejected/);
+  });
+
+  it('links the guide, and never repeats the Skills vs Prompts phrase (AC5)', () => {
+    expect(callout()).toContain('debugging-and-observability.md');
+    expect(lab().match(/Skills vs Prompts/g)?.length).toBe(1);
+  });
+});
+
+describe('lab04 contract: spec alignment — specs/labs/lab04.md records the Phase 4 criterion', () => {
+  it('has AC12 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC12\s*\|[^\n]*lab04-contract/m);
+  });
+});

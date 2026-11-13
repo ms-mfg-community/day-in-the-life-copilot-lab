@@ -255,6 +255,14 @@ Using the fetch MCP server's imageFetch tool, fetch https://raw.githubuserconten
 
 > 💡 **Verify the server loaded:** After restarting your Copilot session, `/mcp list` should show `fetch` along with its status, and `/mcp show fetch` should list its `imageFetch` tool. Then run the test prompt above. It names `imageFetch` on purpose: a vaguer "fetch this page" request can be answered by Copilot's built-in web access without ever touching the new server. If it responds with relevant data, the server is working. §5.6 shows how to remove it.
 
+> **🔍 Debug It (VS Code & Copilot CLI)** — *A server that fails to start fails quietly. Where does the reason go?*
+>
+> - **Copilot CLI:** type these inside a running `copilot` session. `/mcp list` shows each server as connected, connecting, `failed: <reason>`, disabled, stopped or not connected, and `/mcp get <server-name>` opens one server's details and tools. (The steps above write `/mcp show`; this build's built-in documentation lists `get`, and `/help` shows the spelling your build accepts.) `/mcp reload` re-reads the configuration and restarts the servers. At your shell prompt, `copilot mcp list` shows configuration, not live status.
+> - **Process log:** start Copilot with `copilot --log-level debug --log-dir ./logs`, then search the newest `process-<timestamp>-<pid>.log` for your server's name: `grep -h fetch ./logs/process-*.log | tail -n 20` in Bash, or `Select-String -Path ./logs/process-*.log -Pattern 'fetch' | Select-Object -Last 20` in PowerShell. A server that could not start is logged as a warning with the reason (observed, not documented). This repository's `.gitignore` ignores `*.log`, so the process logs do not get committed.
+> - **VS Code:** run **MCP: List Servers** from the Command Palette, select the server and choose **Show Output** to read its errors, or **Restart Server**. If the server runs but its tool is never called, open **Show Chat Debug View** and check whether the tool appears in the tool definitions; if it does, look for tool calls and errors in **Show Agent Debug Logs**.
+>
+> More in [the guide](../docs/debugging-and-observability.md#33-process-logs).
+
 ## 5.5 Final
 
 <details>

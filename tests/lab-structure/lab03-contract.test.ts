@@ -188,3 +188,58 @@ describe('lab03 contract: AC11 — §3.3 is a read-only forward-reference previe
     }
   });
 });
+
+describe('lab03 contract: AC12 — §3.4 carries a Debug It callout: was the agent loaded, and what does it cost?', () => {
+  const TITLE = '🔍 Debug It (VS Code & Copilot CLI)';
+  const callouts = (text: string): string[] => {
+    const all = text.replace(/\r\n/g, '\n').split('\n');
+    const out: string[] = [];
+    all.forEach((l, i) => {
+      if (!l.startsWith(`> **${TITLE}**`)) return;
+      let to = i;
+      while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+      out.push(all.slice(i, to + 1).map((x) => x.replace(/^>\s?/, '')).join('\n'));
+    });
+    return out;
+  };
+  const callout = (): string => callouts(section('3.4'))[0] ?? '';
+
+  it('has exactly one such callout in the lab, and it sits in §3.4, before the learner leaves the session', () => {
+    expect(callouts(lab()).length).toBe(1);
+    expect(callouts(section('3.4')).length, 'the callout is not inside §3.4').toBe(1);
+    const s = section('3.4');
+    expect(s.indexOf(TITLE), 'the callout must come before the instruction to type /exit').toBeLessThan(
+      s.indexOf('type `/exit` to leave Copilot'),
+    );
+  });
+
+  it('uses /env to see the loaded agents and /context for the split of the window, with per-skill and per-agent usage tied to experimental mode', () => {
+    expect(callout()).toContain('`/env`');
+    expect(callout()).toContain('`/context`');
+    expect(callout()).toContain('System Prompt');
+    expect(callout()).toMatch(/experimental/i);
+    expect(callout()).toMatch(/inside (?:the same|a running) `copilot` session|in the same `copilot` session/);
+  });
+
+  it('names the VS Code route: Discovery events in the Logs view, and the agent definition in the System prompt', () => {
+    expect(callout()).toContain('Show Agent Debug Logs');
+    expect(callout()).toContain('Logs view');
+    expect(callout()).toContain('Discovery');
+    expect(callout()).toContain('Show Chat Debug View');
+    expect(callout()).toContain('System prompt');
+  });
+
+  it('adds no MCP wiring to the hands-on steps: the callout names neither mcp-servers nor context7', () => {
+    expect(callout()).not.toMatch(/mcp-servers|context7/i);
+  });
+
+  it('links the guide', () => {
+    expect(callout()).toContain('debugging-and-observability.md');
+  });
+});
+
+describe('lab03 contract: spec alignment — specs/labs/lab03.md records the Phase 4 criterion', () => {
+  it('has AC12 observed by this contract test', () => {
+    expect(readFileSync(SPEC, 'utf8')).toMatch(/^\|\s*AC12\s*\|[^\n]*lab03-contract/m);
+  });
+});

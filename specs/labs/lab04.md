@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab04.md` (131 lines) — "Skills & Prompts" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: anti-pattern callout — AC11) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: anti-pattern callout — AC11; Phase 4: Debug It callout — AC12, C13–C14, D9, §5, §7) |
 
 ---
 
@@ -53,6 +53,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | AC9 | §4.2 states that `dotnet-testing` already ships in this repo, so the step overwrites it | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC10 | The lab names a deterministic skills command (`/skills list` or `/skills info`) as the way to confirm loading | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC11 | The lab carries one `🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax` callout covering vague descriptions (false-positive activation, context bloat), IDE-only `${input:...}` placeholders and `ADD:`-style commit prefixes that contradict the repo's `<type>: <description>` rule, and pointing at the clean exemplar `.github/skills/commit/SKILL.md` — which must itself stay free of `${input:` and `ADD:`/`UP:`/`DEL:`. It does not repeat the phrase "Skills vs Prompts" (AC5) | `npx vitest run tests/lab-structure/lab04-contract` |
+| AC12 | §4.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), in a different section and a different blockquote from the §4.3 anti-pattern callout. It separates a skill that was loaded from one the model used (a knowledge skill is chosen from its `description`; a `disable-model-invocation: true` command skill is never chosen that way); uses `/skills list`, `/env` and `/context` inside the same `copilot` session, with per-skill usage tied to experimental mode; and in VS Code the **Discovery** events in the **Logs view** of **Show Agent Debug Logs** (loaded, skipped or rejected). It links `docs/debugging-and-observability.md` and does not repeat "Skills vs Prompts" (AC5) | `npx vitest run tests/lab-structure/lab04-contract tests/lab-structure/debugging-observability-contract` |
 
 ## 4. Outside-world claims
 
@@ -70,6 +71,8 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | C10 | Skills work in Copilot CLI at all | `free-check` — correct | *About agent skills*: *"Agent skills work with Copilot cloud agent, Copilot code review, the GitHub Copilot CLI, the GitHub Copilot app, and agent mode in Visual Studio Code and JetBrains IDEs."* Project skills live in `.github/skills`. |
 | C11 | Two reference URLs (L16–17) and the L59 doc link | `free-check` | All three returned **HTTP 200** on 2026-10-12. |
 | C12 | Solutions links in §4.5 | `free-check` — correct | `solutions/lab04-skill-and-prompt/dotnet-testing/SKILL.md` and `…/create-dotnet-test/SKILL.md` both exist on disk. |
+| C13 | Phase 4: "`/skills list` shows what was discovered; `/env` shows the skills loaded alongside agents, MCP servers and hooks; `/context` shows what the session's context costs, and in experimental mode breaks usage down per skill, subagent, MCP server, tool and plugin" | `free-check` | `copilot help commands` (1.0.111-0) and the CLI built-in docs, `command:/skills`, `command:/env` and `command:/context` (1.0.110-3). **Spelling note, recorded and not chased:** this build's built-in docs list the subcommands `list`, `get`, `add`, `remove` and `reload` for `/skills`, where GitHub Docs and this lab's AC10 / §4.4 say `/skills info`. The callout therefore names only `/skills list`, which both sources agree on. |
+| C14 | Phase 4: "the **Discovery** events in the **Logs view** of **Show Agent Debug Logs** say whether a skill was loaded, skipped or rejected; the model requests and tool calls that follow show whether its text was used" | `free-check` for the Discovery claim; the second half is advice | VS Code, [Debug chat interactions](https://code.visualstudio.com/docs/agents/agent-troubleshooting/chat-debug-view), read 2026-11-12: "Check **Discovery** events in the Agent Debug Logs to see whether a customization was loaded, skipped, or rejected." The page does not name skills in that sentence; it speaks of customizations. The Logs view's filters for model requests and tool calls are documented. |
 
 ## 5. Non-goals
 
@@ -81,6 +84,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 - Do not rename or relocate the shipped `.github/skills/dotnet-testing/` skill to make §4.2 true. Changing repo configuration to suit a lab is backwards.
 - Do not add `allowed-tools` teaching or the skill-runs-a-script material. Real and documented, but it is a different lab's worth of content and carries a security warning that deserves more than a line.
 - Do not edit any file other than `labs/lab04.md`, this spec and `tests/lab-structure/lab04-contract.test.ts`.
+- **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §4.4 (AC12) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 15. It does not rename `/skills info` anywhere else in the lab (C13), repeats no "Skills vs Prompts" text (AC5) and carries no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
 
 ## 6. Known defects
 
@@ -94,6 +98,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | D6 | §4.2 | Presents creating `dotnet-testing` as new when it ships in this repo and the appendix overwrites it (C8). State plainly that the skill already ships and the step replaces it, so a learner knows the §4.4 probe cannot fail. |
 | D7 | §4.4 step 3 and the 💡 "What you should see" callout | Model-probe-only verification (C9). Name `/skills list` and `/skills info dotnet-testing` as the deterministic check and keep the probe as behavioural corroboration. |
 | D8 | L59 | The note is correct and load-bearing but is buried as a `⚠️` aside in §4.3 while §4.4 contradicts it 35 lines later. After D1/D4 the lab should no longer need the apology; keep the IDE-only fact, drop any wording that implies the CLI almost supports it. |
+| D9 | §4.4 | **Added 2026-11-12 (Phase 4).** After `/skills list` the lab has no way to say *why* a loaded skill was or was not used, and nothing on what a skill costs or where a skipped one went wrong (plan §2.1 finding 4). Fixed by the `🔍 Debug It` callout (AC12); see C13, C14. |
 
 ## 7. Out of scope for `lab-forge`
 
@@ -105,6 +110,7 @@ reports each UNVERIFIED — not "could not run":
 - `mkdir -p .github/skills/…`, `New-Item … .github/skills/…`, and both appendix heredocs (`cat > … << 'SKILL'`, `… | Out-File -FilePath …`);
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the §4.4 probes;
 - `/skills` and any subcommand (`list`, `info`, `reload`, `add`, `remove`, enable/disable), the `copilot skill …` terminal subcommand, and `/agent`;
+- **Phase 4:** `/env` and `/context` typed into a session, and the callout's VS Code steps (**Show Agent Debug Logs**, the capture setting), which need a running VS Code;
 - any prompt-file invocation in any surface;
 - every GitHub-side write.
 
