@@ -134,8 +134,6 @@ call hierarchy:
 > section first — ideally before the session — and do not start §15.3 until
 > the checkpoint at the end of this section passes.
 
-🖥️ **In your terminal:**
-
 The exercises in §15.3 and §15.4 work on the C# solution
 (`dotnet/ContosoUniversity.sln`), so the server you need is a **C# language
 server**: `csharp-ls`, installed with the .NET SDK's `dotnet tool` command.
@@ -145,8 +143,11 @@ step 2 shows how to add it as an optional comparison, but it only
 understands TypeScript and JavaScript, so it cannot answer any C# question
 in §15.3.
 
-1. Check whether a language server is already configured. From your
-   terminal, `copilot lsp list` prints the servers the CLI has configured
+🐚 **In your OS Terminal** for steps 1 and 2, then 🤖 **in Copilot CLI
+(`copilot>`)** for step 3. Each switch is labelled:
+
+1. Check whether a language server is already configured. 🐚 From your OS
+   Terminal, `copilot lsp list` prints the servers the CLI has configured
    (read-only, safe to run any time) — look for one that covers `.cs`
    files:
 
@@ -154,7 +155,7 @@ in §15.3.
    copilot lsp list
    ```
 
-   Or, from inside a Copilot CLI session, run `/lsp` or ask:
+   Or, 🤖 from inside a Copilot CLI session (`copilot>`), run `/lsp` or ask:
 
    ```
    What LSP servers are configured for this workspace, and which
@@ -170,7 +171,7 @@ in §15.3.
    > you remove it. §15.7 gives the matching uninstall commands; run them
    > when you finish.
 
-   **Required — the C# server (needs the .NET SDK) — WSL/Bash or PowerShell:**
+   **🐚 Required — the C# server (needs the .NET SDK) — in your OS Terminal, WSL/Bash or PowerShell:**
    ```bash
    dotnet tool install -g csharp-ls
    ```
@@ -178,17 +179,17 @@ in §15.3.
    If the command reports that `csharp-ls` is already installed, that is
    fine — it is already on your machine, so go on to step 3.
 
-   **Optional comparison only — the Node server, not needed for §15.3 —
-   WSL/Bash or PowerShell:**
+   **🐚 Optional comparison only — the Node server, not needed for §15.3 —
+   in your OS Terminal, WSL/Bash or PowerShell:**
    ```bash
    npm install -g typescript-language-server typescript
    ```
 
 3. Configure it for Copilot CLI. The CLI has two LSP surfaces: `/lsp`
    inside a session (it shows server status, and `/lsp reload` re-reads
-   the configuration) and `copilot lsp` in your terminal (run
-   `copilot lsp --help` to see its subcommands). Ask Copilot to set the
-   server up:
+   the configuration) and `copilot lsp` in your OS Terminal (run
+   `copilot lsp --help` to see its subcommands). 🤖 **In Copilot CLI
+   (`copilot>`)**, ask Copilot to set the server up:
 
    ```
    Configure csharp-ls as the LSP server for the C# files in this repo,
@@ -200,7 +201,8 @@ in §15.3.
    `~/.copilot/lsp-config.json`, or a project-level `lsp.json` in this
    repo's `.github/` folder (see [Lab 01](lab01.md) §1.3). Note which one
    Copilot used, because §15.7 removes the entry. Then run `/lsp reload` in
-   your session to load it, and confirm from your terminal:
+   your session (🤖 still in Copilot CLI) to load it, and confirm 🐚 **in your
+   OS Terminal**:
 
    ```bash
    copilot lsp list
@@ -252,7 +254,7 @@ in §15.3.
 
 ## 15.3 Use LSP-Backed Navigation
 
-🖥️ **In Copilot CLI:**
+🤖 **In Copilot CLI (`copilot>`):**
 
 1. Ask a **go-to-definition** question that a grep-based search would answer
    ambiguously (e.g. a common name):
@@ -278,7 +280,7 @@ in §15.3.
    `dotnet/` — the instructor code included. You will rename it, look at
    two things in what changed, and **undo it** before moving on.
 
-   **Guard first — a gate, not a suggestion.** In a second terminal tab
+   **Guard first — a gate, not a suggestion.** 🐚 In a second OS Terminal tab
    (leave your Copilot session open), from the repo root:
 
    ```bash
@@ -308,7 +310,7 @@ in §15.3.
    **do not rename** — stop and ask the presenter or a teammate. Your
    set-aside work is not lost: you bring it back at the end of this step.
 
-   **Rename.** In Copilot CLI:
+   **Rename.** 🤖 In Copilot CLI (`copilot>`):
 
    ```
    Using the LSP rename operation, rename the FirstMidName property
@@ -328,9 +330,9 @@ in §15.3.
    already-replaced symbol asks the server to rename a `FirstMidName` that
    is no longer there, which fails for a second, unrelated reason.
 
-   **Inspect — two things, then stop.** Back in the second terminal, first
-   see what the rename changed. The diff marks every removed line with `-`
-   and every added line with `+`:
+   **Inspect — two things, then stop.** 🐚 Back in the second OS Terminal tab,
+   first see what the rename changed. The diff marks every removed line with
+   `-` and every added line with `+`:
 
    ```bash
    git --no-pager diff -- dotnet/
@@ -371,8 +373,8 @@ in §15.3.
    the `asp-for` leftover. Stop inspecting here; you do not need to audit
    the rest.
 
-   **Undo.** Put the tree back so later labs run against the committed
-   code. Run this only now, after you have looked:
+   **Undo.** 🐚 In the same OS Terminal tab, put the tree back so later labs
+   run against the committed code. Run this only now, after you have looked:
 
    ```bash
    # Safe only because the guard printed nothing before you renamed, so
@@ -392,8 +394,8 @@ in §15.3.
    removes every untracked file at once, including ones that are not
    Copilot's. Run the status command again until it prints nothing.
 
-   **Bring back your own work — only if you set some aside.** Once that
-   status prints nothing, check the stash:
+   **Bring back your own work — only if you set some aside.** 🐚 Once that
+   status prints nothing, check the stash in your OS Terminal:
 
    ```bash
    git stash list
@@ -411,8 +413,8 @@ in §15.3.
    > `git restore dotnet/` at this point would discard exactly the work you
    > just brought back, and the stash that held it is already gone.
 
-4. **Extension — optional, and not part of the timed path.** Ask for a
-   **call hierarchy** (incoming/outgoing calls) — useful before a
+4. **Extension — optional, and not part of the timed path.** 🤖 In Copilot
+   CLI, ask for a **call hierarchy** (incoming/outgoing calls) — useful before a
    refactor, to understand blast radius. The repository layer here is
    generic: `GetByIdAsync` is declared on `IRepository<T>`
    (`dotnet/ContosoUniversity.Core/Interfaces/IRepository.cs`) and
@@ -454,15 +456,16 @@ LSP servers don't cover everything:
   back to its existing text-based tools. Nothing breaks; you just lose the
   precision and token-efficiency benefits above.
 
-🖥️ **Try it:** compare two answers about the same word. You already have
+**Try it:** compare two answers about the same word. You already have
 the first: Copilot's find-references answer for `EnrollmentDate` from
 §15.3 step 2 (scroll back to it, or ask again) — the places that really
 use the `Student` property, found by symbol. Now get the second one, a
 plain text search.
 
-First a baseline from Git: every file *outside* `dotnet/` that contains
-the word. (`-l` prints file names only. `':!dotnet'` leaves the `dotnet/`
-folder out; keep the quotes — they work the same in Bash and PowerShell.)
+🐚 **In your OS Terminal:** first a baseline from Git: every file *outside*
+`dotnet/` that contains the word. (`-l` prints file names only.
+`':!dotnet'` leaves the `dotnet/` folder out; keep the quotes — they work
+the same in Bash and PowerShell.)
 
 ```bash
 git --no-pager grep -l EnrollmentDate -- . ':!dotnet'
@@ -471,7 +474,7 @@ git --no-pager grep -l EnrollmentDate -- . ':!dotnet'
 Expect Markdown files — skill and instruction files, and this lab itself.
 No language server answers questions about prose.
 
-Now ask Copilot for the text version:
+🤖 **In Copilot CLI (`copilot>`):** now ask Copilot for the text version:
 
 ```
 Do a plain text search — not a symbol lookup — for every place in the
@@ -582,8 +585,9 @@ two answered.
 >   file new in step 3, `git status --short` lists it as `??` and you can
 >   delete the whole file. If the file was already there, remove only the
 >   entry. Leave every other server alone, including any that were
->   configured before this lab. Then run `/lsp reload` in a session and
->   `copilot lsp list` in your terminal to confirm the C# entry is gone.
+>   configured before this lab. Then run `/lsp reload` in a Copilot CLI
+>   session (🤖) and `copilot lsp list` in your OS Terminal (🐚) to confirm
+>   the C# entry is gone.
 
 <!-- This cleanup is deliberately lab-local: Lab 15 does not @include
 docs/_partials/cleanup.md. Running that partial's generic sweep here found three
@@ -599,7 +603,7 @@ owner, not to this lab. -->
 > 🧹 **Cleanup — confirm the tree really is back.** The Lab 15 specifics
 > above are the cleanup. These two checks confirm they worked.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Confirm the working tree is clean (or expected).**
 

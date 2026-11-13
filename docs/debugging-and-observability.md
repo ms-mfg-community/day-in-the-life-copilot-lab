@@ -62,6 +62,10 @@ Open the panel from the Chat view's **...** menu with **Show Agent Debug Logs**,
 | **Agent Flow Chart** | See the sequence of interactions between agents and subagents: which agent delegated an action, and where the workflow stopped. Pan, zoom, and select a node to inspect its event | Summary view, then **Agent Flow Chart** |
 | **Cache Explorer** | Compare consecutive model requests and find the first point where they differ. Use it only after the Summary view reports low cache reuse together with unexpected duration or input token usage | Summary view, then **Cache Explorer** |
 
+![Illustrative VS Code Agent Debug Logs panel with numbered callouts: the Logs view lists Load Instructions, Load Agents, Load Hooks and Load Skills discovery events, the Summary view reports tool calls, tokens and errors, the Agent Flow Chart draws a subagent graph, and the sparkle icon attaches #debugEventsSnapshot to chat.](./images/labs/vscode-agent-debug-logs.svg)
+
+*Figure: an illustrative mock-up drawn from the VS Code documentation, not a screenshot. Event rows, counts and timings are sample values.*
+
 To keep a session, select the **Export** icon in the upper-right toolbar and save an OpenTelemetry JSON file in OTLP format. The **Import** icon opens a saved file in the Summary and Logs views. This is a separate path from the CLI's OpenTelemetry exporter in [section 5](#5-opentelemetry). Review an exported file before you share it.
 
 ### 2.3 Open the Chat Debug view
@@ -75,6 +79,10 @@ Open it from the Chat view's overflow menu with **Show Chat Debug View**, or run
 | **Context** | Files, symbols and other attached context | The context the task needs is present and relevant |
 | **Response** | The response returned by the model | Whether the model returned complete content or an error |
 | **Tool responses** | Inputs and outputs for tools invoked during the request | Each tool received the expected input and returned a usable result |
+
+![Illustrative VS Code Chat Debug View with numbered callouts: a sidebar groups requests by agent, and the main pane shows the expandable System prompt, User prompt, Context, Response and Tool responses sections for one model request.](./images/labs/vscode-chat-debug-view.svg)
+
+*Figure: an illustrative mock-up drawn from the VS Code documentation, not a screenshot. The prompt text and tool names are sample values.*
 
 Three scenarios from the VS Code page show how the views fit together:
 
@@ -326,6 +334,10 @@ The documentation does not describe the record format of the file, so this part 
 - **Delegation.** A run that delegated to a subagent was a single trace: an `execute_tool task` span had a child `invoke_agent explore`, which held its own `chat <model>` and `execute_tool <tool>` spans. `explore` is a built-in agent; a custom agent was not tried.
 - **Useful attributes.** `chat` spans carry `gen_ai.request.model`, `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`. `execute_tool` spans carry `gen_ai.tool.name`, and `process.exit.code` for shell commands. The `invoke_agent` span carries `github.copilot.context.skills`, `github.copilot.context.custom_agent_names` and `github.copilot.context.mcp_server_names`, each a string that lists names.
 - **Hooks and MCP servers.** Hook activity is recorded as span events on `invoke_agent`: `github.copilot.hook.start` and `github.copilot.hook.end`, with `github.copilot.hook.type`, and on the end event `github.copilot.hook.decision` and `github.copilot.hook.duration`. MCP server start-up appears as `github.copilot.mcp.server.lifecycle`.
+
+![Illustrative OpenTelemetry trace waterfall for one Copilot CLI run: an invoke_agent root span with chat spans and an execute_tool task span that holds a child invoke_agent explore span, plus github.copilot.hook.start and github.copilot.hook.end span events.](./images/labs/otel-span-tree.svg)
+
+*Figure: an illustrative waterfall, not captured output. The documented tree is `invoke_agent`, `chat <model>` and `execute_tool <tool>`; the `execute_tool task` nesting and the hook span events are the observed items listed above.*
 
 List the span names in file order:
 

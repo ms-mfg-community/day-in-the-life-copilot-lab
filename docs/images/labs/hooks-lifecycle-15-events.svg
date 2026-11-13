@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1296" width="1600" height="1296" role="img" aria-labelledby="hooks-title hooks-desc">
+  <title id="hooks-title">The 15 hook lifecycle events in four groups, and how a hook is dispatched</title>
+  <desc id="hooks-desc">A swimlane diagram of the 15 Copilot hook lifecycle events, each a point where Copilot hands control to your hook. Session, five events: sessionStart, then preCompact, notification and errorOccurred which can fire at any point, then sessionEnd. Turn and prompt, three events in order: userPromptSubmitted, userPromptTransformed and agentStop. Subagent, two events: subagentStart and subagentStop. Tool execution, five events: permissionRequest, preToolUse, preMcpToolCall, then the tool runs, then postToolUse on success or postToolUseFailure on failure. Each card names the event, its PascalCase alias if one is documented, and what a hook can do. Four events can block: permissionRequest, preToolUse, agentStop and subagentStop. preMcpToolCall is drawn with a dashed border because it is documented in the Copilot CLI build settings and not in the GitHub hooks reference. Below the lanes, two panels compare dispatch. A command hook runs a program: the event arrives as JSON on stdin and the decision leaves as JSON on stdout plus an exit code. It can use bash, powershell or command entries, or a shell-free exec with args; command preToolUse is fail-closed on a non-zero exit. An HTTP hook sends the event as a POST to a URL and uses the JSON response as its output; HTTP preToolUse is fail-open, and HTTP is the recommended built-in type for audit logs from ephemeral cloud agent jobs once the host is allow-listed.</desc>
+  <style>
+    .bg{fill:#0d1117}
+    .lane{fill:#11161d;stroke:#30363d;stroke-width:2}
+    .card{fill:#161b22;stroke-width:2}
+    .sep{stroke:#30363d;stroke-width:2}
+    .h1{font:700 34px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .h2{font:700 26px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .sub{font:400 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .ln{font:700 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#0d1117}
+    .lc{font:600 15px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#0d1117}
+    .ev{font:700 18px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .al{font:400 15px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#9da7b3}
+    .t{font:400 17px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tb{font:700 19px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tm{font:400 16px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .cap{font:400 16px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .m{font:500 16px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .pill{fill:#2b1417;stroke:#f85149;stroke-width:2}
+    .pt{font:700 14px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#ffa198;text-anchor:middle}
+    .box{fill:#161b22;stroke:#58a6ff;stroke-width:2}
+    .edge{stroke:#9da7b3;stroke-width:2.5;fill:none}
+    .arrow{fill:#9da7b3}
+  </style>
+
+  <rect class="bg" width="1600" height="1296"/>
+  <text class="h1" x="40" y="58">Hook lifecycle: 15 interrupt points</text>
+  <text class="sub" x="40" y="92">Each event is a place where Copilot hands control to your hook. 5 + 3 + 2 + 5 = 15 events in four groups.</text>
+  <text class="tm" x="1560" y="58" text-anchor="end">14 events come from the GitHub hooks reference.</text>
+  <text class="tm" x="1560" y="82" text-anchor="end">preMcpToolCall comes from the Copilot CLI build docs.</text>
+
+  <!-- Lane 1: Session -->
+  <rect class="lane" x="30" y="126" width="1540" height="168" rx="12"/>
+  <rect x="30" y="126" width="112" height="168" rx="12" fill="#3fb950"/>
+  <text class="ln" x="86" y="200" text-anchor="middle">Session</text><text class="lc" x="86" y="224" text-anchor="middle">5 events</text>
+  <path d="M440 152 v-8 H1278 v8" fill="none" stroke="#3fb950" stroke-width="2"/>
+  <text class="tm" x="859" y="140" text-anchor="middle">These three can fire at any point in the session</text>
+  <line x1="156" y1="220" x2="1562" y2="220" stroke="#3fb950" stroke-width="3" opacity="0.35"/>
+
+  <g transform="translate(156,162)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#3fb950"/>
+    <text class="ev" x="14" y="30">sessionStart</text><text class="al" x="14" y="52">alias SessionStart</text>
+    <text class="cap" x="14" y="80">New or resumed session: add</text><text class="cap" x="14" y="102">context, or submit a prompt</text>
+  </g>
+  <g transform="translate(440,162)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#3fb950"/>
+    <text class="ev" x="14" y="30">preCompact</text><text class="al" x="14" y="52">alias PreCompact</text>
+    <text class="cap" x="14" y="80">Before compaction: observe</text><text class="cap" x="14" y="102">only, it cannot block it</text>
+  </g>
+  <g transform="translate(724,162)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#3fb950"/>
+    <text class="ev" x="14" y="30">notification</text><text class="al" x="14" y="52">no PascalCase alias</text>
+    <text class="cap" x="14" y="80">System notice: inject context;</text><text class="cap" x="14" y="102">fire-and-forget, never blocks</text>
+  </g>
+  <g transform="translate(1008,162)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#3fb950"/>
+    <text class="ev" x="14" y="30">errorOccurred</text><text class="al" x="14" y="52">alias ErrorOccurred</text>
+    <text class="cap" x="14" y="80">On an error:</text><text class="cap" x="14" y="102">log or notify only</text>
+  </g>
+  <g transform="translate(1292,162)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#3fb950"/>
+    <text class="ev" x="14" y="30">sessionEnd</text><text class="al" x="14" y="52">alias SessionEnd</text>
+    <text class="cap" x="14" y="80">Session ends: clean up or</text><text class="cap" x="14" y="102">log only</text>
+  </g>
+  <path class="arrow" d="M440 220 l-10 -6 v12 z"/><path class="arrow" d="M1292 220 l-10 -6 v12 z"/>
+
+  <!-- Lane 2: Turn and prompt -->
+  <rect class="lane" x="30" y="310" width="1540" height="144" rx="12"/>
+  <rect x="30" y="310" width="112" height="144" rx="12" fill="#58a6ff"/>
+  <text class="ln" x="86" y="368" text-anchor="middle">Turn and</text><text class="ln" x="86" y="390" text-anchor="middle">prompt</text><text class="lc" x="86" y="414" text-anchor="middle">3 events</text>
+  <line x1="156" y1="382" x2="994" y2="382" stroke="#58a6ff" stroke-width="3" opacity="0.35"/>
+  <g transform="translate(156,324)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#58a6ff"/>
+    <text class="ev" x="14" y="30">userPromptSubmitted</text><text class="al" x="14" y="52">alias UserPromptSubmit</text>
+    <text class="cap" x="14" y="80">User sends a prompt: observe</text><text class="cap" x="14" y="102">or log; output is dropped</text>
+  </g>
+  <g transform="translate(440,324)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#58a6ff"/>
+    <text class="ev" x="14" y="30">userPromptTransformed</text><text class="al" x="14" y="52">no PascalCase alias</text>
+    <text class="cap" x="14" y="80">Rewrite the model's prompt:</text><text class="cap" x="14" y="102">modifiedTransformedPrompt</text>
+  </g>
+  <g transform="translate(724,324)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#58a6ff"/>
+    <text class="ev" x="14" y="30">agentStop</text><text class="al" x="14" y="52">alias Stop</text>
+    <rect class="pill" x="196" y="-10" width="70" height="26" rx="13"/><text class="pt" x="231" y="8">can block</text>
+    <text class="cap" x="14" y="80">Agent ends a turn: block +</text><text class="cap" x="14" y="102">reason forces another turn</text>
+  </g>
+  <path class="arrow" d="M440 382 l-10 -6 v12 z"/><path class="arrow" d="M724 382 l-10 -6 v12 z"/>
+  <text class="tm" x="1018" y="368">agentStop fires each time the</text>
+  <text class="tm" x="1018" y="392">main agent finishes a turn.</text>
+
+  <!-- Lane 3: Subagent -->
+  <rect class="lane" x="30" y="470" width="1540" height="144" rx="12"/>
+  <rect x="30" y="470" width="112" height="144" rx="12" fill="#bc8cff"/>
+  <text class="ln" x="86" y="534" text-anchor="middle">Subagent</text><text class="lc" x="86" y="558" text-anchor="middle">2 events</text>
+  <line x1="156" y1="542" x2="710" y2="542" stroke="#bc8cff" stroke-width="3" opacity="0.35"/>
+  <g transform="translate(156,484)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#bc8cff"/>
+    <text class="ev" x="14" y="30">subagentStart</text><text class="al" x="14" y="52">no PascalCase alias</text>
+    <text class="cap" x="14" y="80">Subagent spawned: add</text><text class="cap" x="14" y="102">context, cannot block it</text>
+  </g>
+  <g transform="translate(440,484)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#bc8cff"/>
+    <text class="ev" x="14" y="30">subagentStop</text><text class="al" x="14" y="52">alias SubagentStop</text>
+    <rect class="pill" x="196" y="-10" width="70" height="26" rx="13"/><text class="pt" x="231" y="8">can block</text>
+    <text class="cap" x="14" y="80">Subagent done: block + reason,</text><text class="cap" x="14" y="102">or redact: modifiedResponse</text>
+  </g>
+  <path class="arrow" d="M440 542 l-10 -6 v12 z"/>
+  <text class="tm" x="740" y="528">subagentStart skips the built-in general-purpose agent,</text>
+  <text class="tm" x="740" y="552">and a matcher can pick the agent name.</text>
+
+  <!-- Lane 4: Tool execution -->
+  <rect class="lane" x="30" y="630" width="1540" height="168" rx="12"/>
+  <rect x="30" y="630" width="112" height="168" rx="12" fill="#d29922"/>
+  <text class="ln" x="86" y="702" text-anchor="middle">Tool</text><text class="ln" x="86" y="724" text-anchor="middle">execution</text><text class="lc" x="86" y="748" text-anchor="middle">5 events</text>
+  <line x1="156" y1="724" x2="1562" y2="724" stroke="#d29922" stroke-width="3" opacity="0.35"/>
+  <text class="tm" x="1015" y="656" text-anchor="middle">tool runs</text>
+  <text class="tm" x="1299" y="656" text-anchor="middle">or</text>
+  <g transform="translate(156,666)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#d29922"/>
+    <text class="ev" x="14" y="30">permissionRequest</text><text class="al" x="14" y="52">alias PermissionRequest</text>
+    <rect class="pill" x="196" y="-10" width="70" height="26" rx="13"/><text class="pt" x="231" y="8">can block</text>
+    <text class="cap" x="14" y="80">Before the permission service:</text><text class="cap" x="14" y="102">allow or deny (behavior)</text>
+  </g>
+  <g transform="translate(440,666)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#d29922"/>
+    <text class="ev" x="14" y="30">preToolUse</text><text class="al" x="14" y="52">alias PreToolUse</text>
+    <rect class="pill" x="196" y="-10" width="70" height="26" rx="13"/><text class="pt" x="231" y="8">can block</text>
+    <text class="cap" x="14" y="80">Before a tool: allow, deny or</text><text class="cap" x="14" y="102">ask, or rewrite modifiedArgs</text>
+  </g>
+  <g transform="translate(724,666)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#d29922" stroke-dasharray="7 5"/>
+    <text class="ev" x="14" y="30">preMcpToolCall</text><text class="al" x="14" y="52">no alias; CLI build setting</text>
+    <text class="cap" x="14" y="80">Before an MCP call: adjust</text><text class="cap" x="14" y="102">request metadata (CLI docs)</text>
+  </g>
+  <g transform="translate(1008,666)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#d29922"/>
+    <text class="ev" x="14" y="30">postToolUse</text><text class="al" x="14" y="52">alias PostToolUse</text>
+    <text class="cap" x="14" y="80">After a tool succeeds: replace</text><text class="cap" x="14" y="102">the result or add context</text>
+  </g>
+  <g transform="translate(1292,666)">
+    <rect class="card" width="270" height="116" rx="10" stroke="#d29922"/>
+    <text class="ev" x="14" y="30">postToolUseFailure</text><text class="al" x="14" y="52">alias PostToolUseFailure</text>
+    <text class="cap" x="14" y="80">After a tool fails: add</text><text class="cap" x="14" y="102">recovery additionalContext</text>
+  </g>
+  <path class="arrow" d="M440 724 l-10 -6 v12 z"/><path class="arrow" d="M724 724 l-10 -6 v12 z"/><path class="arrow" d="M1008 724 l-10 -6 v12 z"/><path class="arrow" d="M1292 724 l-10 -6 v12 z"/>
+
+  <!-- Legend -->
+  <rect class="pill" x="40" y="816" width="70" height="26" rx="13"/><text class="pt" x="75" y="834">can block</text>
+  <text class="tm" x="122" y="835">can block or deny the action</text>
+  <rect x="420" y="814" width="64" height="30" rx="6" fill="#161b22" stroke="#d29922" stroke-width="2" stroke-dasharray="7 5"/>
+  <text class="tm" x="496" y="835">documented in the CLI build docs, not in the hooks reference</text>
+  <text class="tm" x="1120" y="835">11 of 15 events document an alias</text>
+
+  <!-- Dispatch -->
+  <text class="h2" x="40" y="896">How a hook is dispatched</text>
+
+  <rect class="card" x="40" y="914" width="750" height="306" rx="12" stroke="#58a6ff"/>
+  <text class="tb" x="64" y="950">Command hook: runs a program on your machine</text>
+  <rect class="box" x="64" y="972" width="150" height="56" rx="10"/><text class="tb" x="139" y="1006" text-anchor="middle">Copilot</text>
+  <path class="edge" d="M214 1000 H334"/><path class="arrow" d="M344 1000 l-12 -7 v14 z"/>
+  <text class="tm" x="279" y="990" text-anchor="middle">event JSON</text><text class="tm" x="279" y="1022" text-anchor="middle">on stdin</text>
+  <rect class="box" x="344" y="972" width="190" height="56" rx="10"/><text class="tb" x="439" y="1006" text-anchor="middle">Your program</text>
+  <path class="edge" d="M534 1000 H654"/><path class="arrow" d="M664 1000 l-12 -7 v14 z"/>
+  <text class="tm" x="599" y="990" text-anchor="middle">JSON on stdout</text><text class="tm" x="599" y="1022" text-anchor="middle">+ exit code</text>
+  <rect class="box" x="664" y="972" width="100" height="56" rx="10"/><text class="tb" x="714" y="1006" text-anchor="middle">Copilot</text>
+  <text class="t" x="64" y="1068">Entry fields: bash, powershell or command, or a shell-free exec + args.</text>
+  <text class="t" x="64" y="1094">exec + args work in Copilot CLI and the VS Code Copilot harness;</text>
+  <text class="t" x="64" y="1118">the cloud agent honors bash and command entries.</text>
+  <text class="t" x="64" y="1152">preToolUse is fail-closed: a non-zero exit denies the call.</text>
+  <text class="t" x="64" y="1176">A timeout, or empty or unparseable output, falls through.</text>
+
+  <rect class="card" x="810" y="914" width="750" height="306" rx="12" stroke="#bc8cff"/>
+  <text class="tb" x="834" y="950">HTTP hook: Copilot POSTs the event to a web service</text>
+  <rect class="box" x="834" y="972" width="150" height="56" rx="10" style="stroke:#bc8cff"/><text class="tb" x="909" y="1006" text-anchor="middle">Copilot</text>
+  <path class="edge" d="M984 1000 H1104"/><path class="arrow" d="M1114 1000 l-12 -7 v14 z"/>
+  <text class="tm" x="1049" y="990" text-anchor="middle">POST</text><text class="tm" x="1049" y="1022" text-anchor="middle">event JSON</text>
+  <rect class="box" x="1114" y="972" width="190" height="56" rx="10" style="stroke:#bc8cff"/><text class="tb" x="1209" y="1006" text-anchor="middle">Your service</text>
+  <path class="edge" d="M1304 1000 H1424"/><path class="arrow" d="M1434 1000 l-12 -7 v14 z"/>
+  <text class="tm" x="1369" y="990" text-anchor="middle">JSON</text><text class="tm" x="1369" y="1022" text-anchor="middle">response</text>
+  <rect class="box" x="1434" y="972" width="100" height="56" rx="10" style="stroke:#bc8cff"/><text class="tb" x="1484" y="1006" text-anchor="middle">Copilot</text>
+  <text class="t" x="834" y="1068">Entry fields: type http, url, headers, allowedEnvVars and timeoutSec.</text>
+  <text class="t" x="834" y="1094">The JSON response is the hook's output, like stdout from a command.</text>
+  <text class="t" x="834" y="1128">preToolUse is fail-open: a network error, a timeout or a non-2xx</text>
+  <text class="t" x="834" y="1152">response falls through to the normal permission flow.</text>
+  <text class="t" x="834" y="1182">Recommended built-in type for persistent audit logs from ephemeral</text>
+  <text class="t" x="834" y="1206">cloud agent jobs, once an admin has allow-listed the host.</text>
+
+  <text class="tm" x="40" y="1250">camelCase names such as preToolUse get a camelCase payload; PascalCase aliases such as PreToolUse get the VS Code and Claude compatible snake_case payload.</text>
+  <text class="tm" x="40" y="1274">Write userPromptTransformed, preMcpToolCall, subagentStart and notification in camelCase: they have no documented PascalCase alias.</text>
+</svg>

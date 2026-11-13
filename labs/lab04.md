@@ -15,7 +15,7 @@ In this lab you will learn the two ways a **skill** is used — loaded automatic
 
 **Prerequisite:** finish [Setup](setup.md) first — `copilot --version` prints a version number, and you are signed in to GitHub Copilot.
 
-**Node track only:** the Node appendix creates its two skills with Bash commands (`mkdir -p` and heredocs) and has no complete PowerShell route, so you also need a Bash shell — on Windows, a WSL2 terminal opened at the root of the same repository checkout that your Copilot CLI and IDE use. macOS and Linux already have one. Use it for the Node steps in 4.2 and 4.3. The .NET track needs no Bash: its two skills already ship in this repository, and the lab's own commands each come with a PowerShell form.
+**Node track only:** the Node appendix gives each of its two skills as a plain Markdown block that you create in 💠 VS Code, on any operating system. Its 🐚 OS Terminal shell alternative uses Bash commands (`mkdir -p` and heredocs) and has no complete PowerShell route, so if you take the shell route you also need a Bash shell — on Windows, a WSL2 terminal opened at the root of the same repository checkout that your Copilot CLI and IDE use. macOS and Linux already have one. The .NET track needs no Bash: its two skills already ship in this repository, and the lab's own commands each come with a PowerShell form.
 
 References:
 - [Agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
@@ -26,7 +26,7 @@ References:
 
 Skills are knowledge packs that Copilot loads **automatically** when your prompt matches a skill's `description`. You can also ask for one by name: put its name in your prompt, preceded by a forward slash — for example, `Use the /dotnet-testing skill to review these tests` (the `/skill-name` form).
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Look at a skill's frontmatter — the `description` drives activation:
 
@@ -40,6 +40,8 @@ head -5 .github/skills/coding-standards/SKILL.md
 Get-Content .github/skills/coding-standards/SKILL.md -Head 5
 ```
 
+💠 **In VS Code:** or open the same file from the Explorer, or run **Chat: Open Customizations** from the Command Palette and select **Skills** to see every skill Copilot discovered and read its `name` and `description`. In the Chat view, type `/` to list the skills you can run by name.
+
 The `description` field is critical. A clear, specific description means better auto-activation.
 
 > 💡 **Progressive disclosure:** Copilot only reads the skill `name` and `description` upfront. The full body loads only when relevant — so you can have dozens of skills without overwhelming the model's context window.
@@ -48,13 +50,13 @@ The `description` field is critical. A clear, specific description means better 
 
 Each track has a testing-flavored skill that Copilot picks up when you talk about writing tests in that stack. The two tracks start from different places, so read this before you run anything from an appendix:
 
-- **.NET track:** `dotnet-testing` (xUnit + Moq + WebApplicationFactory) **already ships** in this repository at `.github/skills/dotnet-testing/SKILL.md`, with the full unit and integration patterns. The command block in [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) **overwrites** that tracked file with a shorter stub — activation guidance and the test naming convention, pointing back to the full skill. Because the skill is already there, the skill-loaded check in 4.4 succeeds whether or not you run that block.
-- **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) creates the new `node-testing` skill (Vitest + Fastify `inject()`) with its naming convention, unit and integration patterns, and an edge-case checklist. It does not ship in this repository, so you create it. The appendix is written for Bash — work in your Bash (WSL2) terminal at the repository root:
+- **.NET track:** `dotnet-testing` (xUnit + Moq + WebApplicationFactory) **already ships** in this repository at `.github/skills/dotnet-testing/SKILL.md`, with the full unit and integration patterns. The stub in [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) (paste it into that file in VS Code, or use the appendix's shell alternative) **overwrites** that tracked file with a shorter stub — activation guidance and the test naming convention, pointing back to the full skill. Because the skill is already there, the skill-loaded check in 4.4 succeeds whether or not you apply that stub.
+- **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) creates the new `node-testing` skill (Vitest + Fastify `inject()`) with its naming convention, unit and integration patterns, and an edge-case checklist. It does not ship in this repository, so you create it. In 💠 VS Code, on any operating system, create the file from the appendix's Markdown block. The appendix's 🐚 OS Terminal shell alternative is written for Bash, so if you take that route, work in your Bash (WSL2) terminal at the repository root:
   1. Do **section A** of the appendix (create the skill).
   2. Run only the **first** line of **section C. Verify** — the `head -5` check on the skill file. It should print the skill's frontmatter, including `name: node-testing`.
   3. Leave section B and the second line of section C for 4.3: they create and check the prompt, which does not exist yet.
 
-To look at the .NET skill that already ships — its `description` is what drives activation:
+🐚 **In your OS Terminal:** to look at the .NET skill that already ships — its `description` is what drives activation:
 
 **WSL/Bash:**
 ```bash
@@ -81,10 +83,10 @@ A skill can also be a reusable **command**: one you run yourself by typing `/` a
 
 The test-generator command for your track lives in your track's appendix:
 
-- **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `/create-dotnet-test`, which emits xUnit test classes. As with `dotnet-testing`, `.github/skills/create-dotnet-test/SKILL.md` **already ships** in this repository, and the appendix's command block **overwrites** it with a shorter version.
-- **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) — `/create-node-test`, which emits Vitest test files. It does not ship in this repository, so you create it now: run **section B** of the appendix in the same Bash (WSL2) terminal you used in 4.2.
+- **.NET track:** [`labs/appendices/dotnet/lab04.md`](appendices/dotnet/lab04.md) — `/create-dotnet-test`, which emits xUnit test classes. As with `dotnet-testing`, `.github/skills/create-dotnet-test/SKILL.md` **already ships** in this repository, and the appendix's version **overwrites** it with a shorter one.
+- **Node track:** [`labs/appendices/node/lab04.md`](appendices/node/lab04.md) — `/create-node-test`, which emits Vitest test files. It does not ship in this repository, so you create it now: do **section B** of the appendix the same way you did section A, in VS Code or, for the shell alternative, in the same Bash (WSL2) terminal you used in 4.2.
 
-To look at the .NET command skill that already ships:
+🐚 **In your OS Terminal:** to look at the .NET command skill that already ships:
 
 **WSL/Bash:**
 ```bash
@@ -96,7 +98,7 @@ head -7 .github/skills/create-dotnet-test/SKILL.md
 Get-Content .github/skills/create-dotnet-test/SKILL.md -Head 7
 ```
 
-For the Node command, once section B has created it, run the **second** line of the appendix's "C. Verify" block — the `head -7` check on the new skill file. It should print its frontmatter, including `name: create-node-test` and `disable-model-invocation: true`.
+🐚 **In your OS Terminal:** for the Node command, once section B has created it, run the **second** line of the appendix's "C. Verify" block — the `head -7` check on the new skill file. It should print its frontmatter, including `name: create-node-test` and `disable-model-invocation: true`.
 
 > **🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax**
 >
@@ -128,13 +130,15 @@ For the Node command, once section B has created it, run the **second** line of 
 
 Let's verify the skill is loaded, then see how a knowledge skill and a command skill behave differently. Each step shows the .NET and Node versions together — follow the one for your track. On the Node track, this section checks the two skills you created in 4.2 and 4.3, so finish those first.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. From the repository root, start Copilot CLI:
 ```bash
 copilot
 ```
 **Node track:** start it *after* you created `node-testing` in 4.2 and `create-node-test` in 4.3, so both new skills are picked up. If a session is already open from earlier, type `/exit` and run `copilot` again.
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 2. Inside the session, confirm your track's skill is loaded. Type these one at a time — this check does not depend on what the model decides to say:
 
@@ -180,7 +184,9 @@ How should I write unit tests for the student repository in node/infra/repos/stu
 > - **Copilot CLI:** with your session from step 1 still open, type these inside the same `copilot` session. `/skills list` shows what was discovered, `/env` shows the skills loaded alongside agents, MCP servers and hooks, and `/context` shows what the session's context costs. In experimental mode `/context` also breaks usage down per skill, subagent, MCP server, tool and plugin.
 > - **VS Code:** open **Show Agent Debug Logs**, switch to the **Logs view** and filter to **Discovery** to see whether the skill was loaded, skipped or rejected. Then read the model requests and tool calls that follow to see whether the skill's text was used. [Turn capture on first](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce): it is not retroactive.
 
-**Now run the command skill — in the same CLI session:**
+**Now run the command skill:**
+
+🤖 **In Copilot CLI (`copilot>`), in the same session:**
 
 5. Type your track's command, followed by what to test:
 
@@ -198,6 +204,12 @@ The .NET command should generate a complete test class for the CoursesController
 > 💡 **Expected output:** On the .NET track, a complete xUnit test class with `[Fact]` methods following the naming convention. On the Node track, a Vitest file (for example `node/tests/unit/course-repo.test.ts`) with `describe` / `it` / `expect` cases that build an in-memory database with `createInMemoryDb()`. Copilot asks before it writes the file or runs the tests — read what it proposes before you approve any change.
 
 > 💡 **Skills vs Prompts**: Both kinds of skill live in `.github/skills/<name>/SKILL.md` and are discovered by Copilot CLI, VS Code's Copilot harness and the coding agent. A *knowledge* skill (`dotnet-testing`) loads when your prompt matches its `description`, or when you name it as `/skill-name`. A *command* skill (`create-dotnet-test`) sets `disable-model-invocation: true`, so it runs only when you type `/name`. Prompt files (`.prompt.md`) are the older way to store a command and are IDE-only — VS Code's Local chat still reads them, Copilot CLI and the Copilot harness do not — which is why this repository migrated all of its prompts to skills.
+
+💠 **In VS Code:** run the same skills from the Chat view with the **Copilot** harness selected. Type `/` in the chat input to list the available skills, select `/create-dotnet-test` (or `/create-node-test`), and add context after the command, for example `/create-dotnet-test for dotnet/ContosoUniversity.Web/Controllers/CoursesController.cs`. A knowledge skill needs no command: ask the question from step 3, and VS Code loads `dotnet-testing` (or `node-testing`) when your request matches its `description`. To see what VS Code discovered, run **Chat: Open Customizations** and select **Skills**.
+
+This is how the Copilot CLI checks from the Debug It callout look inside a session. The capture is illustrative:
+
+![A terminal-style capture of four Copilot CLI commands typed inside a copilot> session: /env lists the loaded instructions, MCP servers, skills, agents, hooks, plugins, LSPs and extensions; /instructions lists instruction files with on and off checkboxes; /context splits the context window into seven parts; and /diagnose analyzes the current session's logs.](../docs/images/labs/cli-env-context-diagnose.svg)
 
 ## 4.5 Final
 

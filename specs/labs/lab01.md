@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab01.md` (245 lines) — "Exploring Copilot Configuration" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 concept ordering — AC12 and §5; Phase 4 Debug It callout — AC13, C13–C14, D9, §5, §7) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 concept ordering — AC12 and §5; Phase 4 Debug It callout — AC13, C13–C14, D9, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC14, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -24,7 +24,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 
 | | |
 |---|---|
-| **Surface** | `cli` — `copilot plugin …`, `copilot --agent … --prompt …`, plus reading files in the repo. Nothing here needs VS Code. |
+| **Surface** | `mixed` — **Amended 2026-11-13 (Phase 5):** was `cli` ("Nothing here needs VS Code"). The lab teaches the Three Surfaces Legend and badges every step 🐚 / 🤖 / 💠; the commands (`copilot plugin …`, `copilot --agent … --prompt …`, reading files) stay terminal-driven, and §1.1 and §1.4 gain 💠 VS Code counterparts (open the file in the Explorer; pick `planner` from the **Agent** dropdown; **Chat: Open Customizations**). VS Code is an alternative route, not a prerequisite. |
 | **Tier** | `beginner` |
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 10 (unchanged — see §5) |
@@ -48,6 +48,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 | AC11 | The code-intelligence table no longer says "(GA)" or "(seconds)", and still names both LSP config paths | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC12 | Concepts come before extensions: §1.1 → §1.2 → §1.3 → §1.4 are taught first, then the optional §1.0a CLI table and §1.0 marketplace, and the lab ends on `## 1.5 Takeaway`. Every numbered heading is kept, and the marketplace section no longer says "skip ahead" to a section that now precedes it | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC13 | §1.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), outside the optional §1.0a / §1.0 extensions. It says a good answer does not prove the configuration loaded; names `/instructions` and `/env` as the Copilot CLI checks, typed inside a running `copilot` session; names VS Code's **Show Agent Debug Logs** (its **Discovery** events) and **Show Chat Debug View** (the **System prompt**); says VS Code capture must be turned on before the problem is reproduced, with a link to `docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce` | `npx vitest run tests/lab-structure/lab01-contract tests/lab-structure/debugging-observability-contract` |
+| AC14 | **Phase 5.** The lab carries an unnumbered `## The Three Surfaces Legend: where am I typing?` section before `## 1.1`, with the three canonical badges, what belongs on each surface, `three-surfaces-guide.svg`, and the "badge names what you type into" rule. §1.1 and §1.4 badge every command 🐚 or 🤖 and add a 💠 counterpart (open the file from the Explorer; the **Agent** dropdown; **Chat: Open Customizations**), with `vscode-customizations-and-hooks.svg` and `cli-env-context-diagnose.svg` embedded around the `🔍 Debug It` callout. The numbered headings, their order (AC12) and the single callout (AC13) are unchanged | `npx vitest run tests/lab-structure/lab01-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -77,6 +78,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 - Do not keep `/fleet`, `/model`, plan/autopilot, `extensions_manage` or the registry reference out of the lab — AC4 requires them.
 - Do not edit any file other than `labs/lab01.md`, this spec and `tests/lab-structure/lab01-contract.test.ts`. No other lab, no registry, no `AGENTS.md`, no other test.
 - **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout at the end of §1.4 (AC13) and nothing else. It is a callout, not a section: it is not renumbered, not timed, and not moved into the optional §1.0a / §1.0 extensions, and `self_paced_minutes` stays 10. It carries no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new, the guide the callout links), `TROUBLESHOOTING.md`, and `tests/lab-structure/debugging-observability-contract.test.ts`. The callout teaches `/instructions` and `/env` as *checks*; it does not teach hooks, MCP, OpenTelemetry or session data, which belong to Labs 05–07 and the guide.
+- **Amended 2026-11-13 (Phase 5):** "do not add or remove a section" gains one exception: the **unnumbered** `## The Three Surfaces Legend: where am I typing?` section before `## 1.1` (AC14). It is not numbered, so no numbered heading moves (AC12), it is not timed, and `self_paced_minutes` stays 10. The lab also gains the 🐚 / 🤖 / 💠 badges, two 💠 counterparts and three images, and nothing else: the plugin commands, the single `🔍 Debug It` callout and `--allow-all-tools` (C12) are untouched. The "do not edit any file other than" bullet also allows the Phase 5 files named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -101,6 +103,7 @@ reports each UNVERIFIED — not "could not run":
 - interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation (these call a model and may use tools);
 - `/plugin …`, `/fleet`, `/model`, `/autopilot` typed into any session;
 - **Phase 4:** the `🔍 Debug It` callout's commands (`/instructions`, `/env`) are typed into a Copilot session, and its VS Code steps (**Show Agent Debug Logs**, **Show Chat Debug View**, the capture setting) need a running VS Code. No stage executes them: UNVERIFIED, the same as the other session commands;
+- **Phase 5:** the 💠 steps (open the file from the Explorer, the **Agent** dropdown, **Chat: Open Customizations**) need a running VS Code: UNVERIFIED;
 - every GitHub-side write.
 
 **May** be executed, because they are read-only and local: `npm test`, the vitest

@@ -15,7 +15,7 @@ In this lab you will explore the hook system and create a new hook for .NET buil
 
 > 📋 **Before you start.**
 > - Finish [Lab 01](lab01.md) and [Setup](setup.md) first. §6.4 builds `dotnet/ContosoUniversity.sln`, so that solution must already build cleanly.
-> - Open your terminal at the **repository root** (the folder that contains `scripts/` and `.github/`). Every path in this lab is relative to it.
+> - Open your 🐚 OS Terminal at the **repository root** (the folder that contains `scripts/` and `.github/`). Every path in this lab is relative to it.
 > - Pick **one** shell and stay in it: the one your platform uses natively (PowerShell on Windows, Bash on macOS, Linux or WSL). **WSL/Bash** needs `jq`: the hook scripts use it to read the event and stop with an error if it is missing. **PowerShell** needs PowerShell 7 (the `pwsh` command, not Windows PowerShell 5.1), because §6.4 launches `pwsh`.
 
 > ⏱️ **Timed route.** The timings above cover the core path in **one** shell: §6.1, the stdin-JSON idea (§6.2 and §6.2.1), §6.3, §6.4 (without its optional §6.4.1) and §6.6. Everything else is optional reference and is not timed: reading all three scripts in §6.2 steps 2–4 line by line (skim one), the other shell's blocks (such as the §6.3 script you are not using), the Copilot CLI currency table, the collapsible 15-event deep dive at the end of §6.1, all of §6.2.2 (hooks in other languages, shell-free `exec` and `"type": "http"` hooks) and all of §6.4.1 (debug logs, session data, `/diagnose` and OpenTelemetry).
@@ -63,7 +63,7 @@ References:
 
 Hooks are scripts that run automatically at specific points in the Copilot lifecycle. They provide guardrails and automation.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. View the hook configuration:
 
@@ -76,6 +76,10 @@ cat .github/hooks/default.json
 ```powershell
 Get-Content .github/hooks/default.json
 ```
+
+💠 **In VS Code:** or open the same hook files in the Agent Customizations editor. Run **Chat: Open Customizations** from the Command Palette and select **Hooks** (or type `/hooks` in the Chat view). Hook files appear under **Workspace** (this repository's `.github/hooks/`) and **User** (`~/.copilot/hooks/`), and the `+` button next to **Workspace** creates a new hook.
+
+![A mock-up of the Agent Customizations editor in VS Code: a list of tabs (Instructions, Skills, Agents, MCP Servers and Hooks) with the Hooks tab selected, showing the hook events registered in a workspace hooks file and an empty user group.](../docs/images/labs/vscode-customizations-and-hooks.svg)
 
 2. This repository's `default.json` registers seven hooks on the four lifecycle events below. The table is **non-exhaustive**: Copilot supports 15 lifecycle events in all (for example `sessionStart`, `sessionEnd` and `agentStop`). Open the collapsed **Deep Dive** at the end of this section for all 15, or read the [full event catalogue](../docs/copilot-config-reference.md#43-event-catalogue). GitHub's own list is the [hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events).
 
@@ -107,6 +111,8 @@ Get-Content .github/hooks/default.json
 Copilot defines **15** hook lifecycle events. This deep dive calls them *interrupts*: each one is a point where Copilot hands control to your hook so it can look, decide or add context. Most run synchronously and make the agent wait; `notification` is fire-and-forget and never blocks. Fourteen are listed in the [GitHub hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events). The fifteenth, `preMcpToolCall`, is documented only in the Copilot CLI's built-in documentation (`/config` lists it under Capabilities > Hooks as `hooks.preMcpToolCall`); it is not in the GitHub hooks reference's event table. Copilot CLI fires all 15.
 
 Write the event name in camelCase (`preToolUse`) to get a camelCase payload, or in PascalCase (`PreToolUse`) to get the VS Code and Claude compatible snake_case payload. Only 11 events document a PascalCase alias, shown in brackets below. `userPromptTransformed`, `preMcpToolCall`, `subagentStart` and `notification` have none, so always write those four in camelCase.
+
+![A swimlane diagram of the 15 hook lifecycle events in four groups: Session (sessionStart, preCompact, notification, errorOccurred, sessionEnd), Turn and prompt (userPromptSubmitted, userPromptTransformed, agentStop), Subagent (subagentStart, subagentStop) and Tool execution (permissionRequest, preToolUse, preMcpToolCall, postToolUse, postToolUseFailure). Four events can block, and preMcpToolCall is drawn dashed because it comes from the CLI build docs. Two panels below compare a command hook, which reads the event on stdin, with an HTTP hook, which posts it to a web service.](../docs/images/labs/hooks-lifecycle-15-events.svg)
 
 **Session interrupts**
 
@@ -162,7 +168,7 @@ Hooks for the GitHub Copilot CLI receive their event payload **as a JSON object 
 > - **exit status**: the number a script ends with. `0` means success; anything else means failure.
 > - **cwd**: the current working directory, the folder Copilot was working in when the event fired.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. List the hook scripts:
 
@@ -218,6 +224,8 @@ Get-Content scripts/hooks/post-tool-use-format.sh
 
 This hook auto-formats files after Copilot edits them.
 
+💠 **In VS Code:** open any of these scripts from the Explorer to read it with syntax highlighting. They are ordinary files in `scripts/hooks/`.
+
 > 💡 **preToolUse vs postToolUse**: Pre-hooks block actions by **exiting `0` and writing a JSON decision to stdout** (e.g. `{"permissionDecision":"deny","permissionDecisionReason":"…"}`) — see `scripts/hooks/pre-tool-use-secret-scan.sh` for a working example. Command `preToolUse` hooks are also **fail-closed**: if the script crashes or exits non-zero (including `exit 2`), Copilot denies the tool call even when the stdout JSON says `allow`, so a pre-hook that has no objection must `exit 0` — a non-zero exit is a denial, not a harmless skip. The exceptions fall through to the normal permission flow instead: a timeout is fail-open (Copilot surfaces a warning and lets the tool call proceed), and so is empty or unparseable stdout, which Copilot treats as "no decision". HTTP hooks fail differently; see §6.2.2. Post-hooks run after the tool has finished, so they cannot stop it.
 
 ### 6.2.1 The hook IPC contract (Copilot CLI at or above the registry's `copilot_cli_version_floor`)
@@ -247,7 +255,7 @@ This hook auto-formats files after Copilot edits them.
 
 Other events (for example `sessionStart`, `userPromptSubmitted`, `preToolUse`, `errorOccurred`, `agentStop`, `subagentStop` and `sessionEnd`; all 15 are in the §6.1 deep dive) follow the same on-stdin pattern with event-specific keys. **Asymmetry to remember:** in `preToolUse`, `toolArgs` is a JSON-encoded string; in `postToolUse`, `toolArgs` is already a parsed object.
 
-**Read it like this** — these are excerpts from *inside* a hook script. Read them; don't type them into a terminal (on its own, `INPUT="$(cat)"` just waits for input):
+**Read it like this** — these are excerpts from *inside* a hook script, the kind of file you edit in 💠 VS Code. Read them; don't type them into 🐚 your OS Terminal or 🤖 a `copilot>` session (on its own, `INPUT="$(cat)"` just waits for input):
 
 **WSL/Bash** (uses `jq`):
 ```bash
@@ -465,7 +473,7 @@ foreach ($path in $paths) {
 
 The guard checks the file-writing tools only. A shell command such as `echo X=1 > .env` arrives as a `bash` call (a `powershell` call on Windows), and this guard has no opinion about it.
 
-🖥️ **In your terminal (optional):** save the Node version as `scripts/hooks/guard-env.mjs` and pipe it a sample event, the same way §6.4 tests the build hook. You are testing the script directly. Nothing is registered with Copilot.
+💠 **In VS Code (optional):** save the Node version as `scripts/hooks/guard-env.mjs`. Then, 🐚 **in your OS Terminal**, pipe it a sample event, the same way §6.4 tests the build hook. You are testing the script directly. Nothing is registered with Copilot.
 
 **WSL/Bash:**
 ```bash
@@ -536,9 +544,9 @@ A hook entry can launch an executable directly, without a shell. This is a compl
 - **Validate event input.** Tool arguments are untrusted text. Never splice them into a shell command line; parse them as JSON inside a script, as the guards above do.
 - **`matcher`.** It limits the hook to the four tools the guard handles, so Copilot does not start Node for every `view` or `bash` call. The script still checks the tool name itself, so it stays correct without a matcher.
 
-**Registering it (optional).** To watch the guard work for real, create `.github/hooks/guard-env-local.json` with the file above and restart Copilot, because hook files load when it launches. Copilot loads every `.github/hooks/*.json` file together, so you do not need to touch `default.json`. **Never put this entry in `.github/hooks/default.json`:** that file is the repository's committed configuration, and §6.3 already edits it. A scratch file is one you can delete. Then ask Copilot to create a file called `.env`: the call is denied and the agent is shown the reason your guard printed, while a request for `.env.example` is left to the normal permission flow.
+**Registering it (optional).** To watch the guard work for real, 💠 **in VS Code** create `.github/hooks/guard-env-local.json` with the file above and restart Copilot, because hook files load when it launches. Copilot loads every `.github/hooks/*.json` file together, so you do not need to touch `default.json`. **Never put this entry in `.github/hooks/default.json`:** that file is the repository's committed configuration, and §6.3 already edits it. A scratch file is one you can delete. Then, 🤖 **in Copilot CLI**, ask Copilot to create a file called `.env`: the call is denied and the agent is shown the reason your guard printed, while a request for `.env.example` is left to the normal permission flow.
 
-> ⚠️ **A registration must never outlive its script.** Command `preToolUse` hooks are fail-closed (§6.2): if `scripts/hooks/guard-env.mjs` is deleted while `guard-env-local.json` still points at it, Node exits with an error and Copilot denies every `edit`, `create`, `write` and `apply_patch` call with `Denied by preToolUse hook (hook errored)`. That is why the clean-up step at the end of this section deletes the registration first. It is also why the file lives in this repository and not in your user hooks folder: the script path is relative to this repository, so a user-level registration would run in every repository you open and deny edits in each one that has no such script. If edits start being denied like that, delete `.github/hooks/guard-env-local.json` from your own terminal (the tools being denied are Copilot's) and restart Copilot.
+> ⚠️ **A registration must never outlive its script.** Command `preToolUse` hooks are fail-closed (§6.2): if `scripts/hooks/guard-env.mjs` is deleted while `guard-env-local.json` still points at it, Node exits with an error and Copilot denies every `edit`, `create`, `write` and `apply_patch` call with `Denied by preToolUse hook (hook errored)`. That is why the clean-up step at the end of this section deletes the registration first. It is also why the file lives in this repository and not in your user hooks folder: the script path is relative to this repository, so a user-level registration would run in every repository you open and deny edits in each one that has no such script. If edits start being denied like that, delete `.github/hooks/guard-env-local.json` from your own 🐚 OS Terminal (the tools being denied are Copilot's) and restart Copilot.
 
 #### 3. Calling an external service with `"type": "http"`
 
@@ -561,7 +569,7 @@ Two environment variables relax the URL rules. They belong to local experiments,
 
 **Try it locally (optional).** A throwaway listener lets you watch events arrive. A `postToolUse` hook is the safe choice for this: it only observes, and it needs just the first variable.
 
-1. Save this listener as `scripts/hooks/audit-receiver.mjs`:
+1. 💠 **In VS Code:** save this listener as `scripts/hooks/audit-receiver.mjs`:
 
 ```js
 // scripts/hooks/audit-receiver.mjs: a throwaway local listener for the http hook
@@ -580,8 +588,8 @@ createServer((req, res) => {
 }).listen(8787, '127.0.0.1', () => console.log('Listening on http://127.0.0.1:8787 (Ctrl+C to stop)'));
 ```
 
-2. In a **second terminal** at the repository root, start it: `node scripts/hooks/audit-receiver.mjs`.
-3. Create `audit-local.json` in your **user** hooks folder (`~/.copilot/hooks/`, or `%USERPROFILE%\.copilot\hooks\` on Windows). It lives outside the repository on purpose, so `default.json` stays untouched. It applies to every Copilot session you start until you delete it in the clean-up step below:
+2. 🐚 **In a second OS Terminal** at the repository root, start it: `node scripts/hooks/audit-receiver.mjs`.
+3. 💠 **In VS Code:** create `audit-local.json` in your **user** hooks folder (`~/.copilot/hooks/`, or `%USERPROFILE%\.copilot\hooks\` on Windows). It lives outside the repository on purpose, so `default.json` stays untouched. It applies to every Copilot session you start until you delete it in the clean-up step below:
 
 ```json
 {
@@ -599,7 +607,7 @@ createServer((req, res) => {
 }
 ```
 
-4. Start Copilot with the variable set. Hook files load when Copilot starts:
+4. 🐚 **In your first OS Terminal:** start Copilot with the variable set. Hook files load when Copilot starts:
 
 **WSL/Bash:**
 ```bash
@@ -611,7 +619,7 @@ COPILOT_HOOK_ALLOW_LOCALHOST=1 copilot
 $env:COPILOT_HOOK_ALLOW_LOCALHOST = "1"; copilot
 ```
 
-5. Ask Copilot something that uses a tool, such as `Show me the first five lines of README.md`. The listener prints one line for each tool call that succeeds, for example `... POST /copilot-audit tool=view`.
+5. 🤖 **In Copilot CLI (`copilot>`):** ask Copilot something that uses a tool, such as `Show me the first five lines of README.md`. The listener prints one line for each tool call that succeeds, for example `... POST /copilot-audit tool=view`.
 
 Now the shape you would ship. It uses `https://`, so no override variable is needed. The audit hook reports every tool result. The second hook asks a policy service before each tool runs, and the service answers with the same decision JSON a command hook prints, such as `{"permissionDecision": "deny", "permissionDecisionReason": "..."}`, or `{}` for no opinion:
 
@@ -700,7 +708,7 @@ hooks:
 
 The [config reference](../docs/copilot-config-reference.md#4-hooks) documents every field above, with limits and failure rules.
 
-**Clean up.** Undo this section in order. Exit Copilot and stop the listener with `Ctrl+C`. Delete the **registration files first**, then the scripts they point at, and (in PowerShell) clear the variable. A registration that outlives its script denies calls, as the warning in part 2 explains. Hook files load when Copilot starts, so a deleted file stops mattering at your next launch.
+**Clean up.** Undo this section in order, in your 🐚 OS Terminal. Exit Copilot and stop the listener with `Ctrl+C`. Delete the **registration files first**, then the scripts they point at, and (in PowerShell) clear the variable. A registration that outlives its script denies calls, as the warning in part 2 explains. Hook files load when Copilot starts, so a deleted file stops mattering at your next launch.
 
 **WSL/Bash:**
 ```bash
@@ -721,13 +729,116 @@ Remove-Item Env:COPILOT_HOOK_ALLOW_LOCALHOST -ErrorAction SilentlyContinue
 
 Let's create a `postToolUse` hook that automatically verifies the .NET build after Copilot edits a C# file.
 
-> 💡 **PowerShell route.** The `cat > … << 'HOOK'` blocks below are Bash heredocs, so don't paste them into PowerShell. Instead, in VS Code create `scripts/hooks/post-tool-use-dotnet-build.ps1`, paste in only the script from step 2 (the lines between the `cat > …` line and the closing `HOOK` line, not those two lines themselves) and save it. Skip `chmod +x`: Windows has no execute bit. Step 1's `.sh` is optional on this route, because Windows runs the `powershell` entry. §6.4 step 3 has the PowerShell version of the non-matching test.
+> 💡 **PowerShell route.** The VS Code steps below work in any shell. On Windows (PowerShell) you only need the `.ps1` script from step 2: skip step 1's `.sh` (Windows runs the `powershell` entry) and skip `chmod +x`, because Windows has no execute bit. §6.4 step 3 has the PowerShell version of the non-matching test. The heredocs in the shell alternative are Bash, so don't paste them into PowerShell.
 
-🖥️ **In your terminal:**
+💠 **In VS Code:**
 
-1. Create the bash script (reads the event JSON from stdin via `jq`):
+1. Create the bash script `scripts/hooks/post-tool-use-dotnet-build.sh` (it reads the event JSON from stdin via `jq`): in the Explorer, right-click the `scripts/hooks` folder, choose **New File**, paste this content, and save:
 
-**WSL/Bash:**
+```bash
+#!/usr/bin/env bash
+# Post-tool-use hook: Verify .NET build after editing C# files.
+# Reads the Copilot CLI hook event as JSON on stdin (NOT env vars).
+
+set -euo pipefail
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq is required for hooks." >&2
+  exit 1
+fi
+
+INPUT="$(cat)"
+TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // ""')
+CWD=$(echo "$INPUT" | jq -r '.cwd // "."')
+FILE_PATH=$(echo "$INPUT" | jq -r '.toolArgs.file_path // .toolArgs.path // ""')
+
+# Only run after file edits/creates/writes
+if [[ "$TOOL_NAME" != "edit" && "$TOOL_NAME" != "create" && "$TOOL_NAME" != "write" ]]; then
+  exit 0
+fi
+
+# Only check C# / project / Razor files
+if [[ "$FILE_PATH" != *.cs && "$FILE_PATH" != *.csproj && "$FILE_PATH" != *.cshtml ]]; then
+  exit 0
+fi
+
+# Prefer runtime-provided project dir; fall back to event cwd.
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-${COPILOT_PROJECT_DIR:-$CWD}}"
+SOLUTION="$PROJECT_DIR/dotnet/ContosoUniversity.sln"
+
+if BUILD_OUTPUT=$(dotnet build "$SOLUTION" --nologo --verbosity quiet 2>&1); then
+  echo "✅ Build succeeded after editing $FILE_PATH"
+  exit 0
+fi
+
+echo "⚠️  BUILD FAILED after editing $FILE_PATH"
+echo ""
+printf '%s\n' "$BUILD_OUTPUT" | tail -20
+echo ""
+echo "Fix the build errors before continuing."
+exit 1
+```
+
+🐚 **In your OS Terminal** (macOS, Linux and WSL; skip it on Windows PowerShell):
+
+```bash
+chmod +x scripts/hooks/post-tool-use-dotnet-build.sh
+```
+
+> ⚠️ **Don't skip the `chmod +x`** — without execute permissions, the hook won't run and you'll see no output.
+
+💠 **In VS Code:**
+
+2. Create the PowerShell equivalent `scripts/hooks/post-tool-use-dotnet-build.ps1` the same way, paste this content, and save:
+
+```powershell
+# Post-tool-use hook: Verify .NET build after editing C# files.
+# Reads the Copilot CLI hook event as JSON on stdin (NOT env vars).
+
+$ErrorActionPreference = "Stop"
+
+$Event = ($input | Out-String) | ConvertFrom-Json
+
+$ToolName = if ($Event.toolName) { $Event.toolName } else { "" }
+$Cwd      = if ($Event.cwd)      { $Event.cwd }      else { "." }
+$FilePath = ""
+if ($Event.toolArgs) {
+    if     ($Event.toolArgs.file_path) { $FilePath = $Event.toolArgs.file_path }
+    elseif ($Event.toolArgs.path)      { $FilePath = $Event.toolArgs.path }
+}
+
+if ($ToolName -ne "edit" -and $ToolName -ne "create" -and $ToolName -ne "write") {
+    exit 0
+}
+
+if ($FilePath -notmatch '\.(cs|csproj|cshtml)$') {
+    exit 0
+}
+
+$ProjectDir = if ($env:CLAUDE_PROJECT_DIR)      { $env:CLAUDE_PROJECT_DIR }
+              elseif ($env:COPILOT_PROJECT_DIR) { $env:COPILOT_PROJECT_DIR }
+              else { $Cwd }
+$Solution = Join-Path $ProjectDir "dotnet/ContosoUniversity.sln"
+
+$Output = dotnet build $Solution --nologo --verbosity quiet 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️  BUILD FAILED after editing $FilePath"
+    Write-Host ""
+    $Output | Select-Object -Last 20 | Write-Host
+    Write-Host ""
+    Write-Host "Fix the build errors before continuing."
+    exit 1
+}
+
+Write-Host "✅ Build succeeded after editing $FilePath"
+```
+
+<details>
+<summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>
+
+Use these instead of steps 1 and 2 if you would rather write the files from your OS Terminal. They are Bash heredocs, so run them in Bash or WSL.
+
+**WSL/Bash** (step 1, the bash script):
 ```bash
 cat > scripts/hooks/post-tool-use-dotnet-build.sh << 'HOOK'
 #!/usr/bin/env bash
@@ -775,11 +886,7 @@ HOOK
 chmod +x scripts/hooks/post-tool-use-dotnet-build.sh
 ```
 
-> ⚠️ **Don't skip the `chmod +x`** — without execute permissions, the hook won't run and you'll see no output.
-
-2. Create the PowerShell equivalent:
-
-**WSL/Bash** (heredoc — write the file from the bash shell):
+**WSL/Bash** (step 2, the PowerShell script — write the file from the bash shell):
 ```bash
 cat > scripts/hooks/post-tool-use-dotnet-build.ps1 << 'HOOK'
 # Post-tool-use hook: Verify .NET build after editing C# files.
@@ -824,12 +931,13 @@ Write-Host "✅ Build succeeded after editing $FilePath"
 HOOK
 ```
 
-3. Register the hook in `default.json`. Open the file:
-```bash
-code .github/hooks/default.json
-```
+</details>
 
-4. Add the new hook to the `postToolUse` array:
+💠 **In VS Code:**
+
+3. Register the hook in `default.json`. Open `.github/hooks/default.json` (press <kbd>Ctrl</kbd>+<kbd>P</kbd>, or <kbd>Cmd</kbd>+<kbd>P</kbd> on macOS, type `default.json`, and press <kbd>Enter</kbd>). From your 🐚 OS Terminal, `code .github/hooks/default.json` opens the same file.
+
+4. Add the new hook to the `postToolUse` array, then save the file:
 ```json
 {
   "type": "command",
@@ -839,6 +947,8 @@ code .github/hooks/default.json
   "comment": "Verify .NET build after editing C# files"
 }
 ```
+
+🐚 **In your OS Terminal:**
 
 5. Verify the hook is registered:
 
@@ -860,7 +970,7 @@ Get-Content .github/hooks/default.json | Select-String dotnet-build
 
 To test the hook manually, pipe a sample event JSON into it (matching the real `postToolUse` payload shape from §6.2.1):
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Simulate a matching event (edit on a `.cs` file → should run `dotnet build`):
 
@@ -900,9 +1010,11 @@ if ($LASTEXITCODE -eq 0) { Write-Host "(early-return OK)" }
 
 If `(early-return OK)` doesn't appear, the check failed before the script could exit `0`. On the Bash route the usual cause is a missing `jq` (the script prints `ERROR: jq is required for hooks.`); on PowerShell it is usually that `pwsh` (PowerShell 7) isn't installed, as covered in **Before you start**.
 
-4. In a real Copilot session, this hook fires automatically every time Copilot edits a `.cs` file. If the build breaks, Copilot sees the error output and can fix it.
+4. 🤖 **In Copilot CLI (`copilot>`):** in a real session, this hook fires automatically every time Copilot edits a `.cs` file. If the build breaks, Copilot sees the error output and can fix it.
 
 > 💡 **Expected output:** You should see `✅ Build succeeded` in the Copilot output after editing a .cs file. If you see `⚠️ BUILD FAILED`, check the build errors. If you see nothing, verify permissions: `ls -la scripts/hooks/post-tool-use-dotnet-build.sh`.
+
+💠 **In VS Code:** confirm the new hook is registered: run **Chat: Open Customizations**, select **Hooks**, and look for the new `postToolUse` entry under **Workspace**. Its runs show up in **Show Agent Debug Logs**, as the callout below explains.
 
 > **🔍 Debug It (VS Code & Copilot CLI)** — *Did my hook actually run?*
 >
@@ -923,6 +1035,10 @@ If `(early-return OK)` doesn't appear, the check failed before the script could 
 A hook runs without a window of its own, so you cannot tell one that ran and approved from one that never started. Four tools answer that, and the same four answer it for instructions, agents, skills and MCP servers (Labs 01 to 05 and 07 each have a **🔍 Debug It** callout that points here). Use part 1 if you work in VS Code and parts 2 to 4 for Copilot CLI; the [reference guide](../docs/debugging-and-observability.md) has the detail behind each part.
 
 #### 1. VS Code: Agent Debug Logs and the Chat Debug view
+
+💠 **In VS Code:** this is the panel you are about to open. It is a mock-up with sample values, and the panel is in Preview, so its layout can change.
+
+![A mock-up of the Agent Debug Logs panel in VS Code: a Logs view whose first events are Load Instructions, Load Agents, Load Hooks and Load Skills, a detail panel for the selected row, a Summary view with tiles for model turns, tool calls, tokens, errors, events and duration, an Agent Flow Chart in which an orchestrator agent delegates to three subagents, and the sparkle icon that attaches the events to chat.](../docs/images/labs/vscode-agent-debug-logs.svg)
 
 1. **Turn capture on before you reproduce the problem**, because capture is not retroactive. For sessions managed by the Agent Host, which is how the Copilot harness runs, set `chat.agentHost.agentDebugLog.enabled`. Local harness sessions need `github.copilot.chat.agentDebugLog.fileLogging.enabled` instead, and a reload of the editor window before you use `/troubleshoot`. VS Code documents the Local harness as deprecated, so most setups need only the first.
 
@@ -955,8 +1071,8 @@ Every local session leaves a folder at `~/.copilot/session-state/<session-id>/` 
 
 `session-store.db` sits next to the folders in `~/.copilot/`. It indexes your sessions for search, and the `sessions` table in it holds each session's `summary` (`workspace.yaml` does not). These files are not encrypted, and anything that reached a tool result, such as a prompt or the contents of a file, is saved in them.
 
-1. Inside a running `copilot` session, type `/session id` to show and copy the session ID, then ask for something that fires hooks, such as `List the files in .github/hooks`.
-2. In a second terminal, or after `/exit`, count the hooks that ran. Read the result as "hook starts, grouped by hook type":
+1. 🤖 **In Copilot CLI (`copilot>`):** type `/session id` to show and copy the session ID, then ask for something that fires hooks, such as `List the files in .github/hooks`.
+2. 🐚 **In your OS Terminal** (a second one, or the same one after `/exit`), count the hooks that ran. Read the result as "hook starts, grouped by hook type":
 
 **WSL/Bash:**
 ```bash
@@ -976,18 +1092,24 @@ You should see the hook types this repository registers in `.github/hooks/defaul
 
 #### 3. Ask Copilot what happened
 
-You do not have to read the logs yourself.
+You do not have to read the logs yourself. The Copilot CLI commands below are typed inside a session; this capture shows how they look (illustrative):
 
-1. Inside a running `copilot` session, `/diagnose [prompt]` analyzes the current session's logs, including why a permission request needed approval. Try `/diagnose Why did that tool call ask me for approval?`.
+![A terminal-style capture of four Copilot CLI commands typed inside a copilot> session: /env lists the loaded instructions, MCP servers, skills, agents, hooks, plugins, LSPs and extensions; /instructions lists instruction files with on and off checkboxes; /context splits the context window into seven parts; and /diagnose analyzes the current session's logs.](../docs/images/labs/cli-env-context-diagnose.svg)
+
+1. 🤖 **In Copilot CLI (`copilot>`):** `/diagnose [prompt]` analyzes the current session's logs, including why a permission request needed approval. Try `/diagnose Why did that tool call ask me for approval?`.
 2. `/collect-debug-logs` collects debug logs to a local `.tgz` file, shares them with GitHub after you consent, or creates a secret GitHub gist. Choose the local file; `*.tgz` is git-ignored in this repository. Debug logs can contain prompts and source code, so review a bundle before you send it anywhere.
 3. Ask Copilot to read its own history: `Using session_store_sql, show my five most recent sessions with their summaries.` The tool has two stores. The cloud store (the default) has the materialized views `sessions`, `turns`, `checkpoints`, `session_files`, `session_refs`, `session_usage`, `tool_executions` and `events`. The local store (`source: "local"`) is the SQLite file `~/.copilot/session-store.db`, with `sessions`, `turns`, `checkpoints`, `session_files`, `session_refs` and `search_index`. Token totals and tool failures are only in the cloud views.
-4. In VS Code, attach the session's events to chat with the sparkle icon in the Agent Debug Logs panel or by typing `#debugEventsSnapshot`, then ask `#debugEventsSnapshot which customization files were loaded?`. Or run `/troubleshoot Which customizations were loaded, and did any fail?`. For a session in the Agents window, use `/troubleshoot #session` and select the session.
+4. 💠 **In VS Code:** attach the session's events to chat with the sparkle icon in the Agent Debug Logs panel or by typing `#debugEventsSnapshot`, then ask `#debugEventsSnapshot which customization files were loaded?`. Or run `/troubleshoot Which customizations were loaded, and did any fail?`. For a session in the Agents window, use `/troubleshoot #session` and select the session.
 
 #### 4. OpenTelemetry: traces from a real session
 
 OpenTelemetry (OTel) is off until you set one of three things: `COPILOT_OTEL_ENABLED=true`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` (it sends to a collector that you run), or `COPILOT_OTEL_FILE_EXPORTER_PATH` (it writes one JSON record per line to a file, so it needs no collector). This part uses the file, in your operating system's temp folder, outside the repository. `copilot-otel.jsonl` is **not** git-ignored in this repository, so a file inside the checkout could be committed by a stray `git add .`, and with content capture on it holds your prompts.
 
-1. Start Copilot with the exporter on:
+This is the shape of one trace, drawn as a waterfall with sample timings. The span names are documented; the `execute_tool task` span that holds a subagent, and the hook span events, are observed on a current build and can change:
+
+![A waterfall chart of one OpenTelemetry trace: a root invoke_agent span, a chat span, an execute_tool task span that contains a nested invoke_agent explore subagent span with its own chat and execute_tool spans, and a final chat span. Diamond markers on the root span show github.copilot.hook.start and github.copilot.hook.end span events for the userPromptSubmitted, preToolUse and postToolUse hooks.](../docs/images/labs/otel-span-tree.svg)
+
+1. 🐚 **In your OS Terminal:** start Copilot with the exporter on:
 
 **WSL/Bash:**
 ```bash
@@ -1002,13 +1124,13 @@ $env:COPILOT_OTEL_FILE_EXPORTER_PATH = Join-Path ([IO.Path]::GetTempPath()) 'cop
 copilot
 ```
 
-   Inside that session, ask for something that uses a tool, then type `/exit`:
+   🤖 **In Copilot CLI (`copilot>`):** inside that session, ask for something that uses a tool, then type `/exit`:
 
 ```text
 List the files in .github/hooks. Marker: PINEAPPLE-7431.
 ```
 
-2. After `/exit`, list the spans the run recorded:
+2. 🐚 **In your OS Terminal**, after `/exit`, list the spans the run recorded:
 
 **WSL/Bash:**
 ```bash
@@ -1156,7 +1278,7 @@ See [`solutions/lab06-hooks/post-tool-use-dotnet-build.sh`](../solutions/lab06-h
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

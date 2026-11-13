@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab04.md` (131 lines) — "Skills & Prompts" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: anti-pattern callout — AC11; Phase 4: Debug It callout — AC12, C13–C14, D9, §5, §7) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: anti-pattern callout — AC11; Phase 4: Debug It callout — AC12, C13–C14, D9, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC13, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -25,7 +25,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 
 | | |
 |---|---|
-| **Surface** | `mixed` — §4.1–§4.2 and §4.4's skill work are `cli`; the prompt-file invocation in §4.3/§4.4 is **IDE-only** and cannot be done from the CLI at all (C1). The lab must stop pretending otherwise. |
+| **Surface** | `mixed` — §4.1–§4.2 and §4.4's skill work are `cli`; the prompt-file invocation in §4.3/§4.4 is **IDE-only** and cannot be done from the CLI at all (C1). The lab must stop pretending otherwise. **Amended 2026-11-13 (Phase 5):** the Node track's skill files are created editor-first (💠 In VS Code, on any operating system) with the Bash heredocs folded into a collapsed 🐚 *Shell alternative*, so the lab no longer needs Bash for the VS Code route; §4.4 splits into 🐚 start, 🤖 `/skills` and 💠 `/` skill invocation. |
 | **Tier** | `beginner` |
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 15 (unchanged — see §5) |
@@ -54,6 +54,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | AC10 | The lab names a deterministic skills command (`/skills list` or `/skills info`) as the way to confirm loading | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC11 | The lab carries one `🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax` callout covering vague descriptions (false-positive activation, context bloat), IDE-only `${input:...}` placeholders and `ADD:`-style commit prefixes that contradict the repo's `<type>: <description>` rule, and pointing at the clean exemplar `.github/skills/commit/SKILL.md` — which must itself stay free of `${input:` and `ADD:`/`UP:`/`DEL:`. It does not repeat the phrase "Skills vs Prompts" (AC5) | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC12 | §4.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), in a different section and a different blockquote from the §4.3 anti-pattern callout. It separates a skill that was loaded from one the model used (a knowledge skill is chosen from its `description`; a `disable-model-invocation: true` command skill is never chosen that way); uses `/skills list`, `/env` and `/context` inside the same `copilot` session, with per-skill usage tied to experimental mode; and in VS Code the **Discovery** events in the **Logs view** of **Show Agent Debug Logs** (loaded, skipped or rejected). It links `docs/debugging-and-observability.md` and does not repeat "Skills vs Prompts" (AC5) | `npx vitest run tests/lab-structure/lab04-contract tests/lab-structure/debugging-observability-contract` |
+| AC13 | **Phase 5.** §4.1–§4.4 badge every command 🐚, 🤖 or 💠; §4.4 starts `copilot` at 🐚, runs `/skills list` and `/skills info` at 🤖, and adds a 💠 step that types `/` in the Chat view, selects `/create-dotnet-test` (or `/create-node-test`) and opens **Chat: Open Customizations** → **Skills**, with `cli-env-context-diagnose.svg` embedded after the "Skills vs Prompts" callout. Both appendices present each skill as a plain Markdown block with its heredoc and `Out-File` form inside `<details><summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>`. AC4, AC5, AC9 and AC10 still hold: no `@` form, "Skills vs Prompts" once, the overwrite of the shipped `dotnet-testing` still stated, `/skills list` still present; and §4.4 does not match `/in your IDE\|not the terminal/i` | `npx vitest run tests/lab-structure/lab04-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -85,6 +86,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 - Do not add `allowed-tools` teaching or the skill-runs-a-script material. Real and documented, but it is a different lab's worth of content and carries a security warning that deserves more than a line.
 - Do not edit any file other than `labs/lab04.md`, this spec and `tests/lab-structure/lab04-contract.test.ts`.
 - **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §4.4 (AC12) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 15. It does not rename `/skills info` anywhere else in the lab (C13), repeats no "Skills vs Prompts" text (AC5) and carries no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
+- **Amended 2026-11-13 (Phase 5):** "do not edit the appendices" no longer holds for **file creation and command labels**: `labs/appendices/dotnet/lab04.md` and `labs/appendices/node/lab04.md` now present each skill as a plain Markdown block, fold the heredoc and `Out-File` forms into a collapsed 🐚 *Shell alternative*, and badge their command blocks. The skill **bodies** and `solutions/` are unchanged, and the .NET appendix still overwrites the shipped `dotnet-testing` (C8). The lab gains the 🐚 / 🤖 / 💠 badges, one 💠 step and one image (`cli-env-context-diagnose.svg`), and **no new section**; pacing, the anti-pattern callout and the single `🔍 Debug It` callout are untouched. The "do not edit any file other than" bullet also allows the Phase 5 files named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -111,6 +113,7 @@ reports each UNVERIFIED — not "could not run":
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the §4.4 probes;
 - `/skills` and any subcommand (`list`, `info`, `reload`, `add`, `remove`, enable/disable), the `copilot skill …` terminal subcommand, and `/agent`;
 - **Phase 4:** `/env` and `/context` typed into a session, and the callout's VS Code steps (**Show Agent Debug Logs**, the capture setting), which need a running VS Code;
+- **Phase 5:** the 💠 steps (creating the skill files in the Explorer, `/` and `/create-dotnet-test` in the Chat view, **Chat: Open Customizations** → **Skills**) need a running VS Code: UNVERIFIED. The folded heredoc and `Out-File` forms are the same write steps as before and stay fenced;
 - any prompt-file invocation in any surface;
 - every GitHub-side write.
 

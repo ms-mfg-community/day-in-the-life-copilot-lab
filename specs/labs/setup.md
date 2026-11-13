@@ -5,7 +5,7 @@
 | **Lab** | `labs/setup.md` (40-line redirect stub) **plus** the setup sections of `README.md`: Pre-Workshop Setup Checklist, Prerequisites, Choose Your Path (Options A–D), Fork & Clone, Verify Copilot CLI, Troubleshooting. One target. |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-13 (Phase 5 3-Surface facelift — AC10, §5; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -46,6 +46,7 @@ not a rewrite; no path is added or removed.
 | AC7 | The README states a Node.js floor of 22 or later for the `npm install -g @github/copilot` path, and no longer says "Node 18+" | `npx vitest run tests/lab-structure/setup-contract` |
 | AC8 | The README Troubleshooting row for *Copilot CLI not authenticated* names `copilot login`, not `gh auth login` — the README's own Verify section says the CLI "does **not** use `gh auth`" | `npx vitest run tests/lab-structure/setup-contract` |
 | AC9 | Every `git checkout <branch>` in the README names a branch that exists on `origin` | `git ls-remote --heads origin <branch>` — **needs network; read-only; not in the vitest file** |
+| AC10 | **Phase 5.** `labs/setup.md` carries a `## The Three Surfaces Legend: where am I typing?` section with the three canonical badges (🐚 **In your OS Terminal (Bash / PowerShell)**, 🤖 **In Copilot CLI (`copilot>` session)**, 💠 **In VS Code (Editor & Copilot Chat)**), what belongs on each, the `three-surfaces-guide.svg` image with alt text, and the rule that the badge names what you type into. It adds no `Lab NN` string, no `make` target and no setup step, so AC4–AC6 still hold | `npx vitest run tests/lab-structure/setup-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -68,9 +69,9 @@ not a rewrite; no path is added or removed.
 - Do not add or remove a setup path. Options A–D stay; the order and anchors stay.
 - Do not add the WinGet / Homebrew / install-script ways to install Copilot CLI (C7). The npm path is what the repo's scripts and devcontainer use.
 - Do not edit `scripts/preflight.sh`, `scripts/preflight.ps1`, `.devcontainer/*` or `Makefile`. **Known, parked, not for this run:** preflight still tells learners "Install Node.js 18+" and the devcontainer pins Node 20, both below C1's floor of 22. They are separate files with their own test surface; record them, do not fix them here.
-- Do not move setup content back into `labs/setup.md`. The stub-pointing-at-README shape is deliberate.
+- Do not move setup content back into `labs/setup.md`. The stub-pointing-at-README shape is deliberate. **Amended 2026-11-13 (Phase 5):** the Three Surfaces Legend (AC10) is orientation, not setup content: it says where a learner types, names no install step, and cannot drift against the README. It is the one section the stub gains.
 - Do not change pacing, the `feature/modernize` checkout instruction, or the EMU clone flow.
-- Do not touch any lab other than `labs/setup.md`. Do not edit any file under `tests/`.
+- Do not touch any lab other than `labs/setup.md`. Do not edit any file under `tests/`. **Amended 2026-11-13 (Phase 5):** the legend adds `docs/images/labs/three-surfaces-guide.svg` and `tests/lab-structure/three-surfaces-contract.test.ts` to what this spec's pass touches; the README, `scripts/`, `.devcontainer/` and `Makefile` stay out.
 
 ## 6. Known defects
 

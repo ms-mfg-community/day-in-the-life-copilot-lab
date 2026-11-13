@@ -22,11 +22,15 @@ This appendix lists MCP servers that are most useful for the **.NET track** of [
 
 ## Verify MCP servers see the dotnet/ paths
 
-After moving the projects, your agent's `.NET search` calls should target `dotnet/ContosoUniversity.*` paths. A quick smoke test inside Copilot CLI:
+After moving the projects, your agent's `.NET search` calls should target `dotnet/ContosoUniversity.*` paths. A quick smoke test:
+
+🤖 **In Copilot CLI (`copilot>`):** select the agent with `/agent dotnet-dev`, then ask:
 
 ```
-@dotnet-dev Use Context7 to look up the EF Core 8 IRepository pattern and confirm we apply it correctly in dotnet/ContosoUniversity.Infrastructure/Data/Repository.cs.
+Use Context7 to look up the EF Core 8 IRepository pattern and confirm we apply it correctly in dotnet/ContosoUniversity.Infrastructure/Data/Repository.cs.
 ```
+
+💠 **In VS Code:** choose `dotnet-dev` from the **Agent** dropdown in the Chat view and send the same request.
 
 The agent should:
 

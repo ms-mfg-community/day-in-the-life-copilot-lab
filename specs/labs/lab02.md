@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab02.md` (231 lines) — "Custom Instructions & AGENTS.md" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 anti-pattern teachable moments — AC11, AC12, §2, §5, D8; Phase 4 Debug It callout — AC13, C13–C14, D9, §5, §7) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 anti-pattern teachable moments — AC11, AC12, §2, §5, D8; Phase 4 Debug It callout — AC13, C13–C14, D9, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC14, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -28,7 +28,7 @@ change.
 
 | | |
 |---|---|
-| **Surface** | `cli` — all steps are terminal-driven (`copilot`, file edits, `head`/`Get-Content`). §2.1 step 1 launches `$EDITOR` with a documented `code` fallback, so it is not VS Code-only. |
+| **Surface** | `cli` — all steps are terminal-driven (`copilot`, file edits, `head`/`Get-Content`). §2.1 step 1 launches `$EDITOR` with a documented `code` fallback, so it is not VS Code-only. **Amended 2026-11-13 (Phase 5):** the surface is now `mixed` — §2.1 and §2.2 lead with the 💠 In VS Code step (open or create the file in the editor), the heredoc and here-string move into a collapsed 🐚 *Shell alternative*, the checks stay 🐚 / 🤖, and §2.2.3 gains a 💠 check. |
 | **Tier** | `beginner` |
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 15 (unchanged — see §5) |
@@ -61,6 +61,7 @@ change.
 | AC11 | §2.2 carries a `🚫 Spot the Anti-Pattern: Bloated Domain Instructions` callout contrasting a roughly 40-line stack-matched instruction file (the repo's own `.github/instructions/dotnet.instructions.md`, which must stay concise) with a roughly 230-line copy-pasted financial-compliance prompt (PCI-DSS, SOX, sagas) that spends context tokens on every file match | `npx vitest run tests/lab-structure/lab02-contract` |
 | AC12 | §2.3 frames `### ADR-001` as `🚫 Spot the Anti-Pattern: What Does NOT Belong in AGENTS.md` — kept inside a code fence, never a live heading, so §2.3 still contains it — explains why (duplicates `copilot-instructions.md`, lists discoverable structure, cites arXiv 2602.11988), and has the learner add a *different* block of operational notes (SQLite dev-seed behavior, ports 52379/52380, never hand-edit `.lock.yml` or `lab-sources.json`) whose facts match the repo | `npx vitest run tests/lab-structure/lab02-contract` |
 | AC13 | §2.2.3 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), after the `/instructions` check and separate from the §2.2 anti-pattern callout. It goes beyond `/instructions`: `/env` for what the session loaded and `/context` for the Custom Instructions share, typed inside a running `copilot` session; and in VS Code **Chat: Open Customizations**, **Show Agent Debug Logs** (its **Discovery** events) and **Show Chat Debug View** (the **System prompt**). It separates a file that was discovered, one whose text was included, and one the model followed, and links `docs/debugging-and-observability.md` | `npx vitest run tests/lab-structure/lab02-contract tests/lab-structure/debugging-observability-contract` |
+| AC14 | **Phase 5.** §2.2 creates `razor-views.instructions.md` editor-first (💠 In VS Code, the file content as a plain Markdown block); the `cat <<'EOF'` and PowerShell here-string sit inside `<details><summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>`. Every step in §2.1–§2.3 is badged 🐚, 🤖 or 💠. §2.2.3 gains a 💠 counterpart (**Chat: Open Customizations**, **Show Chat Debug View**) with `vscode-chat-debug-view.svg` embedded between the deterministic check and the `🔍 Debug It` callout. The ✅ operational-notes block is still the first fenced block in §2.3 that contains `52379` | `npx vitest run tests/lab-structure/lab02-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -92,6 +93,7 @@ change.
 - Do not delete the "What research says" callout. It is corrected (D2), not cut — its advice is sound and now matches its source.
 - Do not edit any file other than `labs/lab02.md`, this spec and `tests/lab-structure/lab02-contract.test.ts`. No other lab, no registry, no `AGENTS.md`, no `.github/copilot-instructions.md`, no other test.
 - **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §2.2.3 (AC13), after the `/instructions` check and apart from the §2.2 anti-pattern callout, and nothing else. It does not renumber, is not timed, and leaves `self_paced_minutes` at 15 and the §2.3 research callout alone. It carries no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
+- **Amended 2026-11-13 (Phase 5):** §2.2 step 1 is now editor-first, so "keep both the Bash and PowerShell variants of every command" holds *inside* the collapsed *Shell alternative*, not as the lead instruction. The lab gains the 🐚 / 🤖 / 💠 badges, one 💠 counterpart in §2.2.3 and one image (`vscode-chat-debug-view.svg`), and **no new section**; the single `🔍 Debug It` callout, the anti-pattern callout and the pacing are untouched. The "do not edit any file other than" bullet above also allows the files Phase 5 adds or edits for the whole lab set, named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -119,6 +121,7 @@ reports each UNVERIFIED — not "could not run":
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the two learner probes at §2.1 step 3 and §2.2.3 step 2 (these call a model and may use tools);
 - `/instructions`, `/env`, `/new`, `/init` typed into any session, and `extensions_manage`;
 - **Phase 4:** `/context` typed into a session, and the callout's VS Code steps (**Chat: Open Customizations**, **Show Agent Debug Logs**, **Show Chat Debug View**, the capture setting), which need a running VS Code;
+- **Phase 5:** the 💠 steps (creating `razor-views.instructions.md` in the Explorer, **Chat: Open Customizations**, **Show Chat Debug View**) need a running VS Code: UNVERIFIED. The folded heredoc and here-string are the same write step as before and stay fenced;
 - `copilot --continue` (it resumes a real session);
 - every GitHub-side write.
 

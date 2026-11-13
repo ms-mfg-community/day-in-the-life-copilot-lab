@@ -146,7 +146,7 @@ your org pins a different fork (common in regulated tenants), update the
 | Regenerate | The same `python3` + `pandas` + `pyarrow`, but **only** if you rebuild `sales.parquet` with the snippet in §12.2 or `scripts/generate-lab12-fixture.py`. Regenerating **overwrites** the committed `labs/fixtures/lab12/sales.parquet`; you do not need to do it to follow this lab |
 | Both | This repo cloned, with the `main` branch checked out |
 
-Quick check, run from the repository root:
+🐚 **In your OS Terminal**, quick check, run from the repository root:
 
 ```bash
 node --version    # Live path only: >= v20
@@ -160,7 +160,7 @@ Every check you need must succeed before you go on. A failure means a
 prerequisite isn't installed on **this machine** — it isn't a defect in the lab
 — so install it now rather than working around it. Install `jq` with your
 package manager (Homebrew, apt, winget, …). For Python, use a virtual
-environment; VS Code needs it in B.2 anyway:
+environment, again 🐚 **in your OS Terminal**; VS Code needs it in B.2 anyway:
 
 ```bash
 python3 -m venv .venv
@@ -189,6 +189,8 @@ ever want to rebuild it.
 > accident, `git restore labs/fixtures/lab12/sales.parquet` puts the
 > committed copy back. If you only want to follow the lab, skip the snippet
 > and go on to Part A.
+
+🐚 **In your OS Terminal** (only if you want to rebuild the fixture):
 
 ```bash
 mkdir -p labs/fixtures/lab12
@@ -239,7 +241,7 @@ while experimenting stay local — see `.gitignore`.
 > configure here, and no Azure sign-in or Node to set up. Come back to A.1
 > only if you later get a Fabric tenant.
 
-Open your Copilot CLI MCP config (`~/.copilot/mcp-config.json`) and merge
+💠 **In VS Code** (or any editor), open your Copilot CLI MCP config (`~/.copilot/mcp-config.json`) and merge
 in the entry from [`mcp-configs/copilot-cli/individual/fabric.json`](../mcp-configs/copilot-cli/individual/fabric.json):
 
 ```json
@@ -282,6 +284,8 @@ in the entry from [`mcp-configs/copilot-cli/individual/fabric.json`](../mcp-conf
 
 ### A.2 Sign in with Azure CLI (Live path only)
 
+🐚 **In your OS Terminal:**
+
 ```bash
 az login
 # If your Fabric tenant differs from your default tenant:
@@ -315,7 +319,8 @@ export FABRIC_AUTH_TOKEN="$(az keyvault secret show \
 
 ### A.3 Live Fabric: enumerate lakehouses and run a cell
 
-Launch the CLI from the shell where you exported the A.2 variables, run
+Launch the CLI 🐚 **from the OS Terminal** where you exported the A.2 variables, then 🤖 **in
+Copilot CLI (`copilot>`)** run
 `/env`, and confirm that `fabric` is listed among the loaded MCP servers
 (`/mcp` manages the same servers). `fabric` is an MCP server, not an agent,
 so there is nothing to select with `/agent` — its tools are available to
@@ -425,7 +430,7 @@ MCP server fails fast — that's the right behavior. For the **offline
 simulator**, skip the MCP server entirely and let Copilot use plain bash +
 Python against the fixture. This is the **mock command set** equivalent of the
 calls in A.3. It needs `pandas` plus a Parquet engine (`pyarrow` or
-`fastparquet`) — see §12.1:
+`fastparquet`) — see §12.1. 🐚 **In your OS Terminal**, run the mock command set:
 
 ```bash
 # "Enumerate lakehouses"
@@ -445,7 +450,7 @@ print(df.groupby('region')['amount_usd'].agg(['count', 'sum']))
 "
 ```
 
-Now ask Copilot to do the same work conversationally:
+🤖 **In Copilot CLI (`copilot>`)**, now ask Copilot to do the same work conversationally:
 
 ```text
 > The Fabric MCP isn't available in this environment. Read
@@ -492,7 +497,7 @@ CLI.
 > and a Fabric tenant — none of which the Offline path uses. B.2 and B.3 read the
 > committed Parquet fixture and don't need the server.
 
-Merge the entry from [`mcp-configs/vscode/individual/fabric.json`](../mcp-configs/vscode/individual/fabric.json)
+💠 **In VS Code**, merge the entry from [`mcp-configs/vscode/individual/fabric.json`](../mcp-configs/vscode/individual/fabric.json)
 into your workspace's `.vscode/mcp.json` — or, to make it available in every
 workspace, into your user-profile MCP configuration (Command Palette →
 **MCP: Open User Configuration**). Current VS Code reads MCP servers from
@@ -533,7 +538,7 @@ is listed; start it from there if it isn't running.
 
 ### B.2 Open a notebook and use **inline chat** for cell-level edits
 
-1. Create a notebook to work in (or open any `.ipynb` you already have):
+1. 💠 **In VS Code**, create a notebook to work in (or open any `.ipynb` you already have):
    Command Palette → **Create: New Jupyter Notebook**, then save it in the
    repo root as `my-explore.ipynb` (later steps use that name; if you work in a
    different notebook, substitute its name). Click
@@ -586,7 +591,7 @@ is listed; start it from there if it isn't running.
 
 > 🏷️ **First, what is a "parameter cell"?** It is the one cell at the top of a notebook that holds its inputs as plain variables with default values. A runner such as Papermill executes the notebook with different values by injecting overrides in a new cell *right after* the cell whose **metadata** carries the tag `parameters`. Two things trip people up. A `# parameters` comment is only a label for human readers; it is **not** the tag. And the tag is not part of the cell's code: it is a field in the cell's metadata (`"tags": ["parameters"]` in the `.ipynb` JSON). If no cell has the tag, Papermill injects its overrides at the very top of the notebook and your untagged defaults then overwrite them, so the override silently does nothing. Copilot can write the cell; you add the tag yourself, below.
 
-Open Copilot Chat in agent mode (the chat panel's mode selector). Ask:
+💠 **In VS Code**, open Copilot Chat in agent mode (the chat panel's mode selector). Ask:
 
 ```text
 Look across all cells in this notebook. Check that they refer to the
@@ -610,7 +615,7 @@ Accept it, then add the tag and prove it landed:
    run **Add Cell Tag** and type `parameters`. The same commands are usually
    in the cell toolbar's **More Actions** `…` menu. If none are listed, check
    that the Jupyter extension from §12.1 is installed.)
-3. Save the notebook, then read the tag back out of the file:
+3. Save the notebook, then, 🐚 **in your OS Terminal**, read the tag back out of the file:
 
    ```bash
    jq -c '.cells[0].metadata.tags' my-explore.ipynb
@@ -669,14 +674,14 @@ the `my-explore.ipynb` notebook from B.2 and B.3 handy.
 
 ### 12.5.1 Configure a notebook-aware Git diff
 
-Add to `.gitattributes` — both rules together (notebooks get a structured diff, parquet stays binary so the fixture in §12.2 doesn't blow up `git diff`):
+💠 **In VS Code** (or any editor), add to `.gitattributes` — both rules together (notebooks get a structured diff, parquet stays binary so the fixture in §12.2 doesn't blow up `git diff`):
 
 ```gitattributes
 *.ipynb   diff=jupyternotebook merge=jupyternotebook
 *.parquet binary
 ```
 
-And register the drivers once per machine. `nbdime` provides both commands,
+And register the drivers once per machine, 🐚 **in your OS Terminal**. `nbdime` provides both commands,
 so install it first:
 
 ```bash
@@ -738,7 +743,7 @@ Pin exact versions for `pandas`, `pyarrow` and `papermill`. This repo's own
 
 > ⚠️ **This step overwrites a committed file.** The repo already ships `.githooks/pre-commit` (`make setup-hooks` activates it). The `cat` block below replaces it with a variant that avoids `mapfile` (bash 4+), so `git status` will show the file as modified. When you're done, `git restore .githooks/pre-commit` puts the committed copy back (§12.7).
 
-Wire up [`scripts/hooks/pre-commit-strip-notebook-outputs.sh`](../scripts/hooks/pre-commit-strip-notebook-outputs.sh):
+🐚 **In your OS Terminal**, wire up [`scripts/hooks/pre-commit-strip-notebook-outputs.sh`](../scripts/hooks/pre-commit-strip-notebook-outputs.sh):
 
 ```bash
 mkdir -p .githooks
@@ -766,7 +771,7 @@ committed. Prove it with one practice commit.
 
 **Practice commit.** Use the notebook from B.2 and B.3 (substitute its name if
 you called it something else). Run everything from the repository root in
-your Bash terminal. The commit goes on a throwaway branch, so `main` stays
+your 🐚 Bash OS Terminal. The commit goes on a throwaway branch, so `main` stays
 clean for the next lab.
 
 1. Run all the cells and save, then confirm the file really holds outputs.
@@ -826,7 +831,7 @@ as a guarantee that a secret can't leave your machine. The review in step 3 is
 the other half (and B.4 shows how to keep a token out of the notebook in the
 first place).
 
-> 📎 **Optional reference — a different way to strip outputs (`nbstripout`).** Skip this on a first read; the practice commit above doesn't need it. If you'd rather strip outputs declaratively (as a `.gitattributes` filter) instead of via the pre-commit hook above, install `nbstripout` and let it write the `.gitattributes` block for you:
+> 📎 **Optional reference — a different way to strip outputs (`nbstripout`).** Skip this on a first read; the practice commit above doesn't need it. If you'd rather strip outputs declaratively (as a `.gitattributes` filter) instead of via the pre-commit hook above, install `nbstripout` (🐚 **in your OS Terminal**) and let it write the `.gitattributes` block for you:
 >
 > ```bash
 > pip install nbstripout
@@ -874,7 +879,7 @@ workflow Prism (the Fabric Data Architect agent — see
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

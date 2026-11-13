@@ -170,7 +170,7 @@ You will build a single-tool extension named **`clab-summarize`** whose tool, **
 
 ### 3.1 Scaffold
 
-🖥️ **Inside `copilot` (recommended path from the guide):**
+🤖 **In Copilot CLI (`copilot>`) — recommended path from the guide:**
 
 ```text
 extensions_manage({ operation: "scaffold", name: "clab-summarize" })
@@ -180,7 +180,7 @@ This creates `.github/extensions/clab-summarize/extension.mjs` with a working sk
 
 ### 3.2 Replace the body
 
-Open `.github/extensions/clab-summarize/extension.mjs` and replace its body with the file in [`solutions/lab-copilot-cli-extensions/.github/extensions/clab-summarize/extension.mjs`](../solutions/lab-copilot-cli-extensions/.github/extensions/clab-summarize/extension.mjs). The salient bits, all authored from the guide:
+💠 **In VS Code** (or any editor), open `.github/extensions/clab-summarize/extension.mjs` and replace its body with the file in [`solutions/lab-copilot-cli-extensions/.github/extensions/clab-summarize/extension.mjs`](../solutions/lab-copilot-cli-extensions/.github/extensions/clab-summarize/extension.mjs). The salient bits, all authored from the guide:
 
 - **Import:** `import { joinSession } from "@github/copilot-sdk/extension";` — the only import path the guide documents for extension entry points.
 - **Tool registration shape** — `{ name, description, parameters, handler }` — exactly as shown in the guide's "Registering Tools" section.
@@ -190,6 +190,8 @@ Open `.github/extensions/clab-summarize/extension.mjs` and replace its body with
 > 🧠 **Why `session.sendAndWait` and not a custom HTTP call?** Because the extension already has a session — it is the agent's session. The runtime owns the auth token, the model selection (`/model`), the rate limits, and the cost accounting. Re-using the session means the user's `/model` choice is honored automatically and the call shows up in the same telemetry stream as every other turn. Bypassing it is how you ship a security incident.
 
 ### 3.3 Reload and inspect
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 ```text
 extensions_reload({})
@@ -203,7 +205,7 @@ extensions_manage({ operation: "inspect", name: "clab-summarize" })
 
 ### 3.4 Invoke
 
-In the same `copilot` session, type a natural prompt:
+🤖 **In the same Copilot CLI session (`copilot>`)**, type a natural prompt:
 
 > *"Summarize the README of this repository using clab_summarize."*
 
@@ -223,7 +225,7 @@ Keep the order of events straight, because the cost claim depends on it: your pr
 
 ### 4.1 Drop-in the hook config
 
-**Preflight — `jq`.** The `bash` command in this hook parses the event JSON with `jq`. Without it the hook exits 0 with nothing on stdout, so it makes no decision and the gate silently never fires — and you would not find out until §4.3. Check now:
+**Preflight — `jq`.** The `bash` command in this hook parses the event JSON with `jq`. Without it the hook exits 0 with nothing on stdout, so it makes no decision and the gate silently never fires — and you would not find out until §4.3. 🐚 **In your OS Terminal**, check now:
 
 **WSL/Bash:**
 ```bash
@@ -280,8 +282,8 @@ The hook reads the event JSON from stdin (the runtime passes `{toolName, toolArg
 ### 4.3 Verify the gate fires
 
 1. Reload hooks (drops in on next turn — no `extensions_reload` needed for hook configs; hook configs are re-read on each event).
-2. Try a small input: agent calls `clab_summarize`, summary returns. ✅ — or, if §3.4 returned `clab_summarize failed: …`, the same failure again; either way the call was allowed through. Step 3 does not depend on a working summary.
-3. Try an input > 10 KB: the hook prints the deny JSON, the runtime blocks the tool call, and the agent — which still ran its own turn to propose the call — receives the rejection reason and explains it back to you. **The extension body never ran, so its extra model call (`sendAndWait`) was never made.** That is the cost saving: a denial avoids the body's additional model work, not the agent's own turn.
+2. 🤖 **In Copilot CLI (`copilot>`)**, try a small input: agent calls `clab_summarize`, summary returns. ✅ — or, if §3.4 returned `clab_summarize failed: …`, the same failure again; either way the call was allowed through. Step 3 does not depend on a working summary.
+3. Try an input > 10 KB in the same session: the hook prints the deny JSON, the runtime blocks the tool call, and the agent — which still ran its own turn to propose the call — receives the rejection reason and explains it back to you. **The extension body never ran, so its extra model call (`sendAndWait`) was never made.** That is the cost saving: a denial avoids the body's additional model work, not the agent's own turn.
 
 ### 4.4 Why this matters
 
@@ -330,7 +332,7 @@ If you take that follow-up later, the pattern is: **detect the trigger from the 
 
 ### 5.3 Verify
 
-1. **Give the agent the convention.** The hook only detects the prefix, so tell the agent what to do with it. In the same `copilot` session, type:
+1. **Give the agent the convention.** The hook only detects the prefix, so tell the agent what to do with it. 🤖 In the same Copilot CLI session (`copilot>`), type:
 
    > *"For the rest of this session: when a message of mine starts with `summarize:`, call `clab_summarize` with everything after the colon as `text`."*
 
@@ -400,16 +402,16 @@ The reference copies live at [`solutions/lab-copilot-cli-extensions/`](../soluti
 
 This lab changes two things that the generic sweep (below) does **not** touch automatically: the **extension registry** (the set of extensions your session has launched) and the **hook config** (the `.github/hooks/*.json` files your session reads). The runtime authoring guide describes `extensions_reload({})` as stopping all running extensions and re-discovering and re-launching them, and says extensions are reloaded on `/clear` and stopped on CLI exit — *runtime-documented; verify against your current build*. Whatever your build does, the surest way to know both match the filesystem is to fully exit `copilot` and re-launch, so that is what the recipe below has you do.
 
-🖥️ **Lab-specific recipe — run before the generic sweep:**
+**Lab-specific recipe — run before the generic sweep** (each step names its surface):
 
-1. **Inside the running `copilot` session,** type `exit` (or send `Ctrl-D`) to end the session cleanly. Prefer this over `/clear` or `extensions_reload({})`: the runtime guide documents extensions as stopped on CLI exit (*runtime-documented; verify against your current build*), and a fresh process is the only way to see exactly what the next session will load.
+1. 🤖 **Inside the running Copilot CLI session (`copilot>`),** type `exit` (or send `Ctrl-D`) to end the session cleanly. Prefer this over `/clear` or `extensions_reload({})`: the runtime guide documents extensions as stopped on CLI exit (*runtime-documented; verify against your current build*), and a fresh process is the only way to see exactly what the next session will load.
 
    **WSL/Bash and PowerShell:**
    ```text
    exit
    ```
 
-2. **From your shell,** confirm the `copilot` process is gone:
+2. 🐚 **In your OS Terminal,** confirm the `copilot` process is gone:
 
    **WSL/Bash:**
    ```bash
@@ -421,7 +423,7 @@ This lab changes two things that the generic sweep (below) does **not** touch au
    Get-Process -Name copilot -ErrorAction SilentlyContinue
    ```
 
-3. **Remove the lab artifacts** (or stash them for review). The three files listed under **What to commit** above are:
+3. 🐚 **In your OS Terminal, remove the lab artifacts** (or stash them for review). The three files listed under **What to commit** above are:
 
    ```text
    .github/extensions/clab-summarize/extension.mjs
@@ -458,14 +460,14 @@ This lab changes two things that the generic sweep (below) does **not** touch au
 
    If `git status --short` then shows staged deletions (`D`), you had committed the files — commit the removal like any other change. If you want to keep them, leave them — they will simply re-register on the next `copilot` launch.
 
-4. **Re-launch `copilot`.** The fresh process re-scans `.github/extensions/` and re-reads `.github/hooks/*.json` from disk, so whatever state you chose in step 3 is the state the new session sees:
+4. 🐚 **In your OS Terminal, re-launch `copilot`.** The fresh process re-scans `.github/extensions/` and re-reads `.github/hooks/*.json` from disk, so whatever state you chose in step 3 is the state the new session sees:
 
    **WSL/Bash and PowerShell:**
    ```text
    copilot
    ```
 
-5. **Verify the registry matches the filesystem:**
+5. 🤖 **In the new Copilot CLI session (`copilot>`), verify the registry matches the filesystem:**
 
    ```text
    extensions_manage({ operation: "list" })
@@ -484,7 +486,7 @@ Then run the generic sweep below.
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

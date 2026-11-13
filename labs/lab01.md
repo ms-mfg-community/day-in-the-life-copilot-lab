@@ -21,6 +21,20 @@ References:
 - [Custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
 - [Add skills to Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
 
+## The Three Surfaces Legend: where am I typing?
+
+Every step in these labs happens on one of three surfaces. Each step names its surface with a badge, so a shell command never ends up in Copilot and a Copilot prompt never ends up in your shell. [Setup](setup.md) shows the same legend.
+
+| Badge | Surface | What belongs here |
+|-------|---------|-------------------|
+| 🐚 **In your OS Terminal (Bash / PowerShell)** | Your normal shell prompt (`$` in Bash, `PS>` in PowerShell) | Commands run at your normal shell prompt: `dotnet`, `git`, `gh`, `copilot --version` |
+| 🤖 **In Copilot CLI (`copilot>` session)** | An interactive session that you start by typing `copilot` in the OS Terminal | Slash commands (`/agent`, `/skills`, `/instructions`, `/env`, `/diagnose`) and natural-language prompts typed *inside* the session |
+| 💠 **In VS Code (Editor & Copilot Chat)** | The VS Code editor and the Copilot Chat view | Creating and editing `.github/` files in the editor, the Agent Customizations UI (`Chat: Open Customizations` → Instructions, Skills, Agents, MCP Servers, Hooks), and `Show Agent Debug Logs` / `Show Chat Debug View` |
+
+![Three panels side by side: the OS Terminal with a $ or PS> prompt running git, dotnet and copilot; a Copilot CLI session with a copilot> prompt taking /agent, /env and /diagnose; and VS Code with an agent file open in the editor beside the Copilot Chat view.](../docs/images/labs/three-surfaces-guide.svg)
+
+> 💡 **The badge names what you type into, not the window it sits in.** VS Code's integrated terminal is still a 🐚 OS Terminal. Run `copilot` there and you are in 🤖 until you type `/exit`. Typed inside a `copilot>` session, `cat` or `dotnet` goes to the model as chat text, not to your shell. Two other markers are not places you type: 🌐 is a page on GitHub.com in your browser (or a web/global-scope note), and 💬 is a discussion question to answer aloud.
+
 ## 1.1 The Configuration Ecosystem
 
 This repository ships with a rich set of Copilot configurations. Here's the map — the rest of the labs fill it in:
@@ -36,7 +50,7 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 | `.copilot/mcp-config.json` | External tool integrations | 4 servers | Lab 05 |
 | `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 4 | Labs 08-09 |
 
-🖥️ **Quick look — pick any one:**
+🐚 **In your OS Terminal — quick look, pick any one:**
 
 **WSL/Bash:**
 ```bash
@@ -56,6 +70,8 @@ Get-ChildItem .github/agents/
 Get-Content .github/agents/planner.agent.md
 ```
 
+💠 **In VS Code:** open the same file from the Explorer (or press <kbd>Ctrl</kbd>+<kbd>P</kbd>, <kbd>Cmd</kbd>+<kbd>P</kbd> on macOS, and type `planner`). The text between the two `---` lines is the YAML frontmatter; everything below is the agent's instructions.
+
 ## 1.2 The Instruction Hierarchy
 
 Copilot **combines** every instruction source that applies to what you are doing — it does not rank them or pick a winner. What matters is *what loads when*, and understanding that is the single most important concept:
@@ -69,7 +85,7 @@ Copilot **combines** every instruction source that applies to what you are doing
 | The selected agent | Agent profile (`.agent.md`) | When you select the agent with `/agent` (or start with `copilot --agent NAME`) |
 | The command you run | Command skill (`SKILL.md` with `disable-model-invocation: true`) | Only when you type `/skill-name` — never from topic matching (see Lab 04) |
 
-In a session, type `/instructions` to see which instruction files Copilot found and to turn them on or off.
+In a 🤖 Copilot CLI session, type `/instructions` to see which instruction files Copilot found and to turn them on or off.
 
 > 💡 **Key insight:** Instructions cascade and stack. If `copilot-instructions.md` says "use immutable patterns" and `dotnet.instructions.md` says "use async/await", **both** apply when editing `.cs` files. Copilot does not resolve conflicts between them, so avoid writing instructions that contradict each other.
 
@@ -88,14 +104,14 @@ Copilot doesn't just do keyword text search — it uses multiple layers of code 
 
 ## 1.4 Try It
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 # Interactive: start Copilot CLI, then select the planner agent
 copilot
 ```
 
-Inside the session, select the planner with `/agent planner` (or type `/agent` on its own and pick it from the list), then ask:
+🤖 **In Copilot CLI (`copilot>`):** select the planner with `/agent planner` (or type `/agent` on its own and pick it from the list), then ask:
 
 ```text
 How should I add a student search feature to ContosoUniversity?
@@ -103,7 +119,7 @@ How should I add a student search feature to ContosoUniversity?
 
 > 💡 In the CLI, `@` mentions a *file* (for example `@AGENTS.md`) — it does not select an agent. Pick an agent with `/agent` in a session, or with `--agent` when you start `copilot`.
 
-**Non-interactive equivalent** (handy for CI, smoke checks, or shared
+🐚 **In your OS Terminal — non-interactive equivalent** (handy for CI, smoke checks, or shared
 workstations where you'd rather not leave a TTY session open):
 
 ```bash
@@ -122,6 +138,13 @@ copilot --agent planner `
 
 > 💡 Copilot loads agents from `.github/agents/` in the current working directory. You can also place personal agents in `~/.copilot/agents/`.
 
+💠 **In VS Code (Editor & Copilot Chat):** run the same exercise without the terminal.
+
+1. Open the Copilot Chat view with the **Copilot** harness selected, choose `planner` from the **Agent** dropdown, and send the same question. Custom agents from `.github/agents/` appear in that dropdown.
+2. Open the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS) and run **Chat: Open Customizations**. Its tabs (**Instructions**, **Skills**, **Agents**, **MCP Servers** and **Hooks**) list what Copilot can load from this repository. A listed file was *discovered*; that is not proof it was used, and the callout below shows how to check.
+
+![A mock-up of the Agent Customizations editor that Chat: Open Customizations opens in VS Code: a list of tabs (Instructions, Skills, Agents, MCP Servers and Hooks) with the Hooks tab selected, showing the hook events registered in a workspace hooks file.](../docs/images/labs/vscode-customizations-and-hooks.svg)
+
 > **🔍 Debug It (VS Code & Copilot CLI)** — *Did Copilot really load those files?*
 >
 > A good answer does not prove the configuration loaded: Copilot may simply have guessed well. Check what it found instead of asking it to describe itself.
@@ -130,6 +153,10 @@ copilot --agent planner `
 > - **VS Code:** open the Chat view's **...** menu and choose **Show Agent Debug Logs**, then look at the **Discovery** events to see whether a file was loaded, skipped or rejected. **Show Chat Debug View** shows the **System prompt** that reached the model, where request details are available.
 >
 > If you use VS Code, turn capture on before you reproduce the problem, because it is not retroactive: [the guide shows how](../docs/debugging-and-observability.md#21-turn-capture-on-before-you-reproduce). The Copilot CLI checks need no setup.
+
+This is how the Copilot CLI checks look inside a session. The capture is illustrative, and `/context` and `/diagnose` come back in later labs:
+
+![A terminal-style capture of four Copilot CLI commands typed inside a copilot> session: /env lists the loaded instructions, MCP servers, skills, agents, hooks, plugins, LSPs and extensions; /instructions lists instruction files with on and off checkboxes; /context splits the context window into seven parts; and /diagnose analyzes the current session's logs.](../docs/images/labs/cli-env-context-diagnose.svg)
 
 ---
 
@@ -159,7 +186,7 @@ The Copilot CLI plugin marketplace is a registry of community and first-party ag
 
 ### Browse available plugins
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 # List registered marketplaces
@@ -174,6 +201,8 @@ Browse the available plugins and look for ones related to **.NET**, **testing**,
 ### Install a plugin
 
 You can install a plugin by name from a marketplace, or directly from a GitHub repository that contains a plugin:
+
+🐚 **In your OS Terminal:**
 
 ```bash
 # From a GitHub repo that contains a plugin (generic form)
@@ -197,6 +226,8 @@ copilot plugin install PLUGIN-NAME@awesome-copilot
 
 ### Verify the installation
 
+🐚 **In your OS Terminal:**
+
 ```bash
 # Confirm the plugin is installed and ready
 copilot plugin list
@@ -211,12 +242,16 @@ Installing a plugin does not create a command named after the plugin. A plugin a
 - **Custom agents** — type `/agent` in a session to see the agents available to you and pick one, or start the session with `copilot --agent AGENT-NAME`.
 - **Skills** — type `/skills` to see and manage them. Copilot uses a skill on its own when your request matches the skill's description.
 
+🐚 **In your OS Terminal:**
+
 ```bash
 # Interactive: start a session, then pick the plugin's agent with /agent
 copilot
 ```
 
-Inside the session, type `/agent`, choose an agent from the list, then type your request.
+🤖 **In Copilot CLI (`copilot>`):** type `/agent`, choose an agent from the list, then type your request.
+
+🐚 **In your OS Terminal — non-interactive** (CI, scripted or headless):
 
 ```bash
 # Non-interactive (CI / scripted / headless): replace AGENT-NAME with a name from the /agent list

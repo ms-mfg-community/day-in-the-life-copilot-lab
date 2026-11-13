@@ -20,6 +20,8 @@ variant: [`labs/appendices/node/lab-gh-extensions.md`](../node/lab-gh-extensions
 Chain `dotnet build` with `gh clab` so a successful build produces a structured
 changelog for the new delta:
 
+🐚 **In your OS Terminal:**
+
 ```bash
 dotnet build dotnet/ContosoUniversity.sln --nologo --verbosity quiet \
   && gh clab --mock > .git/CLAB_SUMMARY.md \
@@ -34,6 +36,8 @@ Use `--mock` in CI and on air-gapped dev boxes; drop `--mock` to let
 `gh clab` summarizes `git diff HEAD` by default. To scope to the `dotnet/`
 subtree, pipe a constrained diff through the same prompt template via
 `gh models run`:
+
+🐚 **In your OS Terminal:**
 
 ```bash
 gh models run openai/gpt-4o-mini \

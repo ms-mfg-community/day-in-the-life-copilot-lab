@@ -86,7 +86,7 @@ Students can enroll in courses without meeting prerequisite requirements.
 - Cross-department prerequisite equivalency mapping.
 ```
 
-🖥️ **In your terminal:**
+🤖 **In Copilot CLI (`copilot>`):**
 
 ```
 Using GitHub Spec Kit conventions (or your own acceptance-criteria-first
@@ -104,7 +104,7 @@ opens a PRD **pull request** — title prefix `[prd]`, labels `prd` and
 `docs/prd/`. Create a branch that carries your spec and see what the
 workflow makes of it:
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 git checkout -b feature/course-prerequisites
@@ -199,7 +199,7 @@ every new `feature/` branch, so each layer branch you push below can also
 make it open its own `[prd]` pull request, just as the spec branch did.
 Those aren't layers of your stack — you'll close them in **Clean up**.
 
-🖥️ **In your terminal — build the chain:**
+🐚 **In your OS Terminal — build the chain:**
 
 ```bash
 # Layer 1: bottom of the stack, targets your real base
@@ -301,7 +301,7 @@ The payoff is bigger than in a single-PR flow:
   real gate: don't build layer 3 until layer 2's feedback is addressed and
   its PR is approved.
 
-🖥️ **In your terminal — observe/rehearse:**
+🤖 **In Copilot CLI (`copilot>`) — observe/rehearse:**
 
 ```
 For each course-prerequisites stack layer you built, once its PR is
@@ -348,7 +348,7 @@ to inspect.
 - the stack, if you registered it
 - the Lab 09 ruleset, if you turned automatic review back on
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 git checkout main

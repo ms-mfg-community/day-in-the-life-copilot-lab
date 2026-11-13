@@ -313,6 +313,10 @@ A prompt hook is supported only on `sessionStart`, and only in Copilot CLI for *
 
 Copilot defines **15** hook events: the 14 in the Hook events table of the [GitHub hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference#hook-events), plus `preMcpToolCall`, which only the Copilot CLI's built-in documentation covers (`setting:hooks.preMcpToolCall`, listed under Capabilities > Hooks in `/config`). The first table says what each event is and what its output can do. The second says where each one fires and which source documents it. Rows run roughly in the order a session meets them.
 
+![Illustrative diagram of the 15 hook events grouped by where they fire: Session (sessionStart, preCompact, notification, errorOccurred, sessionEnd), Turn and prompt (userPromptSubmitted, userPromptTransformed, agentStop), Subagent (subagentStart, subagentStop) and Tool execution (permissionRequest, preToolUse, preMcpToolCall, postToolUse, postToolUseFailure), with command and HTTP hook dispatch shown beside them.](./images/labs/hooks-lifecycle-15-events.svg)
+
+*Figure: the grouping is this guide's teaching aid, not an official taxonomy. `preMcpToolCall` is marked as a CLI build setting because the hooks reference does not list it.*
+
 | # | Event | PascalCase alias | Fires when | Input JSON payload (camelCase fields) | Output honored? |
 |---|---|---|---|---|---|
 | 1 | `sessionStart` | `SessionStart` | A new session begins or a saved session resumes. | `sessionId`, `timestamp`, `cwd`, `source` (`new` / `resume` / `startup`), `initialPrompt` | **Optional.** `additionalContext` is injected into the session; contributions from several hooks are joined with a blank line, bounded by the 10 MiB hook-output limit. A `"type": "prompt"` hook is also allowed on this event (§4.2). |

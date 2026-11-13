@@ -59,7 +59,7 @@ This is the same "detect → propose PR → human merges" shape as Lab 08's
 `generate-prd.md` and the repo's own `weekly-content-audit.md` — applied to
 the repo's AI configuration instead of its documentation.
 
-🖥️ **In your terminal — read the workflow before running it:**
+🐚 **In your OS Terminal — read the workflow before running it:**
 
 ```bash
 cat .github/workflows/self-improving-agents.md
@@ -74,7 +74,7 @@ generic.
 
 ## 19.2 Compile and Validate the Workflow
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 gh aw compile self-improving-agents
@@ -110,7 +110,8 @@ itself, commit the regenerated lock file with it — the two travel as a pair.)
 Rather than waiting for the schedule or pushing to Actions, rehearse the
 same reasoning locally in Copilot CLI first:
 
-🖥️ **In Copilot CLI:**
+🤖 **In Copilot CLI (`copilot>`)** — start `copilot` from the repository root if
+a session is not already open, then paste:
 
 ```
 Acting as the drift evaluator described in
@@ -136,7 +137,7 @@ Review the report:
 > | An instruction to start every commit message with `ADD:` | **Contradictory convention** | Compare it with the `<type>: <description>` rule in `AGENTS.md` |
 > | A model id that `docs/_meta/registry.yaml` no longer lists | **Retired model ID** | Check each model id against the `models:` block of the registry; the comment at the top of that block names the ids it dropped |
 
-🖥️ **In your terminal, from the repository root:**
+🐚 **In your OS Terminal, from the repository root:**
 
 ```bash
 git worktree add ../drift-rehearsal -b scratch/drift-rehearsal &&
@@ -146,7 +147,7 @@ git worktree add ../drift-rehearsal -b scratch/drift-rehearsal &&
 
 > ⚠️ **If this block stops with an error, stop.** Each `&&` runs the next command only if the one before it worked, so Copilot starts only after the worktree exists *and* you are standing in it. Don't type `copilot` to get past an error: your next prompt writes a file into whichever checkout Copilot starts in, and that must never be your real one. A `../drift-rehearsal` folder or `scratch/drift-rehearsal` branch left over from an earlier attempt is the usual cause. From the repository root, run `git worktree remove --force ../drift-rehearsal`, then `git branch -d scratch/drift-rehearsal`, and paste the block again.
 
-🖥️ **In Copilot CLI** — in this scratch checkout only, plant the three defects, then scan:
+🤖 **In Copilot CLI (`copilot>`)** — in this scratch checkout only, plant the three defects, then scan:
 
 ```
 Create .github/skills/drift-rehearsal/SKILL.md with a name, a one-line
@@ -160,7 +161,7 @@ which drift signal, and whether the workflow's five signals would have
 caught it.
 ```
 
-If the report misses one of the three, that is the lesson. The workflow's five signals never mention the registry, so whether a scan notices a retired model id depends on how it reads "stale references" — and widening the signals is a design change for a human, not something to automate unattended. When you are done, `/exit` Copilot and discard the scratch checkout:
+If the report misses one of the three, that is the lesson. The workflow's five signals never mention the registry, so whether a scan notices a retired model id depends on how it reads "stale references" — and widening the signals is a design change for a human, not something to automate unattended. When you are done, `/exit` Copilot and, 🐚 **in your OS Terminal**, discard the scratch checkout:
 
 ```bash
 cd -                                             # back to your real checkout
@@ -186,7 +187,7 @@ git branch -d scratch/drift-rehearsal            # delete the scratch branch
 >
 > Teardown is at the end of this section.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 ```bash
 gh workflow run self-improving-agents.lock.yml
@@ -195,7 +196,7 @@ gh workflow run self-improving-agents.lock.yml
 Or wait for the schedule (see the `on.schedule` cron in the workflow
 frontmatter — adjust the cadence for your own repo's pace of change).
 
-🖥️ **In Copilot CLI:**
+🤖 **In Copilot CLI (`copilot>`):**
 
 ```
 Watch the triggered run and report back once safe-outputs opens (or
@@ -225,7 +226,7 @@ Because the "Portability config" block in
 `.github/workflows/self-improving-agents.md` is the only repo-specific
 part, porting this workflow is mechanical:
 
-🖥️ **Discuss/rehearse:**
+💬 **Discuss/rehearse** (answer aloud or on paper; nothing to type):
 
 ```
 If we wanted to install this same self-improving-agents workflow in a
@@ -250,6 +251,8 @@ not just a scheduled workflow — see
 [`modernization-bundle/`](../modernization-bundle/), which packages the
 same scan logic (as a bundled agent + skill) using the Lab 11 plugin
 template conventions.
+
+🐚 **In your OS Terminal:**
 
 ```sh
 node modernization-bundle/scripts/install.mjs   # expect ok=true

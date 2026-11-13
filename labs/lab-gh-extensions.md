@@ -27,8 +27,10 @@ Reference solution: [`solutions/lab-gh-extensions/gh-clab/`](../solutions/lab-gh
 > script named `gh-<name>` that the GitHub CLI runs as `gh <name>`. It is **not**
 > a Copilot CLI extension (a different mechanism — compared in §6 and taught in
 > [`lab-copilot-cli-extensions.md`](lab-copilot-cli-extensions.md)) and it is not
-> `gh-aw`. Nothing in the exercise needs Copilot CLI itself, so ignore plugins,
-> skills, MCP servers and `/fleet` for now. Two warnings up front: the `--mock`
+> `gh-aw`. Nothing in the exercise needs Copilot CLI itself — no 🤖 `copilot>`
+> session and no 💠 VS Code step; every command runs in 🐚 **your OS Terminal** —
+> so ignore plugins, skills, MCP servers and `/fleet` for now. Two warnings up
+> front: the `--mock`
 > path needs **no credentials**, and the GitHub Models service that `gh clab`'s
 > first mode calls was **retired** on July 30, 2026
 > ([changelog](https://github.blog/changelog/2026-07-30-github-models-is-now-retired/));
@@ -36,7 +38,7 @@ Reference solution: [`solutions/lab-gh-extensions/gh-clab/`](../solutions/lab-gh
 
 ## Before you start (intermediate)
 
-This lab is **intermediate** and runs in a terminal. It assumes you already use Git
+This lab is **intermediate** and runs in your 🐚 **OS Terminal**. It assumes you already use Git
 (commits, `git diff`, the idea of a hook) and can read a short Node script. It does
 not assume any Copilot CLI experience, and the core route needs no API key.
 
@@ -57,7 +59,7 @@ not assume any Copilot CLI experience, and the core route needs no API key.
 - **The workshop checkout.** Open the shell inside your clone of this repository.
   §3.1 records its location, and §3.2 copies the reference script from it.
 
-Check the tools, your login and your Git identity:
+🐚 **In your OS Terminal**, check the tools, your login and your Git identity:
 
 ```bash
 gh --version
@@ -164,7 +166,8 @@ For this workshop that matters because:
 The extension is **not** part of this repo's build — it is installed into your
 `gh` user profile — so you scaffold it **outside** the workshop checkout. Before
 you leave the checkout, record where it is as an absolute path and confirm the
-reference script is there (§3.2 copies it from `$WORKSHOP`). Run this block from
+reference script is there (§3.2 copies it from `$WORKSHOP`). 🐚 **In your OS
+Terminal**, run this block from
 inside the workshop checkout:
 
 ```bash
@@ -200,7 +203,7 @@ workshop repo, but not outside every repository.
 
 The reference implementation is in
 [`solutions/lab-gh-extensions/gh-clab/gh-clab`](../solutions/lab-gh-extensions/gh-clab/gh-clab)
-in this workshop repo. Copy it over the scaffolded bash entrypoint:
+in this workshop repo. 🐚 **In your OS Terminal**, copy it over the scaffolded bash entrypoint:
 
 ```bash
 # From inside gh-clab/ (where §3.1 left you); $WORKSHOP is the absolute path set in §3.1
@@ -216,6 +219,8 @@ runtime dependencies outside Node ≥ 20 — it uses `child_process` and the
 global `fetch` only.
 
 ### 3.3 Install and run
+
+🐚 **In your OS Terminal:**
 
 ```bash
 gh extension install . && CLAB_INSTALLED=1   # installs the cwd as a local extension; records that this lab owns it
@@ -348,7 +353,7 @@ Do the hands-on part in a **disposable repository** that has no hooks — not in
 workshop checkout, and not in a project you care about. This block creates one
 under your temp directory, gives it a throwaway identity and its own hooks folder
 (so a global `core.hooksPath` or Git template cannot send your hook somewhere
-shared), and makes a first commit so `HEAD` exists:
+shared), and makes a first commit so `HEAD` exists. 🐚 **In your OS Terminal:**
 
 ```bash
 DEMO_REPO="$(mktemp -d "${TMPDIR:-/tmp}/clab-demo.XXXXXX")" && cd "$DEMO_REPO" &&
@@ -365,7 +370,7 @@ git commit -q -m "demo: first commit" || echo "Demo repo setup failed - fix the 
 ### 4.2 Install the hook
 
 The snippet refuses to overwrite an existing hook and writes to whatever path
-`git rev-parse --git-path` reports. Run it **in the demo repository**:
+`git rev-parse --git-path` reports. 🐚 **In your OS Terminal**, run it **in the demo repository**:
 
 ```bash
 # Run this in the demo repository from 4.1 (pwd ends in clab-demo.XXXXXX)
@@ -415,7 +420,8 @@ has the hook.
 ### 4.3 Prove the wiring (mock only)
 
 Make a change and commit it — the commit is what triggers the hook. The hook
-forces `--mock` by default, so this needs no credentials. Run it in the demo
+forces `--mock` by default, so this needs no credentials. 🐚 **In your OS
+Terminal**, run it in the demo
 repository, with `gh clab` already installed from §3.3:
 
 ```bash
@@ -556,8 +562,8 @@ Key takeaways:
 
 The shared checklist below says per-lab specifics should already be reverted, and a
 clean `git status` does not prove that: the extension lives in your `gh` profile and
-the hook lives in Git metadata. So first undo what *this* lab created, in the shell
-you used above. Nothing here edits your global Git config or any hook you had
+the hook lives in Git metadata. So first undo what *this* lab created, in the 🐚
+OS Terminal you used above. Nothing here edits your global Git config or any hook you had
 before, and every command exits 0 whether or not there was anything to undo:
 
 ```bash
@@ -609,7 +615,7 @@ result, not a failure.
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

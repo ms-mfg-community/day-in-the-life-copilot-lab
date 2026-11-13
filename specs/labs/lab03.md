@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab03.md` (201 lines) — "Creating a .NET Development Agent" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: §3.3 forward-reference preview — AC11; Phase 4: Debug It callout — AC12, C12–C13, D9, §5, §7) |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: §3.3 forward-reference preview — AC11; Phase 4: Debug It callout — AC12, C12–C13, D9, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC13, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -23,7 +23,7 @@ published reference does not support.
 
 | | |
 |---|---|
-| **Surface** | `cli` |
+| **Surface** | `mixed` — **Amended 2026-11-13 (Phase 5):** was `cli`. The agent file is created editor-first (💠 In VS Code), the checks and `copilot --agent` runs stay 🐚 / 🤖, and §3.4 gains a 💠 Agent-dropdown step. |
 | **Tier** | `beginner` |
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 15 (unchanged — see §5) |
@@ -46,6 +46,7 @@ published reference does not support.
 | AC10 | The tools table still lists all six documented aliases | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC11 | §3.3 is a read-only forward-reference preview of Lab 05: it links `[Lab 05 — MCP Server Configuration](lab05.md)`, says the `mcp-servers:` block is wired up **after** completing Lab 05 and not in this lab, and says so inside the YAML block too; the hands-on sections (§3.2, §3.4) and both appendices' agent bodies use built-in tool aliases only | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC12 | §3.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), before the instruction to `/exit`. It uses `/env` for the agents the session loaded and `/context` for the split of the context window, typed inside the same `copilot` session, and ties per-skill and per-agent usage to experimental mode; and in VS Code the **Discovery** events in the **Logs view** of **Show Agent Debug Logs** and the **System prompt** in **Show Chat Debug View**. It adds no MCP wiring (AC11 still holds for §3.2 and §3.4) and links `docs/debugging-and-observability.md` | `npx vitest run tests/lab-structure/lab03-contract tests/lab-structure/debugging-observability-contract` |
+| AC13 | **Phase 5.** §3.1 and §3.2 show the editor-first route (💠 In VS Code: create `.github/agents/<track>-dev.agent.md` in the Explorer or with **Chat: Open Customizations** → **Agents** → `+`, paste the appendix's Markdown block, save), and say the `cat` / here-string versions are the 🐚 OS Terminal shell alternative. §3.4 labels its steps 🐚 / 🤖 and adds a 💠 step that picks the agent from the **Agent** dropdown. Both appendices open with a plain Markdown block, and every heredoc / here-string sits inside `<details><summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>`. AC4 and AC11 still hold: no `@` invocation form, no `mcp-servers` or `context7` in §3.2 and §3.4, and the appendices' `tools:` lines have no `/` | `npx vitest run tests/lab-structure/lab03-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -76,6 +77,7 @@ published reference does not support.
 - Do not turn §3.3 into an MCP lab. It is explicitly a preview that defers to Lab 05.
 - Do not edit any file other than `labs/lab03.md`, this spec and `tests/lab-structure/lab03-contract.test.ts`.
 - **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §3.4 (AC12) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 15. It adds no `mcp-servers` or `context7` text (AC11), no `@` invocation form (AC4) and no inline Copilot CLI version. The previous bullet now also allows the files Phase 4 adds or edits for the whole lab set: `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
+- **Amended 2026-11-13 (Phase 5):** "do not edit the appendices" no longer holds for **file creation and command labels**: `labs/appendices/dotnet/lab03.md` and `labs/appendices/node/lab03.md` now present the agent file as a plain Markdown block, fold the heredoc and here-string into a collapsed 🐚 *Shell alternative*, and badge their command blocks (the .NET appendix's stale `@dotnet-dev` "Try the agent" step became `/agent dotnet-dev`, AC4). The agent **body**, the frontmatter and `solutions/lab03-dotnet-dev-agent/` are unchanged. The lab gains the 🐚 / 🤖 / 💠 badges and two 💠 steps, and **no new section**; pacing and the single `🔍 Debug It` callout are untouched. The "do not edit any file other than" bullet also allows the Phase 5 files named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -100,6 +102,7 @@ reports each UNVERIFIED — not "could not run":
 - Interactive `copilot`, and any `copilot -p` / `copilot --prompt` / `copilot --agent` invocation — including the §3.4 smoke test, which carries `--allow-all-tools` and would run with blanket tool approval in the live tree;
 - `/agent`, `/new`, and any slash command typed into a session (including the Phase 4 callout's `/env` and `/context`);
 - **Phase 4:** the callout's VS Code steps (**Show Agent Debug Logs**, **Show Chat Debug View**, the capture setting), which need a running VS Code;
+- **Phase 5:** the 💠 steps (creating the agent file in the Explorer, **Chat: Open Customizations**, the **Agent** dropdown) need a running VS Code: UNVERIFIED. The folded heredoc and here-string are the same write step as before and stay fenced;
 - **any read or write of `~/.copilot/`** — `mcp-config.json` or otherwise. It is the maintainer's real home directory, not a lab fixture;
 - every GitHub-side write.
 

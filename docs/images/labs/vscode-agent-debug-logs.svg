@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100" role="img" aria-labelledby="debuglogs-title debuglogs-desc">
+  <title id="debuglogs-title">VS Code Agent Debug Logs: Logs view, Summary view and Agent Flow Chart</title>
+  <desc id="debuglogs-desc">A mock-up of the Agent Debug Logs panel in VS Code, which is in Preview. The Logs view lists events with a time, an event name and a summary. The first events of a request are the discovery cluster Load Instructions, Load Agents, Load Hooks and Load Skills; after them come an LLM Request and a Tool call. Selecting a row opens a detail panel on the right showing the paths searched and the skills found. A toolbar offers a List or Tree toggle, filters for Discovery, Model requests, Tool calls and Errors, and a sparkle icon that attaches the events to chat, plus Export and Import icons. A Summary view shows tiles for model turns, tool calls, total tokens, errors, total events and duration, with buttons for View Logs, Agent Flow Chart and Cache Explorer. The Agent Flow Chart shows a user prompt reaching a main agent, lab-orchestrator, which delegates to three subagents, dotnet-dev, dotnet-qa and code-reviewer, each calling a tool; one tool node is marked as an error to show where a workflow stopped. A settings box says capture is not retroactive and names the two capture settings, and a numbered legend explains eight callouts. Values are illustrative.</desc>
+  <style>
+    .bg{fill:#0d1117}
+    .win{fill:#0b0f14;stroke:#30363d;stroke-width:2}
+    .bar{fill:#161b22}
+    .card{fill:#161b22;stroke:#30363d;stroke-width:2}
+    .sep{stroke:#30363d;stroke-width:2}
+    .row{fill:#11161d}
+    .h1{font:700 34px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .h2{font:700 24px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .sub{font:400 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .t{font:400 18px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tb{font:700 18px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tm{font:400 16px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .ts{font:400 14px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .m{font:500 17px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .ms{font:500 15px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .ev{font:600 16px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#79c0ff}
+    .evg{font:600 16px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#d2a8ff}
+    .big{font:700 30px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .badge{fill:#e3b341;stroke:#0d1117;stroke-width:2}
+    .bn{font:700 17px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#0d1117;text-anchor:middle}
+    .chip{fill:#161b22;stroke:#30363d;stroke-width:2}
+    .chipa{fill:#10233f;stroke:#58a6ff;stroke-width:2}
+    .node{fill:#161b22;stroke:#58a6ff;stroke-width:2}
+    .nodeg{fill:#161b22;stroke:#bc8cff;stroke-width:2}
+    .nodee{fill:#2b1417;stroke:#f85149;stroke-width:2}
+    .edge{stroke:#9da7b3;stroke-width:2.5;fill:none}
+    .arrow{fill:#9da7b3}
+  </style>
+
+  <rect class="bg" width="1600" height="1100"/>
+  <text class="h1" x="40" y="62">💠 VS Code: Agent Debug Logs</text>
+  <text class="sub" x="40" y="96">Show Agent Debug Logs (Preview): what Copilot loaded, called and spent, in the order it happened.</text>
+
+  <!-- Logs view window -->
+  <rect class="win" x="40" y="120" width="960" height="430" rx="12"/>
+  <rect class="bar" x="40" y="120" width="960" height="40" rx="12"/><rect class="bar" x="40" y="148" width="960" height="12"/>
+  <rect x="52" y="126" width="210" height="34" rx="6" fill="#0b0f14" stroke="#58a6ff" stroke-width="2"/>
+  <text class="tm" x="68" y="149">Agent Debug Logs</text>
+  <rect x="274" y="130" width="84" height="26" rx="13" fill="#2b2410" stroke="#e3b341" stroke-width="2"/>
+  <text class="ts" x="316" y="148" text-anchor="middle" style="fill:#e3b341">Preview</text>
+  <rect class="chip" x="768" y="128" width="34" height="28" rx="6"/><text x="785" y="149" text-anchor="middle" font-size="18">✨</text>
+  <rect class="chip" x="812" y="128" width="84" height="28" rx="6"/><text class="ts" x="854" y="147" text-anchor="middle">Export</text>
+  <rect class="chip" x="906" y="128" width="84" height="28" rx="6"/><text class="ts" x="948" y="147" text-anchor="middle">Import</text>
+
+  <text class="tm" x="64" y="186">Sessions  ›  </text><text class="tb" x="156" y="186" style="fill:#79c0ff;text-decoration:underline">Add a student search page</text>
+
+  <rect class="chipa" x="64" y="200" width="118" height="34" rx="17"/><text class="t" x="123" y="223" text-anchor="middle">List view</text>
+  <rect class="chip" x="190" y="200" width="98" height="34" rx="17"/><text class="t" x="239" y="223" text-anchor="middle">Tree view</text>
+  <rect class="chipa" x="314" y="200" width="110" height="34" rx="17"/><text class="t" x="369" y="223" text-anchor="middle">Discovery</text>
+  <rect class="chip" x="434" y="200" width="150" height="34" rx="17"/><text class="t" x="509" y="223" text-anchor="middle">Model requests</text>
+  <rect class="chip" x="594" y="200" width="104" height="34" rx="17"/><text class="t" x="646" y="223" text-anchor="middle">Tool calls</text>
+
+  <text class="ts" x="76" y="262">TIME</text><text class="ts" x="170" y="262">EVENT</text><text class="ts" x="372" y="262">SUMMARY</text>
+  <line class="sep" x1="52" y1="270" x2="688" y2="270"/>
+
+  <rect x="52" y="276" width="636" height="164" rx="6" fill="none" stroke="#bc8cff" stroke-width="2" stroke-dasharray="6 5"/>
+  <text class="ts" x="76" y="298">10:42:03</text><text class="evg" x="170" y="298">Load Instructions</text><text class="tm" x="372" y="298">instruction files found and applied</text>
+  <text class="ts" x="76" y="338">10:42:03</text><text class="evg" x="170" y="338">Load Agents</text><text class="tm" x="372" y="338">agent configurations loaded</text>
+  <text class="ts" x="76" y="378">10:42:03</text><text class="evg" x="170" y="378">Load Hooks</text><text class="tm" x="372" y="378">hook definitions found</text>
+  <rect x="58" y="392" width="624" height="40" rx="6" fill="#221a33"/>
+  <text class="ts" x="76" y="418">10:42:03</text><text class="evg" x="170" y="418">Load Skills</text><text class="tm" x="372" y="418">skills found and loaded</text>
+  <text class="ts" x="76" y="466">10:42:04</text><text class="ev" x="170" y="466">LLM Request</text><text class="tm" x="372" y="466">system prompt, context, tools</text>
+  <text class="ts" x="76" y="506">10:42:06</text><text class="ev" x="170" y="506">Tool call</text><text class="tm" x="372" y="506">view README.md</text>
+
+  <rect class="card" x="708" y="248" width="280" height="288" rx="10"/>
+  <text class="tb" x="726" y="278">Load Skills</text>
+  <text class="ts" x="726" y="304">PATHS SEARCHED, IN ORDER</text>
+  <text class="ms" x="726" y="330">.github/skills/</text>
+  <text class="ms" x="726" y="354">... more paths, in order</text>
+  <line class="sep" x1="726" y1="394" x2="970" y2="394"/>
+  <text class="ts" x="726" y="420">SKILLS FOUND AND LOADED</text>
+  <text class="ms" x="726" y="446">commit</text>
+  <text class="ms" x="726" y="470">dotnet-testing</text>
+  <text class="ms" x="726" y="494">create-dotnet-test</text>
+  <text class="ts" x="726" y="522">Event details, from a selected row</text>
+
+  <circle class="badge" cx="40" cy="122" r="14"/><text class="bn" x="40" y="128">1</text>
+  <circle class="badge" cx="38" cy="358" r="14"/><text class="bn" x="38" y="364">2</text>
+  <circle class="badge" cx="998" cy="290" r="14"/><text class="bn" x="998" y="296">3</text>
+  <circle class="badge" cx="412" cy="186" r="14"/><text class="bn" x="412" y="192">4</text>
+  <circle class="badge" cx="760" cy="130" r="14"/><text class="bn" x="760" y="136">6</text>
+  <circle class="badge" cx="900" cy="186" r="14"/><text class="bn" x="900" y="192">7</text>
+
+  <!-- Summary view -->
+  <rect class="win" x="1040" y="120" width="520" height="430" rx="12"/>
+  <text class="h2" x="1064" y="166">Summary view</text>
+  <text class="tm" x="1064" y="192">Aggregate numbers for the selected session (sample values)</text>
+  <rect class="card" x="1064" y="212" width="232" height="84" rx="10"/><text class="tm" x="1082" y="240">Model turns</text><text class="big" x="1082" y="278">6</text>
+  <rect class="card" x="1312" y="212" width="232" height="84" rx="10"/><text class="tm" x="1330" y="240">Tool calls</text><text class="big" x="1330" y="278">14</text>
+  <rect class="card" x="1064" y="308" width="232" height="84" rx="10"/><text class="tm" x="1082" y="336">Total tokens</text><text class="big" x="1082" y="374">48.2k</text>
+  <rect class="card" x="1312" y="308" width="232" height="84" rx="10"/><text class="tm" x="1330" y="336">Errors</text><text class="big" x="1330" y="374">1</text>
+  <rect class="card" x="1064" y="404" width="232" height="84" rx="10"/><text class="tm" x="1082" y="432">Total events</text><text class="big" x="1082" y="470">37</text>
+  <rect class="card" x="1312" y="404" width="232" height="84" rx="10"/><text class="tm" x="1330" y="432">Duration</text><text class="big" x="1330" y="470">1m 12s</text>
+  <rect class="chip" x="1064" y="502" width="124" height="34" rx="17"/><text class="t" x="1126" y="525" text-anchor="middle">View Logs</text>
+  <rect class="chipa" x="1198" y="502" width="178" height="34" rx="17"/><text class="t" x="1287" y="525" text-anchor="middle">Agent Flow Chart</text>
+  <rect class="chip" x="1386" y="502" width="158" height="34" rx="17"/><text class="t" x="1465" y="525" text-anchor="middle">Cache Explorer</text>
+  <circle class="badge" cx="1368" cy="504" r="14"/><text class="bn" x="1368" y="510">5</text>
+
+  <!-- Agent Flow Chart -->
+  <rect class="win" x="40" y="580" width="960" height="350" rx="12"/>
+  <rect class="bar" x="40" y="580" width="960" height="40" rx="12"/><rect class="bar" x="40" y="608" width="960" height="12"/>
+  <rect x="52" y="586" width="210" height="34" rx="6" fill="#0b0f14" stroke="#58a6ff" stroke-width="2"/>
+  <text class="tm" x="68" y="609">Agent Flow Chart</text>
+  <text class="ts" x="988" y="607" text-anchor="end">pan, zoom, select a node to inspect that event</text>
+
+  <rect class="node" x="64" y="716" width="150" height="62" rx="10"/>
+  <text class="ts" x="139" y="740" text-anchor="middle">Input</text><text class="m" x="139" y="764" text-anchor="middle">User prompt</text>
+  <rect class="nodeg" x="262" y="716" width="214" height="62" rx="10"/>
+  <text class="ts" x="369" y="740" text-anchor="middle">Main agent</text><text class="m" x="369" y="764" text-anchor="middle">lab-orchestrator</text>
+  <path class="edge" d="M214 747 H258"/><path class="arrow" d="M262 747 l-12 -7 v14 z"/>
+
+  <rect class="node" x="556" y="640" width="200" height="62" rx="10"/>
+  <text class="ts" x="656" y="664" text-anchor="middle">Subagent</text><text class="m" x="656" y="688" text-anchor="middle">dotnet-dev</text>
+  <rect class="node" x="556" y="716" width="200" height="62" rx="10"/>
+  <text class="ts" x="656" y="740" text-anchor="middle">Subagent</text><text class="m" x="656" y="764" text-anchor="middle">dotnet-qa</text>
+  <rect class="node" x="556" y="792" width="200" height="62" rx="10"/>
+  <text class="ts" x="656" y="816" text-anchor="middle">Subagent</text><text class="m" x="656" y="840" text-anchor="middle">code-reviewer</text>
+  <path class="edge" d="M476 747 H516 V671 H552"/><path class="arrow" d="M556 671 l-12 -7 v14 z"/>
+  <path class="edge" d="M476 747 H552"/><path class="arrow" d="M556 747 l-12 -7 v14 z"/>
+  <path class="edge" d="M476 747 H516 V823 H552"/><path class="arrow" d="M556 823 l-12 -7 v14 z"/>
+
+  <rect class="node" x="800" y="640" width="176" height="62" rx="10"/>
+  <text class="ts" x="888" y="664" text-anchor="middle">Tool call</text><text class="m" x="888" y="688" text-anchor="middle">edit</text>
+  <rect class="nodee" x="800" y="716" width="176" height="62" rx="10"/>
+  <text class="ts" x="888" y="740" text-anchor="middle" style="fill:#ffa198">Tool call: error</text><text class="m" x="888" y="764" text-anchor="middle">dotnet test ✖</text>
+  <rect class="node" x="800" y="792" width="176" height="62" rx="10"/>
+  <text class="ts" x="888" y="816" text-anchor="middle">Tool call</text><text class="m" x="888" y="840" text-anchor="middle">view</text>
+  <path class="edge" d="M756 671 H796"/><path class="arrow" d="M800 671 l-12 -7 v14 z"/>
+  <path class="edge" d="M756 747 H796"/><path class="arrow" d="M800 747 l-12 -7 v14 z"/>
+  <path class="edge" d="M756 823 H796"/><path class="arrow" d="M800 823 l-12 -7 v14 z"/>
+  <text class="ts" x="64" y="908">Sample graph: the red node is where this run stopped. The orchestrator delegates each phase to a subagent.</text>
+  <circle class="badge" cx="278" cy="603" r="14"/><text class="bn" x="278" y="609">5</text>
+
+  <!-- Capture settings and asking Copilot -->
+  <rect class="card" x="1040" y="580" width="520" height="168" rx="10"/>
+  <text class="tb" x="1062" y="612">Turn capture on before you reproduce</text>
+  <text class="ts" x="1062" y="638">COPILOT HARNESS (AGENT HOST) SESSIONS</text>
+  <text class="ms" x="1062" y="662">chat.agentHost.agentDebugLog.enabled</text>
+  <text class="ts" x="1062" y="692">LOCAL HARNESS SESSIONS</text>
+  <text class="ms" x="1062" y="716">github.copilot.chat.agentDebugLog.fileLogging.enabled</text>
+  <text class="ts" x="1062" y="738">Both are experimental. Capture is not retroactive.</text>
+  <circle class="badge" cx="1548" cy="592" r="14"/><text class="bn" x="1548" y="598">8</text>
+
+  <rect class="card" x="1040" y="768" width="520" height="162" rx="10"/>
+  <text class="tb" x="1062" y="800">Ask Copilot about the events (sparkle icon)</text>
+  <text class="ms" x="1062" y="830">#debugEventsSnapshot which</text>
+  <text class="ms" x="1062" y="852">customization files were loaded?</text>
+  <text class="ms" x="1062" y="886">/troubleshoot Which customizations</text>
+  <text class="ms" x="1062" y="908">were loaded, and did any fail?</text>
+
+  <!-- Legend -->
+  <line class="sep" x1="40" y1="952" x2="1560" y2="952"/>
+  <circle class="badge" cx="54" cy="990" r="14"/><text class="bn" x="54" y="996">1</text>
+  <text class="t" x="80" y="986">Open: Chat view ... menu,</text><text class="t" x="80" y="1010">Show Agent Debug Logs</text>
+  <circle class="badge" cx="454" cy="990" r="14"/><text class="bn" x="454" y="996">2</text>
+  <text class="t" x="480" y="986">Discovery cluster: loaded,</text><text class="t" x="480" y="1010">skipped or rejected?</text>
+  <circle class="badge" cx="854" cy="990" r="14"/><text class="bn" x="854" y="996">3</text>
+  <text class="t" x="880" y="986">Select a row for details: paths</text><text class="t" x="880" y="1010">searched, tool input and output</text>
+  <circle class="badge" cx="1254" cy="990" r="14"/><text class="bn" x="1254" y="996">4</text>
+  <text class="t" x="1280" y="986">Session in the breadcrumb</text><text class="t" x="1280" y="1010">opens the Summary view</text>
+  <circle class="badge" cx="54" cy="1050" r="14"/><text class="bn" x="54" y="1056">5</text>
+  <text class="t" x="80" y="1046">Summary: Agent Flow Chart,</text><text class="t" x="80" y="1070">Cache Explorer, View Logs</text>
+  <circle class="badge" cx="454" cy="1050" r="14"/><text class="bn" x="454" y="1056">6</text>
+  <text class="t" x="480" y="1046">Sparkle icon attaches a snapshot</text><text class="t" x="480" y="1070">of the events to chat</text>
+  <circle class="badge" cx="854" cy="1050" r="14"/><text class="bn" x="854" y="1056">7</text>
+  <text class="t" x="880" y="1046">Export and Import: OTLP JSON.</text><text class="t" x="880" y="1070">Review it before you share it</text>
+  <circle class="badge" cx="1254" cy="1050" r="14"/><text class="bn" x="1254" y="1056">8</text>
+  <text class="t" x="1280" y="1046">Enable capture first: it is</text><text class="t" x="1280" y="1070">not retroactive</text>
+</svg>

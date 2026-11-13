@@ -16,7 +16,7 @@ generic checklist runs as the final sweep.
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

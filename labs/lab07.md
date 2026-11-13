@@ -52,7 +52,7 @@ References:
 
 Multi-agent orchestration lets one agent coordinate work across multiple specialized agents. Each agent has a focused role, and the orchestrator manages the pipeline.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Review the agents we have available:
 
@@ -65,6 +65,8 @@ ls .github/agents/ | grep -E "dotnet|code-review|orchestrator"
 ```powershell
 Get-ChildItem .github/agents/ | Where-Object { $_.Name -match "dotnet|code-review|orchestrator" }
 ```
+
+💠 **In VS Code:** run **Chat: Open Customizations** and select **Agents** to see the same agents, each with the file it comes from.
 
 The filter above looks for four agents, but they do not all exist yet. On a fresh checkout it lists only `code-reviewer.agent.md`; once you have finished Lab 03 it also lists `dotnet-dev.agent.md`. Here is where each of the four comes from:
 
@@ -112,9 +114,88 @@ tools: ["read", "search", "agent"]  # 'agent' enables delegation
 
 ## 7.2 Create the Orchestrator Agent
 
-🖥️ **In your terminal:**
+💠 **In VS Code:**
 
-1. Create the orchestrator agent:
+1. Create the orchestrator agent: in the Explorer, right-click the `.github/agents` folder, choose **New File**, name it `lab-orchestrator.agent.md`, paste this content, and save. (Or run **Chat: Open Customizations**, select **Agents**, and use the `+` next to **Workspace**.)
+
+````markdown
+---
+name: "lab-orchestrator"
+description: "Orchestrates a .NET development workflow: delegates implementation to dotnet-dev, testing to dotnet-qa, and review to code-reviewer. Coordinates handoffs between agents."
+tools: ["read", "search", "agent"]
+---
+
+# Lab Orchestrator Agent
+
+You are a development workflow orchestrator for the ContosoUniversity project. You coordinate a sequential pipeline: **dotnet-dev → dotnet-qa → code-reviewer**.
+
+You do NOT implement code yourself. You delegate to specialized agents and manage the handoff between them.
+
+## Workflow
+
+When given a feature request or task:
+
+### Phase 1: Planning
+
+1. Analyze the request and break it into implementation tasks
+2. Identify which files will be affected
+3. Determine the acceptance criteria
+
+### Phase 2: Implementation (delegate to @dotnet-dev)
+
+Delegate the implementation work:
+
+```
+@dotnet-dev Implement the following feature in ContosoUniversity:
+
+**Task**: [description]
+**Files to modify**: [list of files]
+**Acceptance criteria**:
+- [criterion 1]
+- [criterion 2]
+```
+
+Wait for completion before proceeding.
+
+### Phase 3: Testing (delegate to @dotnet-qa)
+
+Once implementation is done, delegate testing:
+
+```
+@dotnet-qa Write tests for the changes just made:
+
+**Code changed**: [summary]
+**Test requirements**:
+- Unit tests for new/modified methods
+- Follow MethodName_Condition_ExpectedResult naming
+- Cover edge cases: null inputs, invalid IDs, validation errors
+```
+
+### Phase 4: Review (delegate to @code-reviewer)
+
+After tests pass, request a code review:
+
+```
+@code-reviewer Review the recent changes for:
+- Clean architecture compliance
+- Async/await usage
+- Test coverage adequacy
+- Security considerations
+```
+
+### Phase 5: Summary
+
+Summarize what was done across all phases.
+
+## Delegation Rules
+
+- **Never write code yourself** — always delegate
+- **Wait for completion** before moving to the next phase
+- **Pass context forward** — each agent needs to know what the previous one did
+````
+
+<details>
+<summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>
 
 **WSL/Bash:**
 ````bash
@@ -195,8 +276,7 @@ Summarize what was done across all phases.
 AGENT
 ````
 
-<details>
-<summary><strong>PowerShell alternative</strong></summary>
+**PowerShell:**
 
 ````powershell
 @'
@@ -278,6 +358,8 @@ Summarize what was done across all phases.
 
 </details>
 
+🐚 **In your OS Terminal:**
+
 2. Verify the agent:
 
 **WSL/Bash:**
@@ -294,7 +376,7 @@ Get-Content .github/agents/lab-orchestrator.agent.md -Head 5
 
 The `agent` tool lets agents invoke other agents. Let's understand how it works.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Look at how existing agents reference each other:
 
@@ -332,7 +414,7 @@ Delegate to @dotnet-qa with context about what was implemented.
 
 The orchestrator's Phase 3 hands testing to `dotnet-qa`, so that agent has to exist before you run the delegation test in §7.4 — which is why this section comes first. It keeps the number 7.5 so existing links and references to it still work.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Check if it exists:
 
@@ -346,12 +428,14 @@ ls .github/agents/dotnet-qa.agent.md 2>/dev/null && echo "Already exists" || ech
 if (Test-Path .github/agents/dotnet-qa.agent.md) { "Already exists" } else { "Need to create" }
 ```
 
-2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. Key differences:
+2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. 💠 **In VS Code:** create `.github/agents/dotnet-qa.agent.md` the same way you created the orchestrator in §7.2 (Explorer, **New File**, paste, save). Key differences:
    - Description focuses on xUnit, Moq, WebApplicationFactory
    - System prompt emphasizes test naming convention (`MethodName_Condition_ExpectedResult`)
    - Review checklist focuses on test coverage and quality
 
    Stuck? Compare your file with the reference agent, [`solutions/lab07-orchestrator/dotnet-qa.agent.md`](../solutions/lab07-orchestrator/dotnet-qa.agent.md).
+
+🐚 **In your OS Terminal:**
 
 3. Verify the agent:
 
@@ -371,12 +455,14 @@ You should see the opening `---`, `name: "dotnet-qa"`, a `description`, a `tools
 
 Let's test the orchestrator with a small feature request. It delegates to three worker agents — `dotnet-dev` (from Lab 03), `dotnet-qa` (from §7.5, just above) and `code-reviewer` (ships with the repo) — so all three agent files should now be in `.github/agents/`.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Start Copilot CLI. If `copilot` was already open when you created the agent files in §7.2 or §7.5, exit it (type `/exit`) and start it again — as in Lab 03, agent files are read when a session starts:
 ```bash
 copilot
 ```
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 2. Select the orchestrator, then give it a feature request. In Copilot CLI, `@` adds a file to the context — it does not pick an agent — so choose the agent with the `/agent` command:
 ```
@@ -413,6 +499,8 @@ Add a "Page X of Y" label to the Students/Index view, using the PageIndex and To
 
 > 💡 **What you should see:** The orchestrator plans, then hands work to `dotnet-dev`, then `dotnet-qa`, then `code-reviewer` — each as its own dispatch entry, not just a name in its text — and finishes with a summary built from what those workers returned. The first request counts as a delegation test only when every box in step 3 is checked off; apply the same check to the optional request in step 4. The testing phase relies on the `dotnet-qa` agent from §7.5. The full cycle may take a few minutes.
 
+💠 **In VS Code:** the same delegation test in Chat. With the **Copilot** harness selected, choose `lab-orchestrator` from the **Agent** dropdown in the Chat view and send the step 2 request. The callout below shows how to confirm in VS Code that each phase was really dispatched.
+
 > **🔍 Debug It (VS Code & Copilot CLI)** — *Did the work really move between agents?*
 >
 > Step 3 already asks for dispatch entries. Two more views show the same hand-offs as a diagram and as data.
@@ -421,6 +509,10 @@ Add a "Page X of Y" label to the Students/Index view, using the PageIndex and To
 > - **VS Code:** run **Show Agent Debug Logs**, select the session description in the breadcrumb to open the Summary view, then choose **Agent Flow Chart**. It shows which agent delegated an action and where the workflow stopped, and the Logs view can group events into a tree by subagent.
 >
 > Details: [the guide](../docs/debugging-and-observability.md#52-read-the-file).
+
+This is the VS Code panel the callout describes: a mock-up with sample values, in which the red node marks where a run stopped.
+
+![A mock-up of the Agent Debug Logs panel in VS Code: a Logs view whose first events are Load Instructions, Load Agents, Load Hooks and Load Skills, a Summary view, and an Agent Flow Chart in which the lab-orchestrator agent delegates to the dotnet-dev, dotnet-qa and code-reviewer subagents, each calling a tool, with one tool node marked as an error.](../docs/images/labs/vscode-agent-debug-logs.svg)
 
 > 💡 **Real-world use**: In production, orchestration enables complex workflows — feature development, code review, deployment. Each agent is an expert in its domain, and the orchestrator ensures they work together.
 

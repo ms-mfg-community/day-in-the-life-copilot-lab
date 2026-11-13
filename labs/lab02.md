@@ -25,9 +25,12 @@ References:
 
 The repository-wide instructions file is **loaded automatically** when Copilot CLI starts a session, so adding a rule here is the fastest way to change Copilot's behavior across the whole repository.
 
-🖥️ **In your terminal:**
+💠 **In VS Code:**
 
-1. Open the instructions file in your preferred editor:
+1. Open `.github/copilot-instructions.md` in VS Code: press <kbd>Ctrl</kbd>+<kbd>P</kbd> (<kbd>Cmd</kbd>+<kbd>P</kbd> on macOS), type `copilot-instructions`, and press <kbd>Enter</kbd>.
+
+<details>
+<summary>🐚 Shell alternative (open the file from your OS Terminal)</summary>
 
 **WSL/Bash:**
 ```bash
@@ -41,7 +44,9 @@ The repository-wide instructions file is **loaded automatically** when Copilot C
 
 > 💡 `${EDITOR:-code}` falls back to `code` (VS Code) when `$EDITOR` is unset, so users on `vim`, `nvim`, `nano`, etc. get their own editor without modifying the lab.
 
-2. Add the following section at the end:
+</details>
+
+2. Add the following section at the end, then save the file:
 
 ```markdown
 ## ContosoUniversity Conventions
@@ -64,7 +69,7 @@ The repository-wide instructions file is **loaded automatically** when Copilot C
 >
 > Skip the restart and you'll be debugging stale config — and blaming Copilot for following yesterday's rules.
 
-3. In your restarted session, test the change in Copilot CLI:
+3. 🤖 **In Copilot CLI (`copilot>`):** in your restarted session, test the change:
 ```
 What patterns should I follow when creating a new controller in ContosoUniversity?
 ```
@@ -77,9 +82,29 @@ Copilot should reference your new conventions (async actions, repository pattern
 
 Path-specific instructions apply rules only to certain file types. Each one is a Markdown file that begins with a short settings header between two `---` lines, called *YAML frontmatter*. Its `applyTo` line selects the files the rules apply to, using a *glob* (a file-name pattern): `**/*.cshtml` matches every file whose name ends in `.cshtml`, in any folder.
 
-🖥️ **In your terminal:**
+💠 **In VS Code:**
 
-1. Create a Razor view instruction:
+1. Create the file `.github/instructions/razor-views.instructions.md`: in the Explorer, right-click the `.github/instructions` folder, choose **New File**, and name it `razor-views.instructions.md`.
+2. Paste this content and save the file:
+
+```markdown
+---
+description: "Razor view conventions for ContosoUniversity"
+applyTo: '**/*.cshtml'
+---
+
+# Razor View Guidelines
+
+- Use Tag Helpers (`asp-for`, `asp-action`) instead of HTML helpers (`@Html.`).
+- Always include `asp-validation-for` next to form inputs.
+- Use `asp-validation-summary="ModelOnly"` at the top of forms.
+- Display student names as "LastName, FirstMidName" using `@($"{item.LastName}, {item.FirstMidName}")`.
+- Include `@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }` in form pages.
+- Use Bootstrap 5 CSS classes for layout and styling.
+```
+
+<details>
+<summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>
 
 **WSL/Bash:**
 ```bash
@@ -100,9 +125,7 @@ applyTo: '**/*.cshtml'
 EOF
 ```
 
-<details>
-<summary><strong>PowerShell alternative</strong></summary>
-
+**PowerShell:**
 ```powershell
 @'
 ---
@@ -123,7 +146,7 @@ applyTo: '**/*.cshtml'
 
 </details>
 
-2. Verify the `applyTo` glob:
+🐚 **In your OS Terminal — verify the `applyTo` glob:**
 
 **WSL/Bash:**
 ```bash
@@ -152,7 +175,7 @@ Those four lines are the frontmatter you just wrote. The `applyTo: '**/*.cshtml'
 
 After the restart (see the 🔄 callout above), confirm the new path-specific instruction is actually live before moving on. This is the single most common source of "it's not working" frustration in labs 3–7.
 
-**Step 1 — Sanity-check the file on disk:**
+🐚 **In your OS Terminal — Step 1, sanity-check the file on disk:**
 
 **WSL/Bash:**
 ```bash
@@ -168,7 +191,7 @@ Get-Content .github/instructions/razor-views.instructions.md -Head 4
 
 You should see `razor-views.instructions.md` listed and the YAML frontmatter (`description:` + `applyTo: '**/*.cshtml'`) at the top.
 
-**Step 2 — Behavioral confirmation: ask Copilot CLI about the rule:**
+🤖 **In Copilot CLI (`copilot>`) — Step 2, behavioral confirmation: ask about the rule:**
 
 In your restarted `copilot` session (started from the repository root), ask about one view by its path. Path-specific rules load only when Copilot is working with a matching file, so the prompt names the file for it to read. `Edit.cshtml` is a good choice because it still uses the older `@Html.ValidationSummary` helper, which your rule says to replace with a Tag Helper:
 
@@ -179,6 +202,10 @@ Read dotnet/ContosoUniversity.Web/Views/Students/Edit.cshtml, then tell me what 
 A correctly loaded instruction should surface `asp-validation-summary="ModelOnly"` and Tag Helpers (`asp-for`, `asp-action`) — verbatim from your new file. If Copilot answers generically (or recommends `@Html.` helpers), the instruction may not have loaded — or the model simply didn't mention it. Run `/instructions` (below) to check for certain, then re-check the filename ends in `.instructions.md`, the `applyTo` glob matches, and that you fully restarted the session.
 
 > 💡 **Deterministic check — `/instructions`:** In your restarted `copilot` session, type `/instructions`. It lists the instruction files Copilot CLI discovered for the session — `razor-views.instructions.md` should be among them — and lets you toggle each one on or off (a file you switch off is not included). `/env` shows everything the session loaded: instructions, MCP servers, skills, agents, and more. Unlike the model probe above, these commands report what Copilot found rather than asking a model to describe it.
+
+💠 **In VS Code:** the same check without a terminal. Run **Chat: Open Customizations** from the Command Palette and select **Instructions**: `razor-views.instructions.md` should be listed with its source and no error. Then ask the Step 2 question in the Chat view and open the response's **References** section, where available, to see whether the file was used. For the exact text that reached the model, run **Show Chat Debug View** from the Chat view's overflow menu and open the **System prompt** section:
+
+![A mock-up of the Chat Debug View in VS Code: a sidebar of model requests, and the selected request as five sections, System prompt, User prompt, Context, Response and Tool responses, with the System prompt expanded to show where instruction text appears.](../docs/images/labs/vscode-chat-debug-view.svg)
 
 > **🔍 Debug It (VS Code & Copilot CLI)** — *Is the new rule in the request, or only on disk?*
 >
@@ -193,7 +220,7 @@ A correctly loaded instruction should surface `asp-validation-summary="ModelOnly
 
 `AGENTS.md` gives Copilot project context it **cannot work out by reading the repository** — how the project runs, what is generated, what not to touch. Use it for that operational context; use `copilot-instructions.md` for the *rules*.
 
-> 💡 Open AGENTS.md first to see the current structure before adding your section:
+> 💡 Open `AGENTS.md` first to see the current structure before adding your section, in 💠 VS Code or from your 🐚 OS Terminal:
 > - **WSL/Bash:** `head -50 AGENTS.md`
 > - **PowerShell:** `Get-Content AGENTS.md -Head 50`
 
@@ -232,9 +259,9 @@ This is the pattern *Evaluating AGENTS.md* ([arXiv:2602.11988](https://arxiv.org
 
 **✅ Add this instead** — operational context Copilot cannot discover by reading files, and would otherwise learn by failing:
 
-🖥️ **In your terminal:**
+💠 **In VS Code:**
 
-1. Open `AGENTS.md` in your editor (as in §2.1) and add these notes at the end:
+1. Open `AGENTS.md` in VS Code (<kbd>Ctrl</kbd>+<kbd>P</kbd>, type `AGENTS`, press <kbd>Enter</kbd>) and add these notes at the end, then save the file:
 
 ```markdown
 ## Operational Notes
@@ -244,7 +271,9 @@ This is the pattern *Evaluating AGENTS.md* ([arXiv:2602.11988](https://arxiv.org
 - **Never hand-edit generated files.** `.github/workflows/*.lock.yml` is compiled from the matching `.md` — edit the `.md`, then run `gh aw compile`. `lab-studio/lab-sources.json` is written only by `npm run drift:accept`.
 ```
 
-2. After saving `AGENTS.md`, restart your session so it re-reads the file (see the 🔄 note in 2.1). In the restarted session, type `/instructions` and check that `AGENTS.md` is listed and enabled, then ask:
+2. After saving `AGENTS.md`, restart your session so it re-reads the file (see the 🔄 note in 2.1).
+
+🤖 **In Copilot CLI (`copilot>`):** in the restarted session, type `/instructions` and check that `AGENTS.md` is listed and enabled, then ask:
 ```
 What URL does the ContosoUniversity app listen on in development, and how do I reset its sample data?
 ```

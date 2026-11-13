@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab05.md` (11.3 KB) — "MCP Server Configuration" |
 | **Spec state** | `ready` |
 | **Author** | John (authored 2026-10-13, batch lab05/08/09/11/12) |
-| **Last updated** | 2026-10-13 · amended 2026-11-12 (Phase 2: §5.3 Lab 10 preview — AC12; Phase 4: Debug It callout — AC13, C8–C10, D8, §5, §7) |
+| **Last updated** | 2026-10-13 · amended 2026-11-12 (Phase 2: §5.3 Lab 10 preview — AC12; Phase 4: Debug It callout — AC13, C8–C10, D8, §5, §7) · amended 2026-11-13 (Phase 5 3-Surface facelift — AC14, §2, §5, §7; see `specs/labs/three-surfaces.md`) |
 
 ---
 
@@ -28,7 +28,7 @@ No section is added or renamed. This is a currency and honesty pass, not a rewri
 
 | | |
 |---|---|
-| **Surface** | `cli` — the lab runs `copilot`, reads and edits `~/.copilot/mcp-config.json`, and restarts the CLI twice. Not drivable from VS Code Copilot alone. |
+| **Surface** | `cli` — the lab runs `copilot`, reads and edits `~/.copilot/mcp-config.json`, and restarts the CLI twice. Not drivable from VS Code Copilot alone. **Amended 2026-11-13 (Phase 5):** still CLI-first, but every step now names its surface (🐚 OS Terminal, 🤖 Copilot CLI) and §5.1 and §5.4 gain 💠 notes for VS Code's **MCP Servers** tab and **MCP: List Servers**; the VS Code route inspects servers, it does not replace the CLI steps. |
 | **Tier** | `intermediate` |
 | **Presenter minutes** | 3 (unchanged — registry `lab05.pace_presenter_minutes: 3`) |
 | **Self-paced minutes** | 15 — **under review. Derived estimate ≈30**, see D6. This is a guideline for the editing stage, *not* a floor: the teachability gate re-derives duration from the material and its number wins. The contract test asserts only that frontmatter, registry and the inline callout agree. |
@@ -57,6 +57,7 @@ No section is added or renamed. This is a currency and honesty pass, not a rewri
 | AC11 | Every backticked repo-relative path in the lab resolves on disk | `npx vitest run tests/lab-structure/lab05-contract` |
 | AC12 | §5.3 frames the `.copilot/lessons/` exercise as a preview of `[Lab 10 — Agent Memory](lab10.md)` *before* its first step, and says MCP is for live tools while cross-session state belongs in a memory layer, tied to the stateless 2026-07-28 MCP revision. It points at Lab 10; it does not teach Lab 10's layered model (§5 non-goals) | `npx vitest run tests/lab-structure/lab05-contract` |
 | AC13 | §5.4 carries exactly one `🔍 Debug It (VS Code & Copilot CLI)` callout (Phase 4), after the server is added. It uses `/mcp list` (status, including `failed: <reason>`) and `/mcp get <server-name>` inside a running `copilot` session, says the lab's earlier steps write `/mcp show` and points at `/help`, and says `copilot mcp list` at the shell shows configuration, not live status; teaches `copilot --log-level debug --log-dir ./logs` and the `process-<timestamp>-<pid>.log` it writes, notes that this repository's `.gitignore` ignores `*.log`, so the process logs are not committed (it has no rule for the `logs/` folder, and the callout makes no claim about the folder), and marks the warning-with-a-reason behavior as observed, not documented; and names **MCP: List Servers**, **Show Output** and the tool definitions in **Show Chat Debug View**. It links `docs/debugging-and-observability.md`. AC11 still holds: every backticked repo-relative path resolves | `npx vitest run tests/lab-structure/lab05-contract tests/lab-structure/debugging-observability-contract` |
+| AC14 | **Phase 5.** Every command and prompt in §5.1–§5.6 is badged 🐚, 🤖 or 💠; §5.1 and §5.4 add a 💠 note for **Chat: Open Customizations** → **MCP Servers** and **MCP: List Servers**. The per-track appendices badge their command blocks and no longer use `@dotnet-dev` or `@context7` as an invocation (`/agent dotnet-dev`, "Using Context7, …"). AC11 still holds: the "1. Inspect the wiki" step still comes before the Lab 10 link, and the single `🔍 Debug It` callout is untouched | `npx vitest run tests/lab-structure/lab05-contract tests/lab-structure/three-surfaces-contract` |
 
 ## 4. Outside-world claims
 
@@ -89,6 +90,7 @@ No section is added or renamed. This is a currency and honesty pass, not a rewri
   figure is under review (D6), because only the workshop figure is budgeted against the
   4-hour ceiling in `tests/workshop/time-budget.test.ts`.
 - **Amended 2026-11-12 (Phase 4):** the lab gains **one** `🔍 Debug It` callout in §5.4 (AC13) and nothing else. It is not a section, is not timed, and leaves `self_paced_minutes` at 50. It does **not** rewrite the lab's existing `/mcp show` lines (§5.0, §5.4; C8): that is a pre-existing spelling question outside this phase, recorded for the next pass, and the callout says so to the reader instead. It carries no inline Copilot CLI version. The files Phase 4 adds or edits for the whole lab set are `docs/debugging-and-observability.md` (new), `TROUBLESHOOTING.md` and `tests/lab-structure/debugging-observability-contract.test.ts`.
+- **Amended 2026-11-13 (Phase 5):** the lab gains the 🐚 / 🤖 / 💠 badges and two short 💠 notes, and **no new section**, callout or image; `self_paced_minutes`, the inline currency table and the single `🔍 Debug It` callout are untouched. The two track appendices (`labs/appendices/{dotnet,node}/lab05.md`) change only their command labels and the stale `@dotnet-dev` / `@context7` prompts. The files Phase 5 adds or edits for the whole lab set are named in `specs/labs/three-surfaces.md` §5.
 
 ## 6. Known defects
 
@@ -113,3 +115,4 @@ The run gate must report these UNVERIFIED rather than executing them:
 - §5.3 step 4 — `/exit` and restart.
 - §5.4 steps 1–5 — `code ~/.copilot/mcp-config.json`, adding the `fetch` entry, restart, and the live `https://raw.githubusercontent.com/...` fetch.
 - **Phase 4, §5.4 callout** — `/mcp list`, `/mcp get`, `/mcp reload` typed into a session; `copilot --log-level debug --log-dir ./logs`, which starts a session and creates a `logs/` folder in the checkout, where the process logs are git-ignored through `*.log`; and the callout's VS Code steps (**MCP: List Servers**, **Show Output**, **Restart Server**, **Show Chat Debug View**), which need a running VS Code. The process-log claim (C9) was observed once, in a scratch folder outside the tree, with a deliberately broken server; the run gate must not repeat it.
+- **Phase 5:** the 💠 notes (**Chat: Open Customizations** → **MCP Servers**, **MCP: List Servers**, removing the `fetch` entry in the editor) need a running VS Code: UNVERIFIED.

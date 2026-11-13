@@ -124,7 +124,7 @@ replaces Layer 3.
 >   it again. Skip it and nothing else in your home folder changes; every
 >   consolidation run then uses `--scope project`.
 
-🖥️ **Record your starting point** before you change anything:
+🐚 **In your OS Terminal — record your starting point** before you change anything:
 
 **WSL/Bash:**
 ```bash
@@ -252,7 +252,7 @@ table (plus `todo_deps` for prerequisites) and the agent reads and writes
 it through the `sql` tool. Only that session uses it — which is precisely
 what makes it Layer 1 rather than Layer 2.
 
-🖥️ **Try it — todo tracking via the session SQL store:**
+🤖 **In Copilot CLI (`copilot>`) — try it: todo tracking via the session SQL store:**
 
 ```
 Create a small plan for adding a "Department dashboard" page. Track 3
@@ -266,7 +266,7 @@ and inserts rows into the default `todos` table. Follow up:
 Show me the in-progress todo and mark the first one done.
 ```
 
-🖥️ **Try it — the plan.md file:**
+🤖 **In Copilot CLI (`copilot>`) — try it: the plan.md file:**
 
 ```
 Write a 5-line plan.md to my session folder describing this lab. Make
@@ -280,6 +280,8 @@ hold a `plan.md` with the same heading, so do not search for it: open the
 exact path the agent just reported. Replace `<path>` below with that path,
 using the shell for the environment where `copilot` runs: WSL and Windows
 have separate home folders, so the other one cannot see the file.
+
+🐚 **In your OS Terminal:**
 
 **WSL/Bash:**
 ```bash
@@ -379,7 +381,7 @@ Four things set it apart from the wiki in §10.3:
 Open a Copilot session in your checkout if you do not have one, and ask for
 the memory status. This is a read-only check.
 
-🖥️ **In the Copilot prompt** (not your shell):
+🤖 **In Copilot CLI (`copilot>`)** (not your shell):
 
 ```text
 /memory
@@ -401,7 +403,7 @@ memories: Copilot creates them on its own as you work, and you may have entries
 left by an earlier run of this lab. §10.8 has to delete only what this lab
 adds, and the store prompts cannot tell you what that is, because Copilot can
 decline a store, or reinforce a matching memory you already have instead of
-creating a new one. So look first. 🖥️ **Open both lists in a browser** and, for
+creating a new one. So look first. 🌐 **Open both lists in a browser** and, for
 each one, write down how many entries it holds and the opening words of any
 entry that resembles what you are about to store: one about explaining a change
 before applying it, one about the Node track, or one that begins "Lab 10
@@ -425,7 +427,7 @@ scope itself, an entry you ask for can land in either list.
 
 A user-level preference is about **you**, so say so.
 
-🖥️ **Type this into the Copilot prompt:**
+🤖 **In Copilot CLI (`copilot>`) — type this into the Copilot prompt:**
 
 ```text
 In all my projects, I prefer that you explain a change before applying it. Please store that as a memory, and begin the memory text with "Lab 10 exercise:" so I can find it again.
@@ -459,7 +461,7 @@ Either answer to a vote prompt is fine.
 A repository-level fact is about the codebase and is shared with everyone who
 works in it, so say **this repository**.
 
-🖥️ **Type this into the same session:**
+🤖 **In Copilot CLI (`copilot>`) — type this into the same session:**
 
 ```text
 In this repository, the Node track lives in node/, with its Vitest tests in node/tests/ and its Playwright tests in node/e2e/. Please store that as a memory, and begin the memory text with "Lab 10 exercise:" so I can find it again.
@@ -485,7 +487,7 @@ neither a prompt nor its absence shows whether a new entry exists: §10.2e does.
 Memory is for the next session. Close this one (`/exit`) and start `copilot`
 again in the same checkout.
 
-🖥️ **Ask:**
+🤖 **In Copilot CLI (`copilot>`) — ask:**
 
 ```text
 Which memories do you have about me and about this repository? List each one and say whether it is a user-level preference or a repository-level fact.
@@ -500,7 +502,7 @@ memory is a hint. A rule that has to hold every time belongs in Layer 3.
 
 ### 10.2e Look at where they live, and record what is new
 
-🖥️ **Open the same two lists again** (the links are in §10.2a) and compare each
+🌐 **Open the same two lists again** (the links are in §10.2a) and compare each
 with your baseline. Whatever Copilot stored is on GitHub, in one of two
 different lists. You only **look** in this step; you delete in §10.8.
 
@@ -544,7 +546,7 @@ one user-level preference and one repository-level fact, each tagged
 "Lab 10 sample" so a stray import is easy to find and delete. Bulk import is a
 recent CLI feature, so first check that your CLI has it: `copilot memories --help`
 should list `import`. If it reports an unknown command, run `copilot update` and
-try again, or read this step along. Then, from the repository root, in your shell
+try again, or read this step along. Then, from the repository root, in your 🐚 OS Terminal
 (open a second terminal, or `/exit` the Copilot session first):
 
 **WSL/Bash:**
@@ -615,7 +617,7 @@ in §10.3b names it.
 > sessions, in git, with nothing implicit. Copilot Memory (§10.2) is the native
 > way, and a custom service (§10.6) is the heavier one.
 
-🖥️ **Inspect what ships with the repo:**
+🐚 **In your OS Terminal — inspect what ships with the repo:**
 
 **WSL/Bash:**
 ```bash
@@ -646,7 +648,13 @@ Learning something new mid-session is the trigger for a `log.md` entry.
 The schema is short — a level-2 heading and a bullet list with
 `Context`, `Lesson`, `Evidence`, `Action for future sessions`, and
 `Promoted to`. Ask the agent to record a lesson without editing the
-file yourself:
+file yourself.
+
+🐚 **In your OS Terminal:** the inspect step above ran in your shell, so start
+a Copilot session from the repository root with `copilot`. Skip this if a
+Copilot session is still open in another terminal.
+
+🤖 **In Copilot CLI (`copilot>`) — ask the agent to record the lesson:**
 
 ```
 I just discovered that building only the test project, with
@@ -667,7 +675,7 @@ The repo can back that claim up, which gives the lesson real `Evidence`:
 Infrastructure and Web projects and to nothing else, while
 `ContosoUniversity.sln` also lists the PlaywrightTests project.
 
-🖥️ **Verify the append:**
+🐚 **In your OS Terminal — verify the append:**
 
 **WSL/Bash:**
 ```bash
@@ -685,8 +693,10 @@ leave `Promoted to:` blank — that gets filled in by the
 
 ### 10.3b Recall from a fresh session
 
-This is the payoff. Close your current session (`/exit`) and start a new
-one, then ask:
+This is the payoff. Close your current session (`/exit`), then
+🐚 **in your OS Terminal** start a new one with `copilot` from the repository root.
+
+🤖 **In Copilot CLI (`copilot>`) — in the new session, ask:**
 
 ```
 What have we learned about verifying .NET changes in this repo? Check
@@ -721,7 +731,7 @@ carries `scope: project-override` in its front-matter — that flag means
 the author deliberately disagrees with the global rule, and consolidation
 (§10.5) never auto-reconciles an override.
 
-🖥️ **Optional extension — scaffold a global wiki** (about 3 minutes, not
+🐚 **In your OS Terminal — optional extension: scaffold a global wiki** (about 3 minutes, not
 counted in the 115). The core path does not need one: every step from here on
 works with the project wiki alone. Run
 this only if your starting-point check said `global wiki: absent`. It
@@ -780,7 +790,7 @@ own guidance is to "use custom instructions rather than relying on Copilot
 Memory" when you need consistent behaviour. No Layer 2 option — hosted, DIY
 or custom — replaces this layer.
 
-🖥️ **Inspect the schema in place:**
+🐚 **In your OS Terminal — inspect the schema in place:**
 
 **WSL/Bash:**
 ```bash
@@ -818,7 +828,7 @@ test paths (`**/*.test.*`, `**/tests/**` and similar), and neither
 `dotnet/ContosoUniversity.Tests/Infrastructure/DepartmentRepositoryTests.cs`
 falls under those globs.
 
-Keep the rule tight. Type this into the Copilot prompt:
+🤖 **In Copilot CLI (`copilot>`):** keep the rule tight. Type this into the Copilot prompt:
 
 ```
 Append to .github/instructions/dotnet.instructions.md:
@@ -846,6 +856,8 @@ may still skip a rule, so treat a miss as a prompt to investigate rather
 than proof. The list is the agent's own account, so confirm it on disk. The new
 `.cs` files show as `??`, with a brand-new folder collapsed to one line, and the
 rule you appended shows as `M`:
+
+🐚 **In your OS Terminal:**
 
 **WSL/Bash:**
 ```bash
@@ -877,7 +889,7 @@ repo also ships agent **personalities** — role-specialized agents with
 their own voice and tool scope. What each one can do with the Layer 2
 wiki follows from that tool scope.
 
-🖥️ **Compare two personalities:**
+🐚 **In your OS Terminal — compare two personalities:**
 
 **WSL/Bash:**
 ```bash
@@ -925,7 +937,7 @@ Copilot Dreaming (§10.5e) is the optional hosted pass that goes further.
 > Copilot CLI's built-in list (`copilot help commands`) does not show it;
 > `/skills list` does.
 
-🖥️ **Read the skill before you use it:**
+🐚 **In your OS Terminal — read the skill before you use it:**
 
 **WSL/Bash:**
 ```bash
@@ -941,8 +953,10 @@ Get-Content .github/skills/consolidate-lessons/SKILL.md | Select-Object -First 4
 
 Always start with a dry run so you can see what would change. The skill
 takes two options — `--dry-run` and `--scope project|global|both` —
-and tells the agent what each one means. Run it **in the Copilot
-prompt** (not in your shell), with the options after the name:
+and tells the agent what each one means.
+
+🤖 **In Copilot CLI (`copilot>`):** run the skill **in the Copilot prompt** (not in
+your shell), with the options after the name:
 
 ```text
 /consolidate-lessons --dry-run --scope project
@@ -972,8 +986,8 @@ re-run the dry run.
 
 ### 10.5b Live consolidation
 
-When the dry run looks right, run it for real — again **in the Copilot
-prompt**, not in your shell:
+🤖 **In Copilot CLI (`copilot>`):** when the dry run looks right, run it for
+real — again **in the Copilot prompt**, not in your shell:
 
 ```text
 /consolidate-lessons --scope project
@@ -992,7 +1006,7 @@ Expected result, given the seed wiki this repo ships:
 - The summary ends with a **Files touched** list, and every path in it
   should sit under `.copilot/lessons/`.
 
-🖥️ **Review what the run changed — the content, not just the file
+🐚 **In your OS Terminal — review what the run changed: the content, not just the file
 list.** `git diff --stat` shows only paths and line counts, and it skips a
 brand-new topic file entirely, so use all three commands:
 
@@ -1031,7 +1045,7 @@ you did not mean, do not stage it — §10.8 puts the wiki back, and you can
 re-run the dry run.
 
 If you opted in to `--scope both`, `git` cannot see the global wiki, so
-read it directly:
+read it directly. 🐚 **In your OS Terminal:**
 
 **WSL/Bash:**
 ```bash
@@ -1183,7 +1197,7 @@ never enable context injection, it does approximately nothing. The same holds
 for any custom service, and for Copilot Memory and the wiki too: Layer 2 is
 advisory, and Layer 3 (§10.4) is where a rule binds.
 
-🖥️ **Read, don't run.** The [SCNS README](https://github.com/johnhain-msft/scns/blob/main/README.md)
+🌐 **Read, don't run.** The [SCNS README](https://github.com/johnhain-msft/scns/blob/main/README.md)
 is the primary source for everything above. Opening it is **optional** (about 5
 minutes, not counted in the 115), because the table below carries the
 comparison. If you do open it, you do not need to clone, install or run
@@ -1294,7 +1308,7 @@ Layer 3 binds. Your checklist for the next real task:
 > §10.5b edits, and the §10.8 revert would no longer find them. Keep it for
 > your own next task, run as `/checkpoint create <name>`.
 
-🖥️ **End-of-lab handoff drill:** a handoff is how one task outlives one
+🤖 **In Copilot CLI (`copilot>`) — end-of-lab handoff drill:** a handoff is how one task outlives one
 conversation: a file a fresh conversation can pick up. In the Copilot
 prompt (not your shell), run the
 [`handoff`](../.github/skills/handoff/SKILL.md) skill. It asks for three
@@ -1386,7 +1400,7 @@ A fourth, `.copilot/lessons/example-lesson.md`, changes only when the
 consolidation merged your lesson into it instead of creating a new topic
 file.
 
-🖥️ **Revert the tracked files, then see what is left:**
+🐚 **In your OS Terminal — revert the tracked files, then see what is left:**
 
 **WSL/Bash:**
 ```bash
@@ -1552,7 +1566,7 @@ prose. Re-attach the shared partial only once it is corrected. -->
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,
