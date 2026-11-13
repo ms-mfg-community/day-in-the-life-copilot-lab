@@ -135,3 +135,54 @@ describe('lab04 contract: AC10 — a deterministic skills check is named', () =>
     expect(lab()).toMatch(/(?<![\w./])\/skills\s+(list|info)\b/);
   });
 });
+
+describe('lab04 contract: AC11 — a "Spot the Anti-Pattern" callout covers broad descriptions and uninvocable syntax', () => {
+  const TITLE = '🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax';
+  const EXEMPLAR = '.github/skills/commit/SKILL.md';
+  const text = (): string => lab().replace(/\r\n/g, '\n');
+
+  /** The contiguous `>` blockquote that holds the title, `> ` prefixes removed. */
+  const callout = (): string => {
+    const all = text().split('\n');
+    const at = all.findIndex((l) => l.startsWith('>') && l.includes(TITLE));
+    expect(at, `no blockquote callout titled "${TITLE}"`).toBeGreaterThanOrEqual(0);
+    let to = at;
+    while (to + 1 < all.length && all[to + 1].startsWith('>')) to++;
+    return all
+      .slice(at, to + 1)
+      .map((l) => l.replace(/^>\s?/, ''))
+      .join('\n');
+  };
+
+  it('is a blockquote callout with the exact title', () => {
+    expect(text()).toMatch(new RegExp(`^> \\*\\*${TITLE}\\*\\*`, 'm'));
+  });
+
+  it('shows why a vague description causes false-positive activation and context bloat', () => {
+    const c = callout();
+    expect(c).toMatch(/description/i);
+    expect(c).toMatch(/broad|vague/i);
+    expect(c).toMatch(/context/i);
+    expect(c).toMatch(/activat/i);
+  });
+
+  it('names both uninvocable-syntax traps: IDE-only ${input:...} placeholders and ADD: commit prefixes', () => {
+    const c = callout();
+    expect(c).toContain('${input:');
+    expect(c).toContain('ADD:');
+    expect(c).toMatch(/IDE|VS Code/);
+    expect(c, 'does not name the repo commit rule the ADD: prefix contradicts').toContain('<type>: <description>');
+  });
+
+  it('points at the clean exemplar, and the exemplar really is clean', () => {
+    expect(callout()).toContain(EXEMPLAR);
+    const skill = readFileSync(join(ROOT, EXEMPLAR), 'utf8');
+    expect(skill, 'the commit skill still uses IDE-only ${input:...}').not.toContain('${input:');
+    expect(skill, 'the commit skill still uses ADD:/UP:/DEL: prefixes').not.toMatch(/\b(ADD|UP|DEL):/);
+  });
+
+  it('links the exemplar with a path that resolves from labs/', () => {
+    expect(text()).toContain(`](../${EXEMPLAR})`);
+    expect(existsSync(join(ROOT, 'labs', '..', EXEMPLAR))).toBe(true);
+  });
+});

@@ -112,13 +112,13 @@ You should see two matching lines for your agent file: `## Coding Standards` and
 
 ## 3.3 Configure Tools and MCP Servers
 
-The agent we created uses basic tools. Let's understand how to add MCP server access.
+The agent you created in §3.2 uses only **built-in tools** — `read`, `edit`, `execute` and `search` — and §3.4 tests exactly that agent. This section is a **read-only preview** of how an agent can also reach MCP servers, so the idea is familiar when you meet it properly in [Lab 05 — MCP Server Configuration](lab05.md).
 
-> 📚 **This section is a preview.** [Lab 05](lab05.md) is the canonical MCP configuration lab — it covers per-server scoping, credential handling, and the centralized `mcp-configs/` source of truth. The snippet below shows just enough to wire an MCP server into an agent's frontmatter; defer the full setup walkthrough to lab 05.
+> 🔭 **Forward reference — look, don't wire.** Lab 05 is the canonical MCP lab: per-server scoping, credential handling, and the centralized `mcp-configs/` source of truth. The `mcp-servers:` block below is a preview. You will wire it into your agent **after you complete [Lab 05 — MCP Server Configuration](lab05.md)**: once you have watched an MCP server load and answer in a session, come back to your `.github/agents/<track>-dev.agent.md` and add the block together with the matching `context7/*` entry in `tools`. Do **not** add either now — everything else in this lab runs on built-in tools.
 
-🖥️ **At your shell prompt, from the repository root** (if you are still inside Copilot, type `/exit` first):
+🖥️ **At your shell prompt, from the repository root** (if you are still inside Copilot, type `/exit` first) — read-only, nothing to configure here:
 
-1. View this repository's MCP configuration (the file ships with the repo, so you have it on a fresh clone):
+1. Peek at this repository's MCP configuration (the file ships with the repo, so you have it on a fresh clone):
 
 **WSL/Bash:**
 ```bash
@@ -132,10 +132,11 @@ Get-Content .copilot/mcp-config.json
 
 Copilot CLI also supports a personal, machine-wide MCP file at `~/.copilot/mcp-config.json`. It may not exist on a fresh install, so this lab uses the repository's file instead.
 
-2. Agents can declare MCP servers directly in their frontmatter. For example, to give the agent access to Context7 for .NET documentation lookups:
+2. **Preview:** an agent can declare MCP servers directly in its frontmatter. This is what giving the agent access to Context7 for .NET documentation lookups will look like when you wire it up after Lab 05 — read it, but **don't paste it into your agent yet**:
 
 ```yaml
 ---
+# PREVIEW ONLY — add the context7/* tool and the mcp-servers block after you complete Lab 05, not now
 name: "dotnet-dev"
 description: "..."
 tools: ["read", "edit", "execute", "search", "context7/*"]
@@ -148,9 +149,9 @@ mcp-servers:
 ---
 ```
 
-3. The `mcp-servers` field is an **object**: each key names a server, and its value uses the same fields (`type`, `command`, `args`, `tools`) as the `context7` entry in this repository's `.copilot/mcp-config.json`. The agent can then use tools from that server (e.g., `resolve-library-id` and `query-docs` from Context7) — but only if its own `tools` list allows them. Per GitHub's reference, that list filters MCP tools as well as built-in ones, so step 2 adds `context7/*` (every tool from the `context7` server) next to the four built-in aliases; the `tools: ["*"]` inside the `context7` entry does not override that filter. Also per GitHub's reference, `mcp-servers` is not used by VS Code and other IDE custom agents.
+3. The `mcp-servers` field is an **object**: each key names a server, and its value uses the same fields (`type`, `command`, `args`, `tools`) as the `context7` entry in this repository's `.copilot/mcp-config.json`. The agent can then use tools from that server (e.g., `resolve-library-id` and `query-docs` from Context7) — but only if its own `tools` list allows them. Per GitHub's reference, that list filters MCP tools as well as built-in ones, so the preview in step 2 includes `context7/*` (every tool from the `context7` server) next to the four built-in aliases; the `tools: ["*"]` inside the `context7` entry does not override that filter. Also per GitHub's reference, `mcp-servers` is not used by VS Code and other IDE custom agents.
 
-> 💡 **Note**: MCP server access is optional. The base tools (`read`, `edit`, `execute`, `search`) are sufficient for most development tasks. Add MCP servers when the agent needs specific capabilities like documentation lookup or knowledge persistence.
+> 💡 **Note**: MCP server access is optional. The base tools (`read`, `edit`, `execute`, `search`) are sufficient for most development tasks. Add MCP servers when the agent needs a live capability such as documentation lookup or structured reasoning.
 
 ## 3.4 Test the Agent
 

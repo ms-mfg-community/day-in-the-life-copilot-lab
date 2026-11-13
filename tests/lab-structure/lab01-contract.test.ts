@@ -139,3 +139,47 @@ describe('lab01 contract: AC11 — code-intelligence claims', () => {
     expect(sec).not.toMatch(/\(seconds\)/i);
   });
 });
+
+describe('lab01 contract: AC12 — the configuration concepts come before the marketplace', () => {
+  /** Every `## ` heading outside a fenced block, in file order, as { text, line }. */
+  const headings = (): Array<{ text: string; line: number }> => {
+    let inFence = false;
+    const out: Array<{ text: string; line: number }> = [];
+    lab()
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .forEach((l, line) => {
+        if (/^\s*(```|~~~)/.test(l)) inFence = !inFence;
+        else if (!inFence && /^## /.test(l)) out.push({ text: l.slice(3).trim(), line });
+      });
+    return out;
+  };
+
+  /** Line of the heading numbered exactly `num`, so `1.0` does not match `1.0a`. */
+  const lineOf = (num: string): number =>
+    headings().find((h) => h.text.split(/\s/)[0] === num)?.line ?? -1;
+
+  const ORDER = ['1.1', '1.2', '1.3', '1.4', '1.0a', '1.0', '1.5'];
+
+  it('keeps every numbered heading the other contracts and external references use', () => {
+    for (const num of ORDER) {
+      expect(lineOf(num), `heading "## ${num}" not found`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('teaches 1.1 → 1.2 → 1.3 → 1.4 first, then the 1.0a CLI table and the 1.0 marketplace, then 1.5', () => {
+    const lineNumbers = ORDER.map(lineOf);
+    expect(
+      lineNumbers,
+      `heading order is ${ORDER.join(' → ')}; their line numbers must increase, got ${lineNumbers.join(', ')}`,
+    ).toEqual([...lineNumbers].sort((a, b) => a - b));
+  });
+
+  it('ends on the takeaway: the last ## heading is "1.5 Takeaway"', () => {
+    expect(headings().at(-1)?.text).toBe('1.5 Takeaway');
+  });
+
+  it('the marketplace section does not tell the learner to "skip ahead" to a section that now comes before it', () => {
+    expect(section('1.0 ')).not.toMatch(/skip ahead/i);
+  });
+});

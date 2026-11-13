@@ -139,6 +139,15 @@ Those four lines are the frontmatter you just wrote. The `applyTo: '**/*.cshtml'
 
 > 💡 **Instructions combine.** When editing a `.cshtml` file, Copilot loads: `copilot-instructions.md` + `AGENTS.md` + `razor-views.instructions.md`. All three apply simultaneously — Copilot combines them and defines no precedence order between them, so don't write rules that contradict each other.
 
+> **🚫 Spot the Anti-Pattern: Bloated Domain Instructions**
+>
+> Set the six short rules you just wrote beside the prompt many teams paste into a `**/*.cs` instruction file:
+>
+> - ✅ **Stack-matched, about 40 lines** — this repo's [`.github/instructions/dotnet.instructions.md`](../.github/instructions/dotnet.instructions.md) states the conventions the app really uses (ASP.NET Core 8 MVC, EF Core, xUnit) and nothing else.
+> - ❌ **Copy-pasted, about 230 lines** — a "DDD for financial systems" compliance prompt: PCI-DSS and SOX attestations, currency value objects, saga patterns and a mandatory planning ritual before every edit, for a university CRUD app that takes no payments.
+>
+> `applyTo` decides *when* a file loads, not what it costs. Every line of a matching file spends context tokens on every file match and steers the model toward rules your code never follows. Before you add a rule, ask whether a reviewer would actually enforce it in this repository.
+
 ### 2.2.3 Verify Copilot picked up the new instruction file
 
 After the restart (see the 🔄 callout above), confirm the new path-specific instruction is actually live before moving on. This is the single most common source of "it's not working" frustration in labs 3–7.
@@ -173,15 +182,17 @@ A correctly loaded instruction should surface `asp-validation-summary="ModelOnly
 
 ## 2.3 Edit AGENTS.md
 
-`AGENTS.md` provides project context — architecture, decisions, domain knowledge. Use it for the *what* and *why*; use `copilot-instructions.md` for the *rules*.
+`AGENTS.md` gives Copilot project context it **cannot work out by reading the repository** — how the project runs, what is generated, what not to touch. Use it for that operational context; use `copilot-instructions.md` for the *rules*.
 
 > 💡 Open AGENTS.md first to see the current structure before adding your section:
 > - **WSL/Bash:** `head -50 AGENTS.md`
 > - **PowerShell:** `Get-Content AGENTS.md -Head 50`
 
-🖥️ **In your terminal:**
+> **🚫 Spot the Anti-Pattern: What Does NOT Belong in AGENTS.md**
+>
+> The most common first entry in an `AGENTS.md` is an Architecture Decision Record (ADR). Read the one below and mark every line Copilot could learn without it — because [§2.1](#21-modify-copilot-instructionsmd) already put it in `copilot-instructions.md`, or because Copilot can read it straight from the repository. Then do **not** add it.
 
-1. Open AGENTS.md and add an Architecture Decision Record:
+**❌ Do not add this:**
 
 ```markdown
 ## Architecture Decisions
@@ -200,14 +211,38 @@ A correctly loaded instruction should surface `asp-validation-summary="ModelOnly
 - All queries go through a single abstraction layer
 ```
 
+Why every part of it fails:
+
+| Part of ADR-001 | Why it does not belong in `AGENTS.md` |
+|---|---|
+| "All data access goes through `IRepository<T>`" | **Duplicated.** The rule you added to `copilot-instructions.md` in §2.1 already says "never access `SchoolContext` directly". Two always-loaded files now state the same thing, so Copilot reads it twice. |
+| "defined in `dotnet/ContosoUniversity.Core` … Implementations live in `dotnet/ContosoUniversity.Infrastructure`" | **Discoverable.** Where the projects and folders are is a repository overview, and Copilot learns it by listing the solution. |
+| Status, Context, Consequences | **History for people.** Nothing here changes what the agent does next. |
+
+This is the pattern *Evaluating AGENTS.md* ([arXiv:2602.11988](https://arxiv.org/abs/2602.11988)) measured: repository overviews did not help, and context files raised inference cost by over 20% on average (see the 📊 note at the end of this section). Lines Copilot already has, or can find itself, add cost without adding information.
+
+**✅ Add this instead** — operational context Copilot cannot discover by reading files, and would otherwise learn by failing:
+
+🖥️ **In your terminal:**
+
+1. Open `AGENTS.md` in your editor (as in §2.1) and add these notes at the end:
+
+```markdown
+## Operational Notes
+
+- **Dev database.** Development runs on SQLite (`ContosoUniversity.db`, git-ignored); production uses SQL Server. At startup the app creates the schema and seeds sample data only when the `Students` table is empty, so a restart keeps your edits. To get fresh seed data, stop the app and delete `ContosoUniversity.db`.
+- **Ports.** `dotnet run` serves https://localhost:52379 and http://localhost:52380. The Playwright tests default to the https URL.
+- **Never hand-edit generated files.** `.github/workflows/*.lock.yml` is compiled from the matching `.md` — edit the `.md`, then run `gh aw compile`. `lab-studio/lab-sources.json` is written only by `npm run drift:accept`.
+```
+
 2. After saving `AGENTS.md`, restart your session so it re-reads the file (see the 🔄 note in 2.1). In the restarted session, type `/instructions` and check that `AGENTS.md` is listed and enabled, then ask:
 ```
-Where should I put database query logic in ContosoUniversity?
+What URL does the ContosoUniversity app listen on in development, and how do I reset its sample data?
 ```
 
-With the ADR loaded, expect query logic to go behind `IRepository<T>`, with the interface in `dotnet/ContosoUniversity.Core` and implementations in `dotnet/ContosoUniversity.Infrastructure`. A bare "use the repository pattern" could come from the rule you added in 2.1 alone, and Copilot can also find those projects by reading the repo — so treat the answer as a hint and the `/instructions` listing as the proof that `AGENTS.md` loaded. The ADR is sample content too: it records the direction you want for new code, and existing code may not follow it everywhere yet.
+With the notes loaded, expect `https://localhost:52379` (or `http://localhost:52380`) and advice to stop the app and delete `ContosoUniversity.db`, because seeding only runs when the `Students` table is empty. Copilot can also find the ports in `launchSettings.json`, so treat the answer as a hint and the `/instructions` listing as the proof that `AGENTS.md` loaded. The notes describe this repository as it stands today: if the ports or the seeding change, update them in the same commit.
 
-> 💡 **AGENTS.md vs copilot-instructions.md:** Use `copilot-instructions.md` for **rules** ("always use async"). Use `AGENTS.md` for **context** ("here's our architecture and why"). Copilot CLI discovers both automatically and combines them.
+> 💡 **AGENTS.md vs copilot-instructions.md:** Use `copilot-instructions.md` for **rules** ("always use async"). Use `AGENTS.md` for **context the agent can't discover** ("the dev database seeds only when empty; never hand-edit generated files"). Copilot CLI discovers both automatically and combines them.
 
 > 📊 **What research says:** A recent study (*Evaluating AGENTS.md*, linked in References) found that context files do not generally improve task success rates, while raising inference cost by over 20% on average — and that held for developer-committed files as well as LLM-generated ones. Agents do follow the instructions in a context file, but repository overviews, although popular and recommended by model providers, were not helpful. Context files earn their keep on non-standard practices (for example, "use `uv` not `pip`" or "never modify files in `src/gen/`"). **Keep AGENTS.md short: only things the agent can't discover on its own.**
 
@@ -220,12 +255,13 @@ With the ADR loaded, expect query logic to go behind `IRepository<T>`, with the 
 |---------|------|---------|
 | **Repo-wide instructions** | `.github/copilot-instructions.md` | Repo-wide rules, loaded automatically |
 | **Path-specific instructions** | `.github/instructions/*.instructions.md` | Rules for specific file types via `applyTo` |
-| **Project context** | `AGENTS.md` | Architecture, decisions, domain knowledge |
+| **Project context** | `AGENTS.md` | Operational facts the agent can't discover (runtime behavior, generated files, don't-touch rules) |
 
 **Best practices:**
 - Keep `copilot-instructions.md` focused on coding rules and conventions
 - Keep `AGENTS.md` **minimal** — only include things the agent can't discover on its own
 - Don't duplicate your README or add codebase overviews — agents can navigate repos themselves
+- Don't repeat a rule in two always-loaded files — state it once, in `copilot-instructions.md`
 - Review auto-generated context files before committing them — short and specific beats comprehensive
 - Create path-specific instructions for language/framework-specific rules
 - Use descriptive `applyTo` globs to target the right files

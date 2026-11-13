@@ -21,104 +21,6 @@ References:
 - [Custom instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
 - [Add skills to Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
 
-## 1.0a Copilot CLI currency (2026 refresh)
-
-> 💡 The Copilot CLI surface evolves quickly. Commands are current as of this
-> refresh; versions, model tiers, and MCP pins live in
-> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) so labs stay
-> consistent.
-
-| Capability | Command / surface | Use when |
-|------------|-------------------|----------|
-| **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
-| **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
-| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode (review each step) vs `/autopilot` to toggle autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. Autopilot is a toggle you switch on — it is not the default. |
-| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto` to let Copilot choose) | Pick an id from the registry's `models.cheap` for routine edits; pick one from `models.premium` for deep reasoning. |
-| **Local tool discovery** | `extensions_manage` MCP tool — operation one of `list` \| `inspect` \| `scaffold` \| `guide` (model-side tool call, **not** a slash command) | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. Ask Copilot e.g. *"run `extensions_manage` with operation `list`"*. |
-
-*Lab 11 builds an enterprise plugin that publishes to a private
-`COPILOT_PLUGIN_REGISTRIES` registry using exactly this surface.*
-
-## 1.0 Discover Agents from the Marketplace
-
-The Copilot CLI plugin marketplace is a registry of community and first-party agents you can install directly from your terminal. Plugins extend Copilot with specialized capabilities — think of them as pre-built agents for common development tasks.
-
-### Browse available plugins
-
-🖥️ **In your terminal:**
-
-```bash
-# List registered marketplaces
-copilot plugin marketplace list
-
-# Browse available plugins in a marketplace
-copilot plugin marketplace browse awesome-copilot
-```
-
-Browse the available plugins and look for ones related to **.NET**, **testing**, or **database management** — these will be most useful for the ContosoUniversity project we'll work with throughout these labs.
-
-### Install a plugin
-
-You can install a plugin by name from a marketplace, or directly from a GitHub repository that contains a plugin:
-
-```bash
-# From a GitHub repo that contains a plugin (generic form)
-copilot plugin install OWNER/REPO
-
-# Worked example: the plugin named awesome-copilot, from the built-in awesome-copilot marketplace
-copilot plugin install awesome-copilot@awesome-copilot
-
-# Or install any other marketplace plugin by name
-copilot plugin install PLUGIN-NAME@awesome-copilot
-```
-
-> 💡 **Marketplace, not plugin.** `github/awesome-copilot` is a *marketplace* — a catalog of plugins — so it is not something you install as a whole. The CLI includes that marketplace out of the box (that is why `browse awesome-copilot` works above), and a plugin also named `awesome-copilot` lives inside it. The `plugin@marketplace` form above installs exactly that plugin.
-
-> ⏭️ **Skip this step if** you're on a restricted network, you don't have a
-> GitHub auth token wired up yet, or this is a presenter-led run where the
-> instructor has already installed plugins for the class. Plugin install is
-> **not a prerequisite** for any later lab — Labs 02–10 work end-to-end without
-> a single plugin installed. Lab 11 walks you through publishing your *own*
-> plugin from scratch.
-
-### Verify the installation
-
-```bash
-# Confirm the plugin is installed and ready
-copilot plugin list
-```
-
-You should see your installed plugin listed with its name, version, and source.
-
-### Use the plugin
-
-Installing a plugin does not create a command named after the plugin. A plugin adds *components* — custom agents, skills, hooks, MCP servers and LSP servers — and you use each one by its own name:
-
-- **Custom agents** — type `/agent` in a session to see the agents available to you and pick one, or start the session with `copilot --agent AGENT-NAME`.
-- **Skills** — type `/skills` to see and manage them. Copilot uses a skill on its own when your request matches the skill's description.
-
-```bash
-# Interactive: start a session, then pick the plugin's agent with /agent
-copilot
-```
-
-Inside the session, type `/agent`, choose an agent from the list, then type your request.
-
-```bash
-# Non-interactive (CI / scripted / headless): replace AGENT-NAME with a name from the /agent list
-copilot --agent AGENT-NAME --prompt "help me with my task" --allow-all-tools
-```
-
-> 💡 **Key insight:** Marketplace plugins give you a head start for common workflows — but they're just the beginning. In Lab 03, you'll learn to **create your own agents** tailored to your team's specific needs. Think of marketplace plugins as patterns you can study and customize.
-
-> ⚠️ **Offline or marketplace unavailable?** If you can't access the marketplace, skip ahead to [section 1.1](#11-the-configuration-ecosystem). The rest of this lab works entirely with local configuration files.
-
-References:
-- [Finding and installing plugins](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-finding-installing)
-- [Creating custom agents](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli)
-
----
-
 ## 1.1 The Configuration Ecosystem
 
 This repository ships with a rich set of Copilot configurations. Here's the map — the rest of the labs fill it in:
@@ -220,7 +122,109 @@ copilot --agent planner `
 
 > 💡 Copilot loads agents from `.github/agents/` in the current working directory. You can also place personal agents in `~/.copilot/agents/`.
 
-## 1.5 Final
+---
+
+## 1.0a Copilot CLI currency (2026 refresh)
+
+> 🧭 **The core concepts are done — what follows is optional extension.** §1.1–§1.4 covered what the configuration files are, how Copilot combines them, how it finds code, and an agent answering from them. §1.0a (the CLI's current commands) and §1.0 (marketplace plugins) keep their original numbers so existing links still work, but they now come *after* the concepts on purpose: learn what these files are before you install more of them. Plugins are not a prerequisite for any later lab, so you can jump to [§1.5](#15-takeaway) at any point.
+
+> 💡 The Copilot CLI surface evolves quickly. Commands are current as of this
+> refresh; versions, model tiers, and MCP pins live in
+> [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) so labs stay
+> consistent.
+
+| Capability | Command / surface | Use when |
+|------------|-------------------|----------|
+| **Install a plugin** | `/plugin install owner/repo` (or `copilot plugin install owner/repo`) | Pulling a marketplace or private-registry plugin. Covered in depth below and in Lab 11. |
+| **Parallel subagents** | `/fleet` | Running independent research or implementation threads in one session. |
+| **Plan mode vs autopilot mode** | `/plan` or `Shift+Tab` for plan mode (review each step) vs `/autopilot` to toggle autopilot mode (batch execute) | Plan mode for exploratory/risky work; autopilot mode for scripted, well-understood tasks. Autopilot is a toggle you switch on — it is not the default. |
+| **Mid-session model switch** | `/model MODEL-ID` (or `/model auto` to let Copilot choose) | Pick an id from the registry's `models.cheap` for routine edits; pick one from `models.premium` for deep reasoning. |
+| **Local tool discovery** | `extensions_manage` MCP tool — operation one of `list` \| `inspect` \| `scaffold` \| `guide` (model-side tool call, **not** a slash command) | Inspecting which extensions are loaded — the in-repo analogue of a marketplace. Ask Copilot e.g. *"run `extensions_manage` with operation `list`"*. |
+
+*Lab 11 builds an enterprise plugin that publishes to a private
+`COPILOT_PLUGIN_REGISTRIES` registry using exactly this surface.*
+
+## 1.0 Discover Agents from the Marketplace
+
+The Copilot CLI plugin marketplace is a registry of community and first-party agents you can install directly from your terminal. Plugins extend Copilot with specialized capabilities — think of them as pre-built agents for common development tasks.
+
+### Browse available plugins
+
+🖥️ **In your terminal:**
+
+```bash
+# List registered marketplaces
+copilot plugin marketplace list
+
+# Browse available plugins in a marketplace
+copilot plugin marketplace browse awesome-copilot
+```
+
+Browse the available plugins and look for ones related to **.NET**, **testing**, or **database management** — these will be most useful for the ContosoUniversity project we'll work with throughout these labs.
+
+### Install a plugin
+
+You can install a plugin by name from a marketplace, or directly from a GitHub repository that contains a plugin:
+
+```bash
+# From a GitHub repo that contains a plugin (generic form)
+copilot plugin install OWNER/REPO
+
+# Worked example: the plugin named awesome-copilot, from the built-in awesome-copilot marketplace
+copilot plugin install awesome-copilot@awesome-copilot
+
+# Or install any other marketplace plugin by name
+copilot plugin install PLUGIN-NAME@awesome-copilot
+```
+
+> 💡 **Marketplace, not plugin.** `github/awesome-copilot` is a *marketplace* — a catalog of plugins — so it is not something you install as a whole. The CLI includes that marketplace out of the box (that is why `browse awesome-copilot` works above), and a plugin also named `awesome-copilot` lives inside it. The `plugin@marketplace` form above installs exactly that plugin.
+
+> ⏭️ **Skip this step if** you're on a restricted network, you don't have a
+> GitHub auth token wired up yet, or this is a presenter-led run where the
+> instructor has already installed plugins for the class. Plugin install is
+> **not a prerequisite** for any later lab — Labs 02–10 work end-to-end without
+> a single plugin installed. Lab 11 walks you through publishing your *own*
+> plugin from scratch.
+
+### Verify the installation
+
+```bash
+# Confirm the plugin is installed and ready
+copilot plugin list
+```
+
+You should see your installed plugin listed with its name, version, and source.
+
+### Use the plugin
+
+Installing a plugin does not create a command named after the plugin. A plugin adds *components* — custom agents, skills, hooks, MCP servers and LSP servers — and you use each one by its own name:
+
+- **Custom agents** — type `/agent` in a session to see the agents available to you and pick one, or start the session with `copilot --agent AGENT-NAME`.
+- **Skills** — type `/skills` to see and manage them. Copilot uses a skill on its own when your request matches the skill's description.
+
+```bash
+# Interactive: start a session, then pick the plugin's agent with /agent
+copilot
+```
+
+Inside the session, type `/agent`, choose an agent from the list, then type your request.
+
+```bash
+# Non-interactive (CI / scripted / headless): replace AGENT-NAME with a name from the /agent list
+copilot --agent AGENT-NAME --prompt "help me with my task" --allow-all-tools
+```
+
+> 💡 **Key insight:** Marketplace plugins give you a head start for common workflows — but they're just the beginning. In Lab 03, you'll learn to **create your own agents** tailored to your team's specific needs. Think of marketplace plugins as patterns you can study and customize.
+
+> ⚠️ **Offline or marketplace unavailable?** If you can't access the marketplace, skip to [§1.5](#15-takeaway). You have already covered the local configuration files in §1.1–§1.4, and the rest of the labs work entirely with them.
+
+References:
+- [Finding and installing plugins](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-finding-installing)
+- [Creating custom agents](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli)
+
+---
+
+## 1.5 Takeaway
 
 <details>
 <summary>Key Takeaways</summary>

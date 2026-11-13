@@ -200,3 +200,28 @@ describe('lab05 contract: AC11 — cited paths resolve', () => {
     expect(missing, `lab05 cites path(s) that do not exist: ${missing.join(', ')}`).toEqual([]);
   });
 });
+
+describe('lab05 contract: AC12 — §5.3 frames the lessons exercise as a preview of Lab 10', () => {
+  const sec = (): string => section('5.3').replace(/\r\n/g, '\n');
+  const firstStep = (): number => sec().search(/^1\.\s+Inspect the wiki/m);
+
+  it('links Lab 10 by its title before the first step, so the framing is read first', () => {
+    const link = '[Lab 10 — Agent Memory](lab10.md)';
+    expect(sec()).toContain(link);
+    expect(firstStep(), '§5.3 step 1 ("Inspect the wiki") not found').toBeGreaterThan(0);
+    expect(sec().indexOf(link)).toBeLessThan(firstStep());
+  });
+
+  it('calls the exercise a preview, and says MCP is for live tools while memory layers hold cross-session state', () => {
+    const intro = sec().slice(0, firstStep());
+    expect(intro).toMatch(/preview/i);
+    expect(intro).toMatch(/live tools?/i);
+    expect(intro).toMatch(/cross-session/i);
+    expect(intro).toMatch(/memory/i);
+  });
+
+  it('ties the distinction to the stateless 2026-07-28 MCP spec revision', () => {
+    expect(sec()).toContain('2026-07-28');
+    expect(sec()).toMatch(/stateless|protocol-level sessions/i);
+  });
+});

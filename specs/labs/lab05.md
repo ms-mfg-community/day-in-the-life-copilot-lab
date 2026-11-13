@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab05.md` (11.3 KB) — "MCP Server Configuration" |
 | **Spec state** | `ready` |
 | **Author** | John (authored 2026-10-13, batch lab05/08/09/11/12) |
-| **Last updated** | 2026-10-13 |
+| **Last updated** | 2026-10-13 · amended 2026-11-12 (Phase 2: §5.3 Lab 10 preview — AC12) |
 
 ---
 
@@ -55,6 +55,7 @@ No section is added or renamed. This is a currency and honesty pass, not a rewri
 | AC9 | The lab contains a cleanup section that names **both** things it mutates: `~/.copilot/mcp-config.json` and `.copilot/lessons/log.md` | `npx vitest run tests/lab-structure/lab05-contract` |
 | AC10 | Frontmatter `pace.self_paced_minutes` equals registry `labs.lab05.pace_self_minutes`, and the inline `⏱️` callout states the same number | `npx vitest run tests/lab-structure/lab05-contract` |
 | AC11 | Every backticked repo-relative path in the lab resolves on disk | `npx vitest run tests/lab-structure/lab05-contract` |
+| AC12 | §5.3 frames the `.copilot/lessons/` exercise as a preview of `[Lab 10 — Agent Memory](lab10.md)` *before* its first step, and says MCP is for live tools while cross-session state belongs in a memory layer, tied to the stateless 2026-07-28 MCP revision. It points at Lab 10; it does not teach Lab 10's layered model (§5 non-goals) | `npx vitest run tests/lab-structure/lab05-contract` |
 
 ## 4. Outside-world claims
 

@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab03.md` (201 lines) — "Creating a .NET Development Agent" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: §3.3 forward-reference preview — AC11) |
 
 ---
 
@@ -44,6 +44,7 @@ published reference does not support.
 | AC8 | The unsourced absolute "a plain `.md` file will not be picked up" is gone | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC9 | `name` is no longer described as how users invoke the agent | `npx vitest run tests/lab-structure/lab03-contract` |
 | AC10 | The tools table still lists all six documented aliases | `npx vitest run tests/lab-structure/lab03-contract` |
+| AC11 | §3.3 is a read-only forward-reference preview of Lab 05: it links `[Lab 05 — MCP Server Configuration](lab05.md)`, says the `mcp-servers:` block is wired up **after** completing Lab 05 and not in this lab, and says so inside the YAML block too; the hands-on sections (§3.2, §3.4) and both appendices' agent bodies use built-in tool aliases only | `npx vitest run tests/lab-structure/lab03-contract` |
 
 ## 4. Outside-world claims
 

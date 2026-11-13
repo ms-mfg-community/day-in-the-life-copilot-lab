@@ -134,3 +134,57 @@ describe('lab03 contract: AC10 — the tools table survives intact', () => {
     },
   );
 });
+
+/** Contents of each fenced block in `text`, in order, fence lines excluded. */
+function fencedBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  let current: string[] | null = null;
+  for (const l of text.replace(/\r\n/g, '\n').split('\n')) {
+    if (/^\s*(```|~~~)/.test(l)) {
+      if (current === null) current = [];
+      else {
+        blocks.push(current.join('\n'));
+        current = null;
+      }
+    } else if (current) current.push(l);
+  }
+  return blocks;
+}
+
+describe('lab03 contract: AC11 — §3.3 is a read-only forward-reference preview of Lab 05', () => {
+  const sec = (): string => section('3.3').replace(/\r\n/g, '\n');
+
+  it('links Lab 05 by its title and calls the mcp-servers block a forward-reference preview', () => {
+    expect(sec()).toContain('[Lab 05 — MCP Server Configuration](lab05.md)');
+    expect(sec()).toMatch(/forward[- ]reference/i);
+    expect(sec()).toMatch(/preview/i);
+  });
+
+  it('says the learner wires the block up after completing Lab 05, and not in this lab', () => {
+    expect(sec()).toMatch(/after[\s\S]{0,120}Lab 05/i);
+    expect(sec()).toMatch(/don.t (add|paste|wire)|do not (add|paste|wire)|not yet/i);
+  });
+
+  it('the mcp-servers frontmatter block itself tells the reader to wait for Lab 05', () => {
+    const block = fencedBlocks(sec()).find((b) => b.includes('mcp-servers:'));
+    expect(block, '§3.3 shows no fenced mcp-servers: block').toBeDefined();
+    expect(block as string).toMatch(/^\s*#.*Lab 05/m);
+  });
+
+  it('keeps the hands-on steps on built-in tools: §3.2 (create) and §3.4 (test) wire up no MCP server', () => {
+    for (const id of ['3.2', '3.4']) {
+      expect(section(id), `§${id} mentions mcp-servers`).not.toMatch(/mcp-servers/);
+      expect(section(id), `§${id} mentions context7`).not.toMatch(/context7/i);
+    }
+  });
+
+  it('the agent the learner creates declares only built-in tool aliases (per both appendices)', () => {
+    for (const rel of ['labs/appendices/dotnet/lab03.md', 'labs/appendices/node/lab03.md']) {
+      const text = readFileSync(join(ROOT, rel), 'utf8');
+      const toolLines = text.split(/\r?\n/).filter((l) => /^tools:/.test(l));
+      expect(toolLines.length, `${rel} declares no tools: line`).toBeGreaterThan(0);
+      for (const l of toolLines) expect(l, `${rel}: ${l}`).not.toMatch(/\//);
+      expect(text, `${rel} wires an MCP server into the agent`).not.toMatch(/mcp-servers:/);
+    }
+  });
+});

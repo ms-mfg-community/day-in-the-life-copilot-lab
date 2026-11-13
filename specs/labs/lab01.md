@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Lab** | `labs/lab01.md` (229 lines) — "Exploring Copilot Configuration" |
+| **Lab** | `labs/lab01.md` (245 lines) — "Exploring Copilot Configuration" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 concept ordering — AC12 and §5) |
 
 ---
 
@@ -46,6 +46,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 | AC9 | The plan/autopilot row names `/autopilot`; the `/model` row no longer says `<tier-or-id>` and still points at the registry | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC10 | A setup prerequisite links `setup.md` before the first `##` heading | `npx vitest run tests/lab-structure/lab01-contract` |
 | AC11 | The code-intelligence table no longer says "(GA)" or "(seconds)", and still names both LSP config paths | `npx vitest run tests/lab-structure/lab01-contract` |
+| AC12 | Concepts come before extensions: §1.1 → §1.2 → §1.3 → §1.4 are taught first, then the optional §1.0a CLI table and §1.0 marketplace, and the lab ends on `## 1.5 Takeaway`. Every numbered heading is kept, and the marketplace section no longer says "skip ahead" to a section that now precedes it | `npx vitest run tests/lab-structure/lab01-contract` |
 
 ## 4. Outside-world claims
 
@@ -67,7 +68,7 @@ count, command and claim in them is true against the repo and the installed CLI 
 ## 5. Non-goals
 
 - Do not change pacing (`presenter_minutes: 4`, `self_paced_minutes: 10`) or the registry's `lab01` pace rows. If a gate reports the 10 is wrong, that finding is **recorded, not fixed**.
-- Do not renumber sections. The `1.0a` / `1.0` / `1.1` order is cosmetic and `#11-the-configuration-ecosystem` is linked from inside the lab.
+- Do not renumber sections. **Amended 2026-11-12 (Phase 2):** the old "the `1.0a` / `1.0` / `1.1` order is cosmetic" reasoning no longer holds — it taught plugin installation before the learner knew what an agent, skill or instruction file is. Sections were **moved, not renumbered**: the lab now runs `1.1` → `1.2` → `1.3` → `1.4`, then the optional `1.0a` and `1.0`, then `1.5` (retitled "Takeaway"). AC12 pins that order. The in-lab link to `#11-the-configuration-ecosystem` is gone — the marketplace section's offline callout now points forward to §1.5, because §1.1 comes first.
 - Do not add or remove a section, a table, or a plugin command. Do not add WinGet/Brew/other install paths.
 - Do not change `--allow-all-tools` in §1.4 (C12). Recorded for John; teaching a narrower approval flag is a design change.
 - Do not keep `/fleet`, `/model`, plan/autopilot, `extensions_manage` or the registry reference out of the lab — AC4 requires them.

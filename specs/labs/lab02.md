@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab02.md` (231 lines) — "Custom Instructions & AGENTS.md" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2 anti-pattern teachable moments — AC11, AC12, §2, §5, D8) |
 
 ---
 
@@ -33,7 +33,7 @@ change.
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 15 (unchanged — see §5) |
 | **Prerequisites** | Setup complete: `copilot --version` answers and the learner is signed in (`labs/setup.md`). The lab declares none today, yet §2.1 step 3 and §2.2.3 step 2 both call a model. |
-| **Write steps** | **Yes, four families — and three of them write *tracked files in this repository*.** (a) append a `## ContosoUniversity Conventions` section to `.github/copilot-instructions.md`; (b) create `.github/instructions/razor-views.instructions.md`; (c) append an `## Architecture Decisions` ADR to `AGENTS.md`; (d) launch an editor, and run two interactive `copilot` prompts that call a model. A person rehearses these; **`lab-forge` must not execute any of them** (§7). |
+| **Write steps** | **Yes, four families — and three of them write *tracked files in this repository*.** (a) append a `## ContosoUniversity Conventions` section to `.github/copilot-instructions.md`; (b) create `.github/instructions/razor-views.instructions.md`; (c) append an `## Operational Notes` section to `AGENTS.md` (amended 2026-11-12: this used to be an `## Architecture Decisions` ADR, which §2.3 now shows as the anti-pattern instead of asking the learner to paste it); (d) launch an editor, and run two interactive `copilot` prompts that call a model. A person rehearses these; **`lab-forge` must not execute any of them** (§7). |
 
 > **Why (a)–(c) are the dangerous ones.** The Key-Discovery write-step survey classified
 > this lab "no write steps detected" because it scanned for GitHub writes, global installs
@@ -58,6 +58,8 @@ change.
 | AC8 | The restart callout names both documented ways to apply an instruction change: `/new` and `copilot --continue` | `npx vitest run tests/lab-structure/lab02-contract` |
 | AC9 | A setup prerequisite links `setup.md` before the first `##` heading | `npx vitest run tests/lab-structure/lab02-contract` |
 | AC10 | The cascade callout says Copilot **combines** the applicable files (no precedence ranking anywhere in the lab) | `npx vitest run tests/lab-structure/lab02-contract` |
+| AC11 | §2.2 carries a `🚫 Spot the Anti-Pattern: Bloated Domain Instructions` callout contrasting a roughly 40-line stack-matched instruction file (the repo's own `.github/instructions/dotnet.instructions.md`, which must stay concise) with a roughly 230-line copy-pasted financial-compliance prompt (PCI-DSS, SOX, sagas) that spends context tokens on every file match | `npx vitest run tests/lab-structure/lab02-contract` |
+| AC12 | §2.3 frames `### ADR-001` as `🚫 Spot the Anti-Pattern: What Does NOT Belong in AGENTS.md` — kept inside a code fence, never a live heading, so §2.3 still contains it — explains why (duplicates `copilot-instructions.md`, lists discoverable structure, cites arXiv 2602.11988), and has the learner add a *different* block of operational notes (SQLite dev-seed behavior, ports 52379/52380, never hand-edit `.lock.yml` or `lab-sources.json`) whose facts match the repo | `npx vitest run tests/lab-structure/lab02-contract` |
 
 ## 4. Outside-world claims
 
@@ -80,8 +82,8 @@ change.
 
 - Do not change pacing (`presenter_minutes: 4`, `self_paced_minutes: 15`) or the registry's `lab02` rows (`docs/_meta/registry.yaml:217-221`). If a gate reports the 15 is wrong, that finding is **recorded, not fixed**.
 - Do not renumber sections. `2.1` / `2.2` / `2.2.3` / `2.3` / `2.4` stay as they are.
-- Do not add or remove a section, a step, or a code block. In particular, keep both the Bash and PowerShell variants of every command, and keep the `<details>` PowerShell alternative in §2.2.
-- Do not change the ContosoUniversity conventions, the Razor rules, or the ADR-001 text the learner is told to paste. Their content is lab fixture, not a claim about the world.
+- Do not add or remove a section or renumber one. **Amended 2026-11-12 (Phase 2):** within §2.2 and §2.3 the lab does gain content — one anti-pattern callout in §2.2, and in §2.3 the anti-pattern box plus a new notes block — so "do not add or remove a step or a code block" no longer applies there. Everywhere else, keep both the Bash and PowerShell variants of every command, and keep the `<details>` PowerShell alternative in §2.2.
+- Do not change the ContosoUniversity conventions or the Razor rules. **Amended 2026-11-12 (Phase 2):** the ADR-001 text is unchanged, but it is no longer pasted — it is the anti-pattern the learner is shown, inside a code fence (AC12). The learner now adds the `## Operational Notes` block instead.
 - Do not "fix" `??` to a PowerShell 5.1-compatible form (C12). That is a repo-wide convention; changing it here only in lab02 creates an inconsistency.
 - Do not expand the lab to cover `$HOME/.copilot/` personal instructions, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`, `COPILOT_HOME`, `CLAUDE.md`/`GEMINI.md`, `@`-file references or `excludeAgent`. All are real and documented; all are Lab 1 / Lab 15 territory and would blow a 15-minute beginner lab.
 - Do not delete the "What research says" callout. It is corrected (D2), not cut — its advice is sound and now matches its source.
@@ -98,7 +100,7 @@ change.
 | D5 | L16–19, References | CLI-surface mismatch (C11). Add [Adding custom instructions for GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions) — this lab's steps are CLI steps. Keep the existing github.com link. |
 | D6 | Top of the lab, after the ⏱️ pace line | No prerequisite despite §2.1 step 3 and §2.2.3 step 2 calling a model (C-none; structural). Add one line linking `setup.md`, matching `labs/lab01.md:15`. |
 | D7 | L137, "Instructions cascade" callout | "Cascade" implies a defined order (C6). Say Copilot **combines** the applicable files and defines no precedence between them. Keep the sentence naming all three files and "apply simultaneously" — that part is right. |
-| D8 | L205, "AGENTS.md vs copilot-instructions.md" | Harmless as written (C5), but it sits immediately above D2's callout and repeats "Both are always loaded". Leave the rules/context split alone; no change required unless D2's rewrite makes the two read as contradictory. |
+| D8 | L205, "AGENTS.md vs copilot-instructions.md" | Harmless as written (C5), but it sits immediately above D2's callout and repeats "Both are always loaded". Leave the rules/context split alone; no change required unless D2's rewrite makes the two read as contradictory. **Amended 2026-11-12 (Phase 2):** the callout, the §2.3 opening sentence and the §2.4 takeaway row now say `AGENTS.md` is for context the agent *can't discover*; "architecture and why" had become the anti-pattern the new §2.3 box teaches against. |
 
 ## 7. Out of scope for `lab-forge`
 

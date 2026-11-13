@@ -26,9 +26,9 @@ In this lab you will create an orchestrator agent that coordinates a development
 >   roles. Read the current ids from
 >   [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) instead
 >   of hardcoding one.
-> - Compaction trigger: after §7.3 (orchestrator built and tested),
->   run `/clear` before §7.4's multi-agent rehearsal so you don't
->   re-send the agent-definition diffs every turn.
+> - Compaction trigger: after §7.5 (the orchestrator and all three
+>   worker agents exist), run `/clear` before §7.4's multi-agent
+>   rehearsal so you don't re-send the agent-definition diffs every turn.
 > - See [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md).
 
 References:
@@ -69,11 +69,11 @@ Get-ChildItem .github/agents/ | Where-Object { $_.Name -match "dotnet|code-revie
 The filter above looks for four agents, but they do not all exist yet. On a fresh checkout it lists only `code-reviewer.agent.md`; once you have finished Lab 03 it also lists `dotnet-dev.agent.md`. Here is where each of the four comes from:
 
 - `dotnet-dev.agent.md` — implements code; created in **Lab 03** (the prerequisite above)
-- `dotnet-qa.agent.md` — writes tests; created **later, in §7.5** (it is labelled a bonus, but see the note below)
+- `dotnet-qa.agent.md` — writes tests; created **later, in §7.5**, which you do before the §7.4 delegation test that needs it
 - `code-reviewer.agent.md` — reviews code; **ships with the starter repo** in `.github/agents/`
 - `lab-orchestrator.agent.md` — the orchestrator; you create it in **§7.2**
 
-> 💡 The orchestrator you build in §7.2 always delegates testing to `dotnet-qa` (its Phase 3) before it reviews, so it needs all three worker agents — `dotnet-dev`, `dotnet-qa` and `code-reviewer`. It has no two-worker fallback, so create `dotnet-qa` in §7.5 before you run the delegation test in §7.4: jump ahead to §7.5, then come back.
+> 💡 The orchestrator you build in §7.2 always delegates testing to `dotnet-qa` (its Phase 3) before it reviews, so it needs all three worker agents — `dotnet-dev`, `dotnet-qa` and `code-reviewer`. It has no two-worker fallback, so you create `dotnet-qa` in §7.5, which comes straight after §7.3 and before the §7.4 delegation test that depends on it.
 
 2. The orchestration flow has five phases — the same five that the orchestrator's agent body in §7.2 defines (Planning, Implementation, Testing, Review, Summary):
 
@@ -328,9 +328,48 @@ Delegate to @dotnet-qa with context about what was implemented.
 
 > 💡 **Agent tool**: When an agent has `agent` in its tools list, Copilot can invoke other agents on its behalf. The orchestrator uses `@dotnet-dev`, `@dotnet-qa`, and `@code-reviewer` to delegate work.
 
+## 7.5 Create the QA Worker Agent
+
+The orchestrator's Phase 3 hands testing to `dotnet-qa`, so that agent has to exist before you run the delegation test in §7.4 — which is why this section comes first. It keeps the number 7.5 so existing links and references to it still work.
+
+🖥️ **In your terminal:**
+
+1. Check if it exists:
+
+**WSL/Bash:**
+```bash
+ls .github/agents/dotnet-qa.agent.md 2>/dev/null && echo "Already exists" || echo "Need to create"
+```
+
+**PowerShell:**
+```powershell
+if (Test-Path .github/agents/dotnet-qa.agent.md) { "Already exists" } else { "Need to create" }
+```
+
+2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. Key differences:
+   - Description focuses on xUnit, Moq, WebApplicationFactory
+   - System prompt emphasizes test naming convention (`MethodName_Condition_ExpectedResult`)
+   - Review checklist focuses on test coverage and quality
+
+   Stuck? Compare your file with the reference agent, [`solutions/lab07-orchestrator/dotnet-qa.agent.md`](../solutions/lab07-orchestrator/dotnet-qa.agent.md).
+
+3. Verify the agent:
+
+**WSL/Bash:**
+```bash
+head -5 .github/agents/dotnet-qa.agent.md
+```
+
+**PowerShell:**
+```powershell
+Get-Content .github/agents/dotnet-qa.agent.md -Head 5
+```
+
+You should see the opening `---`, `name: "dotnet-qa"`, a `description`, a `tools` line and the closing `---`. All three workers — `dotnet-dev`, `dotnet-qa` and `code-reviewer` — now exist, so you can run the delegation test.
+
 ## 7.4 Test Multi-Agent Delegation
 
-Let's test the orchestrator with a small feature request. It delegates to three worker agents — `dotnet-dev`, `dotnet-qa` and `code-reviewer` — so before you start, make sure `dotnet-qa.agent.md` exists: §7.5 has the check and the instructions for creating it. If it is missing, do §7.5 first, then come back here.
+Let's test the orchestrator with a small feature request. It delegates to three worker agents — `dotnet-dev` (from Lab 03), `dotnet-qa` (from §7.5, just above) and `code-reviewer` (ships with the repo) — so all three agent files should now be in `.github/agents/`.
 
 🖥️ **In your terminal:**
 
@@ -365,7 +404,7 @@ The Student model already has a FullName property (inherited from Person) that r
    - [ ] **`dotnet-qa` (Phase 3)** — a dispatch entry names `dotnet-qa`; you can read the result it sent back (the tests it wrote); and the request sent on to `code-reviewer` mentions the change or those tests.
    - [ ] **`code-reviewer` (Phase 4)** — a dispatch entry names `code-reviewer`; you can read the review it sent back; and the Phase 5 summary repeats at least one point from that review.
 
-   If a box stays unchecked, treat that phase as narrated, not delegated — the delegation test is not complete. One likely cause is that the worker agent was not loaded: check that `/agent` lists it (create `dotnet-qa` in §7.5 if it is missing), restart `copilot`, and run the request again.
+   If a box stays unchecked, treat that phase as narrated, not delegated — the delegation test is not complete. One likely cause is that the worker agent was not loaded: check that `/agent` lists it (the `dotnet-qa` file comes from §7.5), restart `copilot`, and run the request again.
 
 4. If time permits, try a second request. Students/Index already pages its results (10 per page, with Previous and Next controls in the view), so ask for something that builds on that:
 ```
@@ -375,29 +414,6 @@ Add a "Page X of Y" label to the Students/Index view, using the PageIndex and To
 > 💡 **What you should see:** The orchestrator plans, then hands work to `dotnet-dev`, then `dotnet-qa`, then `code-reviewer` — each as its own dispatch entry, not just a name in its text — and finishes with a summary built from what those workers returned. The first request counts as a delegation test only when every box in step 3 is checked off; apply the same check to the optional request in step 4. The testing phase relies on the `dotnet-qa` agent from §7.5. The full cycle may take a few minutes.
 
 > 💡 **Real-world use**: In production, orchestration enables complex workflows — feature development, code review, deployment. Each agent is an expert in its domain, and the orchestrator ensures they work together.
-
-## 7.5 Create a QA Agent (Bonus)
-
-If you haven't already, create the `dotnet-qa.agent.md` agent that the orchestrator delegates to.
-
-🖥️ **In your terminal:**
-
-1. Check if it exists:
-
-**WSL/Bash:**
-```bash
-ls .github/agents/dotnet-qa.agent.md 2>/dev/null && echo "Already exists" || echo "Need to create"
-```
-
-**PowerShell:**
-```powershell
-if (Test-Path .github/agents/dotnet-qa.agent.md) { "Already exists" } else { "Need to create" }
-```
-
-2. If it doesn't exist, create it following the same pattern as `dotnet-dev.agent.md` but focused on testing. Key differences:
-   - Description focuses on xUnit, Moq, WebApplicationFactory
-   - System prompt emphasizes test naming convention (`MethodName_Condition_ExpectedResult`)
-   - Review checklist focuses on test coverage and quality
 
 ## 7.6 Final
 

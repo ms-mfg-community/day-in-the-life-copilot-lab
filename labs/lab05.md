@@ -136,11 +136,13 @@ Using Context7, look up how to configure WebApplicationFactory for integration t
 Use Context7 to find Entity Framework Core migration best practices.
 ```
 
-> 💡 Context7 is especially useful for staying current with library documentation — it fetches real-time docs rather than relying on training data.
+> 💡 Context7 is especially useful for staying current with library documentation — it fetches real-time docs rather than relying on training data. Now that you know how MCP servers are configured, you can also return to the `dotnet-dev` (or `node-dev`) custom agent you created in [Lab 03 §3.3](lab03.md#33-configure-tools-and-mcp-servers) and wire its `mcp-servers:` block to scope Context7 to that agent.
 
 > 💡 **What you should see:** Copilot responds with up-to-date documentation from the library. If it says "Context7 not available" or ignores the tool, the MCP server may not have started — check that `npx` is available and Node.js is installed.
 
 ## 5.3 Cross-session persistence — markdown lessons, not a server
+
+> 🔭 **Preview of [Lab 10 — Agent Memory](lab10.md).** The `.copilot/lessons/` exercise below is a short first taste of cross-session memory, not the full lesson. Lab 10 is where it gets its layered model and where this DIY wiki is compared with GitHub Copilot Memory and a custom memory service. What to take from this section is one distinction: **MCP is for live tools** — it does something *now* (look up docs, search, reason step by step) — while **cross-session state belongs in a memory layer** (markdown files, Copilot Memory, or a service you run). The stateless MCP spec revision of 2026-07-28 makes that split sharper, as the 🆕 note below explains.
 
 MCP gives you live tools (docs, search, structured reasoning); this repo
 intentionally does **not** treat any MCP server as cross-session memory —

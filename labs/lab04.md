@@ -98,6 +98,32 @@ Get-Content .github/skills/create-dotnet-test/SKILL.md -Head 7
 
 For the Node command, once section B has created it, run the **second** line of the appendix's "C. Verify" block — the `head -7` check on the new skill file. It should print its frontmatter, including `name: create-node-test` and `disable-model-invocation: true`.
 
+> **🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax**
+>
+> Skills copied from other projects often carry one of these defects. Find them in the two headers below before you write your own:
+>
+> ```markdown
+> ---
+> name: helper
+> description: "Helps with coding, testing, git, docs and anything else in the repo."
+> ---
+> ```
+>
+> ```markdown
+> ---
+> name: commit
+> description: "Commit my changes"
+> disable-model-invocation: true
+> ---
+> Write a commit message for ${input:scope}, starting with ADD:, UP: or DEL:.
+> ```
+>
+> - **A description that matches everything matches every turn.** Copilot picks a knowledge skill by comparing your prompt with its `description`, so "helps with coding…" activates on almost any request. The skill body then loads into context when it adds nothing, and you pay for that context each time. Name one job in the words someone would actually type, as `dotnet-testing` does (xUnit, Moq, WebApplicationFactory).
+> - **`${input:...}` is VS Code prompt-file syntax.** VS Code's docs say most models "understand this syntax and will prompt for these inputs" — that is a habit of the model, not a feature of the tool. The Copilot CLI documentation describes no such placeholder for skills, so a command skill should read its arguments from whatever you type after `/name`.
+> - **`ADD:` / `UP:` / `DEL:` fight your own rules.** `AGENTS.md` and `.github/copilot-instructions.md` both require `<type>: <description>` (`feat:`, `fix:` and so on). Copilot combines instruction sources without ranking them, so the command and the repository disagree and nothing says which wins.
+>
+> Compare the clean exemplar, [`.github/skills/commit/SKILL.md`](../.github/skills/commit/SKILL.md): one clear job in its `description`, arguments taken from the text after `/commit`, and the commit types this repository already uses.
+
 ## 4.4 Test Skill Auto-Activation
 
 Let's verify the skill is loaded, then see how a knowledge skill and a command skill behave differently. Each step shows the .NET and Node versions together — follow the one for your track. On the Node track, this section checks the two skills you created in 4.2 and 4.3, so finish those first.

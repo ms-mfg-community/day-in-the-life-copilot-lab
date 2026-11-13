@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab04.md` (131 lines) — "Skills & Prompts" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: anti-pattern callout — AC11) |
 
 ---
 
@@ -52,6 +52,7 @@ two near-duplicate callouts. Every section stays; the claims inside them get cor
 | AC8 | The unsourced "max 1024 chars" description limit is gone | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC9 | §4.2 states that `dotnet-testing` already ships in this repo, so the step overwrites it | `npx vitest run tests/lab-structure/lab04-contract` |
 | AC10 | The lab names a deterministic skills command (`/skills list` or `/skills info`) as the way to confirm loading | `npx vitest run tests/lab-structure/lab04-contract` |
+| AC11 | The lab carries one `🚫 Spot the Anti-Pattern: Overly Broad Skill Descriptions & Uninvocable Syntax` callout covering vague descriptions (false-positive activation, context bloat), IDE-only `${input:...}` placeholders and `ADD:`-style commit prefixes that contradict the repo's `<type>: <description>` rule, and pointing at the clean exemplar `.github/skills/commit/SKILL.md` — which must itself stay free of `${input:` and `ADD:`/`UP:`/`DEL:`. It does not repeat the phrase "Skills vs Prompts" (AC5) | `npx vitest run tests/lab-structure/lab04-contract` |
 
 ## 4. Outside-world claims
 

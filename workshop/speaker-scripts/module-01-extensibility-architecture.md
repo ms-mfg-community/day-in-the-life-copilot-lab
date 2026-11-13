@@ -28,8 +28,8 @@ knows. Start with the decision.
 > Reach for the wrong one and you pay twice: tokens on every turn,
 > and review overhead for coupling that doesn't belong."
 
-Name the five up front: AGENTS.md, custom agents, skills, prompts,
-hooks, memory. (Yes, six including memory as its own axis — point
+Name the five up front: AGENTS.md, custom agents, skills, command
+skills, hooks, memory. (Yes, six including memory as its own axis — point
 this out; it's the one fluent users under-use.)
 
 ## 2. Demo script
@@ -72,8 +72,8 @@ head -20 .github/agents/code-reviewer.agent.md
 # A skill — the description drives activation
 head -5 .github/skills/coding-standards/SKILL.md
 
-# A prompt — human-invoked
-head -10 .github/prompts/verify.prompt.md
+# A command skill — human-invoked as /commit (disable-model-invocation: true)
+head -10 .github/skills/commit/SKILL.md
 
 # Hooks — every turn, every session
 cat .github/hooks/default.json | head -30
@@ -104,15 +104,15 @@ switchable per session.
 ### Demo D — the three-axis check on a real decision (~4 min)
 
 Pick one real rule — e.g. "always run `dotnet format` before
-committing." Ask the room: AGENTS.md bullet, a hook, or a prompt?
+committing." Ask the room: AGENTS.md bullet, a hook, or a command skill?
 
 - AGENTS.md bullet → every turn pays for it; model may or may not obey.
 - Hook (`postToolUse` on write) → deterministic, runs every time, blocks the turn.
-- Prompt (`/format-and-commit`) → deterministic, but the human has to invoke.
+- Command skill (`/format-and-commit`) → deterministic, but the human has to invoke.
 
 Walk the axes out loud: cost, latency, reuse. Land on: for a
 must-run-every-time rule, a hook is right; for a sometimes-run rule,
-it's a prompt. AGENTS.md is almost never the right home for a
+it's a command skill. AGENTS.md is almost never the right home for a
 mechanical rule.
 
 ## 3. Timing cues
@@ -135,7 +135,7 @@ mechanical rule.
 ## 4. Expected pitfalls
 
 - **Attendee wants to rewrite AGENTS.md live.** Don't. Every second you spend editing is a second not spent on the decision framework. Park: "great instinct — do it during the break against your own repo."
-- **`/env` output is overwhelming on this repo.** It is — this repo has 6 skills, 3 agents, 19 prompts, 17 hook scripts. That *is* the teaching moment: "here's why the decision rubric matters; look how much there is to pay for."
+- **`/env` output is overwhelming on this repo.** It is — this repo has 26 skills (7 knowledge skills and 19 command skills), 4 agents, 17 hook scripts. That *is* the teaching moment: "here's why the decision rubric matters; look how much there is to pay for."
 - **Someone asks 'AGENTS.md vs copilot-instructions.md'.** Both load; AGENTS.md is agent-oriented guidance, `copilot-instructions.md` is Copilot-specific. Cite the repo's own `copilot-instructions.md` as the canonical example. Don't let this eat 5 minutes.
 - **'Why not just put everything in a skill?'** Skills are auto-activated by description — a skill with a broad description activates on every turn and burns tokens like a hook, but silently. Narrow descriptions or it's worse than AGENTS.md.
 - **Memory layer confusion.** If someone asks "which memory?", point to `labs/lab10.md` and the `docs/memory-decision-tree.md` flowchart. There are three layers (Raw sources → Recall → Schema), and promotion only ever goes upward. Q3 in the flowchart picks the Layer 2 flavour: native Copilot Memory, the DIY wiki, or a custom service. Call out the disambiguation section: reindex, a bare knowledge-graph store and instinct loops are *not* memory layers. Don't re-teach Lab 10 inside this module — 5 minutes, tops.
@@ -147,7 +147,7 @@ mechanical rule.
 Seed these if the room is quiet:
 
 - "What's in your team's AGENTS.md today that shouldn't be there — that is, what costs on every turn but only matters sometimes?"
-- "When have you had a hook that should have been a prompt? Or vice versa?"
+- "When have you had a hook that should have been a command skill? Or vice versa?"
 - "Anyone running `--agent` flags routinely? What's your shortlist?"
 - "Has anyone hit the skill-description-too-broad problem? What was the activation signal?"
 - "If you had to cut your extension surface in half, which half survives?"

@@ -167,3 +167,53 @@ describe('lab07 contract: AC10 — prerequisites are stated up front', () => {
     expect(head).toMatch(/\]\((?:\.\/)?lab03\.md\)/);
   });
 });
+
+describe('lab07 contract: AC11 — dotnet-qa is created before the delegation test that needs it', () => {
+  /** Every `## ` heading outside a fenced block, in file order. */
+  const headings = (): Array<{ text: string; line: number }> => {
+    let inFence = false;
+    const out: Array<{ text: string; line: number }> = [];
+    lab()
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .forEach((l, line) => {
+        if (/^\s*(```|~~~)/.test(l)) inFence = !inFence;
+        else if (!inFence && /^## /.test(l)) out.push({ text: l.slice(3).trim(), line });
+      });
+    return out;
+  };
+
+  /** Line of the heading numbered exactly `num`. */
+  const lineOf = (num: string): number => headings().find((h) => h.text.split(/\s/)[0] === num)?.line ?? -1;
+
+  it('keeps every numbered heading 7.0–7.6 — sections are moved, not renumbered', () => {
+    for (const num of ['7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6']) {
+      expect(lineOf(num), `heading "## ${num}" not found`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('places "## 7.5" (create the QA worker) after 7.3 and before "## 7.4" (the delegation test), then 7.6', () => {
+    expect(lineOf('7.3')).toBeLessThan(lineOf('7.5'));
+    expect(lineOf('7.5'), '§7.5 must come before the §7.4 delegation test that needs dotnet-qa').toBeLessThan(
+      lineOf('7.4'),
+    );
+    expect(lineOf('7.4')).toBeLessThan(lineOf('7.6'));
+  });
+
+  it('retitles 7.5 "Create the QA Worker Agent" — it is a required step, not a Bonus', () => {
+    expect(headings().find((h) => h.text.startsWith('7.5'))?.text).toBe('7.5 Create the QA Worker Agent');
+    expect(lab()).not.toMatch(/bonus/i);
+  });
+
+  it('drops the "jump ahead" workaround: no sentence sends the learner away to §7.5 and back', () => {
+    expect(lab()).not.toMatch(/jump ahead/i);
+    expect(lab()).not.toMatch(/then come back/i);
+    expect(lab()).not.toMatch(/come back here/i);
+  });
+
+  it('now that dotnet-qa is required, §7.5 points at the reference agent so the step is achievable', () => {
+    const rel = 'solutions/lab07-orchestrator/dotnet-qa.agent.md';
+    expect(existsSync(join(ROOT, rel)), `${rel} is not on disk`).toBe(true);
+    expect(section('7.5')).toContain(rel);
+  });
+});

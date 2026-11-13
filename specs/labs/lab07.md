@@ -5,7 +5,7 @@
 | **Lab** | `labs/lab07.md` (436 lines) — "Multi-Agent Orchestration" |
 | **Spec state** | `ready` |
 | **Author** | John / Copilot (2026-10-12) |
-| **Last updated** | 2026-10-12 |
+| **Last updated** | 2026-10-12 · amended 2026-11-12 (Phase 2: `dotnet-qa` created before the delegation test — AC11, §2, §5) |
 
 ---
 
@@ -30,7 +30,7 @@ invocation form the CLI does not document.
 | **Presenter minutes** | 4 (unchanged) |
 | **Self-paced minutes** | 20 (unchanged — see §5) |
 | **Prerequisites** | `labs/setup.md`, and **`labs/lab03.md`** — §7.1 expects `dotnet-dev.agent.md`, which Lab 03 creates and which does **not** ship. The lab declares no prerequisite today. |
-| **Write steps** | **Yes, two families — one writes a tracked repository directory.** (a) §7.2 creates `.github/agents/lab-orchestrator.agent.md` (both the `cat > … << 'AGENT'` heredoc and the `Out-File` variant); §7.5 optionally creates `.github/agents/dotnet-qa.agent.md`. (b) §7.4 starts an interactive `copilot` session and runs two multi-agent delegations that call models repeatedly. A person rehearses these; **`lab-forge` must not execute any of them** (§7). |
+| **Write steps** | **Yes, two families — one writes a tracked repository directory.** (a) §7.2 creates `.github/agents/lab-orchestrator.agent.md` (both the `cat > … << 'AGENT'` heredoc and the `Out-File` variant); §7.5 creates `.github/agents/dotnet-qa.agent.md` (amended 2026-11-12: it was an optional "bonus" at the end of the lab; it is now a required step placed before the §7.4 delegation test that needs it). (b) §7.4 starts an interactive `copilot` session and runs two multi-agent delegations that call models repeatedly. A person rehearses these; **`lab-forge` must not execute any of them** (§7). |
 
 > **Third of the "no write steps" five.** Like lab02 and lab04, this lab scans clean for
 > GitHub writes, global installs and home-directory paths, and writes tracked repository
@@ -51,6 +51,7 @@ invocation form the CLI does not document.
 | AC8 | §7.4's learner-typed invocation uses the documented `/agent` form, not a bare `@agent-name` | `npx vitest run tests/lab-structure/lab07-contract` |
 | AC9 | §7.1 distinguishes the agent that ships from the ones the learner creates | `npx vitest run tests/lab-structure/lab07-contract` |
 | AC10 | A prerequisite line naming Lab 03 appears before the first `##` heading | `npx vitest run tests/lab-structure/lab07-contract` |
+| AC11 | `dotnet-qa` is created before the delegation test that needs it: `## 7.5 Create the QA Worker Agent` sits after §7.3 and before `## 7.4 Test Multi-Agent Delegation`, every heading `7.0`–`7.6` is kept, the "Bonus" label and every "jump ahead … then come back" workaround are gone, and §7.5 points at the reference agent in `solutions/lab07-orchestrator/` | `npx vitest run tests/lab-structure/lab07-contract` |
 
 ## 4. Outside-world claims
 
@@ -72,7 +73,7 @@ invocation form the CLI does not document.
 ## 5. Non-goals
 
 - Do not change pacing (`presenter_minutes: 4`, `self_paced_minutes: 20`) or the registry's `lab07` rows. If a gate reports the 20 is wrong, that finding is **recorded, not fixed**.
-- Do not renumber sections. `7.0`–`7.6` stay.
+- Do not renumber sections. `7.0`–`7.6` stay. **Amended 2026-11-12 (Phase 2):** §7.5 was *moved*, not renumbered — the file now reads 7.3 → 7.5 → 7.4 → 7.6 so the learner creates `dotnet-qa` before testing the orchestration. The number stays because `.github/agents/planner.agent.md` and `.github/skills/orchestrate/SKILL.md` both cite "section 7.5" as where `dotnet-qa` is created, and AC11 pins the order.
 - Do not add or remove a section, and do not delete the §7.6 worktree callout or the 💰 cost-budget callout.
 - Do not rewrite the orchestrator agent body in §7.2, beyond what C1/C2 require. Its `@dotnet-dev` phase markers are **out of scope** (C8) — changing them would alter a file the learner writes and is unverified either way.
 - Do not create `.github/agents/dotnet-dev.agent.md` or `dotnet-qa.agent.md` to make §7.1's listing true. Lab 03 and §7.5 create those; shipping them would break both.
