@@ -311,10 +311,12 @@ describe('dotnet.instructions.md', () => {
 describe('testing.instructions.md', () => {
   const FILE = '.github/instructions/testing.instructions.md';
 
-  it('declares a description and keeps its applyTo glob', () => {
+  it('declares a description and keeps its applyTo glob covering both Node and .NET test directories', () => {
     const data = frontmatter(FILE);
     expect(String(data.description ?? '').trim()).not.toBe('');
-    expect(data.applyTo).toBe('**/*.test.*,**/*.spec.*,**/e2e/**,**/tests/**,**/__tests__/**');
+    expect(data.applyTo).toBe(
+      '**/*.test.*,**/*.spec.*,**/e2e/**,**/tests/**,**/__tests__/**,**/ContosoUniversity.Tests/**,**/ContosoUniversity.PlaywrightTests/**',
+    );
   });
 
   it('has no unrelated searchMarkets example or Go t.Cleanup()', () => {

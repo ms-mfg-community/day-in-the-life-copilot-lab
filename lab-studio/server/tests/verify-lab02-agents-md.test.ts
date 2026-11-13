@@ -113,4 +113,16 @@ describe("lab02/agents-md verify", () => {
 
     expect(runVerify("lab02/agents-md").pass).toBe(true);
   });
+
+  it("todoMentionWithoutHeading.fails", () => {
+    writeWorkspaceFile(
+      "AGENTS.md",
+      "# ContosoUniversity — Agent Context\n\nTODO: add Operational Notes later.\n",
+    );
+
+    const result = runVerify("lab02/agents-md");
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toContain("## Operational Notes");
+  });
 });

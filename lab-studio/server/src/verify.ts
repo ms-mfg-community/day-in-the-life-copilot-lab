@@ -108,7 +108,7 @@ const checks: Record<string, Check> = {
     const content = readWorkspaceFile("AGENTS.md");
     const hasAdr =
       /ADR-001/.test(content) && /Architecture Decisions/i.test(content);
-    if (/Operational Notes/i.test(content)) {
+    if (/^#{1,6}\s+Operational Notes\b/im.test(content)) {
       return pass(
         hasAdr
           ? "Operational Notes recorded in AGENTS.md — context the agent can't discover by reading the repo. ADR-001 is still in the file, though: duplicated and discoverable, it is the anti-pattern this step warns about — consider removing it."

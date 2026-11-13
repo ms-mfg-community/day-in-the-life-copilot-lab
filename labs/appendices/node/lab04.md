@@ -40,7 +40,7 @@ describe('StudentRepo', () => {
   it('create returns the persisted student with an id', async () => {
     const db = await createInMemoryDb();
     const repo = createStudentRepo(db);
-    const created = await repo.create({ firstName: 'Ada', lastName: 'Lovelace', enrollmentDate: new Date('2024-09-01') });
+    const created = await repo.create({ firstMidName: 'Ada', lastName: 'Lovelace', enrollmentDate: new Date('2024-09-01') });
     expect(created.id).toBeDefined();
   });
 });
@@ -107,7 +107,7 @@ describe('StudentRepo', () => {
   it('create returns the persisted student with an id', async () => {
     const db = await createInMemoryDb();
     const repo = createStudentRepo(db);
-    const created = await repo.create({ firstName: 'Ada', lastName: 'Lovelace', enrollmentDate: new Date('2024-09-01') });
+    const created = await repo.create({ firstMidName: 'Ada', lastName: 'Lovelace', enrollmentDate: new Date('2024-09-01') });
     expect(created.id).toBeDefined();
   });
 });

@@ -1,6 +1,6 @@
 ---
 description: "Testing conventions for ContosoUniversity: xUnit and Moq on the .NET track, Vitest on the Node track, Playwright for E2E"
-applyTo: "**/*.test.*,**/*.spec.*,**/e2e/**,**/tests/**,**/__tests__/**"
+applyTo: "**/*.test.*,**/*.spec.*,**/e2e/**,**/tests/**,**/__tests__/**,**/ContosoUniversity.Tests/**,**/ContosoUniversity.PlaywrightTests/**"
 ---
 
 # Testing Instructions
