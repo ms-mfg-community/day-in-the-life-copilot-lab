@@ -1,6 +1,18 @@
 import { Cmd, FileCard, Note, PromptCard, Snippet } from "./content";
 import type { Lab } from "./types";
 
+// Display-only headers for the "spot the anti-pattern" exercise — nothing
+// writes them. The second is a regular string on purpose: it shows the IDE-only
+// placeholder, and a template literal would try to interpolate it.
+const BROAD_SKILL_HEADER = `---
+name: helper
+description: "Helps with coding, testing, git, docs and anything else in the repo."
+---
+`;
+
+const UNINVOCABLE_SKILL_HEADER =
+  '---\nname: commit\ndescription: "Commit my changes"\ndisable-model-invocation: true\n---\nWrite a commit message for ${input:scope}, starting with ADD:, UP: or DEL:.\n';
+
 const CONTOSO_TESTING_SKILL = `---
 name: contoso-testing
 description: Vitest testing patterns for the ContosoUniversity TypeScript project — unit tests for repositories and route handlers, in-memory test doubles, and the project's test naming convention. Use when writing or reviewing tests.
@@ -141,6 +153,38 @@ export const lab04: Lab = {
             name the skill explicitly:{" "}
             <em>"Use the /contoso-testing skill to…"</em>.
           </Note>
+          <Note>
+            <strong>
+              🔍 Debug It — was the skill loaded, matched, or skipped?
+            </strong>{" "}
+            A skill can be loaded and still go unused: a knowledge skill is
+            picked by comparing your prompt with its <code>description</code>,
+            and a command skill (<code>disable-model-invocation: true</code>) is
+            never picked that way at all. So check loading first, then use.
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type these inside the same
+                session. <code>/skills list</code> shows what was discovered,{" "}
+                <code>/env</code> shows the skills loaded alongside agents, MCP
+                servers and hooks, and <code>/context</code> shows what the
+                session's context costs. In experimental mode{" "}
+                <code>/context</code> also breaks usage down per skill,
+                subagent, MCP server, tool and plugin. (The bench emulates{" "}
+                <code>/skills list</code> and <code>/env</code>;{" "}
+                <code>/context</code> is real-CLI only. The purple chip above is
+                Lab Studio's own view of the same evidence.)
+              </li>
+              <li>
+                <strong>VS Code:</strong> open{" "}
+                <strong>Show Agent Debug Logs</strong>, switch to the{" "}
+                <strong>Logs view</strong> and filter to{" "}
+                <strong>Discovery</strong> to see whether the skill was loaded,
+                skipped or rejected. Then read the model requests and tool calls
+                that follow to see whether the skill's text was used. Turn
+                capture on first: it isn't retroactive.
+              </li>
+            </ul>
+          </Note>
         </>
       ),
     },
@@ -208,6 +252,53 @@ export const lab04: Lab = {
             can always type the name, but you can't un-run a skill the model
             chose for you.
           </Note>
+          <Note tone="warn">
+            <strong>
+              🚫 Spot the Anti-Pattern: overly broad skill descriptions &amp;
+              uninvocable syntax.
+            </strong>{" "}
+            Skills copied from other projects often carry one of these defects.
+            Find them in the two headers below before you write your own:
+          </Note>
+          <Snippet title="skill A — display only">{BROAD_SKILL_HEADER}</Snippet>
+          <Snippet title="skill B — display only">
+            {UNINVOCABLE_SKILL_HEADER}
+          </Snippet>
+          <ul>
+            <li>
+              <strong>
+                A description that matches everything matches every turn.
+              </strong>{" "}
+              Copilot picks a knowledge skill by comparing your prompt with its{" "}
+              <code>description</code>, so "helps with coding…" activates on
+              almost any request. The skill body then loads into context when it
+              adds nothing, and you pay for that context each time. Name one job
+              in the words someone would actually type, as{" "}
+              <code>contoso-testing</code> does (Vitest, in-memory repos, the
+              naming convention).
+            </li>
+            <li>
+              <strong>
+                <code>{"${input:...}"}</code> is VS Code prompt-file syntax.
+              </strong>{" "}
+              VS Code's docs say most models "understand this syntax and will
+              prompt for these inputs" — that is a habit of the model, not a
+              feature of the tool. The Copilot CLI documentation describes no
+              such placeholder for skills, so a command skill should read its
+              arguments from whatever you type after <code>/name</code>.
+            </li>
+            <li>
+              <strong>
+                <code>ADD:</code> / <code>UP:</code> / <code>DEL:</code> fight
+                your own rules.
+              </strong>{" "}
+              If your repository's instructions require{" "}
+              <code>&lt;type&gt;: &lt;description&gt;</code> (<code>feat:</code>
+              , <code>fix:</code> and so on), a skill that demands other
+              prefixes contradicts them. Copilot combines instruction sources
+              without ranking them, so nothing says which wins.
+            </li>
+          </ul>
           <Note tone="sim">
             Lab Studio's bench terminal doesn't route <code>/name</code> to
             skills, so this step is read-only here (later labs translate a

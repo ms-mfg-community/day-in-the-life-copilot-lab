@@ -117,6 +117,36 @@ describe("copilot CLI argument parsing", () => {
   });
 });
 
+describe("copilot session /mcp details", () => {
+  // The real CLI documents `/mcp get <server>`; earlier labs taught `/mcp show`.
+  // Both must open one server's details, or the Lab 05 Debug It note would
+  // silently print the whole list instead.
+  it("mcpGet.unknownServer.reportsNotConfigured", () => {
+    const output = textOf(runTerminalLine("/mcp get nope", "copilot"));
+
+    expect(output).toContain("not configured");
+  });
+
+  it("mcpGet.unknownServer.matchesTheShowSpelling", () => {
+    const get = textOf(runTerminalLine("/mcp get nope", "copilot"));
+    const show = textOf(runTerminalLine("/mcp show nope", "copilot"));
+
+    expect(get).toBe(show);
+  });
+
+  it("mcpGet.unknownServer.isAnErrorBlock", () => {
+    const result = runTerminalLine("/mcp get nope", "copilot");
+
+    expect(blocksOf(result)[0]?.tone).toBe("error");
+  });
+
+  it("mcpList.noSession.stillListsServers", () => {
+    const output = textOf(runTerminalLine("/mcp list", "copilot"));
+
+    expect(output).toContain("MCP servers in this session");
+  });
+});
+
 describe("verify checks against workspace state", () => {
   it("lab02RepoRules.templateState.fails", () => {
     expect(runVerify("lab02/repo-rules").pass).toBe(false);

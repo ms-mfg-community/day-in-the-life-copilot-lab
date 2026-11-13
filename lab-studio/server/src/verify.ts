@@ -106,13 +106,24 @@ const checks: Record<string, Check> = {
     if (!fileExists("AGENTS.md"))
       return fail("AGENTS.md is missing from the workspace.");
     const content = readWorkspaceFile("AGENTS.md");
-    if (/ADR-001/.test(content) && /Architecture Decisions/i.test(content)) {
+    const hasAdr =
+      /ADR-001/.test(content) && /Architecture Decisions/i.test(content);
+    if (/Operational Notes/i.test(content)) {
       return pass(
-        "ADR-001 recorded in AGENTS.md — context, not rules, exactly where it belongs.",
+        hasAdr
+          ? "Operational Notes recorded in AGENTS.md — context the agent can't discover by reading the repo. ADR-001 is still in the file, though: duplicated and discoverable, it is the anti-pattern this step warns about — consider removing it."
+          : "Operational Notes recorded in AGENTS.md — context the agent can't discover by reading the repo, exactly where it belongs.",
+      );
+    }
+    // Workspaces from before the lab taught Operational Notes already recorded
+    // an ADR here and passed this step; keep them passing, and nudge them.
+    if (hasAdr) {
+      return pass(
+        "ADR-001 is recorded in AGENTS.md (accepted from an earlier version of this lab). The lab now treats an ADR as an anti-pattern — it duplicates copilot-instructions.md and describes what Copilot can already discover. Replace it with a `## Operational Notes` section of facts the agent can't find by reading the repo.",
       );
     }
     return fail(
-      "AGENTS.md doesn't contain the `ADR-001` architecture decision record yet.",
+      "AGENTS.md doesn't have a `## Operational Notes` section yet. Add one (the card has it ready — use Insert for me): operational facts Copilot can't discover by reading the repo, such as how data is seeded, how tests run, and which generated files never to hand-edit. Don't add an ADR — that is the anti-pattern this step warns about.",
     );
   },
   "lab02/reload": () => {

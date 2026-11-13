@@ -637,7 +637,9 @@ function mcpCommand(args: string[]): TermResult {
   const meta = bridge.getMeta();
   const servers = meta?.mcpServers ?? [];
   const op = args[0] ?? "list";
-  if (op === "show") {
+  // `get` is the spelling the current CLI documents; `show` is what earlier
+  // labs taught. Both open one server's details.
+  if (op === "show" || op === "get") {
     const name = args[1];
     const server = servers.find((s) => s.name === name);
     if (!server)
@@ -670,7 +672,7 @@ function mcpCommand(args: string[]): TermResult {
           s.status === "connected" ? "success" : "normal",
         ),
       ),
-      text("Details: /mcp show <name>", "dim"),
+      text("Details: /mcp get <name>  (/mcp show <name> works too)", "dim"),
     ],
   };
 }

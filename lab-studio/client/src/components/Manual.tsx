@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { labs } from "../labs";
+import { labs, nextLabIdx, previousLabIdx, trackOfLab } from "../labs";
 import { useStudio } from "../store";
 import type { VerifyState } from "../types";
 import { Badge } from "../labs/content";
@@ -100,24 +100,30 @@ export function Manual(): JSX.Element {
 
   const isFirst = location.stepIdx === 0;
   const isLastStep = location.stepIdx === lab.steps.length - 1;
-  const isLastLab = location.labIdx === labs.length - 1;
+  // Back and Next follow the learning path (the rail's track order), which is
+  // not always numeric order: Track 2 goes Lab 10 -> Lab 12, and Lab 11 is in Track 3.
+  const nextIdx = nextLabIdx(location.labIdx);
+  const isLastLab = nextIdx === undefined;
+  const track = trackOfLab(lab.id);
 
   const goPrev = (): void => {
     if (!isFirst)
       navigate({ labIdx: location.labIdx, stepIdx: location.stepIdx - 1 });
-    else if (location.labIdx > 0) {
-      const prevLab = labs[location.labIdx - 1];
-      navigate({
-        labIdx: location.labIdx - 1,
-        stepIdx: (prevLab?.steps.length ?? 1) - 1,
-      });
-    } else navigate({ labIdx: -1, stepIdx: 0 });
+    else {
+      const prevIdx = previousLabIdx(location.labIdx);
+      if (prevIdx === undefined) navigate({ labIdx: -1, stepIdx: 0 });
+      else
+        navigate({
+          labIdx: prevIdx,
+          stepIdx: (labs[prevIdx]?.steps.length ?? 1) - 1,
+        });
+    }
   };
 
   const goNext = (): void => {
     if (!isLastStep)
       navigate({ labIdx: location.labIdx, stepIdx: location.stepIdx + 1 });
-    else if (!isLastLab) navigate({ labIdx: location.labIdx + 1, stepIdx: 0 });
+    else if (nextIdx !== undefined) navigate({ labIdx: nextIdx, stepIdx: 0 });
   };
 
   const badgeKind =
@@ -128,7 +134,8 @@ export function Manual(): JSX.Element {
       <div className="manual-inner">
         <div className="eyebrow">
           <span>
-            Lab {lab.number} · {lab.title}
+            {track ? `Track ${track.number} · ` : ""}Lab {lab.number} ·{" "}
+            {lab.title}
           </span>
           <span>
             step {location.stepIdx + 1} / {lab.steps.length}
@@ -151,7 +158,7 @@ export function Manual(): JSX.Element {
           {!(isLastStep && isLastLab) ? (
             <button className="primary" onClick={goNext}>
               {isLastStep
-                ? `Next: Lab ${labs[location.labIdx + 1]?.number}`
+                ? `Next: Lab ${nextIdx !== undefined ? (labs[nextIdx]?.number ?? "") : ""}`
                 : "Next step"}{" "}
               →
             </button>
