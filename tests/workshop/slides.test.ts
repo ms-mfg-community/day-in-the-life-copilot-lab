@@ -221,6 +221,14 @@ describe('workshop slides — claims about the shipped .github surface stay true
     expect(m1Slide()).toMatch(/no precedence/i);
   });
 
+  it('M1 hooks bullet names only events that .github/hooks/default.json configures', () => {
+    const bullet = m1Slide().split('\n').filter((line) => line.startsWith('- **Hooks**')).join('\n');
+    const named = [...bullet.matchAll(/`([A-Za-z]+)`/g)].map((m) => m[1]);
+    const configured = Object.keys(JSON.parse(read('.github/hooks/default.json')).hooks);
+    expect(named.length, 'M1 hooks bullet names no events').toBeGreaterThan(0);
+    expect(named.filter((event) => !configured.includes(event))).toEqual([]);
+  });
+
   it('M4 does not call weekly-content-audit the only gh-aw workflow, and its count matches the workflows on disk', () => {
     const onDisk = readdirSync(join(REPO_ROOT, '.github', 'workflows')).filter((f) => f.endsWith('.md'));
     expect(onDisk.length, 'the claim would be vacuous with fewer than two workflows').toBeGreaterThan(1);

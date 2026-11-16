@@ -22,7 +22,7 @@ Reach for the wrong surface and you pay twice — in tokens on every turn *and* 
 - **Custom agents** (`.github/agents/*.agent.md`) — specialist personas the user opts into with `--agent` or `/agent`.
 - **Skills** (`.github/skills/<name>/SKILL.md`) — knowledge packs that **auto-activate** by description match; you can also name one yourself as `/skill-name`.
 - **Command skills** (`.github/skills/<name>/SKILL.md` with `disable-model-invocation: true`) — user-invoked `/skill-name` commands, the successor to prompt files; deterministic playbooks the human triggers and Copilot never loads on its own.
-- **Hooks** (`.github/hooks/default.json`) — lifecycle scripts: `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `stop`, `notification`. Run every time.
+- **Hooks** (`.github/hooks/default.json`) — lifecycle scripts on `userPromptSubmitted`, `preToolUse`, `postToolUse` and `errorOccurred`, four of the 15 hook events taught in `labs/lab06.md`. Run every time.
 - **Memory** — three layers, covered in `labs/lab10.md`: **Layer 1 Raw sources** (`plan.md`, SQL todos, `~/.copilot/session-state/`), **Layer 2 Recall** (GitHub Copilot Memory, the `.copilot/lessons/` wiki, or a custom memory service), **Layer 3 The Schema** (`AGENTS.md`, `.github/instructions/*.md`, agent personalities). Promotion goes Raw → Recall → Schema.
 
 ---
