@@ -226,11 +226,12 @@ test('hooks.browser.deepDiveAndBothQuizzesPersistOnlyCorrectAnswersWithoutRegist
   assert.match(await summary.innerText(), /all 15 hook lifecycle interrupts/i);
   const lifecycleRows = page.locator('.manual details tbody tr');
   assert.equal(await lifecycleRows.count(), 15);
+  assert.equal(await page.locator('.manual details').getAttribute('open'), null);
   await summary.focus();
   await page.keyboard.press('Enter');
-  assert.equal(await page.locator('.manual details').getAttribute('open'), null);
-  await page.keyboard.press('Enter');
   assert.notEqual(await page.locator('.manual details').getAttribute('open'), null);
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('.manual details').getAttribute('open'), null);
   const styles = await page.locator('.manual details table').first().evaluate((table) => getComputedStyle(table).fontSize);
   assert.equal(styles, '13px');
   for (const [title, key] of [
