@@ -310,3 +310,32 @@ describe('lab05 contract: spec alignment — specs/labs/lab05.md records the Pha
     }
   });
 });
+
+describe('lab05 contract: .NET appendix smoke test grants context7/* to dotnet-dev first', () => {
+  it('requires the Lab 03 §3.3 context7/* prerequisite in both CLI and VS Code variants when dotnet-dev starts without it', () => {
+    const lab03Dotnet = readFileSync(join(ROOT, 'labs/appendices/dotnet/lab03.md'), 'utf8').replace(/\r\n/g, '\n');
+    const agentFmMatch = lab03Dotnet.match(/````markdown\n---\n([\s\S]*?)\n---/);
+    expect(agentFmMatch, 'dotnet-dev frontmatter not found in labs/appendices/dotnet/lab03.md').not.toBeNull();
+    const agentFm = yaml.load(agentFmMatch![1]) as { tools?: string[] };
+    const tools = agentFm.tools ?? [];
+
+    if (!tools.includes('context7/*') && !tools.includes('*')) {
+      const lab05Dotnet = readFileSync(join(ROOT, 'labs/appendices/dotnet/lab05.md'), 'utf8').replace(/\r\n/g, '\n');
+      const cliSelectIdx = lab05Dotnet.indexOf('/agent dotnet-dev');
+      const vscodeSelectIdx = lab05Dotnet.indexOf('**In VS Code:**');
+      expect(cliSelectIdx, '/agent dotnet-dev not found in labs/appendices/dotnet/lab05.md').toBeGreaterThan(0);
+      expect(vscodeSelectIdx, 'VS Code variant not found in labs/appendices/dotnet/lab05.md').toBeGreaterThan(cliSelectIdx);
+
+      const beforeCliSelect = lab05Dotnet.slice(0, cliSelectIdx);
+      expect(beforeCliSelect).toContain('context7/*');
+      expect(beforeCliSelect).toContain('mcp-servers');
+      expect(beforeCliSelect).toContain('.github/agents/dotnet-dev.agent.md');
+      expect(beforeCliSelect).toMatch(/\/exit[\s\S]*copilot/);
+
+      const vscodeBlock = lab05Dotnet.slice(vscodeSelectIdx);
+      expect(vscodeBlock).toContain('context7/*');
+      expect(vscodeBlock).toMatch(/reload/i);
+    }
+  });
+});
+
