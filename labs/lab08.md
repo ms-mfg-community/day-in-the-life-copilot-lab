@@ -86,7 +86,7 @@ This repository includes a workflow that generates a PRD when you create a `feat
 
 > 🧭 **The big picture — read this first.** You write and edit the **`.md`** file: YAML frontmatter (the settings) plus the instructions you are about to read. `gh aw compile` turns it into a **`.lock.yml`** file, which is an ordinary GitHub Actions workflow. **GitHub Actions runs the `.lock.yml`** — that is the workflow GitHub actually sees, and it is what passes your instructions to the agent. This repository commits both files, so the lab works without compiling anything. §8.3 shows you the lock file and what to look for in it.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Read the workflow file:
 
@@ -158,7 +158,7 @@ gh-aw workflows in `.md` format need to be compiled to `.lock.yml` files for Git
 
 **Compiling is optional; reading the committed lock file is not.** Steps 1–3 check your tooling and compile. Step 4 shows the lock file that GitHub Actions actually runs, and it applies to everyone — whether or not `gh aw` is installed, and whether or not you compile anything.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Check if the gh-aw CLI is available:
 
@@ -313,7 +313,7 @@ gh-aw workflows use the Copilot CLI as their AI engine, and the engine needs cre
 
 ### Add the secret to your repository
 
-🖥️ **In your terminal** (fastest):
+🐚 **In your OS Terminal** (fastest):
 
 ```bash
 gh aw secrets set COPILOT_GITHUB_TOKEN --value "<your-token>"
@@ -397,7 +397,7 @@ If you forked this repository, Issues may be disabled by default.
 
 Choose one of these approaches to add feature stories to your Issues:
 
-**Option A — Use the GitHub CLI (fastest):**
+**Option A — Use the GitHub CLI (fastest):** 🐚 **In your OS Terminal:**
 
 ```bash
 # Run all 4 commands from docs/sample-issues.md
@@ -451,7 +451,7 @@ Now create a branch from your assigned issue to trigger the PRD workflow. Use th
 4. Select **"Checkout locally"** or **"Open in GitHub Desktop"** based on your preference
 5. Click **Create branch**
 
-**Terminal alternative — a branch-name-only demonstration.** If you can't use the button, you can create the branch from 🖥️ **your terminal** instead, in a clone of your fork so that `origin` is your fork and not the upstream repository. This fires the same workflow, but nothing links the branch to your issue: the agent starts from the branch name and the code, and picks up an issue only if its own keyword search happens to match one. Don't use this route to judge how well issue linking works. Choose one route, not both — the workflow triggers when the branch is created, and a branch can only be created once.
+**Terminal alternative — a branch-name-only demonstration.** If you can't use the button, you can create the branch from 🐚 **your OS Terminal** instead, in a clone of your fork so that `origin` is your fork and not the upstream repository. This fires the same workflow, but nothing links the branch to your issue: the agent starts from the branch name and the code, and picks up an issue only if its own keyword search happens to match one. Don't use this route to judge how well issue linking works. Choose one route, not both — the workflow triggers when the branch is created, and a branch can only be created once.
 
 **WSL/Bash:**
 ```bash
@@ -591,7 +591,7 @@ prose. Re-attach the shared partial only once it is corrected. -->
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

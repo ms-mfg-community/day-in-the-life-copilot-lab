@@ -148,6 +148,8 @@ Instead of making changes locally, let's describe the feature we want in a GitHu
 
 > ⚠️ **Terminal users — check which repository `gh` will use.** A clone of a fork can leave `gh` pointed at the original repository, and `gh issue create` would then open the issue there. Run `gh repo set-default --view`; if it doesn't show your fork, run `gh repo set-default` and choose your fork.
 
+🐚 **In your OS Terminal** (instead of the browser steps above):
+
 **WSL/Bash:**
 
 ```bash
@@ -206,7 +208,7 @@ Now assign Copilot to the issue and watch it work.
 3. Select **Copilot** from the list. If an optional prompt box or repository and branch dropdowns appear, leave the defaults and confirm the assignment
 4. Copilot will begin working on the issue
 
-Or use the CLI:
+Or use the CLI. 🐚 **In your OS Terminal:**
 
 **WSL/Bash:**
 ```bash
@@ -303,7 +305,7 @@ MaxEnrollment (must be > 0), with a unit test covering the invalid case.
 Alternatively, you can apply suggestions directly:
 
 1. Click **Apply suggestion** on a Code Review comment to accept a fix inline
-2. Or check out the branch locally to make manual adjustments:
+2. Or check out the branch locally to make manual adjustments. 🐚 **In your OS Terminal:**
 
 ```bash
 gh pr checkout <PR_NUMBER>
@@ -317,7 +319,7 @@ git push
 
 Both the Coding Agent and Code Review automatically read your repository's `.github/copilot-instructions.md` — the same file you worked with in [Lab 02](lab02.md).
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 Run this from the root of your clone of the fork. No clone handy? Open `.github/copilot-instructions.md` in your fork on GitHub.com instead.
 
@@ -386,7 +388,7 @@ The built-in Copilot Code Review covers most use cases. But if you need **full c
 
 This repository includes a custom gh-aw code review workflow:
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 Run these from the root of your clone of the fork. No clone handy? Open `.github/workflows/code-review.md` in your fork on GitHub.com instead.
 
@@ -458,7 +460,7 @@ The file above is the working version — it's the one wired into `.github/workf
 4. **Delete the ruleset.** Open **Settings** → **Rulesets** → **Rulesets** (where you created it in §9.2), click `copilot-code-review`, open the **⋯** menu next to its name, and click **Delete ruleset**. To keep it for later instead, set **Enforcement status** to **Disabled** — it stops requiring pull requests and Copilot reviews until you turn it back on.
 5. **Undo the Coding Agent setting — only if you switched something on in §9.3.** Switch it back under **Settings** → **Copilot** → **Cloud agent**.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 Optional — an alternative to steps 1–3. Run these from your clone of the fork, with `gh` pointed at your fork (see the tip in §9.4). They're the same in Bash and PowerShell; replace `<PR_NUMBER>` and `<ISSUE_NUMBER>` with your own numbers.
 

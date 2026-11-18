@@ -1,5 +1,21 @@
-import { Cmd, FileCard, Note, PromptCard } from "./content";
+import { Cmd, FileCard, Note, PromptCard, Snippet } from "./content";
 import type { Lab } from "./types";
+
+// Shown, never written: the frontmatter an agent grows once Lab 05 has taught
+// MCP. The agent built in this lab stays on built-in tools.
+const MCP_SERVERS_PREVIEW = `---
+# PREVIEW ONLY — add the lab-docs/* tool and the mcp-servers block after Lab 05, not now
+name: "contoso-dev"
+description: "..."
+tools: ["read", "edit", "search", "lab-docs/*"]
+mcp-servers:
+  lab-docs:
+    type: local
+    command: node
+    args: ["./.copilot/mcp/lab-docs.mjs"]
+    tools: ["*"]
+---
+`;
 
 const CONTOSO_DEV_AGENT = `---
 name: "contoso-dev"
@@ -156,6 +172,30 @@ export const lab03: Lab = {
               "grep 'Coding Standards' .github/agents/contoso-dev.agent.md",
             ]}
           />
+          <Note>
+            <strong>🔭 Forward reference — look, don't wire.</strong> An agent
+            can also reach MCP servers by declaring them in its frontmatter. Lab
+            05 is the MCP lab: once you have watched a server load and answer in
+            a session, you come back to <code>contoso-dev</code> and wire the{" "}
+            <code>mcp-servers:</code> block below <strong>after Lab 05</strong>,
+            together with the matching <code>lab-docs/*</code> entry in{" "}
+            <code>tools</code>. Do <strong>not</strong> add either now —
+            everything else in this lab runs on built-in tools.
+          </Note>
+          <Snippet title="PREVIEW ONLY — contoso-dev.agent.md after Lab 05">
+            {MCP_SERVERS_PREVIEW}
+          </Snippet>
+          <p>
+            <code>mcp-servers</code> is an <em>object</em>: each key names a
+            server, and its value uses the same fields (<code>type</code>,{" "}
+            <code>command</code>, <code>args</code>, <code>tools</code>) as the
+            entry in <code>.copilot/mcp-config.json</code>. The agent's own{" "}
+            <code>tools</code> list still filters MCP tools too — that's why the
+            preview adds <code>lab-docs/*</code> beside the built-in aliases;
+            the <code>tools: ["*"]</code> inside the server entry doesn't
+            override it. Per GitHub's reference, <code>mcp-servers</code> isn't
+            used by VS Code and other IDE custom agents.
+          </p>
         </>
       ),
     },
@@ -225,6 +265,38 @@ export const lab03: Lab = {
               change?"
             </em>{" "}
             and compare its list to your file.
+          </Note>
+          <Note>
+            <strong>
+              🔍 Debug It — was my agent loaded, and what does it cost?
+            </strong>{" "}
+            If the agent seems to ignore its file, find out whether Copilot
+            loaded it before you rewrite the prompt.
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type these inside the same
+                session. In the real CLI <code>/env</code> lists the custom
+                agents the session loaded (the bench's <code>/env</code>{" "}
+                summarises counts, and <code>/agent</code> lists them by name),
+                and <code>/context</code> splits the context window into System
+                Prompt, Custom Instructions, System Tools, MCP Tools, Messages,
+                Free Space and Buffer, so you can see how much room the agent's
+                prompt takes. In experimental mode <code>/context</code> also
+                breaks usage down per skill, subagent, MCP server, tool and
+                plugin. (<code>/context</code> is real-CLI only.)
+              </li>
+              <li>
+                <strong>VS Code:</strong> run{" "}
+                <strong>Show Agent Debug Logs</strong>, open the{" "}
+                <strong>Logs view</strong> and filter to{" "}
+                <strong>Discovery</strong> to see whether the agent file was
+                loaded, skipped or rejected.{" "}
+                <strong>Show Chat Debug View</strong> shows the{" "}
+                <strong>System prompt</strong> for a request, which is where the
+                agent's definition should appear. Turn capture on before you
+                reproduce the problem — it isn't retroactive.
+              </li>
+            </ul>
           </Note>
         </>
       ),

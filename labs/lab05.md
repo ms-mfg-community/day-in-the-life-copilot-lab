@@ -51,7 +51,7 @@ References:
 
 MCP servers extend Copilot's capabilities with external tools — documentation lookup, knowledge persistence, structured reasoning, and more.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. View the MCP configuration:
 
@@ -66,6 +66,8 @@ Get-Content ~/.copilot/mcp-config.json
 ```
 
 > 💡 **"No such file or directory"?** A fresh install has no user-level `mcp-config.json` yet — you create it in §5.4. To read a working example now, run `cat .copilot/mcp-config.json` (bash) or `Get-Content .copilot/mcp-config.json` (PowerShell) from the repo root — that is this repo's own copy.
+
+💠 **In VS Code:** run **Chat: Open Customizations** and select **MCP Servers** to see the servers VS Code can load, grouped under **Workspace** and **User**. Run **MCP: List Servers** to see whether each one is running.
 
 2. The table below lists the MCP servers this workshop works with. The
    authoritative list — including each server's pinned version — lives in
@@ -115,12 +117,14 @@ Get-Content ~/.copilot/mcp-config.json
 
 Context7 provides up-to-date documentation for libraries and frameworks. Let's use it to look up .NET documentation.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Start Copilot CLI:
 ```bash
 copilot
 ```
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 2. Ask a question that requires library documentation:
 ```
@@ -136,11 +140,13 @@ Using Context7, look up how to configure WebApplicationFactory for integration t
 Use Context7 to find Entity Framework Core migration best practices.
 ```
 
-> 💡 Context7 is especially useful for staying current with library documentation — it fetches real-time docs rather than relying on training data.
+> 💡 Context7 is especially useful for staying current with library documentation — it fetches real-time docs rather than relying on training data. Now that you know how MCP servers are configured, you can also return to the `dotnet-dev` (or `node-dev`) custom agent you created in [Lab 03 §3.3](lab03.md#33-configure-tools-and-mcp-servers) and wire its `mcp-servers:` block to scope Context7 to that agent.
 
 > 💡 **What you should see:** Copilot responds with up-to-date documentation from the library. If it says "Context7 not available" or ignores the tool, the MCP server may not have started — check that `npx` is available and Node.js is installed.
 
 ## 5.3 Cross-session persistence — markdown lessons, not a server
+
+> 🔭 **Preview of [Lab 10 — Agent Memory](lab10.md).** The `.copilot/lessons/` exercise below is a short first taste of cross-session memory, not the full lesson. Lab 10 is where it gets its layered model and where this DIY wiki is compared with GitHub Copilot Memory and a custom memory service. What to take from this section is one distinction: **MCP is for live tools** — it does something *now* (look up docs, search, reason step by step) — while **cross-session state belongs in a memory layer** (markdown files, Copilot Memory, or a service you run). The stateless MCP spec revision of 2026-07-28 makes that split sharper, as the 🆕 note below explains.
 
 MCP gives you live tools (docs, search, structured reasoning); this repo
 intentionally does **not** treat any MCP server as cross-session memory —
@@ -159,7 +165,7 @@ working alongside MCP.
 > (like this repo's `.copilot/lessons/` markdown wiki) even more clearly a
 > *client/application* concern, not something the protocol does for you.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Inspect the wiki that ships with the repo:
 
@@ -175,7 +181,9 @@ Get-ChildItem .copilot/lessons
 Get-Content .copilot/lessons/index.md | Select-Object -First 20
 ```
 
-2. In Copilot CLI, ask the agent to record a project fact as a lesson. This writes to a git-tracked file in your checkout — §5.6 shows how to undo it:
+🤖 **In Copilot CLI (`copilot>`):**
+
+2. In your Copilot session (start `copilot` again if you closed it), ask the agent to record a project fact as a lesson. This writes to a git-tracked file in your checkout — §5.6 shows how to undo it:
 ```
 Append a lesson to .copilot/lessons/log.md: ContosoUniversity uses
 Entity Framework Core 8 with SQL Server and follows the repository
@@ -183,6 +191,8 @@ pattern; the main DbContext is SchoolContext. Follow the schema in
 .github/instructions/lessons.instructions.md and leave "Promoted to"
 blank.
 ```
+
+🐚 **In your OS Terminal:**
 
 3. Verify the append landed in git-tracked markdown:
 
@@ -195,6 +205,8 @@ head -30 .copilot/lessons/log.md
 ```powershell
 Get-Content .copilot/lessons/log.md | Select-Object -First 30
 ```
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 4. Open a fresh session (`/exit`, then start Copilot again) and ask:
 ```
@@ -218,12 +230,14 @@ wrote to itself, committed alongside the code.
 
 Let's add a new MCP server to the configuration. We'll add a fetch server that retrieves web content.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
-1. Open the user-level MCP configuration in any editor. In VS Code, this command works in both bash and PowerShell; if the file does not exist yet, saving creates it:
+1. Open the user-level MCP configuration in VS Code. This command works in both bash and PowerShell; if the file does not exist yet, saving creates it:
 ```bash
 code "$HOME/.copilot/mcp-config.json"
 ```
+
+💠 **In VS Code:**
 
 2. Add a new server entry. The `fetch` entry below, including its `@1.6.2` pin, is taken from the `fetch` entry in [`mcp-configs/copilot-cli/CATALOG.json`](../mcp-configs/copilot-cli/CATALOG.json). If your file has no `mcpServers` object yet, paste the whole snippet; if it already has one, add only the `"fetch"` entry inside it (mind the commas):
 
@@ -242,7 +256,9 @@ code "$HOME/.copilot/mcp-config.json"
 
 3. The `fetch` server provides an `imageFetch` tool that fetches a web page and returns it as markdown; images are off by default. Before v1.2.0 of the package this tool was called `fetch`; the current package rejects that name. The package's README says it is "designed for macOS only due to its dependency on macOS-specific clipboard operations". This exercise fetches plain text with images off, but if `fetch` does not start on your machine, `/mcp show fetch` shows its status and you can still finish the configuration steps.
 
-4. After saving, restart your Copilot session for the new server to load: `/exit`, then start `copilot` again.
+4. After saving, restart your Copilot session for the new server to load: type `/exit` in your 🤖 Copilot CLI session, then start `copilot` again from your 🐚 OS Terminal.
+
+🤖 **In Copilot CLI (`copilot>`):**
 
 5. Test the new server:
 ```
@@ -252,6 +268,14 @@ Using the fetch MCP server's imageFetch tool, fetch https://raw.githubuserconten
 > ⚠️ **Security note**: Be careful with MCP servers that have broad access. The `tools: ["*"]` setting exposes all tools. In production, restrict to only the tools you need.
 
 > 💡 **Verify the server loaded:** After restarting your Copilot session, `/mcp list` should show `fetch` along with its status, and `/mcp show fetch` should list its `imageFetch` tool. Then run the test prompt above. It names `imageFetch` on purpose: a vaguer "fetch this page" request can be answered by Copilot's built-in web access without ever touching the new server. If it responds with relevant data, the server is working. §5.6 shows how to remove it.
+
+> **🔍 Debug It (VS Code & Copilot CLI)** — *A server that fails to start fails quietly. Where does the reason go?*
+>
+> - **Copilot CLI:** type these inside a running `copilot` session. `/mcp list` shows each server as connected, connecting, `failed: <reason>`, disabled, stopped or not connected, and `/mcp get <server-name>` opens one server's details and tools. (The steps above write `/mcp show`; this build's built-in documentation lists `get`, and `/help` shows the spelling your build accepts.) `/mcp reload` re-reads the configuration and restarts the servers. At your shell prompt, `copilot mcp list` shows configuration, not live status.
+> - **Process log:** start Copilot with `copilot --log-level debug --log-dir ./logs`, then search the newest `process-<timestamp>-<pid>.log` for your server's name: `grep -h fetch ./logs/process-*.log | tail -n 20` in Bash, or `Select-String -Path ./logs/process-*.log -Pattern 'fetch' | Select-Object -Last 20` in PowerShell. A server that could not start is logged as a warning with the reason (observed, not documented). This repository's `.gitignore` ignores `*.log`, so the process logs do not get committed.
+> - **VS Code:** run **MCP: List Servers** from the Command Palette, select the server and choose **Show Output** to read its errors, or **Restart Server**. If the server runs but its tool is never called, open **Show Chat Debug View** and check whether the tool appears in the tool definitions; if it does, look for tool calls and errors in **Show Agent Debug Logs**.
+>
+> More in [the guide](../docs/debugging-and-observability.md#33-process-logs).
 
 ## 5.5 Final
 
@@ -296,6 +320,8 @@ See [`solutions/lab05-mcp-config/.mcp.json`](../solutions/lab05-mcp-config/.mcp.
 
 This lab changes two files. Undo both when you are done.
 
+🐚 **In your OS Terminal:**
+
 1. If you ran the §5.3 step 2 prompt, revert the lesson it appended. `.copilot/lessons/log.md` is tracked by git, so, from the repository root, restore it from `HEAD`:
 
 ```bash
@@ -305,4 +331,4 @@ git status --short
 
 This puts the file back to its last committed state, so it removes the exercise entry and any other uncommitted edit you made to that file. `git status --short` should no longer list `.copilot/lessons/log.md`; if it lists another file under `.copilot/lessons/`, restore that file the same way. If you already committed the entry, remove it by hand or `git revert` that commit.
 
-2. Remove the `fetch` entry you added to `~/.copilot/mcp-config.json` in §5.4 — only that entry, not the whole `mcpServers` object. If `fetch` was the last entry, also delete the comma after the entry before it so the JSON stays valid. Restart Copilot CLI, then run `/mcp list` to confirm `fetch` is gone.
+2. 💠 **In VS Code:** remove the `fetch` entry you added to `~/.copilot/mcp-config.json` in §5.4 — only that entry, not the whole `mcpServers` object. If `fetch` was the last entry, also delete the comma after the entry before it so the JSON stays valid. Then restart Copilot CLI and, 🤖 **in Copilot CLI**, run `/mcp list` to confirm `fetch` is gone.

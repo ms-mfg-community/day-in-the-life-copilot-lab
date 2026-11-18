@@ -18,8 +18,14 @@ import { lab17 } from "./lab17";
 import { lab18 } from "./lab18";
 import { lab19 } from "./lab19";
 import { lab20 } from "./lab20";
+import { nextLabId, previousLabId } from "./tracks";
 import type { Lab } from "./types";
 
+/**
+ * Every lab, in numeric order. The order and each lab's index never change:
+ * persisted learner location is an index into this array. Tracks (see
+ * ./tracks) are a reading order laid over it, not a reordering of it.
+ */
 export const labs: Lab[] = [
   lab01,
   lab02,
@@ -43,5 +49,35 @@ export const labs: Lab[] = [
   lab20,
 ];
 
-/** Index of the first advanced-track lab (Lab 11) in the array above. */
-export const ADVANCED_TRACK_START = 10;
+export {
+  LEARNING_PATH,
+  TRACKS,
+  formatLabRange,
+  nextLabId,
+  previousLabId,
+  trackOfLab,
+} from "./tracks";
+export type { Track } from "./tracks";
+
+/** Index of a lab in `labs` by its id, or -1 when no lab has that id. */
+export function labIndexById(labId: string): number {
+  return labs.findIndex((lab) => lab.id === labId);
+}
+
+function indexOrUndefined(labId: string | undefined): number | undefined {
+  if (labId === undefined) return undefined;
+  const index = labIndexById(labId);
+  return index === -1 ? undefined : index;
+}
+
+/** The `labs` index to open after `labIdx` on the learning path, if any. */
+export function nextLabIdx(labIdx: number): number | undefined {
+  const id = labs[labIdx]?.id;
+  return id === undefined ? undefined : indexOrUndefined(nextLabId(id));
+}
+
+/** The `labs` index to open before `labIdx` on the learning path, if any. */
+export function previousLabIdx(labIdx: number): number | undefined {
+  const id = labs[labIdx]?.id;
+  return id === undefined ? undefined : indexOrUndefined(previousLabId(id));
+}

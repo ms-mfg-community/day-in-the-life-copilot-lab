@@ -22,6 +22,8 @@ The MCP servers introduced in [`labs/lab05.md`](../../lab05.md) all apply to the
 Before relying on context7 to lookup Drizzle docs, make sure the workspace actually
 parses your schema:
 
+🐚 **In your OS Terminal:**
+
 ```bash
 pnpm -C node install
 pnpm -C node test
@@ -31,4 +33,6 @@ A failing test surface gives Copilot more accurate context to ground its answers
 
 ## C. Suggested first prompt
 
-> `@context7 In the node/ workspace I have Fastify v4 and Drizzle ORM (better-sqlite3). Show me the idiomatic way to register a route plugin that depends on a Drizzle db instance via Fastify decorators.`
+🤖 **In Copilot CLI (`copilot>`):**
+
+> `Using Context7, in the node/ workspace I have Fastify v4 and Drizzle ORM (better-sqlite3). Show me the idiomatic way to register a route plugin that depends on a Drizzle db instance via Fastify decorators.`

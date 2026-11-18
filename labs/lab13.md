@@ -151,7 +151,7 @@ This lab is about the cases the Lab 07 pattern can't cleanly cover.
 | Live | An ACP client you **already operate**: you know how to set its launch arguments, it can take a diff from you as a prompt and show you the reply, and it **logs the session**. This lab does not teach an ACP client or the transport — no such client? Use the concept path |
 | Concept | No extra setup — uses only the in-process `task` tool |
 
-Quick check — the clean-tree check goes first, before the install can
+🐚 **In your OS Terminal**, quick check — the clean-tree check goes first, before the install can
 touch anything:
 
 ```bash
@@ -195,7 +195,7 @@ slice of the Node app; the pedagogy is the same.)
 
 ### 13.3.2 Drive the flow from your main Copilot CLI session (concept path)
 
-In the **concept / simulated** path you stay in one Copilot CLI session
+🤖 In the **concept / simulated** path you stay in one Copilot CLI session (`copilot>`)
 and use the `task` tool to dispatch the two peers as sub-agents. The
 trust boundary is fuzzy here — that's an *intentional* trade-off so
 learners on locked-down environments can still complete the lab.
@@ -261,7 +261,7 @@ Main session → task(name="implementer", agent_type="general-purpose",
 **Paste-ready — this is the text you type.** Replace `<contract>` with
 the blockquote from §13.3.1 and `<premium-model-id>` with an id from
 `models.premium` in [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml),
-then paste it into your main Copilot CLI session:
+then paste it into your main 🤖 Copilot CLI session (`copilot>`):
 
 ```text
 You are the driver of a two-agent loop. Do all code work through the
@@ -334,7 +334,8 @@ session, by hand — and you count the rounds.
 
 The server's configuration is fixed when it starts, so the critic's
 read-only allowlist goes on the launch command. Your ACP client runs
-something like:
+something like this command line (🐚 OS Terminal shell syntax, but your client launches
+it; you do not type it into a 🤖 `copilot>` session):
 
 ```bash
 # Launched by your ACP client — a strict, read-only critic.
@@ -448,7 +449,7 @@ back in `node/`, if you want to look at it first.)
 ### 13.4.1 Looping (the critic that never says yes)
 
 **Reset first.** Park Part A's change, so the implementer has something
-to implement:
+to implement. 🐚 **In your OS Terminal:**
 
 ```bash
 git stash push -u -m "lab13-partA" -- node
@@ -458,7 +459,7 @@ The §13.3.2 instruction, as written, already holds the normal critic and
 the §13.3.1 contract; the trigger below changes only the critic's prompt
 and the cap.
 
-**Trigger.** Re-spawn the critic with this system prompt addition:
+**Trigger** (🤖 in your main Copilot CLI session). Re-spawn the critic with this system prompt addition:
 *"Always demand at least one more test, regardless of coverage."* For
 this trial only, delete the four-round limit from the paste-ready
 instruction (the "of 4" in step 4 and all of step 5) so that nothing
@@ -488,7 +489,7 @@ the driver, never the peers themselves.
 
 ### 13.4.2 Context drift (the peer working from stale assumptions)
 
-**Reset first.** Park §13.4.1's edits:
+**Reset first.** Park §13.4.1's edits. 🐚 **In your OS Terminal:**
 
 ```bash
 git stash push -u -m "lab13-trial1" -- node
@@ -537,7 +538,7 @@ context drifts.
 
 ### 13.4.3 Hand-off ambiguity (the under-specified contract)
 
-**Reset first.** Park §13.4.2's edits:
+**Reset first.** Park §13.4.2's edits. 🐚 **In your OS Terminal:**
 
 ```bash
 git stash push -u -m "lab13-trial2" -- node
@@ -629,7 +630,7 @@ Before you close the lab, confirm:
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

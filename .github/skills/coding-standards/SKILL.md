@@ -279,19 +279,19 @@ var enrollments = student.Enrollments; // N+1 query
 ### Project Structure (Clean Architecture)
 
 ```
-ContosoUniversity.sln
-├── ContosoUniversity.Core/          # Domain layer
-│   ├── Entities/                    # Domain entities
-│   └── Interfaces/                  # Repository interfaces
-├── ContosoUniversity.Infrastructure/ # Data access layer
-│   ├── Data/                        # DbContext, migrations
-│   └── Repositories/               # Repository implementations
-├── ContosoUniversity.Web/           # Presentation layer
-│   ├── Controllers/                 # MVC controllers
-│   ├── Models/                      # View models & DTOs
-│   └── Views/                       # Razor views
-├── ContosoUniversity.Tests/         # Unit & integration tests
-└── ContosoUniversity.PlaywrightTests/ # E2E tests
+dotnet/ContosoUniversity.sln
+├── dotnet/ContosoUniversity.Core/          # Domain layer
+│   ├── Entities/                           # Domain entities
+│   └── Interfaces/                         # Repository interfaces
+├── dotnet/ContosoUniversity.Infrastructure/ # Data access layer
+│   ├── Data/                               # DbContext, migrations
+│   └── Repositories/                       # Repository implementations
+├── dotnet/ContosoUniversity.Web/           # Presentation layer
+│   ├── Controllers/                        # MVC controllers
+│   ├── Models/                             # View models & DTOs
+│   └── Views/                              # Razor views
+├── dotnet/ContosoUniversity.Tests/         # Unit & integration tests
+└── dotnet/ContosoUniversity.PlaywrightTests/ # E2E tests
 ```
 
 ### File Naming

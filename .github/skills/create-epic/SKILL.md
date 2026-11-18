@@ -9,10 +9,12 @@ Generate a structured epic document for tracking multi-session work.
 
 ## Input
 
-- Epic Name: ${input:epic_name:Name of the epic}
-- Description: ${input:epic_description:Brief description of what this epic delivers}
-- Business Value: ${input:business_value:Why this matters to users/stakeholders}
-- Scope: ${input:scope:What's in/out of scope}
+Take these four values from the text after `/create-epic`; ask for any that are missing before you start:
+
+- Epic Name: name of the epic
+- Description: brief description of what this epic delivers
+- Business Value: why this matters to users/stakeholders
+- Scope: what's in/out of scope
 
 ## Process
 
@@ -108,7 +110,7 @@ Create `docs/epics/EPIC-XXX-[kebab-case-name].md`:
 
 Every story MUST include:
 - **Test Criteria** section with specific test types
-- Reference `@tdd-guide` agent for implementation guidance
+- Reference the `/tdd` skill (`.github/skills/tdd/SKILL.md`) for implementation guidance
 - No code without corresponding tests
 - Minimum 80% coverage target
 

@@ -22,11 +22,19 @@ This appendix lists MCP servers that are most useful for the **.NET track** of [
 
 ## Verify MCP servers see the dotnet/ paths
 
-After moving the projects, your agent's `.NET search` calls should target `dotnet/ContosoUniversity.*` paths. A quick smoke test inside Copilot CLI:
+After moving the projects, your agent's `.NET search` calls should target `dotnet/ContosoUniversity.*` paths.
+
+> **Prerequisite — grant `dotnet-dev` access to Context7 first:** the `.github/agents/dotnet-dev.agent.md` file you created in [Lab 03](../../lab03.md) starts with `tools: ["read", "edit", "execute", "search"]`, and an agent's `tools` list filters MCP tools as well as built-in ones. Complete the [Lab 03 §3.3](../../lab03.md#33-configure-tools-and-mcp-servers) preview step now (as [Lab 05 §5.2](../../lab05.md) invites): add `"context7/*"` to `tools` in `.github/agents/dotnet-dev.agent.md` together with its `mcp-servers:` block for `context7` (matching `.copilot/mcp-config.json`).
+
+A quick smoke test:
+
+🤖 **In Copilot CLI (`copilot>`):** after saving `.github/agents/dotnet-dev.agent.md` with `"context7/*"` and the `mcp-servers` block, restart your session (`/exit`, then `copilot`) so the updated agent definition loads, select the agent with `/agent dotnet-dev`, and ask:
 
 ```
-@dotnet-dev Use Context7 to look up the EF Core 8 IRepository pattern and confirm we apply it correctly in dotnet/ContosoUniversity.Infrastructure/Data/Repository.cs.
+Use Context7 to look up the EF Core 8 IRepository pattern and confirm we apply it correctly in dotnet/ContosoUniversity.Infrastructure/Data/Repository.cs.
 ```
+
+💠 **In VS Code:** after adding `"context7/*"` to `tools` in `.github/agents/dotnet-dev.agent.md`, reload the agent (**Developer: Reload Window** from the Command Palette so VS Code re-reads `.github/agents/`), choose `dotnet-dev` from the **Agent** dropdown in the Chat view, and send the same request.
 
 The agent should:
 

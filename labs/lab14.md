@@ -208,7 +208,7 @@ Two non-obvious tips that matter for this lab:
    `copilot-orch:work.N`, so if you re-split or reorder the panes the
    scripts will hit the wrong one. Leave the layout alone.
 
-If your environment doesn't have tmux:
+If your environment doesn't have tmux, 🐚 **in your OS Terminal**:
 
 ```bash
 # Debian / Ubuntu
@@ -290,7 +290,7 @@ status 1.
 pane, and a `work` window whose two panes — `worker` (pane 0) and `qa`
 (pane 1) — sit side by side. With `--no-attach` it leaves the session
 detached, so you choose when to join it with `tmux attach`. You'll do
-both in §14.5 Step 0; for now, read its usage text:
+both in §14.5 Step 0; for now, 🐚 **in your OS Terminal**, read its usage text:
 
 ```bash
 ./scripts/orchestrator/tmux-start.sh --help
@@ -308,8 +308,8 @@ timestamped document under `.copilot/orchestrator-handoffs/` and prints
 that document's path on stdout (relative to the directory you ran it
 from, so run it from the repo root). Add `--to-pane N --session NAME`
 and it also types `cat <doc>` into pane N of the `work` window. You'll
-write real hand-offs in §14.5 Steps 2 and 4; for now, read its usage
-text — phase slug first:
+write real hand-offs in §14.5 Steps 2 and 4; for now, 🐚 **in your OS
+Terminal**, read its usage text — phase slug first:
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-demo --help
@@ -322,7 +322,7 @@ window (`--pane qa` is pane 1); the orchestrator pane is never a target.
 A real run needs the §14.5 layout and a Copilot session already running
 in that pane, so **don't run it here** — it waits for §14.5 Step 5.
 `--dry-run` prints what would be sent and sends nothing, so it is safe
-anywhere:
+anywhere (🐚 **in your OS Terminal**):
 
 ```bash
 ./scripts/orchestrator/clear-context.sh --help
@@ -340,11 +340,11 @@ has no department names, so that is the field to filter on.) We'll
 narrate each step in terms of *which pane is talking to whom* — and every
 block below says which process receives it:
 
-- **Bash — control shell** blocks are typed into an ordinary terminal
+- 🐚 **Bash — control shell** blocks are typed into an ordinary OS Terminal
   (Step 0 sets one up), never into a Copilot pane.
-- **Prompt — orchestrator session**, **Prompt — worker session** and
+- 🤖 **Prompt — orchestrator session**, **Prompt — worker session** and
   **Prompt — QA session** blocks are pasted into the Copilot CLI session
-  running in that pane.
+  (`copilot>`) running in that pane.
 
 > 🛤️ This is intentionally a different slice from the Lab 13 worked
 > example so you don't repeat work — pick this lab if you want a fresh
@@ -358,10 +358,10 @@ the same WSL distro or the same Codespace, because a tmux session lives
 inside one environment and a terminal in another can't see it. Then keep
 their jobs apart:
 
-- The **control shell** is an ordinary terminal. Every **Bash** block in
-  this section runs here: the helper scripts, `pnpm` and `git`.
+- The **control shell** is an ordinary OS Terminal (🐚). Every **Bash** block
+  in this section runs here: the helper scripts, `pnpm` and `git`.
 - The **tmux terminal** is the one you attach to the session. It only
-  hosts the interactive Copilot CLI sessions; every **Prompt** block is
+  hosts the interactive Copilot CLI sessions (🤖); every **Prompt** block is
   pasted into one of them.
 
 The split matters because whatever you type into a pane goes to the
@@ -370,13 +370,13 @@ model, not to a shell, so Bash typed into it is just another prompt. The
 Copilot sessions stay running throughout; you never leave one to run a
 command.
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/tmux-start.sh --no-attach
 ```
 
-**Bash — tmux terminal:**
+🐚 **Bash — tmux terminal (OS Terminal):**
 
 ```bash
 tmux attach -t copilot-orch
@@ -388,7 +388,7 @@ only thing you type into one is `copilot`, to start the session that will
 live there. Start your orchestrator session in the `orch` pane, then
 paste the rubric prompt:
 
-**Prompt — orchestrator session:**
+🤖 **Prompt — orchestrator session (Copilot CLI):**
 
 > Use [`.github/skills/orchestrator-rubric/SKILL.md`](../.github/skills/orchestrator-rubric/SKILL.md)
 > as your judging contract for every hand-off you receive.
@@ -404,7 +404,7 @@ control shell does all the Bash.
 In the orchestrator session, ask Copilot to draft the phase plan and to
 tell you where it saved it:
 
-**Prompt — orchestrator session:**
+🤖 **Prompt — orchestrator session (Copilot CLI):**
 
 > Plan a single-phase change: add an optional `departmentId` filter to
 > `GET /api/courses` in `node/web/routes/courses-api.ts`. The
@@ -430,7 +430,7 @@ everything it needs — including where the plan is. In the control shell,
 write the input hand-off and send it to the worker pane in one go,
 replacing `<absolute-plan-path>` with the path from Step 1:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-dev \
@@ -447,7 +447,7 @@ and presses Enter. That pane is running Copilot CLI, not a shell, so the
 line arrives as a prompt rather than a command. Tell the worker what to
 do with it:
 
-**Prompt — worker session:**
+🤖 **Prompt — worker session (Copilot CLI):**
 
 > The line you just received names a hand-off document. Read it, and the
 > plan file it points to, then wait — I'll give you the work one step at
@@ -465,7 +465,7 @@ something you saw yourself.
 
 **RED.** Ask the worker for the test only:
 
-**Prompt — worker session:**
+🤖 **Prompt — worker session (Copilot CLI):**
 
 > RED step only — don't touch `node/web/routes/courses-api.ts`. In
 > `node/tests/integration/courses-api.test.ts`, add one test that POSTs
@@ -477,7 +477,7 @@ something you saw yourself.
 
 Run the suite and read the failure:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 pnpm -C node test
@@ -489,7 +489,7 @@ failure for any other reason (an import error, a typo, a 400 from one of
 the POSTs) isn't a RED yet: have the worker fix the test first. Once the
 failure is the right one, commit the test on its own:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 git add node/tests/integration/courses-api.test.ts
@@ -498,7 +498,7 @@ git commit -m "test(node-api): failing test for the departmentId filter"
 
 **GREEN.** Now ask for the implementation:
 
-**Prompt — worker session:**
+🤖 **Prompt — worker session (Copilot CLI):**
 
 > GREEN step: in `node/web/routes/courses-api.ts`, make
 > `GET /api/courses` accept an optional `departmentId` query parameter.
@@ -511,7 +511,7 @@ Run the suite again; the commit only happens if it is fully green. If
 anything fails, paste the failure output into the worker session and ask
 for a fix.
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 pnpm -C node test && git add node/web/routes/courses-api.ts \
@@ -523,7 +523,7 @@ pnpm -C node test && git add node/web/routes/courses-api.ts \
 The rubric grades evidence, not claims, so collect it first. From the
 control shell:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 git log --oneline -2
@@ -536,7 +536,7 @@ copy it exactly as printed. Now write the return hand-off, replacing
 `<red-sha>`, `<green-sha>` and `<summary-line>` with what you just
 collected (and `<absolute-plan-path>` as in Step 2):
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-dev \
@@ -557,7 +557,7 @@ reaches the orchestrator when you give it that path in Step 5.
 Give the orchestrator the path you copied in Step 4 and have it apply
 the rubric — clearing nothing yet:
 
-**Prompt — orchestrator session:**
+🤖 **Prompt — orchestrator session (Copilot CLI):**
 
 > Read the hand-off at `<printed-path>` and apply the orchestrator rubric
 > to it. Give me the verdict block. Don't clear anything yet.
@@ -578,7 +578,7 @@ strict about evidence — both SHAs, the exact test command, its summary
 line — and the learner route budgets time for one. Only on PROMOTE, clear
 the worker from the control shell:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/clear-context.sh --pane worker
@@ -607,7 +607,7 @@ reviewer that hasn't read the rubric just invents its own bar. Replace
 `<printed-path>` with the Step 4 hand-off's path and
 `<absolute-plan-path>` as in Step 2:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-qa \
@@ -622,7 +622,7 @@ reviewer that hasn't read the rubric just invents its own bar. Replace
 As in Step 2, the typed `cat <doc>` arrives as a prompt, so tell QA what
 to do with it and what to hand back:
 
-**Prompt — QA session:**
+🤖 **Prompt — QA session (Copilot CLI):**
 
 > Read the hand-off you were just sent, then the rubric and the dev
 > hand-off it points to. Spot-check the two commits that dev hand-off
@@ -636,7 +636,7 @@ did in Step 4 — don't retype it from one pane into the other. From the
 control shell, write it down, replacing `<verdict>` and `<reasons>` with
 what QA replied:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/handoff.sh 14-courses-qa \
@@ -650,14 +650,14 @@ what QA replied:
 As in Step 4 there is no `--to-pane`. Copy the path this prints and give
 it to the pane that remembers:
 
-**Prompt — orchestrator session:**
+🤖 **Prompt — orchestrator session (Copilot CLI):**
 
 > Read the QA hand-off at `<qa-printed-path>` and record its verdict on
 > the 14-courses-dev phase as a carry-forward.
 
 Only then clear QA from the control shell:
 
-**Bash — control shell:**
+🐚 **Bash — control shell (OS Terminal):**
 
 ```bash
 ./scripts/orchestrator/clear-context.sh --pane qa
@@ -743,7 +743,8 @@ plot. The rest is discipline.
 ### Teardown
 
 Lab 14 leaves a detached tmux session running and, if you ran
-`handoff.sh`, a folder of hand-off docs. From the repo root:
+`handoff.sh`, a folder of hand-off docs. 🐚 **In your OS Terminal**, from the
+repo root:
 
 ```bash
 # Closes every pane in the session, including any Copilot CLI session still

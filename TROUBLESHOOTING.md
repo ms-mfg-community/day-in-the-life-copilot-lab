@@ -4,6 +4,69 @@ Quick reference for handling common issues during the demo.
 
 ---
 
+## 🔍 Diagnostic Toolkit: VS Code Debug Views, CLI `/diagnose`, Session Data & OpenTelemetry
+
+When Copilot does something unexpected, look at what it received and did before you change the prompt. Everything here is read-only and takes a minute or two. The full guide, with its sources and a note on what was observed rather than documented, is [Debugging and observability](docs/debugging-and-observability.md).
+
+**Type the `/` commands inside a running `copilot` session, not at your shell prompt.**
+
+| Symptom | In Copilot CLI | In VS Code |
+|---------|----------------|------------|
+| Copilot ignores a rule you wrote | `/instructions`, `/env`, then `/context` | **Show Agent Debug Logs** (Discovery events), then **Show Chat Debug View** (System prompt) |
+| An agent or skill is not offered | `/env`, `/agent`, `/skills list` | Discovery events in the Logs view |
+| An MCP tool is never called | `/mcp list` (look for `failed: <reason>`) | **MCP: List Servers**, then **Show Output** |
+| A hook did not fire | `hook.start` and `hook.end` records in `events.jsonl`; `/env` | The Agent Debug Logs |
+| A subagent never ran | `/tasks` | **Agent Flow Chart** |
+| "Why did it ask me to approve that?" | `/diagnose` | — |
+| The session is slow or expensive | `/context`, `/usage` | The Summary view |
+
+### VS Code: Agent Debug Logs and the Chat Debug view
+
+1. **Before** you reproduce the problem, turn capture on: `chat.agentHost.agentDebugLog.enabled` for the Copilot harness, or `github.copilot.chat.agentDebugLog.fileLogging.enabled` for the Local harness. Capture is not retroactive.
+2. Open the Chat view's **...** menu and choose **Show Agent Debug Logs** (or run **Developer: Open Agent Debug Logs**). The Logs view lists events in order, the Summary view shows tool calls, tokens, errors and duration, and **Agent Flow Chart** shows which agent delegated to which.
+3. **Show Chat Debug View** (or **Developer: Show Chat Debug View**) shows the System prompt, User prompt, Context, Response and Tool responses for one request.
+4. Ask Copilot about what was captured: select the sparkle icon in the panel, type `#debugEventsSnapshot` in chat, or run `/troubleshoot <question>`, for example `/troubleshoot Which customizations were loaded, and did any fail?`.
+
+The **GitHub Copilot Chat Hooks** Output channel belongs to VS Code's legacy Local hook setup. **GitHub Copilot Chat** is the general Output channel (`Ctrl+Shift+U` on Windows, `Cmd+Shift+U` on macOS, `Ctrl+K Ctrl+H` on Linux).
+
+### Copilot CLI: `/diagnose`, `/collect-debug-logs` and session data
+
+- `/diagnose [prompt]` analyzes the current session's logs, including why a permission request needed approval.
+- `/collect-debug-logs` collects debug logs to a local `.tgz` file, shares them with GitHub after you consent, or creates a secret GitHub gist. Choose the local file; `*.tgz` is git-ignored in this repository.
+- `/context` shows where the context window goes: System Prompt, Custom Instructions, System Tools, MCP Tools, Messages, Free Space and Buffer. Experimental mode adds usage per skill, subagent, MCP server, tool and plugin.
+- Session data lives in `~/.copilot/session-state/<session-id>/`. `events.jsonl` is the session's chronological event log, `workspace.yaml` holds session metadata (`id`, `cwd`, `repository`, `branch`, `created_at`, `updated_at`), and `plan.md` and `session.db` are created when the session uses plans or the `sql` tool. `/session id` shows the current ID.
+- Process logs: `copilot --log-level debug --log-dir ./logs`. This repository's `.gitignore` ignores `*.log`, so those files are not committed.
+
+### OpenTelemetry
+
+Setting any one of these switches OpenTelemetry on:
+
+| Set | Effect |
+|-----|--------|
+| `COPILOT_OTEL_ENABLED=true` | Switches it on. The exporter defaults to `otlp-http` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` | Switches it on and sends to an OTLP/HTTP collector at that address |
+| `COPILOT_OTEL_FILE_EXPORTER_PATH=./copilot-otel.jsonl` | Switches it on and writes JSON-lines to that file. No collector needed |
+
+**WSL/Bash:**
+```bash
+COPILOT_OTEL_FILE_EXPORTER_PATH=/tmp/copilot-otel.jsonl copilot
+```
+
+**PowerShell:**
+```powershell
+$env:COPILOT_OTEL_FILE_EXPORTER_PATH = Join-Path ([IO.Path]::GetTempPath()) 'copilot-otel.jsonl'
+copilot
+# afterwards: Remove-Item Env:COPILOT_OTEL_FILE_EXPORTER_PATH
+```
+
+By default only metadata is recorded. `OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT=SPAN_ONLY` also records prompts, responses, system instructions, tool arguments and results, and sandbox decisions. That is sensitive: use it only in a trusted environment, write the file outside the repository (`copilot-otel.jsonl` is not git-ignored here) and delete it afterwards. Each run appends to the file.
+
+**Before you share any of this:** debug logs, exported files and session folders can contain prompts, source code, file paths and secrets. Read them first.
+
+**Time:** 2 minutes
+
+---
+
 ## 🟢 Per-Lab & Per-Track Issues (2026 modernization)
 
 These cover the labs added in Phases 1, 5, 6, and 7 plus the Node parity track.

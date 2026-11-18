@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { labs } from "../labs";
+import { TRACKS, formatLabRange, labIndexById, labs } from "../labs";
 import { useStudio } from "../store";
 
 interface CheckState {
@@ -32,7 +32,7 @@ export function Home(): JSX.Element {
   return (
     <div className="home-hero">
       <div className="eyebrow">
-        <span>Everything GitHub Copilot · Labs 01–05</span>
+        <span>Everything GitHub Copilot · 20 labs · 4 tracks</span>
       </div>
       <div className="big">
         The Copilot workshop,
@@ -40,12 +40,12 @@ export function Home(): JSX.Element {
         running <span className="accent">live on your bench</span>.
       </div>
       <p>
-        This studio walks you through the first five labs of the{" "}
-        <em>Everything GitHub Copilot</em> workshop without leaving the browser.
-        The manual on this side teaches; the dark bench on the right is a real
-        instrument — a <strong>live GitHub Copilot session</strong> driven
-        through the official Copilot SDK, working inside a disposable lab
-        workspace.
+        This studio walks you through all 20 labs of the{" "}
+        <em>Everything GitHub Copilot</em> workshop, grouped into four learning
+        tracks, without leaving the browser. The manual on this side teaches;
+        the dark bench on the right is a real instrument — a{" "}
+        <strong>live GitHub Copilot session</strong> driven through the official
+        Copilot SDK, working inside a disposable lab workspace.
       </p>
       <div className="legend">
         <span className="badge live">live · real Copilot</span>
@@ -104,33 +104,64 @@ export function Home(): JSX.Element {
         </div>
       </div>
 
-      <h2>The five labs</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Lab</th>
-            <th>What you'll do</th>
-            <th>Progress</th>
-          </tr>
-        </thead>
-        <tbody>
-          {labs.map((lab, i) => {
-            const done = lab.steps.filter((s) => progress[s.key]).length;
-            return (
-              <tr key={lab.id}>
-                <td>
-                  <code>{lab.number}</code> {lab.title}
-                </td>
-                <td>{lab.tagline}</td>
-                <td>
-                  {done}/{lab.steps.length}
-                  {done === lab.steps.length ? " ✓" : ""}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <h2>The 20 labs, in four learning tracks</h2>
+      <p>
+        Take the tracks in order: Track 1 teaches the configuration surfaces
+        every later lab builds on. The rail and the Next button follow the same
+        order, so Lab 10 is followed by Lab 12 — Lab 11 belongs to Track 3. Lab
+        numbers never change.
+      </p>
+      {TRACKS.map((track) => {
+        const trackLabs = track.labIds.flatMap((labId) => {
+          const lab = labs[labIndexById(labId)];
+          return lab ? [lab] : [];
+        });
+        const trackSteps = trackLabs.flatMap((lab) => lab.steps);
+        const trackDone = trackSteps.filter((s) => progress[s.key]).length;
+        return (
+          <section
+            className="track-section"
+            key={track.id}
+            aria-labelledby={`home-${track.id}`}
+          >
+            <h3 className="track-head" id={`home-${track.id}`}>
+              <span className="track-num">Track {track.number}</span>
+              <span>{track.title}</span>
+              <span className="track-labs">
+                Labs {formatLabRange(track.labIds)} · {trackDone}/
+                {trackSteps.length} steps verified
+              </span>
+            </h3>
+            <p className="track-summary">{track.summary}</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Lab</th>
+                  <th>What you'll do</th>
+                  <th>Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trackLabs.map((lab) => {
+                  const done = lab.steps.filter((s) => progress[s.key]).length;
+                  return (
+                    <tr key={lab.id}>
+                      <td>
+                        <code>{lab.number}</code> {lab.title}
+                      </td>
+                      <td>{lab.tagline}</td>
+                      <td>
+                        {done}/{lab.steps.length}
+                        {done === lab.steps.length ? " ✓" : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        );
+      })}
 
       <div className="step-nav" style={{ borderTop: "none", marginTop: 20 }}>
         <span

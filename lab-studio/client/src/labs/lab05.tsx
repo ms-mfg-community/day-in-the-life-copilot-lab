@@ -142,6 +142,58 @@ export const lab05: Lab = {
             round-trip you just watched is a real subprocess, spawned by the
             session, answering over stdio.
           </Note>
+          <Note>
+            <strong>Back to Lab 03.</strong> Now that you've watched an MCP
+            server connect and answer, you can return to{" "}
+            <code>contoso-dev</code> and wire the <code>mcp-servers:</code>{" "}
+            block Lab 03 only previewed — scoping <code>lab-docs</code> to that
+            one agent, with <code>lab-docs/*</code> added to its{" "}
+            <code>tools</code> list. It's optional here, and it's the step Lab
+            03 told you to wait for. (Per GitHub's reference,{" "}
+            <code>mcp-servers</code> isn't used by VS Code and other IDE custom
+            agents.)
+          </Note>
+          <Note>
+            <strong>
+              🔍 Debug It — a server that fails to start fails quietly. Where
+              does the reason go?
+            </strong>
+            <ul>
+              <li>
+                <strong>Copilot CLI:</strong> type these inside a running
+                session. <code>/mcp list</code> shows each server as connected,
+                connecting, <code>failed: &lt;reason&gt;</code>, disabled,
+                stopped or not connected, and{" "}
+                <code>/mcp get &lt;server-name&gt;</code> opens one server's
+                details and tools. (The cards above write <code>/mcp show</code>
+                ; the bench accepts both spellings, and in the real CLI{" "}
+                <code>/help</code> shows the one your build accepts.){" "}
+                <code>/mcp reload</code> re-reads the configuration and restarts
+                the servers — real CLI only. At your shell prompt,{" "}
+                <code>copilot mcp list</code> shows configuration, not live
+                status.
+              </li>
+              <li>
+                <strong>Process log:</strong> start the real CLI with{" "}
+                <code>copilot --log-level debug --log-dir ./logs</code>, then
+                search the newest{" "}
+                <code>process-&lt;timestamp&gt;-&lt;pid&gt;.log</code> for your
+                server's name. A server that could not start is logged as a
+                warning with the reason (observed on a current build, not
+                documented).
+              </li>
+              <li>
+                <strong>VS Code:</strong> run <strong>MCP: List Servers</strong>{" "}
+                from the Command Palette, select the server and choose{" "}
+                <strong>Show Output</strong> to read its errors, or{" "}
+                <strong>Restart Server</strong>. If the server runs but its tool
+                is never called, open <strong>Show Chat Debug View</strong> and
+                check whether the tool appears in the tool definitions; if it
+                does, look for tool calls and errors in{" "}
+                <strong>Show Agent Debug Logs</strong>.
+              </li>
+            </ul>
+          </Note>
         </>
       ),
     },
@@ -152,6 +204,19 @@ export const lab05: Lab = {
       verifyId: "lab05/lessons",
       body: (
         <>
+          <Note>
+            <strong>🔭 Preview of Lab 10 — Agent Memory.</strong> The{" "}
+            <code>.copilot/lessons/</code> exercise below is a short first taste
+            of cross-session memory, not the full lesson. Lab 10 gives it its
+            layered model and compares this DIY wiki with GitHub Copilot Memory
+            and a custom memory service. Take one distinction from this step:{" "}
+            <strong>MCP is for live tools</strong> — it does something{" "}
+            <em>now</em> (look up docs, search, reason step by step) — while{" "}
+            <strong>cross-session state belongs in a memory layer</strong>{" "}
+            (markdown files, Copilot Memory, or a service you run). The
+            stateless MCP spec revision of 2026-07-28 removed protocol-level
+            sessions, which makes that split sharper.
+          </Note>
           <p>
             MCP gives you live tools. It is deliberately <em>not</em> this
             workshop's memory layer: cross-session knowledge lives in plain

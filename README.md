@@ -117,8 +117,10 @@ Copilot agentic surface against the stack you actually work in:
 
 Both tracks share the same domain (Student / Course / Instructor / Enrollment), the same lab
 narrative, and the same `.github/` Copilot configuration. Lab bodies are language-agnostic;
-each lab links a per-track appendix under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
-and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands.
+Labs 03–06 link per-track appendices under [`labs/appendices/dotnet/`](labs/appendices/dotnet/)
+and [`labs/appendices/node/`](labs/appendices/node/) for stack-specific commands (Lab 07 walks
+through a 3-worker `.NET` orchestration pipeline with a Node-track adaptation note, and Labs
+13–14 walk through multi-agent A2A and tmux orchestration on the `Node` track).
 
 Run **both** tracks with a single command:
 
@@ -554,42 +556,64 @@ erDiagram
 
 > 💡 **Multi-Platform Support:** All lab command lines provide both **PowerShell** and **WSL/Bash** alternatives. Choose the commands that work best for your environment.
 
+The 20 labs are organized into **four learning tracks**. Lab numbers and file names never change, so every `labs/labNN.md` link keeps working — a track is a reading order, not a renumbering. **Start with [Setup](#choose-your-path)** (fork the repo, enable Actions, install tools): every track assumes it.
+
+### Track 1: Core Customizations & Guardrails (Labs 01–07)
+
+*Learn what each Copilot configuration file is, how Copilot combines them, and how to guard and coordinate agents. This is the core sequence, and every later track builds on it.*
+
 | Lab | Module | Focus |
 |-----|--------|-------|
-| [Setup](#choose-your-path) | Fork, Prerequisites, Overview | Fork repo, enable Actions, install tools |
-| [Lab 01](labs/lab01.md) | Exploring Copilot Configuration | Plugin marketplace, agents, skills, instructions, prompts |
+| [Lab 01](labs/lab01.md) | Exploring Copilot Configuration | Configuration ecosystem, instruction hierarchy, code search, and marketplace plugins |
 | [Lab 02](labs/lab02.md) | Custom Instructions & AGENTS.md | Instruction hierarchy, modify, extend |
 | [Lab 03](labs/lab03.md) | Creating a .NET Agent | Build `dotnet-dev.agent.md` |
-| [Lab 04](labs/lab04.md) | Skills & Prompts | Create a skill, write a prompt template |
+| [Lab 04](labs/lab04.md) | Skills & Prompts | Create a skill, write a `/name` command skill |
 | [Lab 05](labs/lab05.md) | MCP Server Configuration | Configure Context7, Memory, Sequential Thinking |
-| [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks |
+| [Lab 06](labs/lab06.md) | Hooks | Pre/post tool hooks, build checks, all 15 lifecycle events, hooks in any language, HTTP hooks, and [debugging and observability](docs/debugging-and-observability.md) |
 | [Lab 07](labs/lab07.md) | Multi-Agent Orchestration | Orchestrator → dev → QA → review |
+
+### Track 2: Cloud Agents, Memory & Context Engineering (Labs 08–10, 12, 15)
+
+*Run Copilot in the cloud with agentic workflows and the coding agent, then control what it knows: memory, MCP data sources and code intelligence.*
+
+| Lab | Module | Focus |
+|-----|--------|-------|
 | [Lab 08](labs/lab08.md) | gh-aw: PRD Generation | Branch creation triggers PM agent |
 | [Lab 09](labs/lab09.md) | Copilot Coding Agent & Code Review | Issue → Coding Agent → PR → AI review |
 | [Lab 10](labs/lab10.md) | Agent memory: Copilot Memory, lessons, and custom memory services | Three memory layers (Raw sources → Recall → Schema); GitHub Copilot Memory (repository-level facts, user-level preferences) and Copilot Dreaming; the `.copilot/lessons/` wiki and `/consolidate-lessons`; when a custom memory service such as SCNS pays off |
-| [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 12](labs/lab12.md) | Fabric MCP with Copilot CLI & VS Code | Fabric MCP wiring, lakehouse enumeration, inline-chat & agent-mode notebook editing, **offline Parquet simulator fallback**, notebook hygiene |
+| [Lab 15](labs/lab15.md) | LSP & Code Intelligence in Copilot CLI | Configure a language server, use go-to-definition/find-references/rename/call-hierarchy, know when Copilot still falls back to text search |
+
+### Track 3: Multi-Agent Orchestration, A2A & Extensions (Labs 11, 13–14, 16)
+
+*Package and share plugins, then scale from one agent to many: agent-to-agent patterns, the tmux orchestrator, and a governed marketplace.*
+
+| Lab | Module | Focus |
+|-----|--------|-------|
+| [Lab 11](labs/lab11.md) | Building & Distributing a Copilot Plugin | Enterprise marketplace, private registry, SBOM, allowlist policy |
 | [Lab 13](labs/lab13.md) | A2A Concepts with Copilot CLI ACP | Agent-to-agent fundamentals, two-agent (implementer + critic) walkthrough on the Node app, `task`/`write_agent`/`read_agent` primitives, three failure modes (looping, context drift, hand-off ambiguity) with mitigations |
 | [Lab 14](labs/lab14.md) | Orchestrator + tmux Pattern (Deep-Dive) | Long-lived orchestrator pane + short-lived worker panes, prescribed `plan → implement → handoff → clear → qa → clear` cycle, `scripts/orchestrator/` (tmux-start, handoff, clear-context), `orchestrator-rubric` prompt, worked example adding `?department=…` to the Node `/api/courses` endpoint, tmux primer + cheatsheet |
-| [Lab 15](labs/lab15.md) | LSP & Code Intelligence in Copilot CLI | Configure a language server, use go-to-definition/find-references/rename/call-hierarchy, know when Copilot still falls back to text search |
 | [Lab 16](labs/lab16.md) | Enterprise Marketplace & Plugin Governance | GA `managed-settings.json` schema, `strictKnownMarketplaces` deny-by-default, AI Controls admin walkthrough |
+
+### Track 4: Enterprise Governance, Spec-Driven Delivery & FinOps (Labs 17–20)
+
+*Run Copilot across an organization: admin controls, spec-driven delivery with stacked PRs, self-improving agents, and token reporting.*
+
+| Lab | Module | Focus |
+|-----|--------|-------|
 | [Lab 17](labs/lab17.md) | GitHub Admin Controls for Copilot/AI | AI Controls nav, default-on model availability policy, Copilot audit log scope |
 | [Lab 18](labs/lab18.md) | Spec-Driven Design, Stacked PRs & Code Review in the Loop | Spec Kit-style spec → PRD pipeline, stacked pull requests, Copilot Code Review on every stack layer |
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
-**Total: ~7 hours** (20 labs — self-paced or presenter-led)
+**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across all 20 modules, or ~13 hours of self-paced hands-on execution across all 20 labs)
 
-> 🧭 **Learning path.** Labs 01-10 form the core sequence. Lab 11 is
-> standalone (plugin distribution). Lab 12 is standalone (Fabric MCP).
-> Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and
-> Lab 14 operationalises them with tmux. Labs 15-20 are the **2026
-> modernization track**: Lab 15 (LSP) and Lab 17 (admin controls) are
-> standalone; Lab 16 → Lab 11 are companions (marketplace governance);
-> Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review);
-> Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends
-> [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to
-> enterprise scale and should be read after Lab 17.
+> 🧭 **Learning path.** Take the tracks in order: each one assumes the one before it. Because a track is a reading order, Track 2 runs Lab 10 → 12 → 15 and Lab 11 sits in Track 3.
+>
+> - **Track 1 (Labs 01–07)** is the core sequence. Lab 03's `dotnet-dev` agent feeds Lab 07's orchestrator, and Lab 06 closes with the debugging and observability toolkit that every later lab leans on: VS Code Agent Debug Logs, Copilot CLI session data and `/diagnose`, and OpenTelemetry. Each of Labs 01–07 also carries a short 🔍 **Debug It** callout; the full reference is [`docs/debugging-and-observability.md`](docs/debugging-and-observability.md).
+> - **Track 2 (Labs 08–10, 12, 15).** Labs 08 → 09 are sequential: the gh-aw workflow first, then the coding agent and code review. Lab 10 (memory) follows the `.copilot/lessons/` preview in Lab 05. Lab 12 (Fabric MCP) and Lab 15 (LSP) are standalone.
+> - **Track 3 (Labs 11, 13–14, 16).** Lab 11 is standalone (plugin distribution). Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and Lab 14 operationalises them with tmux. Lab 16 → Lab 11 are companions (marketplace governance).
+> - **Track 4 (Labs 17–20).** Lab 17 (admin controls) is standalone. Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review); Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to enterprise scale and should be read after Lab 17.
 
 ---
 
@@ -602,7 +626,7 @@ This repo ships with a rich set of configurations for you to explore and extend:
 | **Agents** | 4 (+ more you build!) | `planner`, `code-reviewer`, `agentic-workflows`, `lab-studio-maintainer` — learners create more in Labs 03, 07 |
 | **Skills** | 7 | `coding-standards`, `tdd-workflow`, `security-review`, `verification-loop`, `frontend-patterns` |
 | **Command skills** | 19 | `/commit`, `/code-review`, `/tdd`, `/create-test`, `/handoff`, `/cost-check` |
-| **Hooks** | 10 handlers across 5 events | `sessionStart`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — secret scanning, code formatting, type checking, continuous learning, error logging |
+| **Hooks** | 7 handlers across 4 events | `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred` — prompt logging, secret/doc/force-push blocking, build/format verification, error logging |
 | **MCP Servers** | 4 | Context7 (library docs), Sequential Thinking, WorkIQ, Microsoft Learn |
 | **Instructions** | 3 | Path-specific rules for `.cs`, test files, and more |
 

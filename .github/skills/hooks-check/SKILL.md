@@ -14,7 +14,7 @@ Execute these checks in order:
 1. **Config Check**
    - Check if `.github/hooks/` directory exists
    - List any JSON config files found
-   - If no hooks directory, check for `~/.copilot/hooks/` as fallback
+   - Also check `~/.copilot/hooks/` and any inline `hooks` block in `.github/copilot/settings.json` or `~/.copilot/settings.json`. Hooks from every source are combined, so these are not fallbacks
 
 2. **JSON Validation**
    - Validate each JSON config with `jq . <file>`
@@ -33,14 +33,25 @@ Execute these checks in order:
    - Show recent log entries if found (last 10 lines)
 
 5. **Hook Inventory**
-   - List all configured hook events:
+   - List all configured hook events (Copilot CLI supports these 15):
      - sessionStart
      - sessionEnd
      - userPromptSubmitted
+     - userPromptTransformed
+     - permissionRequest
      - preToolUse
+     - preMcpToolCall
      - postToolUse
+     - postToolUseFailure
+     - subagentStart
+     - subagentStop
+     - agentStop
+     - preCompact
+     - notification
      - errorOccurred
-   - Count handlers per event
+   - Count handlers per event, across every config source
+   - Count PascalCase aliases (for example `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`, `SessionStart`) under the matching camelCase event
+   - Flag any event name that is neither one of these nor a known alias as a likely typo
 
 ## Output
 
@@ -55,15 +66,24 @@ Scripts:  [X/Y exist, Z executable]
 Logs:     [ACTIVE/NONE FOUND] - last activity
 
 Hook Events Configured:
-- sessionStart:        [X handlers]
-- sessionEnd:          [X handlers]
-- userPromptSubmitted: [X handlers]
-- preToolUse:          [X handlers]
-- postToolUse:         [X handlers]
-- errorOccurred:       [X handlers]
+- sessionStart:          [X handlers]
+- sessionEnd:            [X handlers]
+- userPromptSubmitted:   [X handlers]
+- userPromptTransformed: [X handlers]
+- permissionRequest:     [X handlers]
+- preToolUse:            [X handlers]
+- preMcpToolCall:        [X handlers]
+- postToolUse:           [X handlers]
+- postToolUseFailure:    [X handlers]
+- subagentStart:         [X handlers]
+- subagentStop:          [X handlers]
+- agentStop:             [X handlers]
+- preCompact:            [X handlers]
+- notification:          [X handlers]
+- errorOccurred:         [X handlers]
 
 Likely Running: [YES/NO]
 Issues Found:   [NONE/list issues]
 ```
 
-> **Note:** This prompt is available in VS Code, Visual Studio, and JetBrains. For Copilot CLI, type `#prompt:hooks-check` or describe the task directly.
+> **Note:** In Copilot CLI, run this command skill as `/hooks-check`, or describe the task directly.

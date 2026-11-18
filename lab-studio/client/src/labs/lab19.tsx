@@ -108,6 +108,78 @@ export const lab19: Lab = {
             triggers the Actions run, which opens at most one draft PR — and "no
             PR because nothing was actionable" is success, not failure.
           </Note>
+          <Note tone="warn">
+            <strong>
+              🧪 Safe rehearsal — plant the drift where it can't reach main.
+            </strong>{" "}
+            A clean <code>.github/</code> gives a scan almost nothing to find.
+            To see what drift looks like, plant three classic signals somewhere
+            harmless and judge whether the scan notices them. In the real lab
+            that is a throwaway git worktree on a scratch branch that you never
+            commit or push; Lab Studio's workspace is already disposable, so
+            here the table is the exercise — read each row and decide whether
+            the report you just got would have caught it.
+          </Note>
+          <table>
+            <thead>
+              <tr>
+                <th>Plant this</th>
+                <th>Signal</th>
+                <th>How you spot it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  A step that reads a file under the removed{" "}
+                  <code>.github/prompts/</code> folder
+                </td>
+                <td>
+                  <strong>Stale path</strong>
+                </td>
+                <td>
+                  <code>grep</code> or <code>find</code> against the current
+                  tree — the workflow's first signal, "stale references"
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  An instruction to start every commit message with{" "}
+                  <code>ADD:</code>
+                </td>
+                <td>
+                  <strong>Contradictory convention</strong>
+                </td>
+                <td>
+                  Compare it with the repository's own{" "}
+                  <code>&lt;type&gt;: &lt;description&gt;</code> commit rule
+                  (the workshop's <code>AGENTS.md</code> and{" "}
+                  <code>copilot-instructions.md</code> both state one)
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  A model id that the registry (the workshop's{" "}
+                  <code>docs/_meta/registry.yaml</code>) no longer lists
+                </td>
+                <td>
+                  <strong>Retired model ID</strong>
+                </td>
+                <td>
+                  Check each model id against the registry's{" "}
+                  <code>models:</code> block; the comment at the top of that
+                  block names the ids it dropped
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            If a scan misses one of the three, that is the lesson. The
+            workflow's five signals never mention the registry, so whether a
+            scan notices a retired model id depends on how it reads "stale
+            references" — and widening the signals is a design change for a
+            human, not something to automate unattended.
+          </p>
         </>
       ),
     },

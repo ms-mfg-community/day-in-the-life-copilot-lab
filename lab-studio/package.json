@@ -2,7 +2,7 @@
   "name": "lab-studio",
   "private": true,
   "version": "0.1.0",
-  "description": "Copilot Lab Studio — run labs 01-05 of the Everything GitHub Copilot workshop entirely in the browser, backed by a live Copilot SDK session.",
+  "description": "Copilot Lab Studio — run all 20 labs of the Everything GitHub Copilot workshop, grouped into four learning tracks, entirely in the browser, backed by a live Copilot SDK session.",
   "workspaces": [
     "server",
     "client"

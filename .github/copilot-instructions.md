@@ -2,48 +2,48 @@
 
 These instructions apply to all Copilot interactions in this repository.
 
+This repository holds two tracks of the same ContosoUniversity app: ASP.NET Core 8 MVC with Entity Framework Core under `dotnet/`, and Node with Fastify and Drizzle under `node/`. Rules below apply to both tracks unless a track is named.
+
 ## Code Style
 
-- Use immutable patterns. Always create new objects with spread operators instead of mutating.
+- Use immutable patterns. In TypeScript create new objects with spread operators instead of mutating; in C# prefer records and `init`-only properties for DTOs and view models.
 - Prefer many small files (200-400 lines) over few large files (800 max).
 - Keep functions under 50 lines. Avoid nesting deeper than 4 levels.
 - Use early returns to reduce nesting.
 - No hardcoded values. Extract constants with descriptive names.
-- No `console.log` in production code. Use structured logging.
+- No `Console.WriteLine` or `console.log` in production code. Use structured logging (`ILogger<T>` in .NET, the Fastify logger in Node).
 - Handle all errors comprehensively with try/catch. Include context in error messages.
-- Validate all user input at system boundaries using schema validation (Zod, Pydantic).
+- Validate all user input at system boundaries: Zod schemas in Fastify route handlers (Node); data annotations, `ModelState.IsValid` and `[Bind]` allow-lists in MVC controllers (.NET).
 
 ## Immutability (Critical)
 
 ```typescript
 // CORRECT: Create new objects
-function updateUser(user, name) {
-  return { ...user, name }
+function renameStudent(student: Student, lastName: string): Student {
+  return { ...student, lastName }
 }
 
-// WRONG: Never mutate
-function updateUser(user, name) {
-  user.name = name // MUTATION
-  return user
+// WRONG: Never mutate (Student's fields are readonly, so this does not even compile)
+function renameStudent(student: Student, lastName: string): Student {
+  student.lastName = lastName // MUTATION
+  return student
 }
 ```
 
 ## API Response Format
 
+Every Fastify route replies through `ok()` / `fail()` in `node/web/api-response.ts`:
+
 ```typescript
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-  meta?: { total: number; page: number; limit: number }
-}
+type ApiResponse<T> =
+  | { success: true; data: T; meta?: { total: number; page?: number; limit?: number } }
+  | { success: false; error: string }
 ```
 
 ## Patterns
 
-- Use the repository pattern for data access abstraction.
-- Use custom hooks with the `use` prefix for reusable React logic.
-- Implement debounce for search inputs and expensive operations.
+- Use the repository pattern for data access abstraction (for example, the repository interfaces in `node/core/repos/` on the Node track).
+- Use dependency injection. In .NET register services in `Program.cs` and the `Add...Services` extension methods; in Node pass dependencies such as `db` into `buildApp` instead of importing singletons.
 - Use `Promise.all` for independent async operations.
 - Select only needed columns in database queries. Avoid `SELECT *`.
 
@@ -60,6 +60,7 @@ interface ApiResponse<T> {
 - Use the Arrange-Act-Assert pattern.
 - Test behavior, not implementation details.
 - Mock external dependencies. Do not skip error path testing.
+- .NET tests use xUnit and Moq; Node tests use Vitest; Playwright covers E2E on both tracks.
 
 ## Security
 
@@ -98,8 +99,16 @@ Only fall back to static links when MCP tools return no results or are unavailab
 
 This repository contains a brownfield .NET web application (ContosoUniversity) used as the lab project.
 
-- **Architecture**: Clean architecture with Core (domain), Infrastructure (data/services), Web (ASP.NET MVC), Tests (xUnit), PlaywrightTests (E2E).
-- **Solution**: `ContosoUniversity.sln` at the repo root.
+- **Architecture**: Clean architecture under `dotnet/` with Core (domain), Infrastructure (data/services), Web (ASP.NET Core 8 MVC), Tests (xUnit), PlaywrightTests (E2E).
+- **Solution**: `dotnet/ContosoUniversity.sln`. From the repo root, build with `dotnet build dotnet/ContosoUniversity.sln` and run the unit and integration tests with `dotnet test dotnet/ContosoUniversity.Tests/ContosoUniversity.Tests.csproj`.
 - **Patterns**: Repository pattern, dependency injection, Entity Framework Core.
 - **Testing**: xUnit for unit/integration tests, Playwright for E2E.
 - When performing code review, ignore files in the `reports/` directory.
+
+## Node / ContosoUniversity Project
+
+The same domain also ships as a Node track in `node/`: Fastify 5, Drizzle ORM on SQLite, Zod, Vitest and Playwright.
+
+- **Layout**: `core/` (entities and repository interfaces), `infra/` (Drizzle schema and repositories), `web/` (Fastify app and routes), `tests/` (Vitest unit and integration tests), `e2e/` (Playwright).
+- **Commands**: `pnpm -C node test` runs Vitest; `pnpm -C node build` type-checks with `tsc --noEmit`.
+- **Conventions**: ES modules with `.js` import specifiers, strict TypeScript, request bodies validated with Zod `safeParse`, replies built with `ok()` / `fail()`.

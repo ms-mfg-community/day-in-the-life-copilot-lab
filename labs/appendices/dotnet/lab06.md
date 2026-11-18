@@ -13,6 +13,8 @@ This appendix shows the **.NET-flavored** post-tool-use hook referenced by [Lab 
 
 ## `scripts/hooks/post-tool-use-dotnet-build.sh`
 
+💠 **In VS Code:** create `scripts/hooks/post-tool-use-dotnet-build.sh` (or open it if it exists), paste this content, and save. Setting the execute bit is a 🐚 OS Terminal step: `chmod +x scripts/hooks/post-tool-use-dotnet-build.sh` (skip it on Windows).
+
 ```bash
 #!/usr/bin/env bash
 # Post-tool-use hook: rebuild after a .cs edit.
@@ -40,6 +42,8 @@ esac
 ```
 
 ## `scripts/hooks/post-tool-use-dotnet-build.ps1`
+
+💠 **In VS Code:** create `scripts/hooks/post-tool-use-dotnet-build.ps1`, paste this content, and save:
 
 ```powershell
 # Post-tool-use hook: rebuild after a .cs edit.

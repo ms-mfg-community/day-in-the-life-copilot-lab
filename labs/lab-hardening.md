@@ -31,7 +31,9 @@ registry: docs/_meta/registry.yaml
 > 🎓 **Advanced-tier lab — Copilot CLI, in a terminal.** It builds on skills it
 > does not teach (custom-agent frontmatter, the JSON a hook receives on stdin,
 > basic Git), so finish the §0 pre-work and preflight *before* the clock
-> starts. Commands run in a terminal; edit files in any editor. In this lab,
+> starts. Commands run in your 🐚 OS Terminal (the optional §1.3 `/agent` check
+> types into a 🤖 `copilot>` session); edit files in any editor, 💠 VS Code
+> included. In this lab,
 > §3.3 means step 3 of section 3, and so on.
 >
 > - **Self-paced (20 minutes):** §1.1 → §1.2 → §2.1 → §2.2 → §3.1 → §3.2 →
@@ -102,7 +104,7 @@ named in the introduction — *before* the 20 minutes start.
 - Basic Git: creating a throwaway branch (§3.3) and — only for the optional
   sidebar there — `git stash`.
 
-🖥️ **Before you start — preflight, in your terminal:**
+🐚 **Before you start — preflight, in your OS Terminal:**
 
 - **A working, signed-in Copilot CLI.** `copilot --version` should print a
   version at or above `copilot_cli_version_floor` in
@@ -128,7 +130,9 @@ named in the introduction — *before* the 20 minutes start.
   at [Adding MCP servers](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers).
   Without it, the positive-path probe in §3.1 will return "tool not
   available" rather than the success the lab expects.
-- **An interactive terminal** — only for the optional `/agent` check in §1.3.
+- **An interactive terminal** — only for the optional `/agent` check in §1.3,
+  where you start `copilot` from your 🐚 OS Terminal and type the slash command
+  at its 🤖 `copilot>` prompt.
 
 ## Copilot CLI currency (2026 refresh)
 
@@ -173,7 +177,7 @@ Custom-agent frontmatter grammar is documented on
 and compiled into
 [`docs/copilot-config-reference.md` §2](../docs/copilot-config-reference.md#2-custom-agent-frontmatter-agentmd).
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Copy the reference agent into your project:
 
@@ -191,7 +195,8 @@ and compiled into
              .github/agents/tight-reviewer.agent.md
    ```
 
-2. Open the file and read the frontmatter. Every field is deliberate:
+2. 💠 **In VS Code** (or any editor), open the file and read the frontmatter.
+   Every field is deliberate:
 
    | Field | Value | Why |
    |---|---|---|
@@ -216,8 +221,8 @@ and compiled into
 3. *(Optional — skip it if you are short on time; nothing in §3 depends on
    it.)* Verify the agent is *not* offered for auto-delegation. Slash commands
    like `/agent` are **interactive-only** — they will not execute under
-   `copilot --prompt`. Open a fresh interactive `copilot` session, then
-   type:
+   `copilot --prompt`. 🐚 **In your OS Terminal**, open a fresh interactive
+   `copilot` session, then 🤖 **in Copilot CLI (`copilot>`)** type:
 
    ```text
    /agent
@@ -229,7 +234,7 @@ and compiled into
    it either. The only way in is from a non-interactive shell, where
    `--allow-all-tools` is required so the agent's tool calls are not
    blocked at the CLI layer. Close the interactive session first, then run
-   this from a regular terminal — **WSL/Bash or PowerShell**, one line, paste
+   this 🐚 **in your OS Terminal** — **WSL/Bash or PowerShell**, one line, paste
    it as is:
 
    ```bash
@@ -250,7 +255,7 @@ because hooks run in every session regardless of which agent is active, a
 hook catches the case where `tools:` on the frontmatter is mistyped,
 deleted, or overridden.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. Copy the reference hook into your project:
 
@@ -319,7 +324,7 @@ deleted, or overridden.
 
 With the agent and hook both in place, confirm defense-in-depth is working.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Positive path (the control)** — the agent calls its permitted tools (read
    a file *and* search Microsoft Learn). **WSL/Bash or PowerShell** — one
@@ -364,11 +369,12 @@ With the agent and hook both in place, confirm defense-in-depth is working.
    hook works. Step 3 tests the hook.
 
 3. **Belt-and-braces check (hook level)** — take gate 1 away and see whether
-   gate 2 holds on its own. On a throwaway branch, open **your copy**,
+   gate 2 holds on its own. On a throwaway branch, 💠 **in VS Code** (or any
+   editor), open **your copy**,
    `.github/agents/tight-reviewer.agent.md` — never the reference file under
    `solutions/` — and change `tools:` to `["*"]`. The copied profile still
    tells the agent it has no shell capability, so ask it plainly to use one
-   (**WSL/Bash or PowerShell**, one line):
+   (🐚 **in your OS Terminal**, **WSL/Bash or PowerShell**, one line):
 
    ```bash
    copilot --allow-all-tools --agent=tight-reviewer --prompt "Use your shell tool to run 'echo hook-check' and paste the exact output."
@@ -436,7 +442,7 @@ With the agent and hook both in place, confirm defense-in-depth is working.
 
 ## Cleanup
 
-🖥️ **First, remove what this lab copied in.** The hook from §2 stays armed
+🐚 **In your OS Terminal — first, remove what this lab copied in.** The hook from §2 stays armed
 after the lab ends: in every later Copilot session you start in this repo, it
 denies each tool call that is not on its allow-list. From the repo root, delete
 it and the agent file from §1 (both commands do nothing if a file is already gone):
@@ -468,7 +474,7 @@ foreach ($f in '.github/agents/tight-reviewer.agent.md', '.github/hooks/deny-unl
 > reverted in the steps above; this is the generic sweep that catches the
 > long-tail.
 
-🖥️ **In your terminal:**
+🐚 **In your OS Terminal:**
 
 1. **Stop background processes.** Anything you started in the foreground with
    `&` or in another tmux pane (dev servers, watchers, `gh aw` long-runs,

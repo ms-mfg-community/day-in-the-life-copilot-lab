@@ -23,6 +23,56 @@ dotnet/ContosoUniversity.PlaywrightTests/ # E2E tests
 
 ## `.github/agents/dotnet-dev.agent.md`
 
+💠 **In VS Code:** create `.github/agents/dotnet-dev.agent.md` (in the Explorer, right-click the `.github/agents` folder and choose **New File**; or run **Chat: Open Customizations**, select **Agents**, and use the `+` next to **Workspace**), paste this content, and save:
+
+````markdown
+---
+name: "dotnet-dev"
+description: "Specialized .NET development agent for ContosoUniversity. Expertise in clean architecture, EF Core, ASP.NET MVC, dependency injection, and C# best practices."
+tools: ["read", "edit", "execute", "search"]
+---
+
+# .NET Development Agent
+
+You are a .NET development specialist working on the ContosoUniversity application. You implement features following clean architecture, DDD principles, and .NET best practices.
+
+## When Invoked
+
+1. Check the solution builds: `dotnet build dotnet/ContosoUniversity.sln`
+2. Review the relevant project layer before making changes
+3. Follow the architecture: Core → Infrastructure → Web
+4. Implement with proper dependency injection and async patterns
+
+## Coding Standards
+
+- **Async all the way**: `async Task<IActionResult>` for controller actions
+- **Constructor injection**: inject `IRepository<T>`, never `new` up services
+- **Null checks with early return**: `if (id == null) return NotFound();`
+- **EF Core async**: `ToListAsync()`, `FirstOrDefaultAsync()`, `SaveChangesAsync()`
+- **No SELECT \***: project only needed columns with `.Select()`
+- **Data Annotations**: `[Required]`, `[StringLength]`, `[Range]` on models
+
+## Development Commands
+
+```bash
+dotnet build dotnet/ContosoUniversity.sln            # Build all projects
+dotnet test dotnet/ContosoUniversity.Tests/           # Run tests
+dotnet run --project dotnet/ContosoUniversity.Web     # Run the app
+```
+
+## Review Checklist
+
+- [ ] `dotnet build` succeeds
+- [ ] Existing tests pass
+- [ ] Async/await used correctly
+- [ ] Repository pattern used for data access
+- [ ] Input validation on controller actions
+- [ ] No hardcoded secrets
+````
+
+<details>
+<summary>🐚 Shell alternative (Bash / PowerShell heredoc)</summary>
+
 **WSL/Bash:**
 
 ````bash
@@ -88,10 +138,16 @@ tools: ["read", "edit", "execute", "search"]
 '@ | Out-File -FilePath .github/agents/dotnet-dev.agent.md -Encoding utf8
 ````
 
+</details>
+
 ## Try the agent
 
+🤖 **In Copilot CLI (`copilot>`):** select the agent with `/agent dotnet-dev`, then ask:
+
 ```
-@dotnet-dev Analyze the dotnet/ContosoUniversity.Core project. What models exist and what are their relationships?
+Analyze the dotnet/ContosoUniversity.Core project. What models exist and what are their relationships?
 ```
+
+💠 **In VS Code:** choose `dotnet-dev` from the **Agent** dropdown in the Chat view and send the same request.
 
 The agent should read files from `dotnet/ContosoUniversity.Core/Models/` and identify Student, Course, Instructor, Enrollment, Department, OfficeAssignment with their relationships.
