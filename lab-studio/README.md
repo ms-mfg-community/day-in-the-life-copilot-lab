@@ -214,8 +214,9 @@ repository README's _Lab Modules_ section (`client/src/labs/tracks.ts` is the
 data; a test keeps the two in step). The rail, the home screen, and the
 Back/Next buttons all follow the track order, so Track 2 runs Lab 10 → 12 → 15
 and Lab 11 belongs to Track 3. Lab ids (`lab01`–`lab20`), step keys and the
-order of the `labs` array never change, so saved progress and location stay
-valid.
+order of the `labs` array never change: progress is keyed by step key and
+survives step reordering, while the saved location is a lab and step index, so
+reordering a lab's steps can reopen a returning learner on a neighbouring step.
 
 | Track                                                    | Labs          |
 | -------------------------------------------------------- | ------------- |
