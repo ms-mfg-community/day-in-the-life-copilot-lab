@@ -109,7 +109,7 @@
   },
   "lab19": {
     "source": "labs/lab19.md",
-    "sourceHash": "0745e604ccbbc86a",
+    "sourceHash": "cbb079bdc09170eb",
     "studio": "client/src/labs/lab19.tsx",
     "studioExists": true
   },

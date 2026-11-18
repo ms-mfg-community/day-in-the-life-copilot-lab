@@ -270,12 +270,22 @@ describe('lab19 contract: AC12 — §19.3 has a safe local rehearsal for the thr
     expect(registryText, 'the registry no longer records which model ids it dropped').toMatch(/\bDropped\b/);
   });
 
-  it('says what to do when the guarded setup stops: do not start copilot by hand, clear the leftovers, run it again', () => {
+  it('says what to do when the guarded setup stops: do not start copilot by hand, inspect leftovers before force-removing, run it again', () => {
     // Prose only: the executable behaviour of the guard is proven in lab19-rehearsal-execution.test.ts.
     const advice = sec().replace(/```[\s\S]*?```/g, '');
     expect(advice).toMatch(/\b(?:don['’]t|do not|never)\b[^.\n]*`copilot`/i);
     expect(advice).toMatch(/left\s?over/i);
+    expect(advice).toContain('git worktree list');
+    expect(advice).toContain('[scratch/drift-rehearsal]');
+    expect(advice).toContain('git -C ../drift-rehearsal status --short');
     expect(advice).toContain('git worktree remove --force ../drift-rehearsal');
     expect(advice).toContain('git branch -d scratch/drift-rehearsal');
+    expect(advice.indexOf('git worktree list')).toBeLessThan(
+      advice.indexOf('git worktree remove --force ../drift-rehearsal'),
+    );
+    expect(advice.indexOf('git -C ../drift-rehearsal status --short')).toBeLessThan(
+      advice.indexOf('git worktree remove --force ../drift-rehearsal'),
+    );
+    expect(advice).toMatch(/leave [^.\n]*worktree alone/i);
   });
 });

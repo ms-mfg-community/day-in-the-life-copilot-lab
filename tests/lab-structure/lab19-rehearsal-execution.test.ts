@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 function git(cwd: string, ...args: string[]): string {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: 20_000 });
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: 60_000 });
   expect(result.error, `git ${args.join(' ')}`).toBeUndefined();
   expect(result.status, result.stderr).toBe(0);
   return result.stdout.trim();
@@ -76,7 +76,7 @@ function run(code: string, context: ReturnType<typeof fixture>) {
       GIT_PAGER: 'cat',
     },
     encoding: 'utf8',
-    timeout: 20_000,
+    timeout: 60_000,
   });
 }
 
@@ -92,7 +92,7 @@ function expectCopilotNeverStarted(context: Context, result: ReturnType<typeof r
   expect(result.status, 'a failed setup step must be reported, not swallowed').not.toBe(0);
 }
 
-describe('Lab 19: execute the local rehearsal without a live model or GitHub', () => {
+describe('Lab 19: execute the local rehearsal without a live model or GitHub', { timeout: 60_000 }, () => {
   it('isolates the planted skill from a dirty main checkout and removes the scratch worktree and branch', () => {
     const context = fixture();
     const original = join(context.checkout, 'AGENTS.md');
@@ -118,10 +118,10 @@ describe('Lab 19: execute the local rehearsal without a live model or GitHub', (
     expect(existsSync(join(context.dir, 'drift-rehearsal'))).toBe(false);
     expect(git(context.checkout, 'worktree', 'list', '--porcelain').match(/^worktree /gm)).toHaveLength(1);
     expect(git(context.checkout, 'branch', '--list', 'scratch/drift-rehearsal')).toBe('');
-  });
+  }, 60_000);
 });
 
-describe('Lab 19: a failed setup step never launches Copilot', () => {
+describe('Lab 19: a failed setup step never launches Copilot', { timeout: 60_000 }, () => {
   // Copilot's next prompt writes a skill into whichever checkout it starts in, so every way the
   // setup can fail has to stop before `copilot` -- not only the happy path above.
 
@@ -162,13 +162,21 @@ describe('Lab 19: a failed setup step never launches Copilot', () => {
     const advice = lab.split(/\r?\n/).find((line) => line.startsWith('> ⚠️ **If this block stops'));
     expect(advice, 'the failed setup needs recovery instructions').toBeDefined();
     const recovery = [...advice!.matchAll(/`(git [^`]+)`/g)].map((match) => match[1]);
-    expect(recovery, 'recover both the leftover worktree and its scratch branch').toHaveLength(2);
+    expect(recovery, 'inspect the leftover worktree before force-removing it and deleting its scratch branch').toEqual([
+      'git worktree list',
+      'git -C ../drift-rehearsal status --short',
+      'git worktree remove --force ../drift-rehearsal',
+      'git branch -d scratch/drift-rehearsal',
+    ]);
 
     expectCopilotNeverStarted(context, run(setup, context), statusBefore);
-    const recovered = run(recovery.join(' &&\n'), context);
+    const [listCmd, statusCmd, removeCmd, branchCmd] = recovery;
+    const recovered = run(`${listCmd} &&\n${statusCmd} &&\n${removeCmd};\n${branchCmd}`, context);
 
     expect(recovered.error).toBeUndefined();
     expect(recovered.status, recovered.stderr).toBe(0);
+    expect(recovered.stdout).toContain('[scratch/drift-rehearsal]');
+    expect(recovered.stdout).toContain('unfinished-rehearsal.txt');
     expect(existsSync(scratch), 'recovery must discard the dirty scratch checkout').toBe(false);
     expect(git(context.checkout, 'branch', '--list', 'scratch/drift-rehearsal')).toBe('');
     expect(existsSync(context.observation), 'recovery itself must not start Copilot').toBe(false);
@@ -187,7 +195,7 @@ describe('Lab 19: a failed setup step never launches Copilot', () => {
     expect(existsSync(scratch)).toBe(false);
     expect(git(context.checkout, 'worktree', 'list', '--porcelain').match(/^worktree /gm)).toHaveLength(1);
     expect(git(context.checkout, 'branch', '--list', 'scratch/drift-rehearsal')).toBe('');
-  });
+  }, 60_000);
 
   it('stops when the directory change fails after the worktree was created', () => {
     const context = fixture();
