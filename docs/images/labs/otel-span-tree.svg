@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="otel-title otel-desc">
+  <title id="otel-title">OpenTelemetry GenAI trace waterfall for one Copilot CLI prompt</title>
+  <desc id="otel-desc">A waterfall chart of one trace written by the Copilot CLI OpenTelemetry file exporter, with span names on the left and time bars on the right. The root span is invoke_agent. Beneath it are a chat model call, an execute_tool task span that launched a subagent, and a final chat call. Nested under the execute_tool task span is a child invoke_agent explore span, which holds its own chat, execute_tool and chat spans, so the subagent is part of the same trace. A faint dashed plan span marks plan mode, where it appears only in plan mode. Pairs of diamonds on the root span mark github.copilot.hook.start and github.copilot.hook.end span events for the userPromptSubmitted, preToolUse and postToolUse hooks. Tags mark each span name as documented in the CLI monitoring docs or observed on a current build. Three cards below list the documented span tree, the observed details that can change, and how to switch the file exporter on, noting that metadata is recorded by default and that SPAN_ONLY content capture makes the file sensitive. Timings are illustrative.</desc>
+  <style>
+    .bg{fill:#0d1117}
+    .panel{fill:#0b0f14;stroke:#30363d;stroke-width:2}
+    .card{fill:#161b22;stroke:#30363d;stroke-width:2}
+    .grid{stroke:#21262d;stroke-width:2}
+    .sep{stroke:#30363d;stroke-width:2}
+    .h1{font:700 34px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .h2{font:700 22px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .sub{font:400 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .t{font:400 17px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tm{font:400 16px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .ts{font:400 14px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .m{font:500 18px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .mc{font:500 15px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .ms{font:500 14px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#9da7b3}
+    .agent{fill:#bc8cff}
+    .chat{fill:#58a6ff}
+    .tool{fill:#d29922}
+    .ghost{fill:none;stroke:#8b949e;stroke-width:2;stroke-dasharray:6 5}
+    .tagd{fill:#12261a;stroke:#3fb950;stroke-width:2}
+    .tago{fill:#2b2410;stroke:#e3b341;stroke-width:2}
+    .tagp{fill:#161b22;stroke:#8b949e;stroke-width:2}
+    .tt{font:700 13px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-anchor:middle}
+    .hk{fill:#f778ba}
+  </style>
+
+  <rect class="bg" width="1600" height="900"/>
+  <text class="h1" x="40" y="62">OpenTelemetry trace: one prompt, one waterfall</text>
+  <text class="sub" x="40" y="96">Written by the Copilot CLI file exporter, one JSON record per line. Timings here are illustrative.</text>
+
+  <!-- Waterfall panel -->
+  <rect class="panel" x="40" y="116" width="1520" height="488" rx="12"/>
+  <text class="h2" x="64" y="152">Span</text>
+  <text class="ts" x="1540" y="152" text-anchor="end">relative time</text>
+  <line class="grid" x1="620" y1="166" x2="620" y2="584"/><line class="grid" x1="850" y1="166" x2="850" y2="584"/><line class="grid" x1="1080" y1="166" x2="1080" y2="584"/><line class="grid" x1="1310" y1="166" x2="1310" y2="584"/><line class="grid" x1="1540" y1="166" x2="1540" y2="584"/>
+  <text class="ts" x="620" y="152" text-anchor="middle">0%</text><text class="ts" x="850" y="152" text-anchor="middle">25%</text><text class="ts" x="1080" y="152" text-anchor="middle">50%</text><text class="ts" x="1310" y="152" text-anchor="middle">75%</text>
+
+  <!-- R0 invoke_agent -->
+  <text class="m" x="64" y="198">invoke_agent</text>
+  <rect class="tagd" x="470" y="182" width="116" height="24" rx="12"/><text class="tt" x="528" y="199" style="fill:#56d364">documented</text>
+  <rect class="agent" x="620" y="182" width="920" height="26" rx="5"/>
+  <!-- hook span events on invoke_agent -->
+  <path class="hk" d="M640 168 l6 6 l-6 6 l-6 -6 z"/><path d="M668 168 l6 6 l-6 6 l-6 -6 z" fill="none" stroke="#f778ba" stroke-width="2"/>
+  <text class="ts" x="684" y="178" style="fill:#f778ba">userPromptSubmitted</text>
+  <path class="hk" d="M1004 168 l6 6 l-6 6 l-6 -6 z"/><path d="M1020 168 l6 6 l-6 6 l-6 -6 z" fill="none" stroke="#f778ba" stroke-width="2"/>
+  <text class="ts" x="990" y="178" text-anchor="end" style="fill:#f778ba">preToolUse</text>
+  <path class="hk" d="M1198 168 l6 6 l-6 6 l-6 -6 z"/><path d="M1214 168 l6 6 l-6 6 l-6 -6 z" fill="none" stroke="#f778ba" stroke-width="2"/>
+  <text class="ts" x="1232" y="178" style="fill:#f778ba">postToolUse</text>
+
+  <!-- R1 plan ghost -->
+  <text class="m" x="92" y="244" style="fill:#9da7b3">plan</text>
+  <rect class="tagp" x="470" y="228" width="116" height="24" rx="12"/><text class="tt" x="528" y="245" style="fill:#c9d1d9">plan mode only</text>
+  <rect class="ghost" x="629" y="228" width="175" height="26" rx="5"/>
+
+  <!-- R2 chat -->
+  <text class="m" x="92" y="290">chat &lt;model&gt;</text>
+  <rect class="tagd" x="470" y="274" width="116" height="24" rx="12"/><text class="tt" x="528" y="291" style="fill:#56d364">documented</text>
+  <rect class="chat" x="648" y="274" width="175" height="26" rx="5"/>
+
+  <!-- R3 execute_tool task -->
+  <text class="m" x="92" y="336">execute_tool task</text>
+  <rect class="tago" x="470" y="320" width="116" height="24" rx="12"/><text class="tt" x="528" y="337" style="fill:#e3b341">observed</text>
+  <rect class="tool" x="841" y="320" width="534" height="26" rx="5"/>
+
+  <!-- R4 invoke_agent explore -->
+  <text class="m" x="120" y="382">invoke_agent explore</text>
+  <rect class="tago" x="470" y="366" width="116" height="24" rx="12"/><text class="tt" x="528" y="383" style="fill:#e3b341">observed</text>
+  <rect class="agent" x="859" y="366" width="497" height="26" rx="5"/>
+
+  <!-- R5 chat -->
+  <text class="m" x="148" y="428">chat &lt;model&gt;</text>
+  <rect class="tagd" x="470" y="412" width="116" height="24" rx="12"/><text class="tt" x="528" y="429" style="fill:#56d364">documented</text>
+  <rect class="chat" x="878" y="412" width="129" height="26" rx="5"/>
+
+  <!-- R6 execute_tool <tool> -->
+  <text class="m" x="148" y="474">execute_tool &lt;tool&gt;</text>
+  <rect class="tagd" x="470" y="458" width="116" height="24" rx="12"/><text class="tt" x="528" y="475" style="fill:#56d364">documented</text>
+  <rect class="tool" x="1025" y="458" width="166" height="26" rx="5"/>
+
+  <!-- R7 chat -->
+  <text class="m" x="148" y="520">chat &lt;model&gt;</text>
+  <rect class="tagd" x="470" y="504" width="116" height="24" rx="12"/><text class="tt" x="528" y="521" style="fill:#56d364">documented</text>
+  <rect class="chat" x="1209" y="504" width="129" height="26" rx="5"/>
+
+  <!-- R8 chat (parent) -->
+  <text class="m" x="92" y="566">chat &lt;model&gt;</text>
+  <rect class="tagd" x="470" y="550" width="116" height="24" rx="12"/><text class="tt" x="528" y="567" style="fill:#56d364">documented</text>
+  <rect class="chat" x="1393" y="550" width="129" height="26" rx="5"/>
+
+  <!-- Legend inside the panel -->
+  <path class="hk" d="M64 596 l5 5 l-5 5 l-5 -5 z" transform="translate(0,-12)"/><text class="ts" x="76" y="590">github.copilot.hook.start</text>
+  <path d="M276 584 l5 5 l-5 5 l-5 -5 z" fill="none" stroke="#f778ba" stroke-width="2"/><text class="ts" x="288" y="594">github.copilot.hook.end (span events on invoke_agent)</text>
+
+  <!-- Cards -->
+  <rect class="card" x="40" y="628" width="500" height="252" rx="12"/>
+  <text class="h2" x="62" y="662">Documented span tree</text>
+  <text class="mc" x="62" y="696">invoke_agent</text>
+  <text class="mc" x="86" y="720">plan <tspan class="ms">(plan mode only)</tspan></text>
+  <text class="mc" x="110" y="744">chat &lt;model&gt;</text>
+  <text class="mc" x="110" y="768">execute_tool &lt;tool&gt;</text>
+  <text class="mc" x="86" y="792">chat &lt;model&gt;</text>
+  <text class="mc" x="86" y="816">execute_tool &lt;tool&gt;</text>
+  <text class="tm" x="62" y="848">Subagent invocations are linked into the same</text>
+  <text class="tm" x="62" y="868">trace through context propagation.</text>
+
+  <rect class="card" x="560" y="628" width="500" height="252" rx="12" style="stroke:#e3b341"/>
+  <text class="h2" x="582" y="662">Observed on a current build</text>
+  <text class="t" x="582" y="696">A delegated run is still one trace:</text>
+  <text class="mc" x="582" y="720">execute_tool task</text><text class="t" x="752" y="720">holds a child span</text>
+  <text class="mc" x="582" y="744">invoke_agent explore</text><text class="t" x="762" y="744">.</text>
+  <text class="t" x="582" y="776">Hooks are span events on invoke_agent:</text>
+  <text class="mc" x="582" y="800">github.copilot.hook.start / .end</text>
+  <text class="t" x="582" y="824">with attribute</text><text class="mc" x="698" y="824">github.copilot.hook.type</text>
+  <text class="tm" x="582" y="856">Names like these are not documented, so they can change.</text>
+
+  <rect class="card" x="1080" y="628" width="480" height="252" rx="12" style="stroke:#58a6ff"/>
+  <text class="h2" x="1102" y="662">Turn it on, then read it</text>
+  <text class="mc" x="1102" y="696">COPILOT_OTEL_FILE_EXPORTER_PATH=</text>
+  <text class="mc" x="1102" y="720">  /tmp/copilot-otel.jsonl copilot</text>
+  <text class="t" x="1102" y="752">One JSON record per line; no collector.</text>
+  <text class="t" x="1102" y="780">Metadata only by default. SPAN_ONLY adds</text>
+  <text class="t" x="1102" y="804">prompts, responses and tool arguments.</text>
+  <text class="tm" x="1102" y="836">The file is then sensitive: keep it outside</text>
+  <text class="tm" x="1102" y="858">the repository and delete it when done.</text>
+</svg>

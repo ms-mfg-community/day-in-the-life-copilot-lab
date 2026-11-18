@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="customizations-title customizations-desc">
+  <title id="customizations-title">VS Code Chat: Open Customizations: the Agent Customizations editor and its Hooks tab</title>
+  <desc id="customizations-desc">A mock-up of the Agent Customizations editor that Chat: Open Customizations opens in VS Code. A left list has five tabs: Instructions, Skills, Agents, MCP Servers and Hooks, with Hooks selected. The Hooks tab shows a Workspace group holding .github/hooks/default.json with its four hook events, userPromptSubmitted, preToolUse, postToolUse and errorOccurred, each with a hook count, and a User group that is empty. Each group has a plus button to create a new hook. A column on the right numbers the five tabs and says what each shows, and a box explains three ways to open the editor: the Open Customizations button in the Chat view title bar, the Chat: Open Customizations command, or typing /hooks in Chat. A note says a listed customization is not proof that it is used; check Discovery events in the Agent Debug Logs. This is an illustrative mock-up and real layouts vary by VS Code version.</desc>
+  <style>
+    .bg{fill:#0d1117}
+    .win{fill:#0b0f14;stroke:#30363d;stroke-width:2}
+    .bar{fill:#161b22}
+    .card{fill:#161b22;stroke:#30363d;stroke-width:2}
+    .sep{stroke:#30363d;stroke-width:2}
+    .h1{font:700 34px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .h2{font:700 26px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .sub{font:400 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .t{font:400 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tb{font:700 20px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e6edf3}
+    .tm{font:400 17px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#9da7b3}
+    .tsel{font:700 21px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#79c0ff}
+    .m{font:500 18px ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;fill:#e6edf3}
+    .badge{fill:#e3b341;stroke:#0d1117;stroke-width:2}
+    .bn{font:700 17px -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#0d1117;text-anchor:middle}
+    .plus{fill:#10233f;stroke:#58a6ff;stroke-width:2}
+  </style>
+
+  <rect class="bg" width="1600" height="900"/>
+  <text class="h1" x="40" y="62">💠 VS Code: Chat: Open Customizations</text>
+  <text class="sub" x="40" y="96">The Agent Customizations editor lists what Copilot can load, one tab for each type.</text>
+
+  <!-- Editor window -->
+  <rect class="win" x="40" y="120" width="1000" height="690" rx="12"/>
+  <rect class="bar" x="40" y="120" width="1000" height="40" rx="12"/>
+  <rect x="40" y="148" width="1000" height="12" fill="#161b22"/>
+  <rect x="52" y="126" width="270" height="34" rx="6" fill="#0b0f14" stroke="#58a6ff" stroke-width="2"/>
+  <text class="tm" x="68" y="149">Agent Customizations</text>
+  <rect x="836" y="128" width="190" height="28" rx="14" fill="#10233f" stroke="#58a6ff" stroke-width="2"/>
+  <text class="tm" x="852" y="148">Harness: Copilot</text>
+
+  <!-- Tab list -->
+  <line class="sep" x1="280" y1="160" x2="280" y2="810"/>
+  <text class="tm" x="64" y="198">CUSTOMIZATION TYPES</text>
+  <text class="t" x="64" y="246">Instructions</text>
+  <text class="t" x="64" y="302">Skills</text>
+  <text class="t" x="64" y="358">Agents</text>
+  <text class="t" x="64" y="414">MCP Servers</text>
+  <rect x="48" y="444" width="224" height="48" rx="8" fill="#10233f" stroke="#58a6ff" stroke-width="2"/>
+  <text class="tsel" x="64" y="476">Hooks</text>
+  <circle class="badge" cx="246" cy="236" r="14"/><text class="bn" x="246" y="242">1</text>
+  <circle class="badge" cx="246" cy="292" r="14"/><text class="bn" x="246" y="298">2</text>
+  <circle class="badge" cx="246" cy="348" r="14"/><text class="bn" x="246" y="354">3</text>
+  <circle class="badge" cx="246" cy="404" r="14"/><text class="bn" x="246" y="410">4</text>
+  <circle class="badge" cx="246" cy="468" r="14"/><text class="bn" x="246" y="474">5</text>
+
+  <!-- Hooks tab content -->
+  <text class="h2" x="312" y="208">Hooks</text>
+  <rect x="690" y="182" width="320" height="38" rx="8" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text class="tm" x="708" y="207">Search hooks</text>
+
+  <text class="tb" x="312" y="268">Workspace</text>
+  <rect class="plus" x="958" y="244" width="52" height="34" rx="8"/>
+  <text class="tb" x="984" y="268" text-anchor="middle">+</text>
+  <rect class="card" x="312" y="288" width="698" height="276" rx="10"/>
+  <text class="m" x="332" y="322">.github/hooks/default.json</text>
+  <line class="sep" x1="332" y1="338" x2="990" y2="338"/>
+  <text class="m" x="332" y="376">userPromptSubmitted</text><text class="tm" x="930" y="376" text-anchor="end">1 hook</text>
+  <text class="m" x="332" y="418">preToolUse</text><text class="tm" x="930" y="418" text-anchor="end">3 hooks</text>
+  <text class="m" x="332" y="460">postToolUse</text><text class="tm" x="930" y="460" text-anchor="end">2 hooks</text>
+  <text class="m" x="332" y="502">errorOccurred</text><text class="tm" x="930" y="502" text-anchor="end">1 hook</text>
+  <text class="tm" x="332" y="543">Select a hook to open its configuration.</text>
+
+  <text class="tb" x="312" y="602">User</text>
+  <rect class="plus" x="958" y="578" width="52" height="34" rx="8"/>
+  <text class="tb" x="984" y="602" text-anchor="middle">+</text>
+  <rect class="card" x="312" y="622" width="698" height="92" rx="10"/>
+  <text class="m" x="332" y="656">~/.copilot/hooks/</text>
+  <text class="tm" x="332" y="692">No hooks yet. The plus button creates one for every project.</text>
+  <text class="tm" x="312" y="768">Mock-up for illustration: names and layout vary with your VS Code version and repository.</text>
+
+  <!-- Right column -->
+  <text class="h2" x="1080" y="160">What each tab shows</text>
+  <circle class="badge" cx="1094" cy="204" r="14"/><text class="bn" x="1094" y="210">1</text>
+  <text class="tb" x="1120" y="204">Instructions</text>
+  <text class="tm" x="1120" y="230">Each file's source, location and any error.</text>
+  <circle class="badge" cx="1094" cy="272" r="14"/><text class="bn" x="1094" y="278">2</text>
+  <text class="tb" x="1120" y="272">Skills</text>
+  <text class="tm" x="1120" y="298">The SKILL.md skills your session can see.</text>
+  <circle class="badge" cx="1094" cy="340" r="14"/><text class="bn" x="1094" y="346">3</text>
+  <text class="tb" x="1120" y="340">Agents</text>
+  <text class="tm" x="1120" y="366">Custom agents, such as .agent.md files.</text>
+  <circle class="badge" cx="1094" cy="408" r="14"/><text class="bn" x="1094" y="414">4</text>
+  <text class="tb" x="1120" y="408">MCP Servers</text>
+  <text class="tm" x="1120" y="434">Servers, with Add Server (+) per group.</text>
+  <circle class="badge" cx="1094" cy="476" r="14"/><text class="bn" x="1094" y="482">5</text>
+  <text class="tb" x="1120" y="476">Hooks</text>
+  <text class="tm" x="1120" y="502">Hook files, with New Hook (+) per group.</text>
+
+  <rect class="card" x="1066" y="540" width="494" height="196" rx="10"/>
+  <text class="tb" x="1088" y="576">Open it three ways</text>
+  <text class="t" x="1088" y="610">Chat view title bar: Open Customizations</text>
+  <text class="t" x="1088" y="642">Command Palette: Chat: Open Customizations</text>
+  <text class="t" x="1088" y="674">Chat input: /hooks for the Hooks tab</text>
+  <text class="tm" x="1088" y="710">Pick the harness first; the list follows the session.</text>
+
+  <rect x="1066" y="752" width="494" height="58" rx="10" fill="#161b22" stroke="#e3b341" stroke-width="2"/>
+  <text class="t" x="1086" y="777">Listed is not the same as used:</text>
+  <text class="t" x="1086" y="801">check Discovery events in Agent Debug Logs.</text>
+</svg>

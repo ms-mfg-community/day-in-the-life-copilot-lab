@@ -1,0 +1,18 @@
+{
+  "segments": [
+    {
+      "id": "Not A Slug",
+      "slideSource": "workshop/slides/10-module-1.md",
+      "scriptSource": "workshop/speaker-scripts/module-01-extensibility-architecture.md",
+      "labRefs": ["labs/lab01.md"],
+      "minutes": 35,
+      "prose": "Free text copied out of a lab has no field to live in, so this extra property must be rejected."
+    },
+    {
+      "id": "missing-minutes",
+      "slideSource": "../outside-the-slides-directory.md",
+      "scriptSource": "workshop/speaker-scripts/module-02-mcp.md",
+      "labRefs": []
+    }
+  ]
+}

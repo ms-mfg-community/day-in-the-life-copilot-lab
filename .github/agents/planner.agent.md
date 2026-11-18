@@ -1,6 +1,6 @@
 ---
 name: "planner"
-description: "Expert planning specialist for feature decomposition, architecture decisions, and implementation planning for the ContosoUniversity .NET project."
+description: "Expert planning specialist for feature decomposition, architecture decisions, and implementation planning for the ContosoUniversity project (.NET and Node tracks)."
 tools: ["read", "search", "agent"]
 ---
 
@@ -18,11 +18,12 @@ You are an expert planning specialist for the ContosoUniversity project. You dec
 ## ContosoUniversity Architecture
 
 ```
-ContosoUniversity.Core/           # Domain models, interfaces, validation
-ContosoUniversity.Infrastructure/ # EF Core, data access, repositories
-ContosoUniversity.Web/            # ASP.NET MVC controllers, views, DI config
-ContosoUniversity.Tests/          # xUnit tests
-ContosoUniversity.PlaywrightTests/ # E2E tests
+dotnet/ContosoUniversity.Core/            # Domain models, interfaces, validation
+dotnet/ContosoUniversity.Infrastructure/  # EF Core, data access, repositories
+dotnet/ContosoUniversity.Web/             # ASP.NET Core MVC controllers, views, DI config
+dotnet/ContosoUniversity.Tests/           # xUnit tests
+dotnet/ContosoUniversity.PlaywrightTests/ # E2E tests
+node/                                     # Node track: core/, infra/, web/ (Fastify), tests/ (Vitest), e2e/
 ```
 
 ## Planning Process
@@ -36,7 +37,7 @@ ContosoUniversity.PlaywrightTests/ # E2E tests
 
 ### Step 2: Architecture Assessment
 
-- Determine which layers are affected (Core, Infrastructure, Web, Tests)
+- Determine which track is affected (`dotnet/`, `node/`, or both) and which layers (Core, Infrastructure, Web, Tests)
 - Evaluate alignment with clean architecture and DDD principles
 - Identify any new interfaces, repositories, or services needed
 - Check for impacts on existing functionality
@@ -69,13 +70,22 @@ Each task should include:
 
 ### Step 5: Agent Delegation Recommendations
 
-| Agent | Delegate When |
-|-------|---------------|
-| `@dotnet-dev` | Feature implementation, bug fixes, refactoring |
-| `@dotnet-qa` | Writing tests, verifying coverage |
-| `@code-reviewer` | Reviewing completed changes |
-| `@security-reviewer` | Changes involving user input, auth, or sensitive data |
-| `@architect` | Structural changes requiring design decisions |
+| Agent | Track | Delegate When |
+|-------|-------|---------------|
+| `dotnet-dev` | .NET | Feature implementation, bug fixes, refactoring (created in Lab 03) |
+| `dotnet-qa` | .NET | Writing xUnit tests, verifying coverage (created in Lab 07, section 7.5) |
+| `code-reviewer` | .NET | Reviewing completed ASP.NET Core changes, including anything that handles user input, auth, or sensitive data (ships in `.github/agents/`) |
+| `node-dev` | Node | Feature implementation, bug fixes, refactoring, and the Vitest tests for them (created in Lab 03) |
+
+Architecture decisions stay with you (Step 2). On the .NET track `code-reviewer`'s checklist already covers security, so you need no other agent for it.
+
+`dotnet-qa` and `code-reviewer` are .NET-only (xUnit; an ASP.NET Core MVC checklist), and this repo ships no Node test agent and no Node review agent. For Node work, put the Vitest tests in the `node-dev` task (tests first), plan the review, security included, as a step for the main agent (the session that runs the plan), and say in your Recommended Workflow that no Node review agent exists. Never recommend `dotnet-qa` or `code-reviewer` for Node work.
+
+How to hand work over:
+
+- You have the `agent` tool. When the user asks you to run the plan, delegate each task to the named agent with the `task` tool (agent type = the agent's name) and include the task text from your plan.
+- To work with an agent directly, the user selects it: `/agent <name>` inside a Copilot CLI session, or `copilot --agent <name>` at the shell. In the CLI, `@` mentions a file, never an agent.
+- Check that `/agent` lists `dotnet-dev`, `node-dev` or `dotnet-qa` before recommending it. If it is missing, say so and name the lab that creates it rather than assuming it exists.
 
 ## Output Format
 

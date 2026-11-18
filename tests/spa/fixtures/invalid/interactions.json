@@ -1,0 +1,35 @@
+{
+  "interactions": [
+    {
+      "id": "pattern-outside-the-nine",
+      "pattern": "marquee",
+      "segment": "m1-extensibility-architecture",
+      "label": "Pattern that is not in the inventory table",
+      "keys": ["Tab"],
+      "statusRegion": false
+    },
+    {
+      "id": "diagram-without-long-description",
+      "pattern": "node-diagram",
+      "segment": "m1-extensibility-architecture",
+      "label": "Visual component with no long description",
+      "keys": ["Tab"],
+      "statusRegion": false
+    },
+    {
+      "id": "chart-without-status-region",
+      "pattern": "parameter-chart",
+      "segment": "m3-multi-agent",
+      "label": "Chart that never writes to the status region",
+      "keys": ["Tab"],
+      "statusRegion": false,
+      "longDescriptionId": "chart-without-status-region-description"
+    },
+    {
+      "id": "missing-keys-and-status-region",
+      "pattern": "tabs",
+      "segment": "m1-extensibility-architecture",
+      "label": "Entry that omits two required fields"
+    }
+  ]
+}

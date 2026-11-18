@@ -19,6 +19,9 @@ tools:
   bash: ["git", "ls", "cat", "grep", "find", "head", "tail", "wc", "date"]
   web-fetch:
 
+# MCP servers are declared in their own top-level block, not under `tools:`.
+# gh-aw rejects unknown keys there, and until this moved the workflow could not
+# be recompiled at the pinned v0.86.2 at all.
 mcp-servers:
   microsoft-learn:
     type: http

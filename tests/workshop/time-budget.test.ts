@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
+import { splitFrontMatter } from '../helpers/platform';
 
 /**
  * Phase 1 — Curriculum time budget.
@@ -202,11 +203,9 @@ describe('workshop slide front-matter vs curriculum', () => {
   });
 
   function slideFrontMatter(file: string): { module?: string; minutes?: number } {
-    const raw = readFileSync(file, 'utf8');
-    if (!raw.startsWith('---\n')) return {};
-    const end = raw.indexOf('\n---\n', 4);
-    if (end === -1) return {};
-    return yaml.load(raw.slice(4, end)) as { module?: string; minutes?: number };
+    const fm = splitFrontMatter(readFileSync(file, 'utf8'));
+    if (fm === null) return {};
+    return yaml.load(fm.yaml) as { module?: string; minutes?: number };
   }
 
   const moduleSlideFiles = readdirSync(SLIDES_DIR)

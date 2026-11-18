@@ -1,4 +1,5 @@
 ---
+name: "agentic-workflows"
 description: GitHub Agentic Workflows (gh-aw) - Create, debug, and upgrade AI-powered workflows with intelligent prompt routing
 disable-model-invocation: true
 ---
@@ -28,7 +29,7 @@ Workflows may optionally include:
 - Workflow files: `.github/workflows/*.md` and `.github/workflows/**/*.md`
 - Workflow lock files: `.github/workflows/*.lock.yml`
 - Shared components: `.github/workflows/shared/*.md`
-- Configuration: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/github-agentic-workflows.md
+- Configuration: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/github-agentic-workflows.md
 
 ## Problems This Solves
 
@@ -50,7 +51,7 @@ When you interact with this agent, it will:
 ### Create New Workflow
 **Load when**: User wants to create a new workflow from scratch, add automation, or design a workflow that doesn't exist yet
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/create-agentic-workflow.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/create-agentic-workflow.md
 
 **Use cases**:
 - "Create a workflow that triages issues"
@@ -60,7 +61,7 @@ When you interact with this agent, it will:
 ### Update Existing Workflow  
 **Load when**: User wants to modify, improve, or refactor an existing workflow
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/update-agentic-workflow.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/update-agentic-workflow.md
 
 **Use cases**:
 - "Add web-fetch tool to the issue-classifier workflow"
@@ -70,7 +71,7 @@ When you interact with this agent, it will:
 ### Debug Workflow  
 **Load when**: User needs to investigate, audit, debug, or understand a workflow, troubleshoot issues, analyze logs, or fix errors
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/debug-agentic-workflow.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/debug-agentic-workflow.md
 
 **Use cases**:
 - "Why is this workflow failing?"
@@ -80,7 +81,7 @@ When you interact with this agent, it will:
 ### Upgrade Agentic Workflows
 **Load when**: User wants to upgrade workflows to a new gh-aw version or fix deprecations
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/upgrade-agentic-workflows.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/upgrade-agentic-workflows.md
 
 **Use cases**:
 - "Upgrade all workflows to the latest version"
@@ -90,7 +91,7 @@ When you interact with this agent, it will:
 ### Create Shared Agentic Workflow
 **Load when**: User wants to create a reusable workflow component or wrap an MCP server
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/create-shared-agentic-workflow.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/create-shared-agentic-workflow.md
 
 **Use cases**:
 - "Create a shared component for Notion integration"
@@ -100,7 +101,7 @@ When you interact with this agent, it will:
 ### Fix Dependabot PRs
 **Load when**: User needs to close or fix open Dependabot PRs that update dependencies in generated manifest files (`.github/workflows/package.json`, `.github/workflows/requirements.txt`, `.github/workflows/go.mod`)
 
-**Prompt file**: https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/dependabot.md
+**Prompt file**: https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/dependabot.md
 
 **Use cases**:
 - "Fix the open Dependabot PRs for npm dependencies"
@@ -147,7 +148,8 @@ gh aw compile --validate
 
 ## Important Notes
 
-- Always reference the instructions file at https://github.com/github/gh-aw/blob/v0.50.1/.github/aw/github-agentic-workflows.md for complete documentation
+- Always reference the instructions file at https://github.com/github/gh-aw/blob/v0.86.2/.github/aw/github-agentic-workflows.md for complete documentation
+- **Version pin**: every gh-aw link in this file uses the version in `gh_aw_schema_version` in `docs/_meta/registry.yaml`, the gh-aw version this repository pins. When that registry value changes, update the `v<version>` segment of each link here to match.
 - Use the MCP tool `agentic-workflows` when running in GitHub Copilot Cloud
 - Workflows must be compiled to `.lock.yml` files before running in GitHub Actions
 - **Bash tools are enabled by default** - Don't restrict bash commands unnecessarily since workflows are sandboxed by the AWF

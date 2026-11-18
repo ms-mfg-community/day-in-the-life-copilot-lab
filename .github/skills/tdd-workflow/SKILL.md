@@ -273,7 +273,7 @@ public class StudentE2ETests : IAsyncLifetime
 ## Test File Organization
 
 ```
-ContosoUniversity.Tests/
+dotnet/ContosoUniversity.Tests/
 ├── Unit/
 │   ├── Services/
 │   │   ├── StudentServiceTests.cs
@@ -293,7 +293,7 @@ ContosoUniversity.Tests/
     ├── TestDatabaseFixture.cs
     └── TestDataBuilder.cs
 
-ContosoUniversity.PlaywrightTests/
+dotnet/ContosoUniversity.PlaywrightTests/
 ├── StudentE2ETests.cs
 ├── CourseE2ETests.cs
 └── NavigationE2ETests.cs

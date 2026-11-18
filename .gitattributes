@@ -10,14 +10,17 @@ packaging/core/**/*.sh text eol=lf
 packaging/core/lab-core text eol=lf
 packaging/core/copilot text eol=lf
 
-# Copilot hook scripts are executed by bash. A CRLF in the shebang line makes
-# the interpreter "bad interpreter: /usr/bin/env bash^M" and the hook fails —
-# which for preToolUse fails closed and locks the CLI. Pinning eol=lf also stops
-# core.autocrlf=true from reporting all nine of these as permanently modified.
+# Copilot hook scripts and lab fixture scripts are executed by bash, and every
+# other executable script has the same requirement: with core.autocrlf=true a
+# Windows checkout gives them CRLF, and bash then fails on the first line it
+# reads ("bad interpreter: /usr/bin/env bash^M" or "$'\r': command not found").
+# Pinning eol=lf stops core.autocrlf=true from breaking learners on Git Bash or
+# WSL2 with the clone under /mnt/c/.
 scripts/hooks/**/*.sh text eol=lf
-
-# Lab fixture scripts are run by learners, on Windows as often as on Linux, and
-# a CRLF in the shebang gives "/usr/bin/env: 'bash\r': No such file or
-# directory" under WSL or Git Bash. Same failure mode as the hook scripts above,
-# same fix. Lab 23 ships the first of these.
 labs/fixtures/**/*.sh text eol=lf
+*.sh text eol=lf
+.githooks/* text eol=lf
+solutions/lab-gh-extensions/gh-clab/gh-clab text eol=lf
+scripts/workshop/*.mjs text eol=lf
+scripts/generate-lab12-fixture.py text eol=lf
+workshop/site/hackathon.html -text

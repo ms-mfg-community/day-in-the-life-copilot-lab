@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teaching SPA</title>
+    <style>
+      /* The least a presented page needs, kept here as well as in styles.css so that it holds even when the stylesheet did
+         not arrive: the browser draws a fullscreen element over a black backdrop, fixed at the size of the screen, and styles
+         nothing else. Without these rules the text is black on black, a segment taller than the screen cannot be scrolled, and
+         the bar sits where nothing can reach it. styles.css refines them (same selectors, loaded later). */
+      [data-spa-root="presentation"]:fullscreen {
+        display: block;
+        overflow: auto;
+        background: Canvas;
+        color: CanvasText;
+        scroll-padding-top: 6rem;
+      }
+      [data-spa-root="presentation"]:fullscreen #journey {
+        position: sticky;
+        top: 0;
+        background: Canvas;
+        border-bottom: 1px solid CanvasText;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-spa-root="presentation">
+      <a href="#main" class="skip-link" data-skip>Skip to content</a>
+      <!-- The bar: what this workshop is, where the reader is in it, the way between screens, and the presenter's controls.
+           The cover slide's title and tagline are written into the two brand elements at build time (vite-content-plugin.ts);
+           deck.ts fills the rest from the deck, and keeps the cover (the agenda) here too. -->
+      <div id="journey">
+        <header class="bar">
+          <div class="bar-brand">
+            <button type="button" class="button bar-agenda" id="agenda-open" aria-haspopup="dialog">Agenda</button>
+            <p class="brand-title" id="brand-title"></p>
+            <p class="brand-tagline visually-hidden" id="brand-tagline"></p>
+          </div>
+          <div class="bar-position">
+            <p class="deck-position" id="deck-position"></p>
+            <div class="bar-steps">
+              <button type="button" class="button" id="slide-prev"><span aria-hidden="true">‹</span> Previous</button>
+              <button type="button" class="button" id="slide-next">Next <span aria-hidden="true">›</span></button>
+            </div>
+          </div>
+          <section id="presentation-controls" aria-label="Presentation" class="bar-present">
+            <button type="button" id="present-script-open">Speaker script</button>
+            <button type="button" id="present-start">Present</button>
+            <button type="button" id="present-exit" hidden>Exit presentation</button>
+            <button type="button" id="present-setup-toggle" aria-expanded="false" aria-controls="present-options">Setup</button>
+            <div id="present-options" class="setup-panel">
+              <p class="setup-title">Before you present</p>
+              <label>
+                <input type="checkbox" id="present-keyboard-lock" aria-describedby="present-keyboard-hint" />
+                Lock the keyboard while presenting (optional, Esc still exits)
+              </label>
+              <p id="present-keyboard-hint" hidden></p>
+              <label>
+                <input type="checkbox" id="present-open-script" aria-describedby="present-script-hint" />
+                Also open the speaker script window (optional)
+              </label>
+              <p id="present-script-hint">
+                In Firefox and Safari, opening a window ends fullscreen: open the speaker script first, move it onto your own screen,
+                then activate Present with the option above left off.
+              </p>
+              <button type="button" id="present-choose-screen" hidden>Choose audience screen</button>
+              <div id="present-screen-field" hidden>
+                <label for="present-screen">Audience screen</label>
+                <select id="present-screen"></select>
+              </div>
+              <p id="present-screen-guidance">
+                To put the slides on the audience monitor, move this browser window onto the audience monitor, then activate Present.
+              </p>
+            </div>
+            <p id="present-guidance" class="present-guidance">While presenting, press Esc or F11 to exit fullscreen. The Exit presentation button does the same.</p>
+            <p id="present-unavailable" class="present-unavailable" hidden>
+              Fullscreen is not available in this browser or window, so Present is turned off. The slides still work in the window.
+            </p>
+            <p id="present-notes" class="present-notes"></p>
+          </section>
+          <section id="keyboard-settings" aria-label="Keyboard" class="bar-keys">
+            <button type="button" id="shortcut-help-open" aria-haspopup="dialog" aria-controls="shortcut-help">Shortcuts</button>
+            <label class="bar-setting">
+              <input type="checkbox" id="shortcut-single-key" checked />
+              Single-key shortcuts
+            </label>
+          </section>
+        </header>
+        <nav id="segment-nav" aria-label="Segments" class="strip"></nav>
+      </div>
+      <main id="main" tabindex="-1"></main>
+      <nav id="segment-pager" aria-label="Previous and next module"></nav>
+      <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

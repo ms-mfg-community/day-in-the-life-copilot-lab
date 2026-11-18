@@ -1,5 +1,8 @@
 name: Tests
 
+# The repository test suite, Node track and .NET track run here on Linux CI so
+# `npm test`, Node unit/E2E and .NET unit/E2E are enforced on every push and PR.
+
 on:
   pull_request:
   push:

@@ -17,6 +17,8 @@ variant: [`labs/appendices/dotnet/lab-hardening.md`](../dotnet/lab-hardening.md)
 enough to get a prose review of a Node module against current Node / npm
 guidance, but it cannot run `npm test`, edit sources, or shell out.
 
+🐚 **In your OS Terminal:**
+
 ```bash
 copilot --allow-all-tools \
         --agent=tight-reviewer \
@@ -36,6 +38,8 @@ in the agent's `tools:` allow-list and — under any of its runtime spellings �
 **not** in the `deny-unlisted-tools.json` hook's allow-list either. (The hook
 is keyed on concrete runtime tool names; see the namespace callout in
 [`labs/lab-hardening.md`](../../lab-hardening.md) §2.)
+
+🐚 **In your OS Terminal:**
 
 ```bash
 copilot --allow-all-tools \

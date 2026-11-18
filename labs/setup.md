@@ -1,46 +1,34 @@
 # Hands-on Lab Setup
 
+This page points you to the setup instructions for the hands-on labs, and lists the test command for each track once your environment is running.
+
 > **Setup has moved!** All setup instructions are now in the [README](../README.md).
 >
 > → [Go to README — Choose Your Path](../README.md#choose-your-path)
 >
 > **Picking a track?** See [Pick a stack: .NET track or Node track](../README.md#pick-a-stack-net-track-or-node-track).
->
-> Quick reference once your environment is up:
->
-> | Track | Test command |
-> |-------|--------------|
-> | **.NET** (`dotnet/`) | `make test-dotnet` |
-> | **Node** (`node/`) | `make test-node` |
-> | Both | `make test-all` |
->
-> **Lab catalogue:** Labs 01–10 cover the core agentic surface; Lab 11
-> teaches the enterprise plugin marketplace pattern; [Lab 12](lab12.md)
-> wires up the **Fabric MCP** for both Copilot CLI and VS Code and ships
-> an **offline simulator path** (local Parquet fixture) so Codespaces
-> learners can complete it without Fabric auth; [Lab 13](lab13.md)
-> introduces **A2A / ACP** orchestration with a two-agent
-> implementer + critic walkthrough on the Node app, including the three
-> classic failure modes (looping, context drift, hand-off ambiguity)
-> and their mitigations; [Lab 14](lab14.md) operationalizes that schema
-> as the **orchestrator + tmux deep-dive** — a long-lived orchestrator
-> pane plus short-lived worker panes driven by `scripts/orchestrator/`
-> through a strict `plan → implement → handoff → clear → qa → clear`
-> cycle (it's the same loop this repo's modernization was built with).
-> Labs 15–20 are the **2026 modernization track**: [Lab 15](lab15.md)
-> LSP-backed code intelligence, [Lab 16](lab16.md) enterprise
-> marketplace/plugin governance (`managed-settings.json`),
-> [Lab 17](lab17.md) GitHub admin AI controls, [Lab 18](lab18.md)
-> spec-driven design with stacked PRs and per-layer Code Review,
-> [Lab 19](lab19.md) a self-improving-agents gh-aw template, and
-> [Lab 20](lab20.md) enterprise-scale token optimization and reporting.
-> Labs 21–26 are the **enterprise agentic SDLC harness** arc (self-paced):
-> [Lab 21](lab21.md) the tech lead's plugin and marketplace lockdown,
-> [Lab 22](lab22.md) centralized Spec Kit templates and the org catalog,
-> [Lab 23](lab23.md) custom SDLC stages, gates and the rework loop,
-> [Lab 24](lab24.md) the notification funnel and executable tasks,
-> [Lab 25](lab25.md) telemetry, Log Analytics and the improvement loop, and
-> [Lab 26](lab26.md) Copilot App canvases for applied SDLC operations.
+
+## The Three Surfaces Legend: where am I typing?
+
+Every lab step happens in one of three places, and every step names its place with a badge. Read the badge, then match it to the prompt in front of you, so you never paste a shell command into Copilot or a Copilot prompt into your shell.
+
+| Badge | Surface | What belongs here |
+|-------|---------|-------------------|
+| 🐚 **In your OS Terminal (Bash / PowerShell)** | Your normal shell prompt (`$` in Bash, `PS>` in PowerShell) | Commands run at your normal shell prompt: `dotnet`, `git`, `gh`, `copilot --version` |
+| 🤖 **In Copilot CLI (`copilot>` session)** | An interactive session that you start by typing `copilot` in the OS Terminal | Slash commands (`/agent`, `/skills`, `/instructions`, `/env`, `/diagnose`) and natural-language prompts typed *inside* the session |
+| 💠 **In VS Code (Editor & Copilot Chat)** | The VS Code editor and the Copilot Chat view | Creating and editing `.github/` files in the editor, the Agent Customizations UI (`Chat: Open Customizations` → Instructions, Skills, Agents, MCP Servers, Hooks), and `Show Agent Debug Logs` / `Show Chat Debug View` |
+
+![Three panels side by side: the OS Terminal with a $ or PS> prompt running git, dotnet and copilot; a Copilot CLI session with a copilot> prompt taking /agent, /env and /diagnose; and VS Code with an agent file open in the editor beside the Copilot Chat view.](../docs/images/labs/three-surfaces-guide.svg)
+
+> 💡 **The badge names what you type into, not the window it sits in.** VS Code's integrated terminal is still a 🐚 OS Terminal. Run `copilot` there and you are in 🤖 until you type `/exit`. Typed inside a `copilot>` session, `cat` or `dotnet` goes to the model as chat text, not to your shell. Two other markers are not places you type: 🌐 is a page on GitHub.com in your browser (or a web/global-scope note), and 💬 is a discussion question to answer aloud.
+
+Quick reference once your environment is up:
+
+| Track | Test command |
+|-------|--------------|
+| **.NET** (`dotnet/`) | `make test-dotnet` |
+| **Node** (`node/`) | `make test-node` |
+| Both | `make test-all` |
 
 ---
 

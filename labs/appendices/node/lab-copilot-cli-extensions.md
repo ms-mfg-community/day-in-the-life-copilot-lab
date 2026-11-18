@@ -23,12 +23,14 @@ Each of these is a place where **the deterministic gate matters**: diffs and ver
 
 ## Node-flavored smoke test
 
+🐚 **In your OS Terminal:**
+
 ```bash
 # from the repo root, after extensions_reload({})
 npm test 2>&1 | tee test-output.log
 ```
 
-Then in `copilot`:
+🤖 **In Copilot CLI (`copilot>`):** ask:
 
 > *"Read `test-output.log` and summarize the failing tests using clab_summarize."*
 

@@ -1,0 +1,22 @@
+{
+  "id": "undeclared-term-parameter",
+  "label": "Invalid dataset: schema-valid, fails the cross-reference checks",
+  "provenance": {
+    "kind": "illustrative",
+    "note": "Passes the JSON Schema. Its default sits outside min..max and one output term names a parameter that is not declared, which only the semantic checks in scripts/spa/lib/validate.mjs can see."
+  },
+  "parameters": [
+    { "id": "inputTokens", "label": "Input tokens", "unit": "tokens", "min": 0, "max": 1000, "step": 1, "default": 5000 }
+  ],
+  "outputs": [
+    {
+      "id": "totalTokens",
+      "label": "Total tokens",
+      "unit": "tokens",
+      "terms": [
+        { "parameter": "inputTokens", "coefficient": 1 },
+        { "parameter": "outputTokens", "coefficient": 1 }
+      ]
+    }
+  ]
+}

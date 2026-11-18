@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ms-mfg-community/day-in-the-life-copilot-lab/workshop/spa/schema/frontmatter.schema.json",
+  "title": "Curriculum front matter",
+  "description": "Front matter of workshop/slides/*.md, workshop/speaker-scripts/*.md and labs/*.md. The set of top-level properties is closed (additionalProperties false) and must equal the Key column of workshop/spa/docs/content-authoring.md (AC25). No key is required: labs/setup.md carries no front matter and the cover slide carries only title and role.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "anchor_labs": {
+      "description": "Lab ids a module anchors; each resolves to labs/<id>.md.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+    },
+    "lab_number": {
+      "description": "A positive integer for numbered labs; the extension and hardening labs use a string.",
+      "anyOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+    "minutes": {
+      "description": "Time budget of the module in minutes.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "module": {
+      "description": "Module code such as M1 or M5b.",
+      "type": "string",
+      "pattern": "^M[0-9]+[a-z]*$"
+    },
+    "pace": {
+      "description": "How long the lab takes when presenter-led and when self-paced.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["presenter_minutes", "self_paced_minutes"],
+      "properties": {
+        "presenter_minutes": { "type": "number", "minimum": 0 },
+        "self_paced_minutes": { "type": "number", "minimum": 0 }
+      }
+    },
+    "phase": {
+      "description": "Curriculum build phase that produced the file, as a string such as 3a.",
+      "type": "string",
+      "pattern": "^[0-9]+[a-z]?$"
+    },
+    "prerequisites": {
+      "description": "Lab ids to complete first.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+    },
+    "registry": {
+      "description": "Workspace-relative path of the lab registry.",
+      "type": "string",
+      "pattern": "^[^\\s]+$"
+    },
+    "role": {
+      "description": "Marks a slide file that is not a teaching module.",
+      "type": "string",
+      "minLength": 1
+    },
+    "slide_source": {
+      "description": "Workspace-relative POSIX path of the slide file a speaker script accompanies.",
+      "type": "string",
+      "pattern": "^workshop/slides/[A-Za-z0-9._-]+\\.md$"
+    },
+    "title": {
+      "description": "Human-readable title of the file.",
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

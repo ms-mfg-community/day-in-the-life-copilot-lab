@@ -1,5 +1,5 @@
 {
-  "_comment": "preToolUse hook: deny clab_summarize when its `text` arg exceeds 10000 bytes. Per docs (https://docs.github.com/en/copilot/reference/hooks-configuration) only `deny` is currently honored; `allow`/`ask` outputs are accepted but ignored. Emit nothing (empty stdout / exit 0) to let the call through.",
+  "_comment": "preToolUse hook: deny clab_summarize when its `text` arg exceeds about 10 KB (the bash and PowerShell branches count bytes slightly differently, so do not test exactly on the boundary). This hook only ever emits `deny`, but per the hooks reference (https://docs.github.com/en/copilot/reference/hooks-reference#pretooluse-decision-control) `permissionDecision` accepts `allow`, `deny` or `ask`. Emit nothing (empty stdout / exit 0) to make no decision, so the default permission flow runs.",
   "version": 1,
   "hooks": {
     "preToolUse": [
