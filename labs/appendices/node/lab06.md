@@ -23,19 +23,40 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 INPUT="$(cat)"
-TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // ""')
-EDITED_PATH=$(echo "$INPUT" | jq -r '.toolArgs.file_path // .toolArgs.path // ""')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName? // ""')
+case "$TOOL_NAME" in
+  edit|create|write|str_replace_editor|apply_patch) ;;
+  *) exit 0 ;;
+esac
+
+CWD=$(echo "$INPUT" | jq -r '.cwd? // ""' | tr '\\' '/')
+CWD="${CWD%/}"
+
+PATHS=$(echo "$INPUT" | jq -r '
+  (.toolArgs | . as $raw | try fromjson catch $raw) as $args
+  | if ($args | type) == "string" then
+      $args | split("\n")[]
+      | capture("^\\*\\*\\* (?:Add File|Update File|Delete File|Move to):\\s*(?<path>.*\\S)\\s*$").path
+    elif ($args | type) == "object" then
+      ($args.file_path?, $args.path?) | strings
+    else empty end')
 
 # Re-run the Node workspace build/tests after any tool that edits files in node/.
-case "$EDITED_PATH" in
-  node/*) ;;
-  *) exit 0 ;;
-esac
+MATCHED=0
+while IFS= read -r RAW_PATH; do
+  if [[ -z "$RAW_PATH" ]]; then continue; fi
+  NORM_PATH=$(printf '%s' "$RAW_PATH" | tr '\\' '/')
+  if [[ -n "$CWD" && "$NORM_PATH" == "$CWD/"* ]]; then
+    REL_PATH="${NORM_PATH#"$CWD/"}"
+  else
+    REL_PATH="${NORM_PATH#./}"
+  fi
+  case "$REL_PATH" in
+    node/*) MATCHED=1; break ;;
+  esac
+done <<< "$PATHS"
 
-case "$TOOL_NAME" in
-  edit|create|write|str_replace_editor) ;;
-  *) exit 0 ;;
-esac
+if [[ "$MATCHED" -ne 1 ]]; then exit 0; fi
 
 echo "[post-tool-use] Node file edited; running pnpm -C node test..."
 pnpm -C node test --run
@@ -59,19 +80,40 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 INPUT="$(cat)"
-TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // ""')
-EDITED_PATH=$(echo "$INPUT" | jq -r '.toolArgs.file_path // .toolArgs.path // ""')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName? // ""')
+case "$TOOL_NAME" in
+  edit|create|write|str_replace_editor|apply_patch) ;;
+  *) exit 0 ;;
+esac
+
+CWD=$(echo "$INPUT" | jq -r '.cwd? // ""' | tr '\\' '/')
+CWD="${CWD%/}"
+
+PATHS=$(echo "$INPUT" | jq -r '
+  (.toolArgs | . as $raw | try fromjson catch $raw) as $args
+  | if ($args | type) == "string" then
+      $args | split("\n")[]
+      | capture("^\\*\\*\\* (?:Add File|Update File|Delete File|Move to):\\s*(?<path>.*\\S)\\s*$").path
+    elif ($args | type) == "object" then
+      ($args.file_path?, $args.path?) | strings
+    else empty end')
 
 # Re-run the Node workspace build/tests after any tool that edits files in node/.
-case "$EDITED_PATH" in
-  node/*) ;;
-  *) exit 0 ;;
-esac
+MATCHED=0
+while IFS= read -r RAW_PATH; do
+  if [[ -z "$RAW_PATH" ]]; then continue; fi
+  NORM_PATH=$(printf '%s' "$RAW_PATH" | tr '\\' '/')
+  if [[ -n "$CWD" && "$NORM_PATH" == "$CWD/"* ]]; then
+    REL_PATH="${NORM_PATH#"$CWD/"}"
+  else
+    REL_PATH="${NORM_PATH#./}"
+  fi
+  case "$REL_PATH" in
+    node/*) MATCHED=1; break ;;
+  esac
+done <<< "$PATHS"
 
-case "$TOOL_NAME" in
-  edit|create|write|str_replace_editor) ;;
-  *) exit 0 ;;
-esac
+if [[ "$MATCHED" -ne 1 ]]; then exit 0; fi
 
 echo "[post-tool-use] Node file edited; running pnpm -C node test..."
 pnpm -C node test --run
@@ -90,15 +132,34 @@ chmod +x .github/hooks/post-tool-use-node-build.sh
 $ErrorActionPreference = "Stop"
 
 $Event = ($input | Out-String) | ConvertFrom-Json
-$tool  = if ($Event.toolName) { $Event.toolName } else { "" }
-$path  = ""
-if ($Event.toolArgs) {
-    if     ($Event.toolArgs.file_path) { $path = $Event.toolArgs.file_path }
-    elseif ($Event.toolArgs.path)      { $path = $Event.toolArgs.path }
+if ($Event -isnot [System.Management.Automation.PSCustomObject]) { exit 0 }
+
+$tool = if ($Event.toolName -is [string]) { $Event.toolName } else { "" }
+if ($tool -cnotin @("edit","create","write","str_replace_editor","apply_patch")) { exit 0 }
+
+$cwd = if ($Event.cwd -is [string]) { ($Event.cwd -replace '\\', '/').TrimEnd('/') } else { "" }
+
+$toolArgs = $Event.toolArgs
+if ($toolArgs -is [string]) {
+    try { $toolArgs = $toolArgs | ConvertFrom-Json -NoEnumerate } catch { }
 }
 
-if (-not $path -or -not $path.StartsWith("node/")) { exit 0 }
-if ($tool -notin @("edit","create","write","str_replace_editor")) { exit 0 }
+$paths = if ($toolArgs -is [string]) {
+    $toolArgs -split "`r?`n" | ForEach-Object {
+        if ($_ -cmatch '^\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.*\S)\s*$') { $Matches[1] }
+    }
+} elseif ($toolArgs -is [System.Management.Automation.PSCustomObject]) {
+    $toolArgs.file_path, $toolArgs.path
+}
+
+$matched = $false
+foreach ($rawPath in $paths) {
+    if ($rawPath -isnot [string] -or -not $rawPath) { continue }
+    $norm = $rawPath -replace '\\', '/'
+    $rel  = if ($cwd -and $norm.StartsWith("$cwd/")) { $norm.Substring($cwd.Length + 1) } else { $norm -replace '^\./', '' }
+    if ($rel.StartsWith("node/")) { $matched = $true; break }
+}
+if (-not $matched) { exit 0 }
 
 Write-Host "[post-tool-use] Node file edited; running pnpm -C node test..."
 pnpm -C node test --run
@@ -113,15 +174,34 @@ pnpm -C node test --run
 $ErrorActionPreference = "Stop"
 
 $Event = ($input | Out-String) | ConvertFrom-Json
-$tool  = if ($Event.toolName) { $Event.toolName } else { "" }
-$path  = ""
-if ($Event.toolArgs) {
-    if     ($Event.toolArgs.file_path) { $path = $Event.toolArgs.file_path }
-    elseif ($Event.toolArgs.path)      { $path = $Event.toolArgs.path }
+if ($Event -isnot [System.Management.Automation.PSCustomObject]) { exit 0 }
+
+$tool = if ($Event.toolName -is [string]) { $Event.toolName } else { "" }
+if ($tool -cnotin @("edit","create","write","str_replace_editor","apply_patch")) { exit 0 }
+
+$cwd = if ($Event.cwd -is [string]) { ($Event.cwd -replace '\\', '/').TrimEnd('/') } else { "" }
+
+$toolArgs = $Event.toolArgs
+if ($toolArgs -is [string]) {
+    try { $toolArgs = $toolArgs | ConvertFrom-Json -NoEnumerate } catch { }
 }
 
-if (-not $path -or -not $path.StartsWith("node/")) { exit 0 }
-if ($tool -notin @("edit","create","write","str_replace_editor")) { exit 0 }
+$paths = if ($toolArgs -is [string]) {
+    $toolArgs -split "`r?`n" | ForEach-Object {
+        if ($_ -cmatch '^\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.*\S)\s*$') { $Matches[1] }
+    }
+} elseif ($toolArgs -is [System.Management.Automation.PSCustomObject]) {
+    $toolArgs.file_path, $toolArgs.path
+}
+
+$matched = $false
+foreach ($rawPath in $paths) {
+    if ($rawPath -isnot [string] -or -not $rawPath) { continue }
+    $norm = $rawPath -replace '\\', '/'
+    $rel  = if ($cwd -and $norm.StartsWith("$cwd/")) { $norm.Substring($cwd.Length + 1) } else { $norm -replace '^\./', '' }
+    if ($rel.StartsWith("node/")) { $matched = $true; break }
+}
+if (-not $matched) { exit 0 }
 
 Write-Host "[post-tool-use] Node file edited; running pnpm -C node test..."
 pnpm -C node test --run
