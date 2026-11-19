@@ -27,8 +27,10 @@ the skill's review rubric in this agent.
   and read-only Git commands. Never use it to create, change, move, or delete a
   file.
 - `qa-boundary/write_verdict` is the only sanctioned write. It validates the
-  verdict and writes `qa-review.md` at the repository root; it cannot write
-  any other file.
+  verdict (`approve` or `reject`) and writes `<FEATURE_DIR>/qa-review.md`
+  inside the repository root (resolving `<FEATURE_DIR>` from `featureDir`,
+  `SPECIFY_FEATURE_DIRECTORY`, `.specify/feature.json`, or `.` at the
+  repository root); it cannot write any other file.
 - There is no `edit` tool.
 
 Four things hold this boundary, and only the last one is runtime prevention:

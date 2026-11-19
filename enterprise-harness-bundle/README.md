@@ -24,7 +24,10 @@ whose activation depends on probabilistic description matching.
 Every agent declares an explicit, non-wildcard `tools:` list. The QA agent has
 `read`, `search`, and `execute` for evidence, and no `edit` tool. Its
 agent-scoped `qa-boundary` MCP server exposes one tool, `write_verdict`, which
-validates the verdict and always writes `qa-review.md` at the repository root.
+validates the verdict (`approve` or `reject`) and writes
+`<FEATURE_DIR>/qa-review.md` inside the repository root (resolving
+`<FEATURE_DIR>` from `featureDir`, `SPECIFY_FEATURE_DIRECTORY`,
+`.specify/feature.json`, or `.` at the repository root).
 It refuses to write through a symlinked or hard-linked `qa-review.md`, so it
 can't be pointed at another file. The server is bundled locally and resolved
 through `${PLUGIN_ROOT}`; it does not fetch or execute a mutable external MCP

@@ -8,13 +8,65 @@ const TOOLS = [
   {
     name: "write_verdict",
     description:
-      "Write the validated QA verdict to qa-review.md. This is the QA reviewer's only sanctioned file write.",
+      "Write the validated QA verdict (approve or reject) to <FEATURE_DIR>/qa-review.md (or qa-review.md at the repository root) using the qa-review-template layout. When status is reject, classification ('implementation' or 'spec-scope') is required. This is the QA reviewer's only sanctioned file write.",
     inputSchema: {
       type: "object",
       properties: {
-        status: { type: "string", enum: ["pass", "reject"] },
+        status: { type: "string", enum: ["approve", "reject"] },
         summary: { type: "string", minLength: 1 },
         findings: { type: "array", items: { type: "string", minLength: 1 } },
+        featureDir: { type: "string", minLength: 1 },
+        classification: {
+          type: "string",
+          enum: ["implementation", "spec-scope"],
+        },
+        reviewed: { type: "string", minLength: 1 },
+        counts: {
+          type: "object",
+          properties: {
+            met: { type: "integer", minimum: 0 },
+            partial: { type: "integer", minimum: 0 },
+            unmet: { type: "integer", minimum: 0 },
+            unverified: { type: "integer", minimum: 0 },
+          },
+          additionalProperties: false,
+        },
+        criteria: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              criterion: { type: "string", minLength: 1 },
+              result: {
+                type: "string",
+                enum: ["met", "partial", "unmet", "unverified"],
+              },
+              evidence: { type: "string", minLength: 1 },
+            },
+            required: ["criterion", "result", "evidence"],
+            additionalProperties: false,
+          },
+        },
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", minLength: 1 },
+              marked: { type: "string", minLength: 1 },
+              evidenceFound: { type: "boolean" },
+              note: { type: "string", minLength: 1 },
+            },
+            required: ["id", "evidenceFound"],
+            additionalProperties: false,
+          },
+        },
+        returnsTo: {
+          type: "string",
+          enum: ["epic", "specify", "plan", "tasks", "implement"],
+        },
+        whatChanges: { type: "string", minLength: 1 },
+        rerunNeeded: { type: "string", minLength: 1 },
       },
       required: ["status", "summary", "findings"],
       additionalProperties: false,

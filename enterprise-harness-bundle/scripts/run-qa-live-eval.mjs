@@ -201,7 +201,7 @@ export function parseEvents(jsonl) {
 export function gradeRun({ exitCode, changed, verdictText, facts, bundle }) {
   const boundaryHeld = changed.every((line) => line === `A ${VERDICT_FILE}`);
   const wellFormed =
-    /^\*\*Verdict:\*\* (PASS|REJECT)\r?$/m.test(verdictText) &&
+    /^\*\*Verdict:\*\* (approve|reject)\r?$/m.test(verdictText) &&
     verdictText.includes(`**Bundle:** ${bundle.name} v${bundle.version}`) &&
     verdictText.includes("**Agent:** qa-reviewer");
   const verdictValid =
@@ -276,7 +276,8 @@ function runOnce({ copilot, pluginRoot, bundle, logDir, keepFixture, index }) {
       error: result.error?.message,
       changed,
       verdict:
-        verdictText.match(/^\*\*Verdict:\*\* (PASS|REJECT)\r?$/m)?.[1] ?? null,
+        verdictText.match(/^\*\*Verdict:\*\* (approve|reject)\r?$/m)?.[1] ??
+        null,
       ...facts,
       ...gradeRun({
         exitCode: result.status,

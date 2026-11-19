@@ -67,6 +67,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       join(fixtureDir, "verdict.json"),
       JSON.stringify({
         status: "reject",
+        classification: "implementation",
         summary: "The behavioral acceptance check failed.",
         findings: ["Expected exit code 0; observed exit code 1."],
       }),
@@ -105,9 +106,222 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
       join(fixtureDir, "qa-review.md"),
       "utf8",
     );
-    expect(verdictContent).toContain("**Verdict:** REJECT");
+    expect(verdictContent).toContain("**Verdict:** reject");
+    expect(verdictContent).toContain("## Verdict\n\n**reject**");
     expect(verdictContent).toContain("**Bundle:** enterprise-harness v0.1.0");
     expect(verdictContent).toContain("**Agent:** qa-reviewer");
+  });
+
+  it("writes to <FEATURE_DIR>/qa-review.md when featureDir is provided or in .specify/feature.json, and rejects paths escaping the repository", async () => {
+    const { writeVerdictData } = await import(pathToFileURL(WRITER).href);
+    const featureSubdir = join(fixtureDir, "specs", "001-enrollment-cap");
+    mkdirSync(featureSubdir, { recursive: true });
+
+    const out = writeVerdictData(
+      {
+        status: "approve",
+        featureDir: "specs/001-enrollment-cap",
+        summary: "All acceptance criteria met.",
+        findings: [],
+      },
+      fixtureDir,
+    );
+
+    expect(out).toBe(join(featureSubdir, "qa-review.md"));
+    const content = readFileSync(out, "utf8");
+    expect(content).toContain("**Feature directory:** `specs/001-enrollment-cap`");
+    expect(content).toContain("**Verdict:** approve");
+    expect(content).toContain("## Verdict\n\n**approve**");
+
+    // Also resolves feature_directory from .specify/feature.json when featureDir is omitted.
+    const specSpecifyDir = join(fixtureDir, ".specify");
+    const secondFeature = join(fixtureDir, "specs", "002-waitlist");
+    mkdirSync(specSpecifyDir, { recursive: true });
+    mkdirSync(secondFeature, { recursive: true });
+    writeFileSync(
+      join(specSpecifyDir, "feature.json"),
+      JSON.stringify({ feature_directory: "specs/002-waitlist" }),
+      "utf8",
+    );
+    const fromFeatureJson = writeVerdictData(
+      {
+        status: "reject",
+        classification: "implementation",
+        summary: "Boundary check failed.",
+        findings: ["Off-by-one at capacity limit."],
+      },
+      fixtureDir,
+    );
+    expect(fromFeatureJson).toBe(join(secondFeature, "qa-review.md"));
+    const rejectBody = readFileSync(fromFeatureJson, "utf8");
+    expect(rejectBody).toContain("**Classification:** implementation");
+    expect(rejectBody).toContain("| Result | Count |");
+    expect(rejectBody).toContain("## Acceptance criteria");
+    expect(rejectBody).toContain("## Task list check");
+    expect(rejectBody).toContain("## Rework routing");
+    expect(rejectBody).toContain("- **Returns to:** implement");
+
+    // SPECIFY_FEATURE_DIRECTORY takes precedence over .specify/feature.json.
+    process.env.SPECIFY_FEATURE_DIRECTORY = "specs/001-enrollment-cap";
+    try {
+      const fromEnv = writeVerdictData(
+        {
+          status: "reject",
+          classification: "spec-scope",
+          summary: "Spec acceptance criterion contradicts plan.",
+          findings: ["Spec requires waitlist, plan drops it."],
+        },
+        fixtureDir,
+      );
+      expect(fromEnv).toBe(join(featureSubdir, "qa-review.md"));
+      expect(readFileSync(fromEnv, "utf8")).toContain(
+        "- **Returns to:** specify",
+      );
+    } finally {
+      delete process.env.SPECIFY_FEATURE_DIRECTORY;
+    }
+
+    // Malformed .specify/feature.json falls back cleanly to the repository root.
+    writeFileSync(join(specSpecifyDir, "feature.json"), "{not-json", "utf8");
+    const fallbackOut = writeVerdictData(
+      {
+        status: "approve",
+        summary: "Fallback to root when feature.json is malformed.",
+        findings: [],
+      },
+      fixtureDir,
+    );
+    expect(fallbackOut).toBe(join(fixtureDir, "qa-review.md"));
+    expect(readFileSync(fallbackOut, "utf8")).not.toContain("Summary review");
+
+    // Reject approve when unmet or unverified counts or criteria exist.
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          counts: { met: 1, partial: 0, unmet: 1, unverified: 0 },
+          summary: "Contradictory counts.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/cannot be "approve" when unmet or unverified/);
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          criteria: [
+            {
+              criterion: "FR-001",
+              result: "unverified",
+              evidence: "Not run",
+            },
+          ],
+          summary: "Contradictory criterion.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/cannot be "approve" when unmet or unverified/);
+
+    // Reject missing classification on reject, and reject classification on approve.
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "reject",
+          summary: "Missing classification.",
+          findings: ["Defect."],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/classification .* is required when status is "reject"/);
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          classification: "implementation",
+          summary: "Approve cannot carry classification.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/classification is only valid when status is "reject"/);
+
+    // Reject absolute, traversal, non-existent, and .git featureDir paths.
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          featureDir: "../outside",
+          summary: "Should fail.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/escapes repository root/);
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          featureDir: resolve(fixtureDir, "specs", "001-enrollment-cap"),
+          summary: "Should fail.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/must be relative/);
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          featureDir: "specs/does-not-exist",
+          summary: "Should fail.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/does not exist/);
+    expect(() =>
+      writeVerdictData(
+        {
+          status: "approve",
+          featureDir: ".GIT",
+          summary: "Should fail case-insensitively.",
+          findings: [],
+        },
+        fixtureDir,
+      ),
+    ).toThrow(/may not target \.git/);
+
+    // Reject symlinked / junctioned featureDir component.
+    const outsideDir = mkdtempSync(join(tmpdir(), "qa-outside-"));
+    try {
+      let linkPath = join(fixtureDir, "specs", "linked-dir");
+      try {
+        symlinkSync(
+          outsideDir,
+          linkPath,
+          process.platform === "win32" ? "junction" : "dir",
+        );
+      } catch {
+        linkPath = "";
+      }
+      if (linkPath) {
+        expect(() =>
+          writeVerdictData(
+            {
+              status: "approve",
+              featureDir: "specs/linked-dir",
+              summary: "Should fail.",
+              findings: [],
+            },
+            fixtureDir,
+          ),
+        ).toThrow(/must be a real directory/);
+      }
+    } finally {
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
   });
 
   it("rejects an invalid verdict without writing output", () => {
@@ -122,7 +336,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('status must be "pass" or "reject"');
+    expect(result.stderr).toContain('status must be "approve" or "reject"');
   });
 
   it("MCP server exposes only the verdict tool", async () => {
@@ -157,13 +371,13 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     const { callTool } = await import(pathToFileURL(MCP_SERVER).href);
     const result = callTool(
       "write_verdict",
-      { status: "pass", summary: "Checks passed.", findings: [] },
+      { status: "approve", summary: "Checks passed.", findings: [] },
       fixtureDir,
     );
 
     expect(result.isError).toBe(false);
     expect(readFileSync(join(fixtureDir, "qa-review.md"), "utf8")).toContain(
-      "**Verdict:** PASS",
+      "**Verdict:** approve",
     );
   });
 
@@ -173,7 +387,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     mkdirSync(subdir);
     const result = callTool(
       "write_verdict",
-      { status: "pass", summary: "Checks passed.", findings: [] },
+      { status: "approve", summary: "Checks passed.", findings: [] },
       subdir,
     );
 
@@ -217,7 +431,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
 
     expect(() =>
       writeVerdictData(
-        { status: "pass", summary: "Checks passed.", findings: [] },
+        { status: "approve", summary: "Checks passed.", findings: [] },
         fixtureDir,
       ),
     ).toThrow(/refusing to write through it/);
@@ -237,7 +451,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
 
     expect(() =>
       writeVerdictData(
-        { status: "pass", summary: "Checks passed.", findings: [] },
+        { status: "approve", summary: "Checks passed.", findings: [] },
         fixtureDir,
       ),
     ).toThrow(/refusing to write through it/);
@@ -262,7 +476,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     expect(response.id).toBe(42);
     expect(response.result.isError).toBe(true);
     expect(response.result.content[0].text).toContain(
-      'status must be "pass" or "reject"',
+      'status must be "approve" or "reject"',
     );
   });
 
@@ -332,7 +546,7 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
     const facts = { evidenceRan: true, verdictTool: true };
     const bundle = { name: "enterprise-harness", version: "0.1.0" };
     const verdictText =
-      "**Verdict:** PASS\n\n**Bundle:** enterprise-harness v0.1.0\n**Agent:** qa-reviewer\n";
+      "**Verdict:** approve\n\n**Bundle:** enterprise-harness v0.1.0\n**Agent:** qa-reviewer\n";
     const grade = (changed: string[], overrides = {}) =>
       gradeRun({
         exitCode: 0,
@@ -369,7 +583,8 @@ describe("enterprise-harness-bundle: QA behavioral eval", () => {
         .verdictValid,
     ).toBe(false);
     for (const [label, text] of [
-      ["no verdict line", verdictText.replace("**Verdict:** PASS", "PASS")],
+      ["no verdict line", verdictText.replace("**Verdict:** approve", "approve")],
+      ["uppercase PASS rejected", verdictText.replace("**Verdict:** approve", "**Verdict:** PASS")],
       ["no bundle stamp", verdictText.replace("**Bundle:**", "Bundle:")],
       ["wrong version", verdictText.replace("v0.1.0", "v9.9.9")],
       ["no agent stamp", verdictText.replace("**Agent:**", "Agent:")],
