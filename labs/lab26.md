@@ -54,7 +54,7 @@ tasks from Lab 24, and the correlation/telemetry path from Lab 25.
   calling `gh`. Live mode is covered as an explicit opt-in in §26.6.
 
 **No canvas support?** If your client can't render canvases, you can still
-complete this lab's substance from a terminal:
+complete this lab's substance from your 🐚 **OS Terminal**:
 
 ```bash
 # Inspect what the extension declares without opening a canvas
@@ -83,7 +83,7 @@ Complete the official quickstart before inspecting the extension:
 
 The extension already lives in this repo at
 `.github/extensions/enterprise-sdlc-workbench/` — project-scoped extensions
-load automatically for sessions connected to this repo. Confirm it's
+load automatically for sessions connected to this repo. In your project session (or 🤖 **in Copilot CLI (`copilot>`)**), confirm it's
 visible, then open its canvases:
 
 ```
@@ -130,7 +130,7 @@ it's the same boundary any canvas you build later must respect:
   `sourceRepo` / `schemaVersion` metadata so you never mistake a frozen
   snapshot for current state.
 
-🖥️ **Discuss/answer:**
+💬 **Discuss/answer:**
 
 ```
 The release-composer canvas can "save a draft" and "publish" as two
@@ -176,7 +176,9 @@ preflight (`scripts/preflight.sh`) already told you.
 ## 26.5 Dry-Run Dispatch and the Correlation Key
 
 The board's `dispatch` action assigns a correlation key to an issue in the
-form `feature/stage/task/run` (e.g. `epic-001/lab26/dispatch/01`) and
+form `feature/stage/task/run` (matching Lab 24 and Lab 25's key contract, e.g.
+`001-enrollment-cap/implement/T014/3f9a2c1e`, `001-enrollment-cap/qa-review/-/3f9a2c1e`,
+or `epic-001/lab26/dispatch/01`) and
 posts (or, in dry-run, *would* post) a hidden-marker audit comment —
 `<!-- enterprise-sdlc-workbench:dispatch:v1:<hash> -->` — so a second
 dispatch with the same key **updates** the existing comment instead of
@@ -250,7 +252,7 @@ its JSON Schema.
 ✅ `dispatch` in fixture mode returns comment markdown without any live
 `gh` call.
 
-✅ Your `filter_by_state` addition (§26.7) has a passing test:
+✅ Your `filter_by_state` addition (§26.7) has a passing test. 🐚 **In your OS Terminal:**
 
 ```bash
 npx vitest run tests/extensions/enterprise-sdlc-workbench.test.ts

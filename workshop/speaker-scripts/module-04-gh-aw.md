@@ -31,9 +31,10 @@ Actions". The room knows. Start with the trust model.
 
 Point at the real example:
 
-> "This repo commits four gh-aw workflows — `generate-prd.md`,
-> `code-review.md`, `weekly-content-audit.md` and
-> `self-improving-agents.md`. Over the next 25 minutes we are going to
+> "This repo commits six gh-aw workflows — `generate-prd.md`,
+> `code-review.md`, `weekly-content-audit.md`,
+> `self-improving-agents.md`, `sdlc-funnel.md` and
+> `lab25-improvement-review.md`. Over the next 25 minutes we are going to
 > treat `.github/workflows/weekly-content-audit.md` as the reference
 > shape, then compare it to `generate-prd.md` and `code-review.md` —
 > three patterns, three triggers, one trust model."

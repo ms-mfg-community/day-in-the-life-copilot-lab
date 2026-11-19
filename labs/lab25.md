@@ -62,7 +62,7 @@ Do [Lab 21](lab21.md) (managed settings) and [Lab 24](lab24.md) (stage events an
 approvals of record) first if you can. This lab ships a synthetic dataset shaped exactly
 like their output, so you can do it standalone.
 
-🖥️ **In your terminal (from the repository root):**
+🐚 **In your OS Terminal (from the repository root):**
 
 ```shell
 node --version
@@ -113,7 +113,13 @@ resource attribute: `contoso.bundle.version` (25.3).
 
 ### See it for yourself
 
-🖥️ **In your terminal:** run one short CLI session with the file exporter on, then read it.
+🐚 **In your OS Terminal:** inspect the shipped OTel span fixture right away (no Copilot CLI session required):
+
+```shell
+node labs/fixtures/lab25/lab25.mjs inspect labs/fixtures/lab25/data/copilot-otel.jsonl
+```
+
+Optionally, if you have Copilot CLI authenticated on this machine, record and inspect one live turn of your own with the file exporter on:
 
 ```powershell
 $env:COPILOT_OTEL_FILE_EXPORTER_PATH = "$env:TEMP\lab25-otel.jsonl"
@@ -153,6 +159,8 @@ empty parent, never just an empty parent.
 
 Sum AIU over every span and you'll report roughly **double** the real cost: each `chat`
 child carries AIU that its root already totals. Sum the **root `invoke_agent` span only**.
+
+🐚 **In your OS Terminal:**
 
 ```shell
 node labs/fixtures/lab25/lab25.mjs query cost-double-count
@@ -237,7 +245,7 @@ key that every record in this lab carries:
 001-enrollment-cap/qa-review/-/3f9a2c1e      ← "-" means stage-level work
 ```
 
-`run` is Spec Kit's 8-character `run_id`. The Spec Kit step that launches the CLI sets it
+`run` is Spec Kit's 8-character `run_id`. 🐚 **In your OS Terminal**, the Spec Kit step that launches the CLI sets it
 per session:
 
 ```shell
@@ -294,7 +302,7 @@ Three rules keep the numbers honest:
 Lab 24 already deduplicates approvals: it counts a duplicate decision once, at its earliest
 time. Lab 25 ingests the records as they are and doesn't deduplicate them again.
 
-Trace one feature end to end, with SHA verification against the real artifacts:
+🐚 **In your OS Terminal:** trace one feature end to end, with SHA verification against the real artifacts:
 
 ```shell
 node labs/fixtures/lab25/lab25.mjs provenance 001-enrollment-cap
@@ -311,6 +319,8 @@ The query pack lives in [`kql/`](fixtures/lab25/kql/cost-per-task.kql). Each fil
 names its tables, columns and offline mirror in
 [`lib/queries.mjs`](fixtures/lab25/lib/queries.mjs). The mirror is **not a KQL engine**; it
 reproduces each query's semantics over the same rows.
+
+🐚 **In your OS Terminal:**
 
 ```shell
 node labs/fixtures/lab25/lab25.mjs report
@@ -354,6 +364,10 @@ repeats them as literals and `tests/lab25/lab25-azure.test.ts` fails if they dri
 [`bicep/main.bicep`](fixtures/lab25/bicep/main.bicep) deploys a workspace, four custom
 tables on the **Analytics** plan, a `Direct` data collection rule (DCR), an optional role
 assignment, a p95 cost alert and a Workbook with one panel per query.
+
+> ⚠️ **Role-assignment permission:** Passing `-p principalId=...` creates a `Microsoft.Authorization/roleAssignments` resource for Monitoring Metrics Publisher on the DCR, which requires `Owner` or `User Access Administrator` (`Microsoft.Authorization/roleAssignments/write`) in addition to `Contributor`. If your account only has `Contributor` on the resource group, omit `-p principalId=...` (`principalId` defaults to `''` and skips the role assignment) and have an administrator grant Monitoring Metrics Publisher on the DCR separately.
+
+🐚 **In your OS Terminal:**
 
 ```shell
 az deployment group create -g <rg> -f labs/fixtures/lab25/bicep/main.bicep \
@@ -496,18 +510,21 @@ the workflow's prompt tells the agent to treat every string as data.
 
 ## 25.10 Verify
 
+🐚 **In your OS Terminal:**
+
 ```shell
+node labs/fixtures/lab25/lab25.mjs inspect labs/fixtures/lab25/data/copilot-otel.jsonl
 node labs/fixtures/lab25/lab25.mjs report
 node labs/fixtures/lab25/lab25.mjs query cost-double-count
 node labs/fixtures/lab25/lab25.mjs provenance 001-enrollment-cap
 node labs/fixtures/lab25/lab25.mjs forward --dry-run
-npx vitest run tests/lab25
+npx vitest run tests/lab25   # optional: requires `npm ci` at the repo root
 ```
 
 You're done when:
 
-- [ ] `inspect` shows your own session's root `invoke_agent` span, and you can explain why
-      its AIU equals its `chat` child's.
+- [ ] `inspect` shows a root `invoke_agent` span (from the shipped `copilot-otel.jsonl` fixture or your own optional live session), and you can explain why
+      its AIU equals the sum of its `chat` children's.
 - [ ] You can say which number is the cost and which is double counted.
 - [ ] `provenance` shows the QA reject on `3f9a2c1e` and the `implementation` rework.
 - [ ] You can name the one outcome the report refuses to judge, and why.

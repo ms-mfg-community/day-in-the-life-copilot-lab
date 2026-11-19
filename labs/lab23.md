@@ -41,7 +41,7 @@ References:
 
 You need [Lab 22](lab22.md) done, and the Spec Kit CLI at the pinned release:
 
-🖥️ **In your terminal (from the repository root).** Every path in this lab is relative to
+🐚 **In your OS Terminal (from the repository root).** Every path in this lab is relative to
 the repo root, and the demo project you create below must be a direct child of it —
 otherwise the `../labs/fixtures/lab23/...` paths won't resolve.
 
@@ -58,7 +58,7 @@ Copilot **CLI** layout — see Lab 22 §22.2 if you need the reasoning.
 
 ## 23.1 The default SDLC, and why yours differs
 
-Spec Kit ships one workflow. Look at what it actually does:
+🐚 **In your OS Terminal:** Spec Kit ships one workflow. Look at what it actually does:
 
 ```bash
 specify workflow info speckit
@@ -203,6 +203,8 @@ picture in the one file the epic gate puts in front of them.
 
 ## 23.3 Install and verify the extension
 
+🐚 **In your OS Terminal:**
+
 ```bash
 specify extension add --dev ../labs/fixtures/lab23/contoso-review
 specify extension list
@@ -236,7 +238,7 @@ specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
 specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle
 ```
 
-```text
+```console
 Manifest is invalid:
   - Unresolved reference workflow:contoso-sdlc@1.0.0: workflow 'contoso-sdlc' is not
     bundled, installed, or present in any active catalog.
@@ -283,14 +285,14 @@ edits:
       on_reject: retry
 ```
 
-Install it and look at the result:
+🐚 **In your OS Terminal:** install it and look at the result:
 
 ```bash
 specify workflow overlay add ../labs/fixtures/lab23/overlays/contoso-stages.yml
 specify workflow resolve speckit
 ```
 
-```text
+```console
 Step attribution:
   • epic: project:contoso-stages
   • review-epic: project:contoso-stages
@@ -427,6 +429,8 @@ progress in the QA review or your tracker, not in checkboxes you're about to ove
 
 ## 23.7 Run it
 
+🐚 **In your OS Terminal:**
+
 ```bash
 specify workflow run speckit
 ```
@@ -495,7 +499,7 @@ cannot hook a phase core doesn't define. **And nothing tells you.** Put `before_
 just a hook that doesn't happen.
 
 > 💡 **Check the list yourself rather than trusting a doc.** The authoritative source is
-> the installed command bodies, which is what actually emits the hooks. With the
+> the installed command bodies, which is what actually emits the hooks. 🐚 **In your OS Terminal**, with the
 > `--commands` layout this lab uses, they're in `.github/agents/`:
 >
 > ```powershell
@@ -531,7 +535,7 @@ and fails at `run`. **Run all three, in that order, before you believe an overla
 
 ## 23.9 Verify
 
-Run these and confirm each one:
+🐚 **In your OS Terminal:** run these and confirm each one:
 
 ```bash
 specify extension list                       # contoso-review, Commands: 2

@@ -48,7 +48,7 @@ This repository ships with a rich set of Copilot configurations. Here's the map 
 | `AGENTS.md` | Non-obvious project context (always loaded) | 1 | Lab 02 |
 | `.github/hooks/` | Lifecycle guardrails (`default.json`) | 4 lifecycle hook events (`preToolUse`, `postToolUse`, `userPromptSubmitted`, `errorOccurred`) | Lab 06 |
 | `.copilot/mcp-config.json` | External tool integrations | 4 servers | Lab 05 |
-| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 4 | Labs 08-09 |
+| `.github/workflows/*.md` | Cloud-side AI automation (gh-aw) | 6 | Labs 08-09, 19, 24-25 |
 
 🐚 **In your OS Terminal — quick look, pick any one:**
 

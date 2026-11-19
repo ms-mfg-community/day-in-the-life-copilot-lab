@@ -46,8 +46,12 @@ enables all available tools, while `tools: []` disables tools entirely. A
 list restricts which tools an agent can use; it doesn't approve them. The QA
 agent has `read`, `search`, and `execute` for evidence, and no `edit` tool.
 Its only sanctioned write is `qa-boundary/write_verdict`, a tool from an
-agent-scoped MCP server that validates the verdict and always writes
-`qa-review.md`. Because `execute` can still write files, the boundary is
+agent-scoped MCP server that validates the verdict (`approve` or `reject`,
+matching Lab 23's `qa-review` stage gate) and writes
+`<FEATURE_DIR>/qa-review.md` inside the repository root (resolving
+`<FEATURE_DIR>` from `featureDir`, `SPECIFY_FEATURE_DIRECTORY`,
+`.specify/feature.json`, or the repository root when `featureDir` is omitted).
+Because `execute` can still write files, the boundary is
 checked by behavior: the bundle's live eval runs the agent against a fixture
 repository and fails if anything except `qa-review.md` changes (see
 [`evals/qa-review.md`](../enterprise-harness-bundle/evals/qa-review.md)). That
@@ -105,7 +109,7 @@ tests validate the bundle manifest and the installer's entrypoints. The QA
 reviewer's verdict writer needs a newer Copilot CLI than that floor; the
 registry notes the version beside `copilot_cli_version_floor`.
 
-Run the dry-run from the repository root:
+🐚 **In your OS Terminal (from the repository root):** run the dry-run:
 
 **WSL/Bash:**
 
@@ -235,7 +239,7 @@ managed-settings location. This interaction is tracked as Q8 in
 a controlled enterprise test with admin access should resolve it before the
 baseline adds `disableBypassPermissionsMode`.
 
-Until a controlled enterprise test proves the interaction, run Spec Kit with:
+🐚 **In your OS Terminal:** until a controlled enterprise test proves the interaction, run Spec Kit with:
 
 **WSL/Bash:**
 

@@ -65,7 +65,7 @@ You need:
 - The repository's Node dependencies, installed with `npm ci` from the repo root. The
   Lab 24 scripts use the repo's `js-yaml`.
 
-🖥️ **In your terminal (from the repository root).** You'll reuse Lab 23's scratch
+🐚 **In your OS Terminal (from the repository root).** You'll reuse Lab 23's scratch
 project, `contoso-sdlc-demo/`. It's gitignored, and it sits directly under the repo root
 so the `../labs/fixtures/...` paths resolve.
 
@@ -186,7 +186,7 @@ pre-agent-steps:
     run: node labs/fixtures/lab24/scripts/route.mjs --events "$EVENTS" --out route.json
 ```
 
-Try it on the fixture:
+🐚 **In your OS Terminal:** try it on the fixture:
 
 ```bash
 node labs/fixtures/lab24/scripts/route.mjs --events labs/fixtures/lab24/stage-events
@@ -276,10 +276,13 @@ It **appends** to core's tasks template instead of replacing it, so the native f
 stays exactly as Spec Kit ships it: `[ID] [P?] [Story]`, phases and checkpoints. It also
 stacks with Lab 22's `contoso-sdd` preset, which appends the governance `G` tasks.
 
+🐚 **In your OS Terminal (from the repository root):** enter `contoso-sdlc-demo/`, install the `contoso-tasks` preset, and return to the repository root:
+
 ```bash
 cd contoso-sdlc-demo
 specify preset add --dev ../labs/fixtures/lab24/contoso-tasks
 specify preset list
+cd ..
 ```
 
 Each `T` task gets one fenced `yaml task-prompt` block directly under its line. Here is
@@ -345,8 +348,19 @@ tiers are real, every `context` link resolves, owned files don't overlap `do_not
 and the run id has been stamped. When something's wrong, it **rejects** the file. It
 doesn't try to fix it, and it doesn't ask a model.
 
+🐚 **In your OS Terminal (from the repository root):**
+
+**WSL/Bash:**
+
 ```bash
 node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs \
+  labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md
+```
+
+**PowerShell:**
+
+```powershell
+node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs `
   labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md
 ```
 
@@ -356,8 +370,17 @@ labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md: 4 task prompts valid
 
 Now the file that breaks one rule per task:
 
+**WSL/Bash:**
+
 ```bash
 node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs \
+  labs/fixtures/lab24/invalid/specs/002-invalid/tasks.md
+```
+
+**PowerShell:**
+
+```powershell
+node labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs `
   labs/fixtures/lab24/invalid/specs/002-invalid/tasks.md
 ```
 
@@ -385,9 +408,20 @@ pull request that changes a `specs/<feature>/tasks.md`, so a hand edit gets the 
 
 **Dispatch.** The same script turns a task into the exact prompt and model to run:
 
+**WSL/Bash:**
+
 ```bash
 V=labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs
 T=labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md
+node $V $T --print T016       # the prompt, in plain sentences
+node $V $T --dispatch T016    # {"agent":"task-executor","tier":"standard","model":"…","fallback_model":"…","execution":"agent"}
+```
+
+**PowerShell:**
+
+```powershell
+$V = "labs/fixtures/lab24/contoso-sdlc/scripts/validate-tasks.mjs"
+$T = "labs/fixtures/lab24/specs/001-enrollment-cap/tasks.md"
 node $V $T --print T016       # the prompt, in plain sentences
 node $V $T --dispatch T016    # {"agent":"task-executor","tier":"standard","model":"…","fallback_model":"…","execution":"agent"}
 ```
@@ -449,13 +483,15 @@ projection and an **optional `review-tasks` gate** before implementation. That g
 wrapped in an `if` on the `review_tasks` input, which defaults to `true`, so a team can
 turn it off for low-risk features without editing the workflow.
 
-Install it with Lab 23's extension and both presets:
+🐚 **In your OS Terminal (from the repository root):** enter `contoso-sdlc-demo/` and install the `contoso-sdlc` workflow (if you are starting in a fresh demo directory that hasn't run Lab 23 or §24.4 yet, install `contoso-review`, `contoso-sdd` and `contoso-tasks` first):
 
 ```bash
 cd contoso-sdlc-demo
-specify extension add --dev ../labs/fixtures/lab23/contoso-review
-specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
-specify preset add --dev ../labs/fixtures/lab24/contoso-tasks
+# Only needed in a fresh project (skip if already installed in Lab 23 and §24.4):
+# specify extension add --dev ../labs/fixtures/lab23/contoso-review
+# specify preset add --dev ../labs/fixtures/lab22/contoso-sdd
+# specify preset add --dev ../labs/fixtures/lab24/contoso-tasks
+
 specify workflow add --dev ../labs/fixtures/lab24/contoso-sdlc
 specify workflow info contoso-sdlc
 ```
@@ -470,14 +506,26 @@ left it as the last unresolved reference. It's installed now, so the online chec
 
 ```bash
 specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle
+cd ..
 ```
 
-Run it on a branch that has a pull request, so `--input pr=auto` can find the PR:
+**Optional live run (requires a repository with `.github/workflows/sdlc-funnel.md` and a pull request).** Note that `contoso-sdlc-demo/` is a gitignored local scratch folder for inspecting Spec Kit's package and bundle resolution; the GitHub Actions funnel (`.github/workflows/sdlc-funnel.md`) watches `stage-events/**` at the **repository root** of your fork. To exercise the live workflow and funnel end-to-end in a repo initialized with Spec Kit at its root and an open PR:
+
+**WSL/Bash:**
 
 ```bash
 export SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0
 specify workflow run contoso-sdlc \
   --input spec="Cap course enrollment at the course capacity" \
+  --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101
+```
+
+**PowerShell:**
+
+```powershell
+$env:SPECKIT_COPILOT_ALLOW_ALL_TOOLS = "0"
+specify workflow run contoso-sdlc `
+  --input spec="Cap course enrollment at the course capacity" `
   --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101
 ```
 
@@ -495,12 +543,22 @@ the funnel notifies whoever is next. The run pauses at each gate, as it did in L
 
 So each gate's **approval of record** is a durable GitHub artifact, made by the gate's
 owner: a PR review, or a comment, with a marker in it.
-[`approvals.mjs`](../labs/fixtures/lab24/scripts/approvals.mjs) writes the marker:
+🐚 **In your OS Terminal (from the repository root)**, [`approvals.mjs`](../labs/fixtures/lab24/scripts/approvals.mjs) writes the marker:
+
+**WSL/Bash:**
 
 ```bash
 node labs/fixtures/lab24/scripts/approvals.mjs --record --gate review-plan \
   --key 001-enrollment-cap/plan/-/3f9a2c1e --verdict approve --approver blake-lead \
-  --artifact specs/001-enrollment-cap/plan.md
+  --artifact labs/fixtures/lab24/specs/001-enrollment-cap/plan.md
+```
+
+**PowerShell:**
+
+```powershell
+node labs/fixtures/lab24/scripts/approvals.mjs --record --gate review-plan `
+  --key 001-enrollment-cap/plan/-/3f9a2c1e --verdict approve --approver blake-lead `
+  --artifact labs/fixtures/lab24/specs/001-enrollment-cap/plan.md
 ```
 
 ```text
@@ -527,9 +585,19 @@ The fixture is seeded with a rejection. In
 [`approvals/pr-comments.json`](../labs/fixtures/lab24/approvals/pr-comments.json), QA
 rejects T014 and two markers are forged:
 
+**WSL/Bash:**
+
 ```bash
 node labs/fixtures/lab24/scripts/approvals.mjs \
   --count labs/fixtures/lab24/approvals/pr-comments.json \
+  --out labs/fixtures/lab24/approvals/approvals-of-record.json
+```
+
+**PowerShell:**
+
+```powershell
+node labs/fixtures/lab24/scripts/approvals.mjs `
+  --count labs/fixtures/lab24/approvals/pr-comments.json `
   --out labs/fixtures/lab24/approvals/approvals-of-record.json
 ```
 
@@ -567,12 +635,27 @@ through `review-spec` or `review-plan`. A gate can't rewind, and a new run resta
 `epic` (Lab 23, §23.6). So the owner re-reviews the change on the PR **before** QA
 resumes. QA's reject marker records `escalated_to: "@blake-lead"`, and the funnel says so.
 
-**2. Record the rework event**, which notifies the person named in the table above:
+**2. Record the rework event**, which notifies the person named in the table above.
+
+> 💡 **Fixture path vs. optional live path:** On the default offline fixture path, this rework event, `T016` (`supersedes: T014`), and `qa-review.md` are already seeded under `labs/fixtures/lab24/` (you routed and validated them in §24.3 and §24.5, and you will verify them in §24.12). The commands in steps 2 and 5 below show how the **optional live repository path** (from §24.7, in a repository with Spec Kit and `contoso-sdlc` installed at the root and a run paused on `review-qa`) executes the rework transition.
+
+🐚 **In your OS Terminal (optional live repository path):**
+
+**WSL/Bash:**
 
 ```bash
 node .specify/workflows/contoso-sdlc/scripts/record-stage.mjs --feature 001-enrollment-cap \
   --stage rework --from qa-review --transition rework --classification implementation \
   --task T016 --run 3f9a2c1e --require-artifact \
+  --artifact specs/001-enrollment-cap/tasks.md --pr auto
+```
+
+**PowerShell:**
+
+```powershell
+node .specify/workflows/contoso-sdlc/scripts/record-stage.mjs --feature 001-enrollment-cap `
+  --stage rework --from qa-review --transition rework --classification implementation `
+  --task T016 --run 3f9a2c1e --require-artifact `
   --artifact specs/001-enrollment-cap/tasks.md --pr auto
 ```
 
@@ -589,10 +672,22 @@ T014's and closes it.
 the `qa-review` step before it. So start QA yourself, as a new process, then record the
 new verdict as a stage event:
 
+**WSL/Bash:**
+
 ```bash
 copilot -p "Review 001-enrollment-cap" --agent speckit.contoso-review.qa-review
 node .specify/workflows/contoso-sdlc/scripts/record-stage.mjs --feature 001-enrollment-cap \
   --stage qa-review --from rework --run 3f9a2c1e --require-artifact \
+  --artifact specs/001-enrollment-cap/qa-review.md --pr auto
+specify workflow resume 3f9a2c1e
+```
+
+**PowerShell:**
+
+```powershell
+copilot -p "Review 001-enrollment-cap" --agent speckit.contoso-review.qa-review
+node .specify/workflows/contoso-sdlc/scripts/record-stage.mjs --feature 001-enrollment-cap `
+  --stage qa-review --from rework --run 3f9a2c1e --require-artifact `
   --artifact specs/001-enrollment-cap/qa-review.md --pr auto
 specify workflow resume 3f9a2c1e
 ```
@@ -675,7 +770,7 @@ That's correct for the workshop, and it does nothing on a real repo until you re
 
 ## 24.12 Verify
 
-Confirm each of these:
+🐚 **In your OS Terminal:** confirm each of these:
 
 ```bash
 # Routing is computed, and the guard rejects a different route

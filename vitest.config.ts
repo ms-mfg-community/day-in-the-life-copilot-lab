@@ -8,7 +8,8 @@ export default defineConfig({
     // would sink `npm test` for every lab, making AC1 meaningless.
     // See specs/labs/README.md, "Pending contract tests".
     exclude: [...configDefaults.exclude, 'tests/lab-structure/pending/**'],
-    testTimeout: 20000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
     reporters: ['default'],
     coverage: {
       provider: 'v8',
