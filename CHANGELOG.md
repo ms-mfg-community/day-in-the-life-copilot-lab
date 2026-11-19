@@ -10,6 +10,13 @@ demo app).
 
 ### Added
 
+- **Repository dashboard canvas** (`.github/extensions/repository-dashboard/`) —
+  a project-scoped Copilot CLI extension showing issues, pull requests and
+  GitHub Actions runs in one view, with failure breakouts, Copilot fix
+  recommendations, and one-click handoff of an issue to a new Copilot session.
+  Issue and CI text is fenced as untrusted data and shown verbatim for approval
+  before it is sent; see the extension README for the limits and request
+  security model.
 - **Copilot Lab Studio** (`lab-studio/`) — a browser-based guided runner for
   **all 20 labs**. A React SPA walks the learner through each lab against a
   sandboxed mini-ContosoUniversity workspace, with a terminal "bench" that
