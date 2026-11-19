@@ -1,0 +1,12 @@
+// id: errors
+// kind: diagnostic
+// tables: CopilotSpans_CL
+// columns: StatusCode, ErrorType, SpanName, ToolName
+// mirror: lib/queries.mjs errors
+//
+// Failed spans grouped by tool and error type. ToolName and SpanName are attacker-influenced
+// strings: render them as data, and never paste them unescaped into an agent prompt.
+CopilotSpans_CL
+| where StatusCode == 2 or isnotempty(ErrorType)
+| summarize Count = count() by SpanName, ToolName, ErrorType
+| sort by Count desc, SpanName asc

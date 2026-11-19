@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { bridge } from "./copilot-bridge.js";
 import {
   fileExists,
@@ -7,6 +8,8 @@ import {
 } from "./sandbox.js";
 import { commandHistory } from "./sim-terminal.js";
 import { installedPlugins } from "./sim-registry.js";
+
+const LEARNER_CODE_TIMEOUT_MS = 2000;
 
 export interface VerifyResult {
   pass: boolean;
@@ -716,6 +719,160 @@ const advancedChecks: Record<string, Check> = {
       return fail("Rehearse locally first: send the drift-evaluator prompt and review its report before any scheduled run.");
     }
     return pass("Dry run reviewed — you judged the drift report before letting any automation act on it. That order is the pattern.");
+  },
+
+  // ---------------------------------------------------------------- Lab 21
+  "lab21/bundle": () => {
+    const path = "enterprise/qa-reviewer.agent.md";
+    if (!fileExists(path)) return fail(`Create \`${path}\` first — the step card has the QA reviewer agent.`);
+    const raw = readWorkspaceFile(path);
+    const { data } = parseFrontmatter(raw);
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw)?.[1] ?? "";
+    const toolsBlock = /^tools:\s*(?:\[(.*)\]|(\r?\n(?:\s*-\s*[^\r\n]+\r?\n?)+))/m.exec(fm);
+    const toolsText = data.tools || toolsBlock?.[1] || toolsBlock?.[2] || "";
+    if (!toolsText.includes("qa-boundary/write_verdict")) {
+      return fail("`qa-reviewer` must declare `tools:` including `qa-boundary/write_verdict`.");
+    }
+    if (/\*/.test(toolsText) || /\b(?:edit|multiedit|write|notebookedit)\b/i.test(toolsText)) {
+      return fail("Drop `edit` (and any write alias or `*` wildcard) from `qa-reviewer`'s tools — its only sanctioned write is `qa-boundary/write_verdict`.");
+    }
+    if (!/mcp-servers:[\s\S]*qa-boundary:/m.test(raw)) {
+      return fail("Keep the agent-scoped `mcp-servers: qa-boundary` declaration so Copilot CLI starts the verdict writer.");
+    }
+    return pass("QA reviewer boundary verified: explicit non-wildcard tools list, no edit tool, and qa-boundary/write_verdict is the only sanctioned write.");
+  },
+
+  // ---------------------------------------------------------------- Lab 22
+  "lab22/preset": () => {
+    const presetPath = ".specify/presets/contoso-sdd/preset.yml";
+    const wrapPath = ".specify/presets/contoso-sdd/templates/plan-template.md";
+    if (!fileExists(presetPath)) return fail(`Create \`${presetPath}\` first.`);
+    if (!fileExists(wrapPath)) return fail(`Create \`${wrapPath}\` next — the wrapped plan template.`);
+    const preset = readWorkspaceFile(presetPath);
+    if (!/strategy:\s*wrap/.test(preset) || !/strategy:\s*append/.test(preset)) {
+      return fail("`preset.yml` must declare both the `wrap` strategy (plan-template) and `append` strategy (tasks-template).");
+    }
+    const wrap = readWorkspaceFile(wrapPath);
+    if (!wrap.includes("{CORE_TEMPLATE}")) {
+      return fail("A `wrap` template must contain the literal `{CORE_TEMPLATE}` placeholder so the lower layer is substituted.");
+    }
+    return pass("Preset manifest and wrapped plan template verified — replace, wrap (with {CORE_TEMPLATE}), and append are ready.");
+  },
+
+  // ---------------------------------------------------------------- Lab 23
+  "lab23/overlay": () => {
+    const path = ".specify/workflows/overlays/speckit/contoso-stages.yml";
+    if (!fileExists(path)) return fail(`Create \`${path}\` — notice it lives under the extended workflow's id (\`speckit\`).`);
+    const overlay = readWorkspaceFile(path);
+    if (!/extends:\s*speckit/.test(overlay)) {
+      return fail("The overlay must declare `extends: speckit`.");
+    }
+    if (!/insert_before:\s*specify/.test(overlay) || !/insert_after:\s*implement/.test(overlay)) {
+      return fail("Anchor the new steps on base workflow steps (`insert_before: specify` and `insert_after: implement`).");
+    }
+    if (!/on_reject:\s*retry/.test(overlay)) {
+      return fail("Configure the gates with `on_reject: retry` (`rework` is not a valid Spec Kit `on_reject` value).");
+    }
+    return pass("Workflow overlay verified: anchored on base steps (`specify` and `implement`) with `on_reject: retry`.");
+  },
+
+  // ---------------------------------------------------------------- Lab 24
+  "lab24/task-prompt": () => {
+    const path = "specs/001-enrollment-cap/tasks.md";
+    if (!fileExists(path)) return fail(`Create \`${path}\` from the step card.`);
+    const tasks = readWorkspaceFile(path);
+    if (!/```yaml task-prompt[\s\S]*```/.test(tasks)) {
+      return fail("Include the fenced `yaml task-prompt` block directly under the `T014` task line.");
+    }
+    if (!/owned_files:[\s\S]*do_not_modify:|do_not_modify:[\s\S]*owned_files:/.test(tasks)) {
+      return fail("Declare both `owned_files` and `do_not_modify` inside the `yaml task-prompt` block.");
+    }
+    if (!/acceptance:\s*\r?\n\s*command:\s*\S+/.test(tasks)) {
+      return fail("Declare a runnable `acceptance.command` and `acceptance.expect` in the task prompt.");
+    }
+    if (!/tier:\s*(cheap|standard|premium)\b/.test(tasks)) {
+      return fail("`tier` must name a registry tier (`cheap`, `standard`, or `premium`), never a literal model ID.");
+    }
+    if (!/correlation_key:\s*[0-9]{3}-[a-z0-9-]+\/[a-z-]+\/(-|T\d{3})\/[0-9a-f]{8}\b/.test(tasks)) {
+      return fail("`correlation_key` must follow `<feature>/<stage>/<task>/<run>` (e.g. `001-enrollment-cap/implement/T014/3f9a2c1e`).");
+    }
+    return pass("Executable task prompt verified: bounded owned_files, do_not_modify, acceptance command, registry tier, and 4-segment correlation key.");
+  },
+
+  // ---------------------------------------------------------------- Lab 25
+  "lab25/telemetry": () => {
+    const path = "enterprise/managed-settings.telemetry.json";
+    if (!fileExists(path)) return fail(`Create \`${path}\` from the step card.`);
+    let parsed: { telemetry?: Record<string, unknown> };
+    try {
+      parsed = JSON.parse(readWorkspaceFile(path)) as { telemetry?: Record<string, unknown> };
+    } catch {
+      return fail("`enterprise/managed-settings.telemetry.json` is not valid JSON.");
+    }
+    const telemetry = parsed.telemetry;
+    if (!telemetry || telemetry.captureContent !== false || telemetry.lockCaptureContent !== true) {
+      return fail("Set `captureContent: false` and `lockCaptureContent: true` inside the `telemetry` block.");
+    }
+    const capture = telemetry.capture as Record<string, unknown> | undefined;
+    const classes = ["identity", "prompts", "responses", "toolArguments", "toolOutput", "policyDetail"];
+    if (!capture || classes.some((k) => capture[k] !== false)) {
+      return fail("All six `telemetry.capture` classes must default to `false` until a named privacy/security approver signs off.");
+    }
+    return pass("Telemetry governance verified: all six capture classes off, legacy captureContent false, and lockCaptureContent true.");
+  },
+
+  // ---------------------------------------------------------------- Lab 26
+  "lab26/canvas": () => {
+    const path = ".github/extensions/sdlc-filter/filter.mjs";
+    if (!fileExists(path)) return fail(`Create \`${path}\` from the step card.`);
+    const code = readWorkspaceFile(path);
+    if (!/export\s+function\s+filterByState\b/.test(code)) {
+      return fail("Export `filterByState(issues, state)` from `.github/extensions/sdlc-filter/filter.mjs`.");
+    }
+    if (!/export\s+function\s+escapeHtml\b/.test(code)) {
+      return fail("Export `escapeHtml(value)` so untrusted issue titles and labels are escaped before reaching canvas HTML.");
+    }
+    // Execute the learner's module and sample calls inside a bounded VM context (after stripping `export `) so a non-terminating loop cannot hang the server.
+    const runnable = `(function () {
+${code.replace(/\bexport\s+function\s+/g, "function ")}
+const sample = [
+  { id: 47, state: "open" },
+  { id: 48, state: "closed" },
+  { id: 50, state: "OPEN" },
+];
+const openOnly = filterByState(sample, "open");
+const closedOnly = filterByState(sample, "closed");
+const openIds = Array.isArray(openOnly) ? openOnly.map((i) => i && i.id).join(",") : null;
+const closedIds = Array.isArray(closedOnly) ? closedOnly.map((i) => i && i.id).join(",") : null;
+const rawEscaped = escapeHtml('<script>alert("x" & \\'y\\')</script>');
+const escaped = typeof rawEscaped === "string" ? rawEscaped : "";
+return { openIds, closedIds, escaped };
+})()`;
+    let outcome: { openIds: string | null; closedIds: string | null; escaped: string };
+    try {
+      outcome = runInNewContext(runnable, Object.create(null), {
+        timeout: LEARNER_CODE_TIMEOUT_MS,
+      }) as typeof outcome;
+    } catch (err) {
+      const errCode = (err as { code?: string } | null)?.code;
+      const message = err instanceof Error ? err.message : String(err);
+      if (errCode === "ERR_SCRIPT_EXECUTION_TIMEOUT" || /Script execution timed out/i.test(message)) {
+        return fail(
+          `Learner module execution timed out after ${LEARNER_CODE_TIMEOUT_MS}ms — check \`filterByState\` and \`escapeHtml\` for non-terminating loops.`,
+        );
+      }
+      return fail(`Module execution error: ${message}`);
+    }
+    if (outcome.openIds !== "47,50" || outcome.closedIds !== "48") {
+      return fail("`filterByState(issues, state)` must return only issues whose `state` matches `open` or `closed` (case-insensitively).");
+    }
+    if (
+      outcome.escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#39;y&#39;)&lt;/script&gt;" &&
+      outcome.escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#x27;y&#x27;)&lt;/script&gt;"
+    ) {
+      return fail("`escapeHtml(value)` must escape all five characters (`<`, `>`, `&`, `\"`, and `'`) in untrusted issue titles.");
+    }
+    return pass("Canvas filter and HTML escaper executed and verified against open/closed issue fixtures and hostile HTML strings.");
   },
 };
 

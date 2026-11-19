@@ -556,7 +556,7 @@ erDiagram
 
 > 💡 **Multi-Platform Support:** All lab command lines provide both **PowerShell** and **WSL/Bash** alternatives. Choose the commands that work best for your environment.
 
-The 20 labs are organized into **four learning tracks**. Lab numbers and file names never change, so every `labs/labNN.md` link keeps working — a track is a reading order, not a renumbering. **Start with [Setup](#choose-your-path)** (fork the repo, enable Actions, install tools): every track assumes it.
+The 26 labs are organized into **five learning tracks**. Lab numbers and file names never change, so every `labs/labNN.md` link keeps working — a track is a reading order, not a renumbering. **Start with [Setup](#choose-your-path)** (fork the repo, enable Actions, install tools): every track assumes it.
 
 ### Track 1: Core Customizations & Guardrails (Labs 01–07)
 
@@ -606,7 +606,20 @@ The 20 labs are organized into **four learning tracks**. Lab numbers and file na
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
-**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across all 20 modules, or ~13 hours of self-paced hands-on execution across all 20 labs)
+### Track 5: Enterprise Agentic SDLC Harness (Labs 21–26)
+
+*Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and GitHub Copilot App canvases.*
+
+| Lab | Module | Focus |
+|-----|--------|-------|
+| [Lab 21](labs/lab21.md) | The Tech Lead's Plugin & Marketplace Lockdown | Role-based SDLC agents and centrally enforced marketplace controls |
+| [Lab 22](labs/lab22.md) | Centralized Spec Kit Templates & the Org Catalog | Org preset for spec/plan/tasks templates, `bundle.yml`, discovery-vs-install catalog control |
+| [Lab 23](labs/lab23.md) | Custom SDLC Stages, Gates & the Rework Loop | Custom epic and QA-review phases, workflow overlays with approval gates, first-class rework |
+| [Lab 24](labs/lab24.md) | The Notification Funnel & Executable Tasks | Stage-transition notification routing, tasks projected to issues, task-as-prompt format |
+| [Lab 25](labs/lab25.md) | Telemetry, Log Analytics & the Improvement Loop | Copilot OpenTelemetry export, offline file-exporter path, Logs Ingestion API, KQL pack and Workbook |
+| [Lab 26](labs/lab26.md) | Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension, SDLC board, code-aware workbench, dry-run release composer |
+
+**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across the 20 live workshop modules, or ~16.5 hours of self-paced hands-on execution across all 26 labs)
 
 > 🧭 **Learning path.** Take the tracks in order: each one assumes the one before it. Because a track is a reading order, Track 2 runs Lab 10 → 12 → 15 and Lab 11 sits in Track 3.
 >
@@ -614,6 +627,7 @@ The 20 labs are organized into **four learning tracks**. Lab numbers and file na
 > - **Track 2 (Labs 08–10, 12, 15).** Labs 08 → 09 are sequential: the gh-aw workflow first, then the coding agent and code review. Lab 10 (memory) follows the `.copilot/lessons/` preview in Lab 05. Lab 12 (Fabric MCP) and Lab 15 (LSP) are standalone.
 > - **Track 3 (Labs 11, 13–14, 16).** Lab 11 is standalone (plugin distribution). Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and Lab 14 operationalises them with tmux. Lab 16 → Lab 11 are companions (marketplace governance).
 > - **Track 4 (Labs 17–20).** Lab 17 (admin controls) is standalone. Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review); Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to enterprise scale and should be read after Lab 17.
+> - **Track 5 (Labs 21–26).** Labs 21 → 26 are the sequential **enterprise agentic SDLC harness** arc (~3.5 hours), framed by the [executive blueprint](docs/enterprise-harness-blueprint.md). The arc is **self-paced only** — it is not part of the 4-hour [workshop curriculum](workshop/curriculum.md).
 
 ---
 
@@ -646,6 +660,17 @@ Version floors, model tiers, and MCP pins live in
 ---
 
 ## Useful Commands
+
+The [Tests workflow](.github/workflows/tests.yml) runs on every pull request and push to
+`main`, and can also be dispatched manually. Four independent Ubuntu checks run the
+complete root Vitest suite (including Bash, tmux and registry-pinned gh-aw checks), Node
+unit/integration and Chromium E2E tests, .NET unit/integration and Chromium E2E tests,
+and the Lab Studio drift, typecheck and server test suite.
+Results appear in the PR **Checks** tab; JUnit/TRX reports, browser traces and the .NET
+application log are uploaded as artifacts even when tests fail. Unit tests run even if
+browser installation fails, and browser tests still run after a unit-test failure. No path
+filters or failure suppression hide failing suites.
+The heavyweight, offline prepared-image verification remains a separate manual workflow.
 
 | Task                                                               | Command                                                              |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
@@ -691,7 +716,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 20 hands-on lab modules + per-track appendices
+├── labs/                          # 26 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
@@ -717,7 +742,7 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **PRD Generation**       | Feature branch created                                 | PM agent generates a Product Requirements Document                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **Code Review**          | Pull request opened                                    | Code review agent provides automated feedback                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the seven freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
+| **Weekly Content Audit** | `cron: 0 5 * * 0` (Sunday 05:00 UTC) + manual dispatch | Audits the nine freshness checks in [`docs/_meta/registry.yaml`](docs/_meta/registry.yaml) (CLI, gh-aw, MCP, doc URLs, packages, models, lab pacing, Spec Kit release, Azure Monitor API versions) and opens **one** PR on `automation/weekly-audit-YYYY-MM-DD` with a generated [`docs/_meta/audit-report.md`](docs/_meta/audit-report.template.md), labeled `automated`, `content-audit`, `needs-review`. Drafted automatically when changes exceed `audit.draft_pr_if_changes_exceed`. Reviewers come from [`.github/CODEOWNERS`](.github/CODEOWNERS). |
 
 ---
 
@@ -726,8 +751,8 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource                              | Description                                                                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Setup](#choose-your-path)            | Fork, prerequisites, environment setup                                                                                                                                                   |
-| [Lab Modules](labs/)                  | 20 hands-on labs — start here                                                                                                                                                            |
-| [Lab Studio](lab-studio/)             | Browser-based guided runner for all 20 labs — live Copilot sessions via the Copilot SDK, a simulated GitHub surface (Actions/PRs/rulesets) with real AI inside it, per-step verification |
+| [Lab Modules](labs/)                  | 26 hands-on labs — start here                                                                                                                                                            |
+| [Lab Studio](lab-studio/)             | Browser-based guided runner for all 26 labs — live Copilot sessions via the Copilot SDK, a simulated GitHub surface (Actions/PRs/rulesets) with real AI inside it, per-step verification |
 | [Reference Solutions](solutions/)     | Completed solutions for each lab                                                                                                                                                         |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes                                                                                                                                                                  |
 | [AGENTS.md](AGENTS.md)                | Full project context document                                                                                                                                                            |

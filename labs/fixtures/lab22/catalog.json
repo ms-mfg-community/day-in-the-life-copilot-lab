@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-25T00:00:00Z",
+  "catalog_url": "https://raw.githubusercontent.com/contoso/spec-kit-catalog/main/catalog.json",
+  "presets": {
+    "contoso-sdd": {
+      "name": "Contoso SDD Standards",
+      "id": "contoso-sdd",
+      "version": "1.0.0",
+      "description": "Contoso's org-wide spec, plan and tasks templates — one source, no forks.",
+      "author": "Contoso Platform Engineering",
+      "repository": "https://github.com/contoso/spec-kit-preset-contoso-sdd",
+      "download_url": "https://github.com/contoso/spec-kit-preset-contoso-sdd/archive/refs/tags/v1.0.0.zip",
+      "license": "MIT",
+      "requires": {
+        "speckit_version": ">=1.0.0"
+      },
+      "provides": {
+        "templates": 3,
+        "commands": 0
+      },
+      "tags": ["contoso", "governance", "standards"]
+    }
+  }
+}

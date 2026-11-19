@@ -6,6 +6,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
+    setupFiles: ["./tests/yield-event-loop.setup.ts"],
     // The suites reset the sandbox on every test; give them their own root so
     // `npm test` never touches the .sandbox/workspace a running studio uses.
     env: { LAB_STUDIO_SANDBOX: mkdtempSync(join(tmpdir(), "lab-studio-test-")) },

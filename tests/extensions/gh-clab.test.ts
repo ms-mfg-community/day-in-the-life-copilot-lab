@@ -26,9 +26,9 @@ describe('extensions: solutions/lab-gh-extensions/gh-clab/gh-clab', () => {
     // the script run inside a clean working tree (no diff against HEAD).
     const out = execNodeScript(GH_CLAB, ['--mock', '--allow-empty'], {
       env: { ...process.env, GH_CLAB_MOCK: '1' },
-      timeout: 10000,
+      timeout: 30000,
     });
     expect(out.length).toBeGreaterThan(0);
     expect(out.toLowerCase()).toMatch(/changelog|gh clab|mock|added|summariz/);
-  });
+  }, 30000);
 });

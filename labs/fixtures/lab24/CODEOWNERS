@@ -1,0 +1,8 @@
+# Lab 24 fixture CODEOWNERS. The funnel requests PR reviews from these owners.
+# GitHub semantics: the LAST matching pattern wins, so order general -> specific.
+
+*                               @contoso-internal/copilot-platform
+/specs/                         @blake-lead
+/specs/**/tasks.md              @blake-lead @dana-dev
+/specs/**/qa-review.md          @casey-qa
+/dotnet/                        @dana-dev

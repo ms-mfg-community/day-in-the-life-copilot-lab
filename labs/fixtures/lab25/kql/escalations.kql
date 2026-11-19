@@ -1,0 +1,19 @@
+// id: escalations
+// kind: outcome
+// tables: SdlcStageEvents_CL, SdlcApprovals_CL
+// columns: TimeGenerated, Stage, Feature, Task, EscalatedTo
+// mirror: lib/queries.mjs escalations
+//
+// Escalations per implemented task. An escalation is an approval of record with escalated_to
+// set — Lab 24 sets it when QA classifies a rejection as spec-scope and routes it to the spec owner.
+let changeAt = datetime(2026-09-15);
+let tasks = SdlcStageEvents_CL
+    | where Stage == "implement" and isnotempty(Task) and Task != "-"
+    | summarize Tasks = dcount(strcat(Feature, "/", Task)) by Window = iff(TimeGenerated < changeAt, "baseline", "after");
+let escalated = SdlcApprovals_CL
+    | where isnotempty(EscalatedTo)
+    | summarize Escalations = count() by Window = iff(TimeGenerated < changeAt, "baseline", "after");
+tasks
+| join kind=leftouter escalated on Window
+| extend Escalations = coalesce(Escalations, 0)
+| project Window, Tasks, Escalations, EscalationsPerTask = round(todouble(Escalations) / Tasks, 3)

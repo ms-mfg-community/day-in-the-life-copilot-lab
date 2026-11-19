@@ -39,13 +39,13 @@ function walkMarkdown(dir: string): string[] {
 // ---------------------------------------------------------------------------
 const LAB_NAMES = [
   'setup',
-  ...Array.from({ length: 20 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`),
+  ...Array.from({ length: 26 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`),
   'lab-hardening',
   'lab-copilot-cli-extensions',
   'lab-gh-extensions',
 ];
 const labFile = (name: string): string => join(LABS, `${name}.md`);
-const ALL_LAB_MARKDOWN = walkMarkdown(LABS); // labs/*.md and labs/appendices/**
+const ALL_LAB_MARKDOWN = walkMarkdown(LABS).filter((f) => !rel(f).startsWith('labs/fixtures/')); // labs/*.md and labs/appendices/**
 const MAIN_LAB_MARKDOWN = ALL_LAB_MARKDOWN.filter((f) => dirname(f) === LABS);
 
 const BADGE = { shell: '\u{1F41A}', cli: '\u{1F916}', vscode: '\u{1F4A0}' } as const; // 🐚 🤖 💠

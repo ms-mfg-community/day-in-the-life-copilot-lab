@@ -1,0 +1,53 @@
+// id: before-after
+// kind: outcome
+// tables: SdlcApprovals_CL, SdlcStageEvents_CL, SdlcStepLog_CL, CopilotSpans_CL
+// columns: TimeGenerated, Feature, Gate, Verdict, EscalatedTo, Stage, Task, RunId, Event, StepId, SpanName, ParentSpanId, NanoAiu
+// mirror: lib/queries.mjs beforeAfter
+//
+// The improvement-loop scorecard: outcome metrics FIRST, cost beside them, never activity.
+// OBSERVATIONAL. Two time windows either side of a change are not an experiment: task mix,
+// reviewers and model tiers move too. SampleOk=false when either window has < minSample rows.
+// Lower is better for every metric here.
+let changeAt = datetime(2026-09-15);
+let minSample = 5;
+let qa = SdlcApprovals_CL
+    | where Gate == "review-qa"
+    | summarize Value = round(todouble(countif(Verdict == "reject")) / count(), 3), N = count()
+        by Window = iff(TimeGenerated < changeAt, "baseline", "after")
+    | extend Metric = "qa_reject_rate", Kind = "outcome";
+let rework = SdlcApprovals_CL
+    | where Gate == "review-qa"
+    | summarize FirstDecision = min(TimeGenerated), AnyReject = countif(Verdict == "reject") > 0 by Feature
+    | summarize Value = round(todouble(countif(AnyReject)) / count(), 3), N = count()
+        by Window = iff(FirstDecision < changeAt, "baseline", "after")
+    | extend Metric = "rework_rate", Kind = "outcome";
+let escalated = SdlcStageEvents_CL
+    | where Stage == "implement" and isnotempty(Task) and Task != "-"
+    | summarize N = dcount(strcat(Feature, "/", Task)) by Window = iff(TimeGenerated < changeAt, "baseline", "after")
+    | join kind=leftouter (SdlcApprovals_CL
+        | where isnotempty(EscalatedTo)
+        | summarize E = count() by Window = iff(TimeGenerated < changeAt, "baseline", "after")) on Window
+    | project Window, N, Value = round(todouble(coalesce(E, 0)) / N, 3), Metric = "escalations_per_task", Kind = "outcome";
+let dwell = SdlcStepLog_CL
+    | where Event in ("step_started", "step_completed")
+    | sort by RunId asc, StepId asc, TimeGenerated asc
+    | extend PrevEvent = prev(Event), PrevRunId = prev(RunId), PrevStepId = prev(StepId), Started = prev(TimeGenerated)
+    | where Event == "step_completed" and PrevEvent == "step_started" and PrevRunId == RunId and PrevStepId == StepId
+    | where StepId == "review-qa"
+    | summarize Value = round(percentile((TimeGenerated - Started) / 1m, 50), 1), N = count()
+        by Window = iff(Started < changeAt, "baseline", "after")
+    | extend Metric = "review_qa_dwell_p50_minutes", Kind = "outcome";
+let cost = CopilotSpans_CL
+    | where SpanName == "invoke_agent" and isempty(ParentSpanId) and isnotempty(Task) and Task != "-"
+    | summarize TaskAiu = sum(NanoAiu) / 1e9 by Window = iff(TimeGenerated < changeAt, "baseline", "after"), Feature, Task
+    | summarize P50 = round(percentile(TaskAiu, 50), 3), P95 = round(percentile(TaskAiu, 95), 3), N = count() by Window;
+union qa, rework, escalated, dwell,
+    (cost | project Window, N, Value = P50, Metric = "cost_p50_aiu_per_task", Kind = "cost"),
+    (cost | project Window, N, Value = P95, Metric = "cost_p95_aiu_per_task", Kind = "cost")
+| summarize
+    Baseline = take_anyif(Value, Window == "baseline"), After = take_anyif(Value, Window == "after"),
+    NBaseline = take_anyif(N, Window == "baseline"), NAfter = take_anyif(N, Window == "after")
+    by Metric, Kind
+| extend NBaseline = coalesce(NBaseline, 0), NAfter = coalesce(NAfter, 0)
+| extend Delta = round(After - Baseline, 3), SampleOk = NBaseline >= minSample and NAfter >= minSample
+| project Metric, Kind, Baseline, After, Delta, NBaseline, NAfter, SampleOk

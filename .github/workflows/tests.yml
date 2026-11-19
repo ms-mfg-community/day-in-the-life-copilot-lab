@@ -1,56 +1,203 @@
 name: Tests
 
-# The 458-test suite had no CI job at all: it ran only when a maintainer ran it
-# by hand, and on Windows it failed 45 assertions for platform reasons, so in
-# practice it ran nowhere. This job is what makes `npm test` a real gate, and
-# it is what justifies the handful of tests that skip on Windows — Linux is
-# where they execute for real.
+# The repository test suite, Node track, .NET track and Lab Studio suite run here on Linux CI so
+# `npm test`, Node unit/E2E, .NET unit/E2E and Lab Studio drift/typecheck/tests are enforced on every push and PR.
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: tests-${{ github.ref }}
+  group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  vitest:
-    name: vitest (ubuntu)
+  repository:
+    name: Repository tests (Linux)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Check out
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
-
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 8.0.x
       - name: Install dependencies
-        run: npm ci
-
-      # tmux and jq gate real assertions via skipIf(). Without them the suite
-      # still passes, but silently covers less than it appears to.
-      - name: Install test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y tmux jq
-
-      # tests/workflows/* shell out to `gh aw compile`. The version must match
-      # gh_aw_schema_version in docs/_meta/registry.yaml, because compiling
-      # with a different one rewrites every committed .lock.yml.
-      - name: Install gh-aw at the pinned version
+          sudo apt-get install --yes tmux jq
+          npm ci
+      - name: Install the registry-pinned gh-aw compiler
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh extension install github/gh-aw --pin v0.86.2
+        run: |
+          version="$(node --input-type=module -e 'import fs from "node:fs"; import yaml from "js-yaml"; process.stdout.write(yaml.load(fs.readFileSync("docs/_meta/registry.yaml", "utf8")).gh_aw_schema_version)')"
+          gh extension install github/gh-aw --pin "v${version}"
+          gh aw --help > /dev/null
+          tmux -V
+      - name: Run every root Vitest suite
+        run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/repository.xml
+      - name: Upload repository test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-test-results
+          path: test-results/
+          if-no-files-found: warn
 
-      - name: Run the suite
-        run: npm test
+  node:
+    name: Node tests and Chromium E2E
+    # ghcp-was-here: pinned to ubuntu-24.04 because Playwright 1.59.1 (Node) and Microsoft.Playwright.NUnit 1.55.0 (.NET) lack Ubuntu 26.04 browser-dependency mappings; ceiling is GitHub retiring ubuntu-24.04. Upgrade path: bump @playwright/test to >=1.61.0 and Microsoft.Playwright.NUnit to a release supporting Ubuntu 26.04, then return runs-on to ubuntu-latest.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Install registry-pinned pnpm and application dependencies
+        id: deps
+        run: |
+          version="$(sed -n 's/^    pnpm: "\(.*\)"/\1/p' ../docs/_meta/registry.yaml)"
+          test -n "$version"
+          corepack enable
+          corepack prepare "pnpm@${version}" --activate
+          pnpm install --frozen-lockfile
+      - name: Type-check application
+        run: pnpm build
+      - name: Install Chromium
+        id: browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run Node unit and integration tests
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: pnpm test --reporter=default --reporter=junit --outputFile=test-results/unit.xml
+      - name: Run Node browser tests
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        env:
+          CI: "true"
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/e2e.xml
+        run: pnpm exec playwright test --reporter=list,junit --output=playwright-results
+      - name: Upload Node test results and traces
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: node-test-results
+          path: |
+            node/test-results/
+            node/playwright-results/
+          if-no-files-found: warn
+
+  dotnet:
+    name: .NET tests and Chromium E2E
+    # ghcp-was-here: see node job comment above for ubuntu-24.04 ceiling and Playwright Ubuntu 26.04 upgrade path.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore and build solution
+        id: build
+        run: dotnet build dotnet/ContosoUniversity.sln --configuration Release
+      - name: Install Chromium
+        id: browsers
+        run: pwsh dotnet/ContosoUniversity.PlaywrightTests/bin/Release/net8.0/playwright.ps1 install --with-deps chromium
+      - name: Run .NET unit and integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: dotnet test dotnet/ContosoUniversity.Tests --configuration Release --no-build --logger trx --results-directory test-results/unit
+      - name: Run .NET browser tests against an isolated local app
+        if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://127.0.0.1:52380
+          ConnectionStrings__DefaultConnection: Data Source=${{ runner.temp }}/contoso-e2e.db
+          PreparedCore__Enabled: "true"
+          E2E_BASE_URL: http://127.0.0.1:52380
+        run: |
+          mkdir -p test-results/screenshots
+          dotnet run --project dotnet/ContosoUniversity.Web --configuration Release --no-build --no-launch-profile > test-results/app.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"; wait "$server_pid" || true' EXIT
+          ready=false
+          for attempt in {1..60}; do
+            if curl --fail --silent --output /dev/null "$E2E_BASE_URL/Account/SignIn"; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat test-results/app.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat test-results/app.log
+            echo "Application did not become ready within 60 seconds" >&2
+            exit 1
+          fi
+          dotnet test dotnet/ContosoUniversity.PlaywrightTests --configuration Release --no-build --logger trx --results-directory test-results/e2e
+      - name: Upload .NET results and application log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dotnet-test-results
+          path: |
+            test-results/
+            dotnet/ContosoUniversity.PlaywrightTests/**/screenshots/
+          if-no-files-found: warn
+
+  lab-studio:
+    name: Lab Studio tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: lab-studio
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: lab-studio/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Check Lab Studio drift
+        run: npm run drift
+      - name: Type-check Lab Studio
+        run: npm run typecheck
+      - name: Run Lab Studio server tests
+        run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/lab-studio.xml
+      - name: Upload Lab Studio test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lab-studio-test-results
+          path: lab-studio/server/test-results/
+          if-no-files-found: warn

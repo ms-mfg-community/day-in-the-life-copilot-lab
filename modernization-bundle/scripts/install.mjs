@@ -13,7 +13,7 @@
 //     2 on unexpected errors.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { join, isAbsolute, dirname, resolve } from 'node:path';
+import { join, isAbsolute, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import yaml from 'js-yaml';
 
@@ -32,11 +32,27 @@ export async function dryRun(templateDir, { manifestOverride } = {}) {
   const errors = [];
   const resolved = { agents: [], skills: [], hooks: [], prompts: [] };
 
+  const templateRoot = resolve(templateDir);
   const entrypoints = manifest?.entrypoints ?? {};
   for (const kind of ENTRYPOINT_KINDS) {
     const declared = Array.isArray(entrypoints[kind]) ? entrypoints[kind] : [];
     for (const rel of declared) {
-      const abs = isAbsolute(rel) ? rel : join(templateDir, rel);
+      if (typeof rel !== 'string' || isAbsolute(rel)) {
+        errors.push(`${kind} entrypoint must be relative: ${rel}`);
+        continue;
+      }
+
+      const abs = resolve(templateRoot, rel);
+      const fromRoot = relative(templateRoot, abs);
+      // On Windows, relative() across drives returns an absolute path.
+      if (
+        isAbsolute(fromRoot) ||
+        fromRoot === '..' ||
+        fromRoot.startsWith(`..${sep}`)
+      ) {
+        errors.push(`${kind} entrypoint escapes template root: ${rel}`);
+        continue;
+      }
       if (!existsSync(abs)) {
         errors.push(`missing ${kind} entrypoint: ${rel}`);
         continue;

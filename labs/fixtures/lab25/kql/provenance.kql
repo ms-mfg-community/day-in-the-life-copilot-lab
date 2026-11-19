@@ -1,0 +1,29 @@
+// id: provenance
+// kind: provenance
+// tables: SdlcStageEvents_CL, SdlcApprovals_CL, CopilotSpans_CL
+// columns: TimeGenerated, Feature, CorrelationKey, Transition, FromStage, Stage, Classification, Actor, Artifact, ArtifactSha, Gate, Verdict, Source, EscalatedTo, Approver, SpanName, ParentSpanId, NanoAiu, BundleVersion
+// mirror: lib/queries.mjs provenance
+//
+// One feature's history from durable records only: who advanced each stage and with which
+// artifact (blob SHA), who approved or rejected it and through which channel, and what the
+// version-stamped agent sessions cost. Nothing is re-run. Only as complete as the workspace
+// retention; the git artifacts and approvals of record remain the system of record. Verify an
+// ArtifactSha with `git cat-file -e <sha>` (the offline CLI does this for you).
+let feature = "001-enrollment-cap";
+union
+    (SdlcStageEvents_CL
+    | where Feature == feature
+    | project Time = TimeGenerated, Kind = "stage", CorrelationKey,
+        Detail = strcat(Transition, " ", iff(isempty(FromStage), "(start)", FromStage), " -> ", Stage, iff(isempty(Classification), "", strcat(" [", Classification, "]"))),
+        Who = Actor, Artifact, ArtifactSha, BundleVersion = ""),
+    (SdlcApprovals_CL
+    | where Feature == feature
+    | project Time = TimeGenerated, Kind = "approval", CorrelationKey,
+        Detail = strcat(Gate, " ", Verdict, " via ", Source, iff(isempty(EscalatedTo), "", strcat(" escalated to ", EscalatedTo))),
+        Who = Approver, Artifact = "", ArtifactSha, BundleVersion = ""),
+    (CopilotSpans_CL
+    | where Feature == feature and SpanName == "invoke_agent" and isempty(ParentSpanId)
+    | summarize Time = min(TimeGenerated), Sessions = count(), Aiu = round(sum(NanoAiu) / 1e9, 3), Versions = make_set(BundleVersion) by CorrelationKey
+    | project Time, Kind = "sessions", CorrelationKey, Detail = strcat(Sessions, " session(s), ", Aiu, " AIU"),
+        Who = "", Artifact = "", ArtifactSha = "", BundleVersion = strcat_array(Versions, ","))
+| sort by Time asc, Kind asc

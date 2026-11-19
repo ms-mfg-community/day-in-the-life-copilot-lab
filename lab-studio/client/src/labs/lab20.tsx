@@ -128,10 +128,11 @@ health     → measure it like Lab 19 measures agent drift: stale refs,
             explain="Owner, review, versions — the shared reviewed repo provides all three; a memory service provides none, and copy-paste forks the knowledge instantly. That completes the series: the same file-based discipline from Lab 02, scaled to the org."
           />
           <Note>
-            <strong>Series complete.</strong> Twenty labs: configuration →
-            agents → skills → hooks → orchestration → the GitHub platform →
-            memory → the enterprise. Reset the workspace and run it again any
-            time.
+            <strong>Track 4 complete.</strong> Twenty labs across Tracks 1–4:
+            configuration → agents → skills → hooks → orchestration → the GitHub
+            platform → memory → enterprise governance. Continue to{" "}
+            <strong>Track 5 (Labs 21–26)</strong> to build and operate the
+            end-to-end enterprise agentic SDLC harness.
           </Note>
         </>
       ),

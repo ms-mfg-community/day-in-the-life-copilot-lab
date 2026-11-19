@@ -192,6 +192,11 @@ as self-paced follow-up paths back to their lab READMEs:
 - Any beginner/primer content for Copilot CLI itself — the workshop
   is explicitly advanced.
 - VS Code flows — Copilot CLI only in live demos.
+- The Labs 21–26 enterprise agentic SDLC harness arc (~3.5 hours
+  self-paced) — it cannot enter the 240-minute budget without
+  displacing M1–M6, so it is **self-paced only**. Its registry entries
+  still carry `pace_workshop_minutes` because the workshop-pace audit
+  checks every lab.
 
 ## Phase-1 change log
 

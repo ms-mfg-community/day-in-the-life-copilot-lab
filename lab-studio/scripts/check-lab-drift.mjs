@@ -17,7 +17,7 @@ const studioRoot = resolve(here, "..");
 const repoRoot = resolve(studioRoot, "..");
 const manifestPath = join(studioRoot, "lab-sources.json");
 
-const LABS = Array.from({ length: 20 }, (_, i) => String(i + 1).padStart(2, "0"));
+const LABS = Array.from({ length: 26 }, (_, i) => String(i + 1).padStart(2, "0"));
 
 function sha256(path) {
   // Hash with LF line endings so the baseline is identical on Windows

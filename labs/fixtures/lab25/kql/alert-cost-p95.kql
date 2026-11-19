@@ -1,0 +1,13 @@
+// id: alert-cost-p95
+// kind: alert
+// tables: CopilotSpans_CL
+// columns: SpanName, ParentSpanId, Feature, Task, NanoAiu
+// mirror: none (bicep/main.bicep loads this file into the scheduled query rule)
+//
+// p95 AI Credits per task over the rule's window (P1D, evaluated every PT6H). The rule fires when
+// P95Aiu exceeds its threshold. No `let changeAt` and no time filter: the alert supplies the window.
+CopilotSpans_CL
+| where SpanName == "invoke_agent" and isempty(ParentSpanId)
+| where isnotempty(Task) and Task != "-"
+| summarize TaskAiu = sum(NanoAiu) / 1e9 by Feature, Task
+| summarize P95Aiu = percentile(TaskAiu, 95)
