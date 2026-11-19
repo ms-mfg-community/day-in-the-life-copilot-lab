@@ -32,7 +32,7 @@ export function Home(): JSX.Element {
   return (
     <div className="home-hero">
       <div className="eyebrow">
-        <span>Everything GitHub Copilot · 20 labs · 4 tracks</span>
+        <span>Everything GitHub Copilot · 26 labs · 5 tracks</span>
       </div>
       <div className="big">
         The Copilot workshop,
@@ -40,8 +40,8 @@ export function Home(): JSX.Element {
         running <span className="accent">live on your bench</span>.
       </div>
       <p>
-        This studio walks you through all 20 labs of the{" "}
-        <em>Everything GitHub Copilot</em> workshop, grouped into four learning
+        This studio walks you through all 26 labs of the{" "}
+        <em>Everything GitHub Copilot</em> workshop, grouped into five learning
         tracks, without leaving the browser. The manual on this side teaches;
         the dark bench on the right is a real instrument — a{" "}
         <strong>live GitHub Copilot session</strong> driven through the official
@@ -104,7 +104,7 @@ export function Home(): JSX.Element {
         </div>
       </div>
 
-      <h2>The 20 labs, in four learning tracks</h2>
+      <h2>The 26 labs, in five learning tracks</h2>
       <p>
         Take the tracks in order: Track 1 teaches the configuration surfaces
         every later lab builds on. The rail and the Next button follow the same

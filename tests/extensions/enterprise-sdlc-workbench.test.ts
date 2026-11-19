@@ -68,6 +68,16 @@ describe("extensions: enterprise-sdlc-workbench", () => {
                 run: "run-001",
             });
             expect(isValidCorrelationKey(key)).toBe(true);
+
+            // Also accepts canonical Lab 24 / Lab 25 Spec Kit correlation keys (task ID T014 or stage-level "-").
+            expect(isValidCorrelationKey("001-enrollment-cap/implement/T014/3f9a2c1e")).toBe(true);
+            expect(isValidCorrelationKey("001-enrollment-cap/qa-review/-/3f9a2c1e")).toBe(true);
+            expect(parseCorrelationKey("001-enrollment-cap/implement/T014/3f9a2c1e")).toEqual({
+                feature: "001-enrollment-cap",
+                stage: "implement",
+                task: "T014",
+                run: "3f9a2c1e",
+            });
         });
 
         it("rejects non-kebab-case or wrong segment counts", () => {

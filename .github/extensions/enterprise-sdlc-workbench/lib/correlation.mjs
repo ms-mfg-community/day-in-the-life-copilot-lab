@@ -8,20 +8,27 @@
 
 export const SCHEMA_VERSION = "v1";
 
-// Four kebab-case segments: feature/stage/task/run.
+// Four segments: feature/stage/task/run.
+// Supports both Lab 24/25's canonical Spec Kit keys
+// (e.g. "001-enrollment-cap/implement/T014/3f9a2c1e" or
+// "001-enrollment-cap/qa-review/-/3f9a2c1e") and general kebab-case keys
+// (e.g. "epic-001/lab26/dispatch/01").
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
-const CORRELATION_RE = new RegExp(`^(${SEGMENT})/(${SEGMENT})/(${SEGMENT})/(${SEGMENT})$`);
+const TASK_SEGMENT = `(?:${SEGMENT}|-|T\\d{3,4})`;
+const CORRELATION_RE = new RegExp(
+    `^(${SEGMENT})/(${SEGMENT})/(${TASK_SEGMENT})/(${SEGMENT})$`,
+);
 
 /**
  * @param {{ feature: string, stage: string, task: string, run: string }} parts
- * @returns {string} e.g. "lab26/implement/sdlc-board/run-001"
+ * @returns {string} e.g. "001-enrollment-cap/implement/T014/3f9a2c1e"
  */
 export function formatCorrelationKey({ feature, stage, task, run }) {
     const key = `${feature}/${stage}/${task}/${run}`;
     if (!CORRELATION_RE.test(key)) {
         throw new Error(
-            `invalid correlation key parts: each of feature/stage/task/run must be ` +
-                `lowercase kebab-case (got "${key}")`,
+            `invalid correlation key parts: feature/stage/run must be lowercase kebab-case ` +
+                `and task must be lowercase kebab-case, T<NNN>, or "-" (got "${key}")`,
         );
     }
     return key;

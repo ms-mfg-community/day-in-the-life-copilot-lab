@@ -42,11 +42,11 @@ function readmeTracks(): ReadmeTrack[] {
   });
 }
 
-describe('README Lab Modules groups the 20 labs into four learning tracks', () => {
-  it('has exactly four numbered track headings, in order', () => {
+describe('README Lab Modules groups the 26 labs into five learning tracks', () => {
+  it('has exactly five numbered track headings, in order', () => {
     const tracks = readmeTracks();
 
-    expect(tracks.map((t) => t.number)).toEqual([1, 2, 3, 4]);
+    expect(tracks.map((t) => t.number)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it.each(TRACKS.map((t) => [t.number, t] as const))('track %i heading names the title and lab range Lab Studio shows', (_n, track) => {
@@ -65,7 +65,7 @@ describe('README Lab Modules groups the 20 labs into four learning tracks', () =
   it('links every lab exactly once across the whole section', () => {
     const links = [...labModules().matchAll(/\]\(labs\/(lab\d{2})\.md\)/g)].map((m) => m[1]);
 
-    const expected = Array.from({ length: 20 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`);
+    const expected = Array.from({ length: 26 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`);
     expect([...links].sort()).toEqual(expected);
   });
 

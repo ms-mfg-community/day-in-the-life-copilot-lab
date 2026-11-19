@@ -23,13 +23,14 @@ import { formatLabRange } from "../../client/src/labs/tracks.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const client = resolve(here, "../../client/src");
 const NUMERIC_IDS = Array.from(
-  { length: 20 },
+  { length: 26 },
   (_, index) => `lab${String(index + 1).padStart(2, "0")}`,
 );
 const PATH_IDS = [
   "lab01", "lab02", "lab03", "lab04", "lab05", "lab06", "lab07",
   "lab08", "lab09", "lab10", "lab12", "lab15", "lab11", "lab13",
   "lab14", "lab16", "lab17", "lab18", "lab19", "lab20",
+  "lab21", "lab22", "lab23", "lab24", "lab25", "lab26",
 ];
 
 // Import the real client modules through Vite, not a text search or a mock.
@@ -154,7 +155,7 @@ describe("Phase 6 executable client contracts", () => {
   });
 
   it("labIndices.invalidSavedLocations.haveNoNeighbor", () => {
-    for (const index of [-1, 20, 999, 0.5, Number.NaN]) {
+    for (const index of [-1, 26, 999, 0.5, Number.NaN]) {
       expect(curriculum.nextLabIdx(index)).toBeUndefined();
       expect(curriculum.previousLabIdx(index)).toBeUndefined();
     }
@@ -210,19 +211,19 @@ describe("Phase 6 executable client contracts", () => {
     }
   });
 
-  it("homeAndRail.renderFourAccessibleGroups.withAllTwentyLabsInPathOrder", () => {
+  it("homeAndRail.renderFiveAccessibleGroups.withAllTwentySixLabsInPathOrder", () => {
     const home = htmlOf(createElement(Home));
     const rail = htmlOf(createElement(Rail));
     expect(
       [...home.matchAll(/<section[^>]*aria-labelledby="home-(track\d)"/g)].map(
         (match) => match[1],
       ),
-    ).toEqual(["track1", "track2", "track3", "track4"]);
+    ).toEqual(["track1", "track2", "track3", "track4", "track5"]);
     expect(
       [...rail.matchAll(/role="group" aria-labelledby="rail-(track\d)"/g)].map(
         (match) => match[1],
       ),
-    ).toEqual(["track1", "track2", "track3", "track4"]);
+    ).toEqual(["track1", "track2", "track3", "track4", "track5"]);
     expect(rows(home).flatMap((row) => row[0]?.match(/^\d{2}/) ?? [])).toEqual(
       PATH_IDS.map((id) => id.slice(3)),
     );
@@ -230,7 +231,7 @@ describe("Phase 6 executable client contracts", () => {
     expect(headings.map((match) => plain(match[1] ?? "").slice(0, 2))).toEqual(
       PATH_IDS.map((id) => id.slice(3)),
     );
-    expect(plain(home)).toContain("20 labs · 4 tracks");
+    expect(plain(home)).toContain("26 labs · 5 tracks");
     expect(plain(home)).not.toMatch(/first five labs|The five labs|Labs 01–05/i);
   });
 });
@@ -378,5 +379,57 @@ describe("Phase 6 rendered lessons and their real writable artifacts", () => {
     expect(text).toContain("By default only metadata is recorded");
     expect(text).toContain("separate content events aren't exported");
     expect(text).toContain("read it: they can hold prompts");
+  });
+
+  it("track5Labs.insertedCards.passTheirRealServerVerifiers", () => {
+    resetSandbox();
+    const cases: ReadonlyArray<{
+      stepKey: string;
+      verifyId: string;
+      files: readonly string[];
+    }> = [
+      {
+        stepKey: "lab21/bundle",
+        verifyId: "lab21/bundle",
+        files: ["enterprise/qa-reviewer.agent.md"],
+      },
+      {
+        stepKey: "lab22/preset",
+        verifyId: "lab22/preset",
+        files: [
+          ".specify/presets/contoso-sdd/preset.yml",
+          ".specify/presets/contoso-sdd/templates/plan-template.md",
+        ],
+      },
+      {
+        stepKey: "lab23/overlay",
+        verifyId: "lab23/overlay",
+        files: [".specify/workflows/overlays/speckit/contoso-stages.yml"],
+      },
+      {
+        stepKey: "lab24/task-prompt",
+        verifyId: "lab24/task-prompt",
+        files: ["specs/001-enrollment-cap/tasks.md"],
+      },
+      {
+        stepKey: "lab25/telemetry",
+        verifyId: "lab25/telemetry",
+        files: ["enterprise/managed-settings.telemetry.json"],
+      },
+      {
+        stepKey: "lab26/canvas",
+        verifyId: "lab26/canvas",
+        files: [".github/extensions/sdlc-filter/filter.mjs"],
+      },
+    ];
+
+    for (const c of cases) {
+      expect(runVerify(c.verifyId).pass, `${c.verifyId} should fail before writing files`).toBe(false);
+      for (const path of c.files) {
+        writeWorkspaceFile(path, card(c.stepKey, path));
+      }
+      const res = runVerify(c.verifyId);
+      expect(res.pass, `${c.verifyId}: ${res.message}`).toBe(true);
+    }
   });
 });

@@ -52,6 +52,14 @@ export const TRACKS: readonly Track[] = [
       "Run Copilot across an organization: admin controls, spec-driven delivery with stacked PRs, self-improving agents, and token reporting.",
     labIds: ["lab17", "lab18", "lab19", "lab20"],
   },
+  {
+    id: "track5",
+    number: 5,
+    title: "Enterprise Agentic SDLC Harness",
+    summary:
+      "Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and GitHub Copilot App canvases.",
+    labIds: ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26"],
+  },
 ];
 
 /** Lab ids in learning-path order: every lab of Track 1, then Track 2, and so on. */

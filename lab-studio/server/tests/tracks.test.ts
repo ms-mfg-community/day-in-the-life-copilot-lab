@@ -9,22 +9,23 @@ import {
 } from "../../client/src/labs/tracks.js";
 
 const ALL_LAB_IDS = Array.from(
-  { length: 20 },
+  { length: 26 },
   (_, i) => `lab${String(i + 1).padStart(2, "0")}`,
 );
 
 describe("learning tracks", () => {
-  it("tracks.areFour.numberedOneToFour", () => {
-    expect(TRACKS.map((t) => t.number)).toEqual([1, 2, 3, 4]);
+  it("tracks.areFive.numberedOneToFive", () => {
+    expect(TRACKS.map((t) => t.number)).toEqual([1, 2, 3, 4, 5]);
     expect(TRACKS.map((t) => t.id)).toEqual([
       "track1",
       "track2",
       "track3",
       "track4",
+      "track5",
     ]);
   });
 
-  it("tracks.everyLab01To20.appearsInExactlyOneTrack", () => {
+  it("tracks.everyLab01To26.appearsInExactlyOneTrack", () => {
     const placed = TRACKS.flatMap((t) => [...t.labIds]);
 
     expect([...placed].sort()).toEqual(ALL_LAB_IDS);
@@ -36,6 +37,7 @@ describe("learning tracks", () => {
       ["lab08", "lab09", "lab10", "lab12", "lab15"],
       ["lab11", "lab13", "lab14", "lab16"],
       ["lab17", "lab18", "lab19", "lab20"],
+      ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26"],
     ]);
   });
 
@@ -45,6 +47,7 @@ describe("learning tracks", () => {
       "Cloud Agents, Memory & Context Engineering",
       "Multi-Agent Orchestration, A2A & Extensions",
       "Enterprise Governance, Spec-Driven Delivery & FinOps",
+      "Enterprise Agentic SDLC Harness",
     ]);
   });
 
@@ -78,6 +81,12 @@ describe("learning path", () => {
       "lab18",
       "lab19",
       "lab20",
+      "lab21",
+      "lab22",
+      "lab23",
+      "lab24",
+      "lab25",
+      "lab26",
     ]);
   });
 
@@ -97,7 +106,8 @@ describe("learning path", () => {
   });
 
   it("nextLabId.lastLab.isUndefined", () => {
-    expect(nextLabId("lab20")).toBeUndefined();
+    expect(nextLabId("lab20")).toBe("lab21");
+    expect(nextLabId("lab26")).toBeUndefined();
   });
 
   it("previousLabId.mirrorsNextLabId", () => {
@@ -122,6 +132,7 @@ describe("track lookup", () => {
     expect(trackOfLab("lab12")?.number).toBe(2);
     expect(trackOfLab("lab16")?.number).toBe(3);
     expect(trackOfLab("lab20")?.number).toBe(4);
+    expect(trackOfLab("lab25")?.number).toBe(5);
   });
 
   it("trackOfLab.unknownLab.isUndefined", () => {

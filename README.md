@@ -608,7 +608,7 @@ The 26 labs are organized into **five learning tracks**. Lab numbers and file na
 
 ### Track 5: Enterprise Agentic SDLC Harness (Labs 21–26)
 
-*Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and Copilot CLI canvases.*
+*Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and GitHub Copilot App canvases.*
 
 | Lab | Module | Focus |
 |-----|--------|-------|
