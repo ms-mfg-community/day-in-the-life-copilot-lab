@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { load } from 'js-yaml';
 
 interface Step {
+  id?: string;
+  name?: string;
   run?: string;
   uses?: string;
   if?: string;
@@ -15,6 +17,7 @@ interface Workflow {
   jobs: Record<string, {
     'runs-on': string;
     'timeout-minutes': number;
+    defaults?: { run?: { shell?: string; 'working-directory'?: string } };
     steps: Step[];
   }>;
 }
@@ -29,12 +32,16 @@ describe('automatic test checks', () => {
     expect(triggers).toHaveProperty('workflow_dispatch');
   });
 
-  it('runs all three suites on Linux with bounded, read-only jobs', () => {
+  it('runs all four suites on Linux with bounded, read-only jobs', () => {
     const config = workflow();
     expect(config.permissions).toEqual({ contents: 'read' });
-    expect(Object.keys(config.jobs)).toEqual(['repository', 'node', 'dotnet']);
+    expect(Object.keys(config.jobs)).toEqual(['repository', 'node', 'dotnet', 'lab-studio']);
+    expect(config.jobs.repository['runs-on']).toBe('ubuntu-latest');
+    expect(config.jobs.node['runs-on']).toBe('ubuntu-24.04');
+    expect(config.jobs.dotnet['runs-on']).toBe('ubuntu-24.04');
+    expect(config.jobs['lab-studio']['runs-on']).toBe('ubuntu-latest');
+    expect(config.jobs['lab-studio'].defaults?.run?.['working-directory']).toBe('lab-studio');
     for (const job of Object.values(config.jobs)) {
-      expect(job['runs-on']).toBe('ubuntu-latest');
       expect(job['timeout-minutes']).toBeGreaterThan(0);
       for (const step of job.steps) {
         if (step.uses) expect(step.uses).toMatch(/@[a-f0-9]{40}$/);
@@ -61,5 +68,54 @@ describe('automatic test checks', () => {
     expect(commands('dotnet')).toContain('dotnet test dotnet/ContosoUniversity.PlaywrightTests');
     expect(commands('dotnet')).toContain('trap');
     expect(commands('dotnet')).toContain('curl --fail');
+    expect(commands('lab-studio')).toContain('npm ci');
+    expect(commands('lab-studio')).toContain('npm run drift');
+    expect(commands('lab-studio')).toContain('npm run typecheck');
+    expect(commands('lab-studio')).toContain('npm test');
+
+    const nodeDepsStep = jobs.node.steps.find(step => step.run?.includes('pnpm install --frozen-lockfile'));
+    const nodeUnitStep = jobs.node.steps.find(step => step.run?.includes('pnpm test --'));
+    expect(nodeDepsStep?.id).toBe('deps');
+    expect(nodeUnitStep?.if).toContain('!cancelled()');
+    expect(nodeUnitStep?.if).toContain("steps.deps.outcome == 'success'");
+    expect(nodeUnitStep?.if).not.toContain('steps.browsers');
+
+    const dotnetBuildStep = jobs.dotnet.steps.find(step => step.run?.includes('dotnet build dotnet/ContosoUniversity.sln'));
+    const dotnetUnitStep = jobs.dotnet.steps.find(step => step.run?.includes('dotnet test dotnet/ContosoUniversity.Tests'));
+    expect(dotnetBuildStep?.id).toBe('build');
+    expect(dotnetUnitStep?.if).toContain('!cancelled()');
+    expect(dotnetUnitStep?.if).toContain("steps.build.outcome == 'success'");
+    expect(dotnetUnitStep?.if).not.toContain('steps.browsers');
+  });
+
+  it.each([
+    ['node', 'deps', 'pnpm test --'],
+    ['dotnet', 'build', 'dotnet test dotnet/ContosoUniversity.Tests'],
+  ])('keeps %s unit tests independent of browser-install success', (job, prerequisite, unitCommand) => {
+    const steps = workflow().jobs[job].steps;
+    const dependencyIndex = steps.findIndex(step => step.id === prerequisite);
+    const unitIndex = steps.findIndex(step => step.run?.includes(unitCommand));
+
+    expect(dependencyIndex).toBeGreaterThanOrEqual(0);
+    expect(unitIndex).toBeGreaterThan(dependencyIndex);
+    expect(steps[unitIndex].if).toBe(`\${{ !cancelled() && steps.${prerequisite}.outcome == 'success' }}`);
+  });
+
+  it('runs Lab Studio install, drift, typecheck and tests in order with its own lockfile', () => {
+    const job = workflow().jobs['lab-studio'];
+    const setup = job.steps.find(step => step.uses?.startsWith('actions/setup-node@'));
+
+    expect(job.defaults?.run?.['working-directory']).toBe('lab-studio');
+    expect(setup?.with).toMatchObject({
+      'node-version': 22,
+      cache: 'npm',
+      'cache-dependency-path': 'lab-studio/package-lock.json',
+    });
+    expect(job.steps.filter(step => step.run).map(step => step.run)).toEqual([
+      'npm ci',
+      'npm run drift',
+      'npm run typecheck',
+      expect.stringMatching(/^npm test(?:\s|$)/),
+    ]);
   });
 });

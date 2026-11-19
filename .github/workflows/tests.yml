@@ -1,7 +1,7 @@
 name: Tests
 
-# The repository test suite, Node track and .NET track run here on Linux CI so
-# `npm test`, Node unit/E2E and .NET unit/E2E are enforced on every push and PR.
+# The repository test suite, Node track, .NET track and Lab Studio suite run here on Linux CI so
+# `npm test`, Node unit/E2E, .NET unit/E2E and Lab Studio drift/typecheck/tests are enforced on every push and PR.
 
 on:
   pull_request:
@@ -61,7 +61,8 @@ jobs:
 
   node:
     name: Node tests and Chromium E2E
-    runs-on: ubuntu-latest
+    # ghcp-was-here: pinned to ubuntu-24.04 because Playwright 1.59.1 (Node) and Microsoft.Playwright.NUnit 1.55.0 (.NET) lack Ubuntu 26.04 browser-dependency mappings; ceiling is GitHub retiring ubuntu-24.04. Upgrade path: bump @playwright/test to >=1.61.0 and Microsoft.Playwright.NUnit to a release supporting Ubuntu 26.04, then return runs-on to ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -75,6 +76,7 @@ jobs:
         with:
           node-version: 22
       - name: Install registry-pinned pnpm and application dependencies
+        id: deps
         run: |
           version="$(sed -n 's/^    pnpm: "\(.*\)"/\1/p' ../docs/_meta/registry.yaml)"
           test -n "$version"
@@ -87,6 +89,7 @@ jobs:
         id: browsers
         run: pnpm exec playwright install --with-deps chromium
       - name: Run Node unit and integration tests
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         run: pnpm test --reporter=default --reporter=junit --outputFile=test-results/unit.xml
       - name: Run Node browser tests
         if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
@@ -106,7 +109,8 @@ jobs:
 
   dotnet:
     name: .NET tests and Chromium E2E
-    runs-on: ubuntu-latest
+    # ghcp-was-here: see node job comment above for ubuntu-24.04 ceiling and Playwright Ubuntu 26.04 upgrade path.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -116,11 +120,13 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - name: Restore and build solution
+        id: build
         run: dotnet build dotnet/ContosoUniversity.sln --configuration Release
       - name: Install Chromium
         id: browsers
         run: pwsh dotnet/ContosoUniversity.PlaywrightTests/bin/Release/net8.0/playwright.ps1 install --with-deps chromium
       - name: Run .NET unit and integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: dotnet test dotnet/ContosoUniversity.Tests --configuration Release --no-build --logger trx --results-directory test-results/unit
       - name: Run .NET browser tests against an isolated local app
         if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
@@ -161,4 +167,37 @@ jobs:
           path: |
             test-results/
             dotnet/ContosoUniversity.PlaywrightTests/**/screenshots/
+          if-no-files-found: warn
+
+  lab-studio:
+    name: Lab Studio tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: lab-studio
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: lab-studio/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Check Lab Studio drift
+        run: npm run drift
+      - name: Type-check Lab Studio
+        run: npm run typecheck
+      - name: Run Lab Studio server tests
+        run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/lab-studio.xml
+      - name: Upload Lab Studio test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lab-studio-test-results
+          path: lab-studio/server/test-results/
           if-no-files-found: warn

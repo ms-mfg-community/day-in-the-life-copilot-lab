@@ -662,12 +662,14 @@ Version floors, model tiers, and MCP pins live in
 ## Useful Commands
 
 The [Tests workflow](.github/workflows/tests.yml) runs on every pull request and push to
-`main`, and can also be dispatched manually. Three independent Ubuntu checks run the
+`main`, and can also be dispatched manually. Four independent Ubuntu checks run the
 complete root Vitest suite (including Bash, tmux and registry-pinned gh-aw checks), Node
-unit/integration and Chromium E2E tests, and .NET unit/integration and Chromium E2E tests.
+unit/integration and Chromium E2E tests, .NET unit/integration and Chromium E2E tests,
+and the Lab Studio drift, typecheck and server test suite.
 Results appear in the PR **Checks** tab; JUnit/TRX reports, browser traces and the .NET
-application log are uploaded as artifacts even when tests fail. Browser tests still run
-after a unit-test failure. No path filters or failure suppression hide failing suites.
+application log are uploaded as artifacts even when tests fail. Unit tests run even if
+browser installation fails, and browser tests still run after a unit-test failure. No path
+filters or failure suppression hide failing suites.
 The heavyweight, offline prepared-image verification remains a separate manual workflow.
 
 | Task                                                               | Command                                                              |
