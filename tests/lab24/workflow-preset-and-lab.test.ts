@@ -103,6 +103,38 @@ describe("lab24: lab content", () => {
     expect(lab).toMatch(pattern);
   });
 
+  it.each(["bash", "powershell"])("bootstraps the live repository root before running in %s", (shell) => {
+    const liveSection = lab.slice(lab.indexOf("**Optional live run"));
+    const block = new RegExp("```" + shell + "\\r?\\n([\\s\\S]*?)```").exec(liveSection)?.[1] ?? "";
+    const bootstrap = [
+      'specify init --here --force --integration copilot --integration-options="--commands"',
+      "specify extension add --dev labs/fixtures/lab23/contoso-review",
+      "specify preset add --dev labs/fixtures/lab22/contoso-sdd",
+      "specify preset add --dev labs/fixtures/lab24/contoso-tasks",
+      "specify workflow add --dev labs/fixtures/lab24/contoso-sdlc",
+      "specify workflow info contoso-sdlc",
+      "specify workflow run contoso-sdlc",
+    ];
+    let previousIndex = -1;
+    for (const command of bootstrap) {
+      const index = block.indexOf(command);
+      expect(index, command).toBeGreaterThan(previousIndex);
+      previousIndex = index;
+    }
+    const run = block.slice(block.indexOf("specify workflow run contoso-sdlc"));
+    expect(run).toContain('--input manifest="enterprise-harness-bundle/manifest.yaml"');
+    expect(run).toContain('--input registry="docs/_meta/registry.yaml"');
+  });
+
+  it("keeps the live-root prerequisite in the Studio adaptation", () => {
+    const studio = readFileSync(join(ROOT, "lab-studio/client/src/labs/lab24.tsx"), "utf8");
+
+    expect(studio).toMatch(/optional live repository run install <code>contoso-sdlc<\/code>/);
+    expect(studio).toMatch(/extension and presets[\s\S]*repository root[\s\S]*root-relative/);
+    expect(studio).toContain("<code>manifest</code>");
+    expect(studio).toContain("<code>registry</code>");
+  });
+
   it("hardcodes no Spec Kit or gh-aw version", () => {
     expect(lab).not.toMatch(/spec[- ]kit[^\n]{0,20}v?1\.\d+\.\d+/i);
     expect(lab).not.toMatch(/gh-aw[^\n]{0,20}v0\.\d+\.\d+/i);

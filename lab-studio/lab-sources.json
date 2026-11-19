@@ -139,7 +139,7 @@
   },
   "lab24": {
     "source": "labs/lab24.md",
-    "sourceHash": "887c4749c9025d9c",
+    "sourceHash": "ea051b1e07330476",
     "studio": "client/src/labs/lab24.tsx",
     "studioExists": true
   },

@@ -509,24 +509,44 @@ specify bundle validate --path ../labs/fixtures/lab22/contoso-sdd-bundle
 cd ..
 ```
 
-**Optional live run (requires a repository with `.github/workflows/sdlc-funnel.md` and a pull request).** Note that `contoso-sdlc-demo/` is a gitignored local scratch folder for inspecting Spec Kit's package and bundle resolution; the GitHub Actions funnel (`.github/workflows/sdlc-funnel.md`) watches `stage-events/**` at the **repository root** of your fork. To exercise the live workflow and funnel end-to-end in a repo initialized with Spec Kit at its root and an open PR:
+**Optional live run (requires your fork with `.github/workflows/sdlc-funnel.md` and an open pull request).** Note that `contoso-sdlc-demo/` is a gitignored local scratch folder for inspecting Spec Kit's package and bundle resolution; the GitHub Actions funnel (`.github/workflows/sdlc-funnel.md`) watches `stage-events/**` at the **repository root** of your fork. Because Spec Kit resolves installed packages per project, bootstrap the **repository root** once (installing the extension, presets, and workflow there) and pass root-relative `manifest` and `registry` inputs so they override `workflow.yml`'s `../` demo-subfolder defaults:
 
 **WSL/Bash:**
 
 ```bash
+# Bootstrap the repository root once for the optional live path:
+specify init --here --force --integration copilot --integration-options="--commands"
+specify extension add --dev labs/fixtures/lab23/contoso-review
+specify preset add --dev labs/fixtures/lab22/contoso-sdd
+specify preset add --dev labs/fixtures/lab24/contoso-tasks
+specify workflow add --dev labs/fixtures/lab24/contoso-sdlc
+specify workflow info contoso-sdlc
+
 export SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0
 specify workflow run contoso-sdlc \
   --input spec="Cap course enrollment at the course capacity" \
-  --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101
+  --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101 \
+  --input manifest="enterprise-harness-bundle/manifest.yaml" \
+  --input registry="docs/_meta/registry.yaml"
 ```
 
 **PowerShell:**
 
 ```powershell
+# Bootstrap the repository root once for the optional live path:
+specify init --here --force --integration copilot --integration-options="--commands"
+specify extension add --dev labs/fixtures/lab23/contoso-review
+specify preset add --dev labs/fixtures/lab22/contoso-sdd
+specify preset add --dev labs/fixtures/lab24/contoso-tasks
+specify workflow add --dev labs/fixtures/lab24/contoso-sdlc
+specify workflow info contoso-sdlc
+
 $env:SPECKIT_COPILOT_ALLOW_ALL_TOOLS = "0"
 specify workflow run contoso-sdlc `
   --input spec="Cap course enrollment at the course capacity" `
-  --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101
+  --input feature=001-enrollment-cap --input epic=enrollment-cap --input issue=101 `
+  --input manifest="enterprise-harness-bundle/manifest.yaml" `
+  --input registry="docs/_meta/registry.yaml"
 ```
 
 `SPECKIT_COPILOT_ALLOW_ALL_TOOLS=0` is [Lab 21](lab21.md)'s safe default. It stops Spec

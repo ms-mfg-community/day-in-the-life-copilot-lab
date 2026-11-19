@@ -115,7 +115,11 @@ export const lab24: Lab = {
             <code>spec-scope</code> (escalates to <code>review-spec</code> /{" "}
             <code>review-plan</code> owner before QA resumes). Always re-run{" "}
             <code>qa-review</code> in a fresh session before{" "}
-            <code>specify workflow resume</code>, and cap rework at 2 rounds.
+            <code>specify workflow resume</code>, cap rework at 2 rounds, and on
+            an optional live repository run install <code>contoso-sdlc</code>{" "}
+            (with its extension and presets) at the repository root using
+            root-relative <code>manifest</code> and <code>registry</code>{" "}
+            inputs.
           </Note>
           <Quiz
             stepKey="lab24/funnel"
