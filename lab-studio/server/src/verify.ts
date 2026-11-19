@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { bridge } from "./copilot-bridge.js";
 import {
   fileExists,
@@ -7,6 +8,8 @@ import {
 } from "./sandbox.js";
 import { commandHistory } from "./sim-terminal.js";
 import { installedPlugins } from "./sim-registry.js";
+
+const LEARNER_CODE_TIMEOUT_MS = 2000;
 
 export interface VerifyResult {
   pass: boolean;
@@ -829,36 +832,43 @@ const advancedChecks: Record<string, Check> = {
     if (!/export\s+function\s+escapeHtml\b/.test(code)) {
       return fail("Export `escapeHtml(value)` so untrusted issue titles and labels are escaped before reaching canvas HTML.");
     }
-    // Execute the learner's module in-process (after stripping `export `) to verify behavioral correctness.
-    const runnable = `${code.replace(/\bexport\s+function\s+/g, "function ")}\nreturn { filterByState, escapeHtml };`;
-    let mod: {
-      filterByState: (issues: Array<{ id: number; state: string }>, state: string) => Array<{ id: number; state: string }>;
-      escapeHtml: (value: string) => string;
-    };
+    // Execute the learner's module and sample calls inside a bounded VM context (after stripping `export `) so a non-terminating loop cannot hang the server.
+    const runnable = `(function () {
+${code.replace(/\bexport\s+function\s+/g, "function ")}
+const sample = [
+  { id: 47, state: "open" },
+  { id: 48, state: "closed" },
+  { id: 50, state: "OPEN" },
+];
+const openOnly = filterByState(sample, "open");
+const closedOnly = filterByState(sample, "closed");
+const openIds = Array.isArray(openOnly) ? openOnly.map((i) => i && i.id).join(",") : null;
+const closedIds = Array.isArray(closedOnly) ? closedOnly.map((i) => i && i.id).join(",") : null;
+const rawEscaped = escapeHtml('<script>alert("x" & \\'y\\')</script>');
+const escaped = typeof rawEscaped === "string" ? rawEscaped : "";
+return { openIds, closedIds, escaped };
+})()`;
+    let outcome: { openIds: string | null; closedIds: string | null; escaped: string };
     try {
-      mod = new Function(runnable)() as typeof mod;
+      outcome = runInNewContext(runnable, Object.create(null), {
+        timeout: LEARNER_CODE_TIMEOUT_MS,
+      }) as typeof outcome;
     } catch (err) {
-      return fail(`Module syntax error: ${err instanceof Error ? err.message : String(err)}`);
+      const errCode = (err as { code?: string } | null)?.code;
+      const message = err instanceof Error ? err.message : String(err);
+      if (errCode === "ERR_SCRIPT_EXECUTION_TIMEOUT" || /Script execution timed out/i.test(message)) {
+        return fail(
+          `Learner module execution timed out after ${LEARNER_CODE_TIMEOUT_MS}ms — check \`filterByState\` and \`escapeHtml\` for non-terminating loops.`,
+        );
+      }
+      return fail(`Module execution error: ${message}`);
     }
-    const sample = [
-      { id: 47, state: "open" },
-      { id: 48, state: "closed" },
-      { id: 50, state: "OPEN" },
-    ];
-    const openOnly = mod.filterByState(sample, "open");
-    const closedOnly = mod.filterByState(sample, "closed");
-    if (
-      !Array.isArray(openOnly) ||
-      openOnly.map((i) => i.id).join(",") !== "47,50" ||
-      !Array.isArray(closedOnly) ||
-      closedOnly.map((i) => i.id).join(",") !== "48"
-    ) {
+    if (outcome.openIds !== "47,50" || outcome.closedIds !== "48") {
       return fail("`filterByState(issues, state)` must return only issues whose `state` matches `open` or `closed` (case-insensitively).");
     }
-    const escaped = mod.escapeHtml('<script>alert("x" & \'y\')</script>');
     if (
-      escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#39;y&#39;)&lt;/script&gt;" &&
-      escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#x27;y&#x27;)&lt;/script&gt;"
+      outcome.escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#39;y&#39;)&lt;/script&gt;" &&
+      outcome.escaped !== "&lt;script&gt;alert(&quot;x&quot; &amp; &#x27;y&#x27;)&lt;/script&gt;"
     ) {
       return fail("`escapeHtml(value)` must escape all five characters (`<`, `>`, `&`, `\"`, and `'`) in untrusted issue titles.");
     }
