@@ -1,0 +1,6 @@
+# Require platform and security review for the governed SDLC harness.
+
+*                                   @contoso-internal/copilot-platform
+/manifest.yaml                      @contoso-internal/copilot-platform @contoso-internal/security
+/org-policy.example.yaml            @contoso-internal/copilot-platform @contoso-internal/security
+/.github/workflows/                 @contoso-internal/copilot-platform @contoso-internal/release-engineering

@@ -1,0 +1,15 @@
+// id: rework-rate
+// kind: outcome
+// tables: SdlcApprovals_CL
+// columns: TimeGenerated, Feature, Gate, Verdict
+// mirror: lib/queries.mjs reworkRate
+//
+// Share of features that QA rejected at least once. A feature belongs to the window of its
+// first QA decision.
+let changeAt = datetime(2026-09-15);
+SdlcApprovals_CL
+| where Gate == "review-qa"
+| summarize FirstDecision = min(TimeGenerated), AnyReject = countif(Verdict == "reject") > 0 by Feature
+| summarize Features = count(), Reworked = countif(AnyReject)
+    by Window = iff(FirstDecision < changeAt, "baseline", "after")
+| extend ReworkRate = round(todouble(Reworked) / Features, 3)

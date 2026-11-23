@@ -1,0 +1,41 @@
+schema_version: "1.0"
+
+# DIY: Spec Kit's task format has no per-task agent or model field. This preset
+# adds one as an org convention. Nothing in Spec Kit reads it; the Lab 24
+# validator and dispatcher do.
+preset:
+  id: "contoso-tasks"
+  name: "Contoso Executable Tasks"
+  version: "1.0.0"
+  description: "Every task in tasks.md carries an executable prompt: agent, model tier, acceptance check, escalation."
+  author: "Contoso Platform Engineering"
+  repository: "https://github.com/contoso/spec-kit-preset-contoso-tasks"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=1.0.0"
+
+provides:
+  templates:
+    # append — the native format (`[ID] [P?] [Story]`, phases, checkpoints) is
+    # kept; this only adds the task-prompt rules after core's template. It
+    # stacks with Lab 22's contoso-sdd, which appends its governance tasks.
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-task-prompt.md"
+      description: "Require a yaml task-prompt block under every T task"
+      strategy: "append"
+
+    # append — core's taskstoissues instructions (and its tools list) are kept.
+    # The fragment has no frontmatter on purpose: a fragment with frontmatter
+    # would replace core's.
+    - type: "command"
+      name: "speckit.taskstoissues"
+      file: "commands/speckit.taskstoissues.md"
+      description: "Put the task prompt and its correlation key in each issue body"
+      strategy: "append"
+
+tags:
+  - "contoso"
+  - "tasks"
+  - "agents"

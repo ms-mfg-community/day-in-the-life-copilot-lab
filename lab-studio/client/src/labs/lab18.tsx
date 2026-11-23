@@ -16,13 +16,18 @@ export const lab18: Lab = {
       body: (
         <>
           <p>
-            GitHub Spec Kit gives spec-driven development a repeatable structure
-            — <code>/speckit-constitution</code>, <code>/speckit-specify</code>,{" "}
-            <code>/speckit-plan</code>, <code>/speckit-tasks</code>,{" "}
-            <code>/speckit-implement</code> — commands that run in your coding
-            agent's chat, not a shell. The point: an unambiguous, testable
-            specification <em>before</em> any code. Have Copilot write one using
-            the conventions:
+            GitHub Spec Kit gives spec-driven development a repeatable set of
+            phases — <strong>constitution → specify → plan → tasks → implement</strong>{" "}
+            — for turning an idea into an unambiguous, testable specification{" "}
+            <em>before</em> any code gets written. (In VS Code&apos;s default
+            skills layout those phases are <code>/speckit-constitution</code>,{" "}
+            <code>/speckit-specify</code>, <code>/speckit-plan</code>,{" "}
+            <code>/speckit-tasks</code>, and <code>/speckit-implement</code>,
+            which do not exist as interactive slash commands in Copilot CLI and
+            are separate from Copilot CLI&apos;s own <code>/plan</code> and{" "}
+            <code>/tasks</code>; the <code>--commands</code> layout covered in
+            Lab 22 generates <code>--agent speckit.specify</code> custom agents
+            for CLI.) Have Copilot write a spec using these conventions:
           </p>
           <PromptCard prompt="Using GitHub Spec Kit conventions (acceptance-criteria-first), write a spec for course prerequisite enforcement in ContosoUniversity and save it to docs/specs/course-prerequisites.md. Sections: Problem, Acceptance Criteria (a Course declares zero or more prerequisite courses; enrollment blocked with a clear validation error when prerequisites are unmet; existing enrollments unaffected; prerequisite chains must not allow cycles), and Out of scope (waiver workflow, cross-department equivalency)." />
           <Note>

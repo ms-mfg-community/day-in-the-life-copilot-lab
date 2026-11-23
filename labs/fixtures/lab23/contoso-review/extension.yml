@@ -1,0 +1,48 @@
+schema_version: "1.0"
+
+extension:
+  id: contoso-review
+  name: "Contoso Review Stages"
+  version: "1.0.0"
+  description: "Adds Contoso's epic and QA-review stages to the Spec Kit SDLC."
+  author: "Contoso Platform Engineering"
+  license: MIT
+
+requires:
+  speckit_version: ">=1.0.0"
+
+# The middle segment of every command name MUST equal extension.id above.
+# `speckit.contoso.epic` is rejected at install with:
+#   Command 'speckit.contoso.epic' must use extension namespace 'contoso-review'
+provides:
+  commands:
+    - name: speckit.contoso-review.epic
+      file: commands/speckit.contoso-review.epic.md
+      description: "Frame a body of work as an epic before any spec is written"
+    - name: speckit.contoso-review.qa-review
+      file: commands/speckit.contoso-review.qa-review.md
+      description: "Review an implemented feature against its spec and record a verdict"
+
+  # Template and script names are NOT namespaced — they are plain `^[a-z0-9-]+$`
+  # slugs. `strategy` is not authorable here: extension-provided artifacts always
+  # use `replace` semantics. The composable strategies (wrap/prepend/append) you
+  # used on the Lab 22 preset are preset-only and are rejected in this file.
+  templates:
+    - name: epic-template
+      file: templates/epic-template.md
+      description: "The epic stage's output shape"
+    - name: qa-review-template
+      file: templates/qa-review-template.md
+      description: "The QA-review stage's verdict shape"
+
+  scripts:
+    - name: create-epic
+      file: scripts/bash/create-epic.sh
+      description: "Create the epic directory and seed it from the template"
+      # `runtimes` is informational metadata only — it does not select or invoke
+      # anything. One entry names one `file`. The PowerShell twin at
+      # scripts/powershell/create-epic.ps1 ships alongside and is chosen by the
+      # command, exactly as Spec Kit's own `git` extension does it.
+      runtimes: ["bash", "powershell"]
+
+tags: ["contoso", "sdlc", "governance", "qa"]

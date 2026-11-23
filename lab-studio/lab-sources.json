@@ -1,7 +1,7 @@
 {
   "lab01": {
     "source": "labs/lab01.md",
-    "sourceHash": "f7f6568f598e118f",
+    "sourceHash": "ee951c42b09ec4fb",
     "studio": "client/src/labs/lab01.tsx",
     "studioExists": true
   },
@@ -61,7 +61,7 @@
   },
   "lab11": {
     "source": "labs/lab11.md",
-    "sourceHash": "1f616f54b649d007",
+    "sourceHash": "2a01440b33110afb",
     "studio": "client/src/labs/lab11.tsx",
     "studioExists": true
   },
@@ -103,7 +103,7 @@
   },
   "lab18": {
     "source": "labs/lab18.md",
-    "sourceHash": "395f680ee4a379d5",
+    "sourceHash": "7da0f6a186917b19",
     "studio": "client/src/labs/lab18.tsx",
     "studioExists": true
   },
@@ -115,8 +115,44 @@
   },
   "lab20": {
     "source": "labs/lab20.md",
-    "sourceHash": "a3e6205562606734",
+    "sourceHash": "2ef8b8ebd21b8138",
     "studio": "client/src/labs/lab20.tsx",
+    "studioExists": true
+  },
+  "lab21": {
+    "source": "labs/lab21.md",
+    "sourceHash": "61ec643aba2a992d",
+    "studio": "client/src/labs/lab21.tsx",
+    "studioExists": true
+  },
+  "lab22": {
+    "source": "labs/lab22.md",
+    "sourceHash": "ea0cc609c8348af9",
+    "studio": "client/src/labs/lab22.tsx",
+    "studioExists": true
+  },
+  "lab23": {
+    "source": "labs/lab23.md",
+    "sourceHash": "66571e0df2648015",
+    "studio": "client/src/labs/lab23.tsx",
+    "studioExists": true
+  },
+  "lab24": {
+    "source": "labs/lab24.md",
+    "sourceHash": "ea051b1e07330476",
+    "studio": "client/src/labs/lab24.tsx",
+    "studioExists": true
+  },
+  "lab25": {
+    "source": "labs/lab25.md",
+    "sourceHash": "db1e6615f60f0f6e",
+    "studio": "client/src/labs/lab25.tsx",
+    "studioExists": true
+  },
+  "lab26": {
+    "source": "labs/lab26.md",
+    "sourceHash": "d7dd2350e173addd",
+    "studio": "client/src/labs/lab26.tsx",
     "studioExists": true
   }
 }

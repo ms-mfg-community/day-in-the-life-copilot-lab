@@ -1,6 +1,11 @@
-import { isAbsolute } from "node:path";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, rmSync, statSync } from "node:fs";
+import { isAbsolute, join, resolve } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  SANDBOX_DIR,
+  SANDBOX_ROOT,
+  TEMPLATE_DIR,
   fileExists,
   parseFrontmatter,
   readMcpConfig,
@@ -39,6 +44,65 @@ describe("resetSandbox", () => {
     expect(fileExists("scratch.txt")).toBe(true);
     resetSandbox();
     expect(fileExists("scratch.txt")).toBe(false);
+  });
+
+  it("reset.cachesSeedWorkspaceAndPreservesIsolatedGitRepo", () => {
+    expect(existsSync(join(SANDBOX_ROOT, ".seed-workspace", ".git"))).toBe(true);
+    expect(existsSync(join(SANDBOX_DIR, ".git"))).toBe(true);
+    rmSync(join(SANDBOX_DIR, ".git"), { recursive: true, force: true });
+    resetSandbox();
+    expect(existsSync(join(SANDBOX_DIR, ".git"))).toBe(true);
+    const topLevel = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: SANDBOX_DIR,
+      encoding: "utf8",
+    }).trim();
+    expect(resolve(topLevel)).toBe(resolve(SANDBOX_DIR));
+  });
+
+  it("reset.reusesWarmSeedWithoutReinitializingGitAndRestoresTemplate", () => {
+    const seedIndex = join(SANDBOX_ROOT, ".seed-workspace", ".git", "index");
+    const seedIndexMtime = statSync(seedIndex).mtimeMs;
+    const original = readFileSync(join(TEMPLATE_DIR, "AGENTS.md"), "utf8");
+    writeWorkspaceFile("AGENTS.md", "learner changes");
+
+    resetSandbox();
+
+    expect(statSync(seedIndex).mtimeMs).toBe(seedIndexMtime);
+    expect(readWorkspaceFile("AGENTS.md")).toBe(original);
+    expect(execFileSync("git", ["status", "--porcelain"], {
+      cwd: SANDBOX_DIR,
+      encoding: "utf8",
+    }).trim()).toBe("");
+  });
+
+  it("reset.recreatesRemovedSeedAndKeepsWorkspaceGitIsolated", () => {
+    const seedDir = join(SANDBOX_ROOT, ".seed-workspace");
+    rmSync(seedDir, { recursive: true, force: true });
+
+    resetSandbox();
+
+    expect(existsSync(join(seedDir, ".git", "HEAD"))).toBe(true);
+    expect(fileExists("AGENTS.md")).toBe(true);
+    expect(resolve(execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: SANDBOX_DIR,
+      encoding: "utf8",
+    }).trim())).toBe(resolve(SANDBOX_DIR));
+  });
+});
+
+describe("worker event-loop yield between synchronous tests", () => {
+  let macrotaskTurnedBetweenSyncTests = false;
+
+  it("syncTest1.schedulesImmediateCallback", () => {
+    macrotaskTurnedBetweenSyncTests = false;
+    setImmediate(() => {
+      macrotaskTurnedBetweenSyncTests = true;
+    });
+    expect(macrotaskTurnedBetweenSyncTests).toBe(false);
+  });
+
+  it("syncTest2.observesMacrotaskTurnSoBirpcRepliesDrain", () => {
+    expect(macrotaskTurnedBetweenSyncTests).toBe(true);
   });
 });
 

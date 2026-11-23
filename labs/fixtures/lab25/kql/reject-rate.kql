@@ -1,0 +1,13 @@
+// id: reject-rate
+// kind: outcome
+// tables: SdlcApprovals_CL
+// columns: TimeGenerated, Gate, Verdict
+// mirror: lib/queries.mjs rejectRate
+//
+// Reject rate per gate per window, from the approvals of record (Lab 24). Telemetry cannot
+// produce this: a gate decision is a human act in a PR review, comment or qa-review.md.
+let changeAt = datetime(2026-09-15);
+SdlcApprovals_CL
+| summarize Decisions = count(), Rejects = countif(Verdict == "reject")
+    by Window = iff(TimeGenerated < changeAt, "baseline", "after"), Gate
+| extend RejectRate = round(todouble(Rejects) / Decisions, 3)

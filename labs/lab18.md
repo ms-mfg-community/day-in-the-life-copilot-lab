@@ -53,18 +53,24 @@ References:
 ## 18.1 Write a Spec, Not Just an Issue
 
 **GitHub Spec Kit** is the official toolkit for spec-driven development: it
-gives you a repeatable structure (`/speckit-constitution`,
-`/speckit-specify`, `/speckit-plan`, `/speckit-tasks` and
-`/speckit-implement`) for turning an idea into an unambiguous, testable
+gives you a repeatable set of phases — **constitution → specify → plan →
+tasks → implement** — for turning an idea into an unambiguous, testable
 specification *before* any code gets written — the opposite of "open an
 issue and hope the agent infers the details."
 
-Those are the command names in GitHub Copilot's default (skills) mode, and
-you invoke them inside your coding agent's chat, not in a shell. Don't
-confuse them with Copilot CLI's own `/plan` and `/tasks` commands, which
-are separate. Spec Kit's
-[integrations reference](https://github.github.io/spec-kit/reference/integrations.html)
-also writes the commands in dotted form (for example `/speckit.specify`).
+> ⚠️ **Those are phases, not one universal slash command.** How you invoke
+> them depends on the install layout: the default **skills** layout gives
+> VS Code chat `/speckit-constitution`, `/speckit-specify`, `/speckit-plan`,
+> `/speckit-tasks` and `/speckit-implement` (hyphen), which do **not** exist
+> as slash commands in Copilot CLI (and shouldn't be confused with Copilot
+> CLI's own `/plan` and `/tasks` commands); the `--commands` layout gives CLI
+> agents dispatched as `--agent speckit.specify`, with no slash form at all.
+> Spec Kit's
+> [integrations reference](https://github.github.io/spec-kit/reference/integrations.html)
+> also writes the commands in dotted form (for example `/speckit.specify`),
+> and its command surface is wider than these five phases. [Lab 22](lab22.md)
+> covers both layouts and the invocation differences — this lab stays on the
+> spec itself.
 
 A good spec for this exercise, added to ContosoUniversity:
 

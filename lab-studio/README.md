@@ -1,6 +1,6 @@
 # Copilot Lab Studio
 
-Run **all 20 labs** of the _Everything GitHub Copilot_ workshop entirely in the
+Run **all 26 labs** of the _Everything GitHub Copilot_ workshop entirely in the
 browser — a guided SPA with a **live GitHub Copilot session** on the right-hand
 "bench", driven through the official [`@github/copilot-sdk`](https://www.npmjs.com/package/@github/copilot-sdk).
 
@@ -8,7 +8,7 @@ browser — a guided SPA with a **live GitHub Copilot session** on the right-han
 
 | Pane                | What it is                                                                                                                                            |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Rail** (left)     | Labs 01–20 grouped under four learning-track headers, with per-step punch-holes that fill green as steps verify                                       |
+| **Rail** (left)     | Labs 01–26 grouped under five learning-track headers, with per-step punch-holes that fill green as steps verify                                       |
 | **Manual** (center) | The teaching content — prose, concept tables, and action cards                                                                                        |
 | **Bench** (right)   | A terminal that emulates the Copilot CLI against a sandboxed workspace, a Files editor, and the simulated GitHub tab (issues, PRs, Actions, settings) |
 
@@ -209,11 +209,11 @@ edit → restart (`/exit` + `copilot`, or `/new`) → verify loop, and the
 
 ## Learning tracks
 
-The 20 labs are grouped into four learning tracks — the same grouping as the
+The 26 labs are grouped into five learning tracks — the same grouping as the
 repository README's _Lab Modules_ section (`client/src/labs/tracks.ts` is the
 data; a test keeps the two in step). The rail, the home screen, and the
 Back/Next buttons all follow the track order, so Track 2 runs Lab 10 → 12 → 15
-and Lab 11 belongs to Track 3. Lab ids (`lab01`–`lab20`), step keys and the
+and Lab 11 belongs to Track 3. Lab ids (`lab01`–`lab26`), step keys and the
 order of the `labs` array never change: progress is keyed by step key and
 survives step reordering, while the saved location is a lab and step index, so
 reordering a lab's steps can reopen a returning learner on a neighbouring step.
@@ -224,6 +224,7 @@ reordering a lab's steps can reopen a returning learner on a neighbouring step.
 | 2 · Cloud Agents, Memory & Context Engineering           | 08–10, 12, 15 |
 | 3 · Multi-Agent Orchestration, A2A & Extensions          | 11, 13–14, 16 |
 | 4 · Enterprise Governance, Spec-Driven Delivery & FinOps | 17–20         |
+| 5 · Enterprise Agentic SDLC Harness                      | 21–26         |
 
 ## Lab map
 
@@ -249,6 +250,12 @@ reordering a lab's steps can reopen a returning learner on a neighbouring step.
 | 18 Spec-Driven Design & Stacked PRs | write a spec · spec→PRD check · 2-layer stack · review per layer                                           | spec + reviews live; stack simulated                                 |
 | 19 Self-Improving Agents            | the bounded workflow · local drift-scan dry run (+ the three classic drift signals) · why the bounds matter | drift scan live                                                      |
 | 20 Enterprise Token Optimization    | the right usage source · prompt/knowledge governance                                                       | quizzes                                                              |
+| 21 Plugin & Marketplace Lockdown    | QA write-boundary agent · load lifecycle & strict marketplaces                                             | file verification + quiz                                             |
+| 22 Spec Kit Templates & Catalog     | resolution stack + replace/wrap/append preset · surface layouts & catalog replacement                      | file verification + quiz                                             |
+| 23 Custom SDLC Stages & Overlays    | workflow overlay anchored on base steps · gate rework & staged validation                                  | file verification + quiz                                             |
+| 24 Notification Funnel & Tasks      | executable `yaml task-prompt` contract · deterministic routing & approvals of record                       | file verification + quiz                                             |
+| 25 Telemetry, Log Analytics & KQL   | governed OTel capture settings + 2× AIU root-span rule · outcome joins & sample guards                     | file verification + quiz                                             |
+| 26 Copilot App Canvases             | SDLC board state filter & HTML escaper · capability-token & dry-run trust boundary                         | behavioral verification + quiz                                       |
 
 The **GitHub tab** on the bench is the simulated platform surface (issues,
 pull requests, Actions runs, repo settings) that labs 08, 09 and 18 drive.

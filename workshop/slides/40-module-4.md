@@ -31,7 +31,7 @@ Lives in `.github/workflows/*.md`. The compiler emits a `.lock.yml` counterpart 
 
 ## A real example in this repo — `weekly-content-audit.md`
 
-`.github/workflows/weekly-content-audit.md` is one of the four committed gh-aw workflows (`generate-prd.md`, `code-review.md`, `weekly-content-audit.md` and `self-improving-agents.md`). It's the reference shape. Key front-matter:
+`.github/workflows/weekly-content-audit.md` is one of the six committed gh-aw workflows (`generate-prd.md`, `code-review.md`, `weekly-content-audit.md`, `self-improving-agents.md`, `sdlc-funnel.md` and `lab25-improvement-review.md`). It's the reference shape. Key front-matter:
 
 ```yaml
 ---

@@ -50,7 +50,7 @@ describe('Phase 2: teaching corrections reach the rendered SPA and speaker surfa
     const count = numberWords[workflows.length];
     const { html, scriptHtml } = moduleHtml('M4');
 
-    expect(workflows).toHaveLength(4);
+    expect(workflows).toHaveLength(6);
     expect(html).toContain(`one of the ${count} committed gh-aw workflows`);
     expect(scriptHtml).toContain(`commits ${count} gh-aw workflows`);
     for (const file of workflows) {

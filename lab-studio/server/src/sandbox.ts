@@ -22,6 +22,8 @@ export const SANDBOX_ROOT = process.env.LAB_STUDIO_SANDBOX
   ? resolve(process.env.LAB_STUDIO_SANDBOX)
   : resolve(here, "..", "..", ".sandbox");
 export const SANDBOX_DIR = join(SANDBOX_ROOT, "workspace");
+const SEED_DIR = join(SANDBOX_ROOT, ".seed-workspace");
+let seedReady = false;
 
 export interface TreeNode {
   name: string;
@@ -42,8 +44,13 @@ export function safePath(relPath: string): string {
 export function resetSandbox(): void {
   rmSync(SANDBOX_DIR, { recursive: true, force: true });
   mkdirSync(SANDBOX_ROOT, { recursive: true });
-  cpSync(TEMPLATE_DIR, SANDBOX_DIR, { recursive: true });
-  initSandboxGit();
+  if (!seedReady || !existsSync(SEED_DIR)) {
+    rmSync(SEED_DIR, { recursive: true, force: true });
+    cpSync(TEMPLATE_DIR, SEED_DIR, { recursive: true });
+    initSandboxGit(SEED_DIR);
+    seedReady = true;
+  }
+  cpSync(SEED_DIR, SANDBOX_DIR, { recursive: true, preserveTimestamps: true });
 }
 
 /**
@@ -51,10 +58,10 @@ export function resetSandbox(): void {
  * inside the outer checkout and `git rev-parse --show-toplevel` (which agents
  * love to run) resolves ABOVE the workspace — a containment hazard.
  */
-function initSandboxGit(): void {
+function initSandboxGit(targetDir = SANDBOX_DIR): void {
   const git = (...args: string[]): void => {
     execFileSync("git", args, {
-      cwd: SANDBOX_DIR,
+      cwd: targetDir,
       stdio: "ignore",
       env: {
         ...process.env,

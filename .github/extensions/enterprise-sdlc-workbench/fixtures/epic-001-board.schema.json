@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "enterprise-sdlc-workbench/epic-001-board.schema.json",
+  "title": "SDLC board fixture (schema v1)",
+  "type": "object",
+  "required": ["schemaVersion", "sourceRepo", "capturedAt", "issues"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "v1" },
+    "sourceRepo": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "note": { "type": "string" },
+    "epic": {
+      "type": "object",
+      "required": ["number", "title", "state"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "state": { "enum": ["open", "closed"] },
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "url": { "type": "string" }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["number", "title", "state", "dependsOn"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string" },
+          "state": { "enum": ["open", "closed"] },
+          "labels": { "type": "array", "items": { "type": "string" } },
+          "dependsOn": { "type": "array", "items": { "type": "integer" } },
+          "linkedPRs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["number", "state", "title"],
+              "properties": {
+                "number": { "type": "integer" },
+                "state": { "enum": ["open", "merged", "closed"] },
+                "title": { "type": "string" }
+              }
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "conclusion"],
+              "properties": {
+                "name": { "type": "string" },
+                "conclusion": { "enum": ["success", "failure", "pending", "skipped"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "recentRuns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["workflow", "status", "createdAt"],
+        "properties": {
+          "workflow": { "type": "string" },
+          "status": { "type": "string" },
+          "conclusion": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

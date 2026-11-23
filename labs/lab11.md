@@ -218,22 +218,23 @@ $env:COPILOT_PLUGIN_REGISTRIES = "contoso-internal/contoso-copilot-plugins"
 > **`copilot/managed-settings.json`** in the enterprise's chosen source
 > organization's `.github-private` repo (an older `.github/copilot/settings.json`
 > path is kept for backward compatibility, but `copilot/managed-settings.json`
-> is the current canonical path). It is fetched by Copilot clients (VS Code
-> and Copilot CLI today) and **takes precedence over** any local/file-based
-> config for the keys it sets (the full order is
-> `enterprise_managed_settings.precedence_order` in the registry). GitHub keeps
-> adding supported keys, so read them from
+> is the current canonical path). The published support matrix covers Copilot
+> CLI, VS Code, the GitHub Copilot app, Copilot cloud agent, and JetBrains on a
+> per-key basis. It is fetched on every authentication and refreshed hourly,
+> and it **takes precedence over** any local/file-based config for the keys it
+> sets (the full order is `enterprise_managed_settings.precedence_order` in the
+> registry). GitHub keeps adding supported keys, so read them from
 > `enterprise_managed_settings.supported_keys` in
 > [`docs/_meta/registry.yaml`](../docs/_meta/registry.yaml) (a floor, per the
-> registry's own comment), not from a list frozen in this lab. This repo's
-> `org-policy.example.yaml` + `policy.mjs` (below)
-> models the same deny-by-default allowlist *idea* in a portable,
-> framework-agnostic way you can adapt for CI gating regardless of which
-> enterprise settings mechanism you're on — but for a real GitHub Enterprise
-> Cloud rollout, configure `strictKnownMarketplaces`/`enabledPlugins` in
-> `managed-settings.json` as the source of truth. See [Lab 16](lab16.md) for
-> the full walkthrough of this GA mechanism, including the schema and rollout
-> steps.
+> registry's own comment), not from a list frozen in this lab; nested keys such
+> as `permissions.disableBypassPermissionsMode` must retain their documented
+> shape. This repo's `org-policy.example.yaml` + `policy.mjs` (below) models the
+> same deny-by-default allowlist *idea* in a portable, framework-agnostic way
+> you can adapt for CI gating regardless of which enterprise settings mechanism
+> you're on — but for a real GitHub Enterprise Cloud rollout, configure
+> `strictKnownMarketplaces`/`enabledPlugins` in `managed-settings.json` as the
+> source of truth. See [Lab 16](lab16.md) for the full walkthrough of this
+> GA mechanism, including the schema and rollout steps.
 
 ### Release workflow
 
@@ -374,7 +375,7 @@ execution patterns.
 - [Lab 13](lab13.md) — A2A concepts with Copilot CLI ACP (implementer +
   critic, trust boundaries, hand-off schema).
 - [Lab 14](lab14.md) — Orchestrator + tmux deep-dive (the pattern that
-  built this repo; operationalises Lab 13's hand-off schema).
+  built this repo; operationalizes Lab 13's hand-off schema).
 - [Lab 16](lab16.md) — Enterprise marketplace & plugin governance: the
   full `managed-settings.json` schema, `strictKnownMarketplaces`
   allowlisting, and the AI Controls admin surface.

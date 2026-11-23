@@ -1,0 +1,52 @@
+[
+  {
+    "correlation_key": "001-enrollment-cap/epic/-/3f9a2c1e",
+    "gate": "review-epic",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "avery-pm",
+    "artifact_sha": "2f7e3b51c44dfae007ef5df6b8617e7ee7953c2d",
+    "source": "comment",
+    "at": "2026-05-04T14:31:09Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/feature-spec/-/3f9a2c1e",
+    "gate": "review-spec",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "5240ae71c985556e2e5d1a8f48c4a92d78795a51",
+    "source": "pr-review",
+    "at": "2026-05-04T16:12:30Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/plan/-/3f9a2c1e",
+    "gate": "review-plan",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "b73b6949c572eee4bd978acea33dd0ea1ff58396",
+    "source": "comment",
+    "at": "2026-05-05T09:50:44Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/story-tasks/-/3f9a2c1e",
+    "gate": "review-tasks",
+    "run_id": "3f9a2c1e",
+    "verdict": "approve",
+    "approver": "blake-lead",
+    "artifact_sha": "109898fda2e9e0e989f08d7bf9205875468b9cb0",
+    "source": "pr-review",
+    "at": "2026-05-05T11:02:16Z"
+  },
+  {
+    "correlation_key": "001-enrollment-cap/qa-review/-/3f9a2c1e",
+    "gate": "review-qa",
+    "run_id": "3f9a2c1e",
+    "verdict": "reject",
+    "approver": "casey-qa",
+    "artifact_sha": "6267cc8c4ca917d6e090d433ec2afd86cebcb408",
+    "source": "pr-review",
+    "at": "2026-05-07T11:08:15Z"
+  }
+]
