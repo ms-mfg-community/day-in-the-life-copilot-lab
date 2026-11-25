@@ -1969,6 +1969,10 @@ interface GradedStimulus {
 const UNSUPPORTED_GRADER =
   "simulated vally runs only program graders that stage tool-calls-issued; this grader was not run";
 
+/** The one grader the simulator can run: a program that stages the learner's `tool-calls-issued.mjs`. */
+const stagesIssuedGrader = (grader: VallyGrader): boolean =>
+  grader.type === "program" && grader.script === "tool-calls-issued.mjs";
+
 type GradeOutcome =
   | { ok: true; graded: GradedStimulus[] }
   | { ok: false; blocks: TermBlock[] };
@@ -1983,7 +1987,9 @@ function gradeStimuli(
   const slots: { item: number; grader: number }[] = [];
   items.forEach(({ stimulus, trajectory }, ii) => {
     stimulus.graders.forEach((grader, gi) => {
-      if (grader.type === "program" && grader.script === "tool-calls-issued.mjs") {
+      // A config that is not valid JSON never reaches the learner's grader: real Vally's program
+      // throws on `JSON.parse` first, so running it with `{}` would grade a spec Vally would fail.
+      if (stagesIssuedGrader(grader) && grader.invalidConfigJson === undefined) {
         cases.push({ trajectory, config: grader.config });
         slots.push({ item: ii, grader: gi });
       }
@@ -2007,7 +2013,16 @@ function gradeStimuli(
     const results = stimulus.graders.map((grader, gi) => {
       const slot = slots.findIndex((s) => s.item === ii && s.grader === gi);
       if (slot === -1) {
-        return { name: grader.name, passed: false, score: 0, evidence: UNSUPPORTED_GRADER };
+        const badConfig = stagesIssuedGrader(grader) ? grader.invalidConfigJson : undefined;
+        return {
+          name: grader.name,
+          passed: false,
+          score: 0,
+          evidence:
+            badConfig === undefined
+              ? UNSUPPORTED_GRADER
+              : `Grader exited with exit code 1 (ISSUED_CALL_CONFIG is not valid JSON: ${badConfig})`,
+        };
       }
       const g = run.grades[slot];
       if (!validGrade(g)) {

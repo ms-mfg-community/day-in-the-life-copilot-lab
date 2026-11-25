@@ -36,6 +36,11 @@ function shipped(name: string): string {
 const VALID_GRADER = shipped("ISSUED_GRADER_MJS");
 const VALID_VALLY = shipped("VALLY_CONFIG_YAML");
 const VALID_EVAL = shipped("REVIEWER_ROUTING_EVAL_YAML");
+/** The shipped spec with the comma dropped after `requiredAgents` in the first stimulus's ISSUED_CALL_CONFIG. */
+const MALFORMED_CONFIG_EVAL = VALID_EVAL.replace(
+  '"requiredAgents":["code-reviewer"],',
+  '"requiredAgents":["code-reviewer"] ',
+);
 
 const ALWAYS_PASS = `export function gradeIssuedToolCalls(trajectory, config) {
   return { name: "tool-calls-issued", kind: "code", passed: true, score: 1, evidence: "always passes" };
@@ -322,13 +327,7 @@ describe("lab27/eval-spec verify", () => {
 
   it("malformedIssuedCallConfigJson.failsVerifyAndLint", () => {
     writeWorkspaceFile(VALLY_PATH, VALID_VALLY);
-    writeWorkspaceFile(
-      EVAL_PATH,
-      VALID_EVAL.replace(
-        '"requiredAgents":["code-reviewer"],',
-        '"requiredAgents":["code-reviewer"] ',
-      ),
-    );
+    writeWorkspaceFile(EVAL_PATH, MALFORMED_CONFIG_EVAL);
 
     const verifyResult = runVerify("lab27/eval-spec");
     const lintResult = run(`vally lint -e ${EVAL_PATH} --strict`);
@@ -520,6 +519,52 @@ describe("sim-terminal vally CLI", () => {
       expect(out.text).toContain("FAIL  route-pr-diff-to-code-reviewer");
     });
 
+    it("evalWithAMalformedIssuedCallConfig.failsThePositiveStimulusAndSaysWhy", () => {
+      writeValidWorkspace();
+      writeWorkspaceFile(EVAL_PATH, MALFORMED_CONFIG_EVAL);
+
+      const out = run("vally eval --suite pr-gate");
+
+      // Real Vally hands the program a value its JSON.parse rejects, so the grader exits 1.
+      expect(out.allSim).toBe(true);
+      expect(out.text).toContain("FAIL  route-pr-diff-to-code-reviewer");
+      expect(out.text).toContain("Grader exited with exit code 1");
+      expect(out.text).toContain("ISSUED_CALL_CONFIG is not valid JSON");
+      expect(out.text).toContain("contoso-reviewer-routing  ✘ 1/2");
+      expect(out.text).not.toContain("✓ 2/2");
+      const records = readWorkspaceFile(RESULTS_PATH)
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const failed = records.find(
+        (record) => record.type === "trial-result" && record.stimulus === "route-pr-diff-to-code-reviewer",
+      );
+      expect(failed).toMatchObject({
+        passed: false,
+        score: 0,
+        graderResult: [{
+          name: "check-code-reviewer-dispatch",
+          passed: false,
+          evidence: expect.stringContaining("ISSUED_CALL_CONFIG is not valid JSON"),
+        }],
+      });
+      expect(records.at(-1)).toMatchObject({ type: "run-summary", passed: false });
+    });
+
+    it("gradeWithAMalformedIssuedCallConfig.failsThePositiveStimulusAndSaysWhy", () => {
+      writeValidWorkspace();
+      run("vally eval --suite pr-gate");
+      writeWorkspaceFile(EVAL_PATH, MALFORMED_CONFIG_EVAL);
+
+      const out = run(`vally grade -e ${EVAL_PATH} --workspace . < ${RESULTS_PATH}`);
+
+      expect(out.allSim).toBe(true);
+      expect(out.text).toContain("❌ route-pr-diff-to-code-reviewer (0/1 graders passed, 1 failed)");
+      expect(out.text).toContain("Grader exited with exit code 1");
+      expect(out.text).toContain("ISSUED_CALL_CONFIG is not valid JSON");
+      expect(out.text).toContain("Score: 0.0% | FAILED (threshold: 100.0%)");
+    });
+
     it("suiteFilter.runsOnlyP0StimuliInPrGateAndEverythingInFull", () => {
       writeValidWorkspace();
       const p1 = `
@@ -610,6 +655,19 @@ describe("sim-terminal vally CLI", () => {
       expect(Date.now() - started).toBeLessThan(3500);
       expect(fileExists(RESULTS_PATH)).toBe(false);
     });
+
+    it("graderQueueingARunawayPromiseCallback.timesOutWithoutWritingResults", () => {
+      writeValidWorkspace();
+      writeWorkspaceFile(GRADER_PATH, QUEUES_A_RUNAWAY_PROMISE_CALLBACK);
+
+      const started = Date.now();
+      const out = run("vally eval --suite pr-gate");
+
+      expect(out.allSim).toBe(true);
+      expect(out.text).toMatch(/grader timed out after 2000ms/);
+      expect(Date.now() - started).toBeLessThan(3500);
+      expect(fileExists(RESULTS_PATH)).toBe(false);
+    }, 15_000);
 
     it("everyVallyCommand.badgesEveryBlockAsSimulated", () => {
       writeValidWorkspace();
