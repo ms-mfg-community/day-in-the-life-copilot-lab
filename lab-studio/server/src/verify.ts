@@ -856,6 +856,7 @@ return { openIds, closedIds, escaped };
     try {
       outcome = runInNewContext(runnable, Object.create(null), {
         timeout: LEARNER_CODE_TIMEOUT_MS,
+        microtaskMode: "afterEvaluate",
       }) as typeof outcome;
     } catch (err) {
       const errCode = (err as { code?: string } | null)?.code;

@@ -1454,6 +1454,8 @@ export type IssuedGraderRun =
  * Run the learner's `gradeIssuedToolCalls(trajectory, config)` once per case inside
  * `runInNewContext`, with no host globals and a hard timeout, after stripping `export `
  * from its function declarations. One VM run, so one timeout budget covers every case.
+ * `microtaskMode: "afterEvaluate"` makes the timeout cover promise callbacks the grader
+ * queued too, so a loop inside `Promise.resolve().then(...)` cannot outlive it.
  */
 export function runIssuedGraderCases(
   code: string,
@@ -1482,6 +1484,7 @@ return JSON.stringify(__cases.map(function (c) {
   try {
     const out = runInNewContext(runnable, Object.create(null), {
       timeout: timeoutMs,
+      microtaskMode: "afterEvaluate",
     });
     return { ok: true, grades: JSON.parse(String(out)) as IssuedGrade[] };
   } catch (err) {

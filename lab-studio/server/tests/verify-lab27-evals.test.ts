@@ -57,6 +57,17 @@ const WAITS_FOR_TOOL_RESULT = `export function gradeIssuedToolCalls(trajectory, 
   return { name: "tool-calls-issued", kind: "code", passed: passed, score: passed ? 1 : 0, evidence: passed ? "ok" : "no tool_result" };
 }`;
 
+/**
+ * Queues a promise callback that spins past the 2000ms timeout, then returns a pass. The spin is
+ * bounded by one shared deadline (as in the synchronous-loop tests), so a missing
+ * `microtaskMode` fails the assertions instead of wedging the Vitest worker.
+ */
+const QUEUES_A_RUNAWAY_PROMISE_CALLBACK = `const deadline = Date.now() + 4000;
+export function gradeIssuedToolCalls(trajectory, config) {
+  Promise.resolve().then(function () { while (Date.now() < deadline) {} });
+  return { name: "tool-calls-issued", kind: "code", passed: true, score: 1, evidence: "ok" };
+}`;
+
 const text = (blocks: { text: string }[]): string =>
   blocks.map((b) => b.text).join("\n");
 
@@ -184,6 +195,20 @@ describe("lab27/graders verify", () => {
     writeWorkspaceFile(GRADER_PATH, VALID_GRADER);
     expect(runVerify("lab27/graders").pass).toBe(true);
   });
+
+  it("graderQueueingARunawayPromiseCallback.failsWithinTimeoutAndAllowsCorrectedRetry", () => {
+    writeWorkspaceFile(GRADER_PATH, QUEUES_A_RUNAWAY_PROMISE_CALLBACK);
+
+    const started = Date.now();
+    const result = runVerify("lab27/graders");
+    const elapsedMs = Date.now() - started;
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toMatch(/timed out.*2000\s*ms/i);
+    expect(elapsedMs).toBeLessThan(3500);
+    writeWorkspaceFile(GRADER_PATH, VALID_GRADER);
+    expect(runVerify("lab27/graders").pass).toBe(true);
+  }, 15_000);
 
   it("moduleSyntaxError.failsCleanlyAndAllowsCorrectedRetry", () => {
     writeWorkspaceFile(
