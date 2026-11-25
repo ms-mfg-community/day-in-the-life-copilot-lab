@@ -53,6 +53,9 @@ runs offline and for free (Tier 0 and Tier 1); a live run (Tier 2) is an opt-in 
 | AC12 | The Track 5 range reads `Labs 21–27` in Labs 20–26, the blueprint and the README; Lab 26 links forward to Lab 27; the README table, counts and totals agree with the registry | `npx vitest run tests/lab-structure/lab27-contract tests/labs/lab-tracks` |
 | AC13 | No host path, user name or personal agent name appears in the lab, this spec or the fixtures | `npx vitest run tests/lab-structure/lab27-contract` |
 | AC14 | Tier 0 passes in one command, offline, in either shell | `powershell -NoProfile -ExecutionPolicy Bypass -File labs/fixtures/lab27/scripts/tier0.ps1` |
+| AC15 | A guard trial is graded only on its own evidence: `guarded-commands.cjs` credits an `events.jsonl` only when the `metadata.json` beside it names the trajectory being graded, so a deny recorded by a sibling trial, another model or an earlier attempt cannot pass a trial that never tried the action | `node labs/fixtures/lab27/evals/graders/self-check.cjs` and `npx vitest run tests/lab-structure/lab27-contract` |
+| AC16 | The M6b workshop module (`workshop/slides/65-module-6b-agent-evals-vally.md`, `workshop/speaker-scripts/module-06b-agent-evals-vally.md`, its diagram bands and its cost-dataset note) gives every tier the meaning §27.0 gives it: Tiers 0 and 1 are free, Tier 2 is the live, billable run, no tier is written `Tier N+`, and no Tier 1 command is listed under Tier 0 | `npx vitest run tests/lab-structure/lab27-contract` |
+| AC17 | No screen of the M6b slide carries more than 90 visible words (the ceiling of the `deck-density` gate), so the detail lives in the speaker script and not on the slide | `npx vitest run tests/lab-structure/lab27-contract` |
 
 > AC5 asserts **agreement between the three places**, never that a particular number is correct.
 > Per `specs/labs/README.md`, a pacing number may change without ceremony; only internal
@@ -78,6 +81,7 @@ runs offline and for free (Tier 0 and Tier 1); a live run (Tier 2) is an opt-in 
 | C14 | Lab 25's span tree has a root `invoke_agent` carrying the turn's AIU, `chat` children, no hook span, and `1 AIU = 1e9 nano-AIU` | `free-check` | `labs/lab25.md` (span tree and attribute table); `eval-cost.cjs` computes the same conversion |
 | C15 | The Vally CLI collects pseudonymous usage telemetry and the opt-out variables are `VALLY_TELEMETRY_OPTOUT` and `DO_NOT_TRACK` | `free-check` | The first-run notice the pinned CLI prints on stderr names both variables |
 | C16 | `recorded-results.jsonl` is synthesized and illustrative | `free-check` | Its `metadata.executor` is `mock`; `eval-cost.cjs` prints a NOTE saying so |
+| C17 | Vally writes a trial's `events.jsonl` and `metadata.json` (which names the trial's `trajectoryId` and `executorSessionId`) after that trial's graders have run, so while a trial is graded only the other trials' exports exist | `free-check` | `vally eval --executor mock --workers 1` on a throwaway spec with three trials and a program grader that lists the run folder: trial 1 sees no trial folder, trial 2 sees only trial 0's `metadata.json`, trial 3 sees those of trials 0 and 1. Observed with the pinned release on 2026-11-24, and read in the installed packages' trial runner and session-log writer. |
 
 ## 5. Non-goals
 

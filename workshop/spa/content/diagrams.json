@@ -51,10 +51,10 @@
       "id": "m6b-eval-pipeline",
       "segment": "m6b-agent-evals-vally",
       "match": "Stimulus -> Executor -> Trajectory",
-      "title": "Vally & OTel evaluation pipeline across Tier 0 deterministic and live hermetic/guard bands",
+      "title": "Vally & OTel evaluation pipeline across the free Tier 0–1 band and the live, billable Tier 2 band",
       "bands": [
-        { "label": "Tier 0: Deterministic & Offline (0 AIU)", "rows": [0, 1], "tone": "calm" },
-        { "label": "Tier 1+: Live Hermetic, Guard & Judge", "rows": [2, 3], "tone": "hot" }
+        { "label": "Tiers 0–1: Free & Offline (0 AIU)", "rows": [0, 1], "tone": "calm" },
+        { "label": "Tier 2: Live Hermetic & Guard Trials (Billable AIU)", "rows": [2, 3], "tone": "hot" }
       ],
       "steps": ["stimulus", "execute", "trajectory", "grade-issued", "guard-events", "score-veto", "otel-emit"],
       "nodes": [
@@ -64,7 +64,7 @@
         { "id": "otel-emit", "kind": "note", "col": 2, "row": 1, "label": ["OTel evaluation result", "gen_ai.evaluation.result", "root invoke_agent AIU"] },
         { "id": "execute", "kind": "model", "col": 0, "row": 2, "label": ["Copilot SDK executor", "vally eval --suite", "isolated trial workspace"] },
         { "id": "guard-events", "kind": "gate", "col": 1, "row": 2, "label": ["Trial preToolUse guard hook", "guarded-commands.cjs", "blocks git push & secrets"], "warn": "No execute_hook OTel span; grade audit log" },
-        { "id": "trajectory", "kind": "box", "col": 1, "row": 3, "label": ["Recorded trajectory JSONL", "results.jsonl + spans", "re-grade via vally grade"] }
+        { "id": "trajectory", "kind": "box", "col": 1, "row": 3, "label": ["Recorded trajectory JSONL", "results.jsonl + spans", "free re-grade: vally grade"] }
       ],
       "edges": [
         { "from": "stimulus", "to": "execute", "label": "live trial" },

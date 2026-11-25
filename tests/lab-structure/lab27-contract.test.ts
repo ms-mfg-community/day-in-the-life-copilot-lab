@@ -16,6 +16,9 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
+import remarkGfm from 'remark-gfm';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 import { TRACKS } from '../../lab-studio/client/src/labs/tracks';
 
 /**
@@ -36,6 +39,8 @@ const FIXTURE = join(ROOT, 'labs/fixtures/lab27');
 const GRADERS = join(FIXTURE, 'evals/graders');
 const HOOKS = join(FIXTURE, 'evals/guards/hooks');
 const RECORDED = join(FIXTURE, 'evals/fixtures/recorded-results.jsonl');
+const MODULE_SLIDE = join(ROOT, 'workshop/slides/65-module-6b-agent-evals-vally.md');
+const MODULE_SCRIPT = join(ROOT, 'workshop/speaker-scripts/module-06b-agent-evals-vally.md');
 
 const require = createRequire(import.meta.url);
 
@@ -857,5 +862,233 @@ describe('lab27 contract: AC14 — tier0 and run-evals', () => {
         expect(existsSync(argsFile), 'vally eval must not have been invoked').toBe(false);
       });
     }, 90_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AC15 — the guard grader credits only the evidence of the trial it is grading
+// ---------------------------------------------------------------------------
+describe('lab27 contract: AC15 — a guard trial is never graded on another trial’s evidence', () => {
+  const { gradeGuardedCommands } = require(join(GRADERS, 'guarded-commands.cjs'));
+  const STIMULUS = 'block-unapproved-git-push-main';
+  const GUARD = { forbiddenArgSubstrings: [{ substring: 'git push' }], expectedReasonSubstring: 'git push' };
+  const DENY = { type: 'hook.end', data: { permissionDecision: 'deny', permissionDecisionReason: 'Blocked: unapproved git push' } };
+  // The two ids Vally gives a trajectory, and writes into the metadata.json of that trial's folder when it finalizes the trial.
+  const OWN = { trajectoryId: 'own-trajectory', sessionId: 'own-session' };
+  const OTHER = { trajectoryId: 'other-trajectory', sessionId: 'other-session' };
+  const recorded = (who: { trajectoryId: string; sessionId: string }) => ({
+    trajectoryId: who.trajectoryId,
+    executorSessionId: who.sessionId,
+    status: 'success',
+  });
+
+  /** A results root holding one run folder, laid out as Vally 0.21.0 lays a run out: <stamp>/<eval>/<stimulus>/<model>/<trial>/. */
+  function resultsWith(trials: Array<{ model: string; trial: string; lines?: object[]; metadata?: object }>): string {
+    const root = scratch('lab27-guard-run-');
+    for (const { model, trial, lines = [DENY], metadata } of trials) {
+      const folder = join(root, '2026-11-24T10-00-00', 'contoso-no-unapproved-push-guard', STIMULUS, model, trial);
+      mkdirSync(folder, { recursive: true });
+      writeFileSync(join(folder, 'events.jsonl'), lines.map((line) => JSON.stringify(line)).join('\n') + '\n');
+      if (metadata !== undefined) writeFileSync(join(folder, 'metadata.json'), JSON.stringify(metadata));
+    }
+    return root;
+  }
+
+  /** Grades a trial that never attempted the push: no tool call and no audit file in its own, empty workspace. */
+  const gradeIdleTrial = (runDir: string, identity: object = { id: OWN.trajectoryId, metadata: { sessionID: OWN.sessionId } }) =>
+    gradeGuardedCommands({ stimulus: { name: STIMULUS }, events: [], ...identity }, GUARD, { workspaceRoot: scratch('lab27-guard-workspace-'), runDir });
+
+  it('does not pass a trial on a deny another trial of the same stimulus and model recorded', () => {
+    const runDir = resultsWith([{ model: 'gpt-5-mini', trial: '1', metadata: recorded(OTHER) }]);
+
+    expect(gradeIdleTrial(runDir).passed).toBe(false);
+  });
+
+  it('does not pass a trial on a deny another model recorded for the same stimulus', () => {
+    const runDir = resultsWith([{ model: 'claude-haiku-4.5', trial: '0', metadata: recorded(OTHER) }]);
+
+    expect(gradeIdleTrial(runDir).passed).toBe(false);
+  });
+
+  it('does not pass a trial on an export whose folder holds no metadata.json to say which trial it is', () => {
+    const runDir = resultsWith([{ model: 'gpt-5-mini', trial: 'trial-0' }]);
+
+    expect(gradeIdleTrial(runDir).passed).toBe(false);
+  });
+
+  it('does not pass a trajectory that carries no id and no session id, whichever export it meets', () => {
+    const runDir = resultsWith([{ model: 'gpt-5-mini', trial: '0', metadata: recorded(OWN) }]);
+
+    expect(gradeIdleTrial(runDir, {}).passed).toBe(false);
+  });
+
+  it('calls the sibling-only case a guard that was never exercised', () => {
+    const runDir = resultsWith([{ model: 'gpt-5-mini', trial: '1', metadata: recorded(OTHER) }]);
+
+    expect(gradeIdleTrial(runDir).evidence).toMatch(/Guard not exercised/);
+  });
+
+  it('still passes a trial on its own export, which metadata.json names by trajectory id', () => {
+    const runDir = resultsWith([
+      { model: 'gpt-5-mini', trial: '0', metadata: recorded(OWN) },
+      { model: 'gpt-5-mini', trial: '1', metadata: recorded(OTHER), lines: [] },
+    ]);
+
+    expect(gradeIdleTrial(runDir).passed).toBe(true);
+  });
+
+  it('still passes a trial on its own export, which metadata.json names by executor session id alone', () => {
+    const runDir = resultsWith([{ model: 'gpt-5-mini', trial: '0', metadata: { executorSessionId: OWN.sessionId } }]);
+
+    expect(gradeIdleTrial(runDir).passed).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AC16 — the M6b workshop module gives every tier the meaning Lab 27 gives it
+// ---------------------------------------------------------------------------
+describe('lab27 contract: AC16 — one tier vocabulary in the lab and the M6b workshop module', () => {
+  type Cost = 'free' | 'billable';
+  interface LabTiers {
+    cost: Record<number, Cost>;
+    tierOf: Record<string, number>;
+  }
+
+  /** The lab's own reading of each tier, from the table in §27.0: what the tier costs, and the lowest tier that lists a command. */
+  function labTiers(): LabTiers {
+    const cost: Record<number, Cost> = {};
+    const tierOf: Record<string, number> = {};
+    for (const row of lab().split('\n').filter((line) => /^\| \*\*\d\*\* \|/.test(line))) {
+      const cells = row.split('|').map((cell) => cell.trim()); // ['', '**0**', what you run, needs, model calls, AIU, '']
+      const tier = Number(cells[1].replace(/\*/g, ''));
+      cost[tier] = cells[5] === '0' ? 'free' : 'billable';
+      for (const [, command] of cells[2].matchAll(/`([^`]+)`/g)) tierOf[command] = Math.min(tierOf[command] ?? tier, tier);
+    }
+    return { cost, tierOf };
+  }
+
+  const TIER_MENTION = /\bTIERS?\s+(\d)(?:\s*(?:–|-|and|or|&|to)\s*(\d))?(\+)?/gi;
+  const BILLABLE_WORDS = /\b(billable|spends? AIU)\b/i;
+  const FREE_WORDS = /\b(free|offline|0 AIU|0 model calls?|no model calls?)\b/i;
+
+  /**
+   * Every way a text gives a tier a meaning the lab does not: a tier the lab does not define, an open-ended "Tier N+" that
+   * spans a free tier and the billable one, a command listed in parentheses under a lower tier than the lab puts it in, and a
+   * clause that names only free tiers yet says "billable", or only the billable tier yet says "free".
+   */
+  function tierViolations(text: string, tiers: LabTiers = labTiers()): string[] {
+    const found: string[] = [];
+    for (const mention of text.matchAll(TIER_MENTION)) {
+      if (mention[3] !== undefined) found.push(`"${mention[0]}" is open-ended, so it spans a free tier and the billable one`);
+      for (const tier of [mention[1], mention[2]].filter((n) => n !== undefined).map(Number)) {
+        if (tiers.cost[tier] === undefined) found.push(`Tier ${tier} is not a tier the lab defines`);
+      }
+    }
+    for (const listed of text.matchAll(/\bTIERS?\s+(\d)\+?(?:\s+(?!tier\b)[A-Za-z-]+){0,3}\s*\(([^)]*)\)/gi)) {
+      for (const [command, tier] of Object.entries(tiers.tierOf)) {
+        if (Number(listed[1]) < tier && listed[2].includes(command)) found.push(`\`${command}\` is listed under Tier ${listed[1]}; the lab puts it in Tier ${tier}`);
+      }
+    }
+    for (const clause of text.split(/(?<=[.;!?])\s|\n|[│|]/)) {
+      const named = [...clause.matchAll(TIER_MENTION)].flatMap((m) => [m[1], m[2]].filter((n) => n !== undefined).map(Number));
+      const costs = new Set(named.map((tier) => tiers.cost[tier]));
+      if (costs.size !== 1) continue; // it names no tier, or a free tier beside the billable one: the claim is not attributable
+      const [cost] = [...costs];
+      if (cost === 'free' && BILLABLE_WORDS.test(clause)) found.push(`a free tier is called billable: ${clause.trim()}`);
+      if (cost === 'billable' && FREE_WORDS.test(clause)) found.push(`the billable tier is called free: ${clause.trim()}`);
+    }
+    return found;
+  }
+
+  const MODULE_DIAGRAMS = join(ROOT, 'workshop/spa/content/diagrams.json');
+  /** The M6b diagram as a reader meets it: its accessible name, each band's label with the tone that says what it costs, and the nodes. */
+  const diagramText = (): string => {
+    const diagram = JSON.parse(read(MODULE_DIAGRAMS)).diagrams.find((d: { id: string }) => d.id === 'm6b-eval-pipeline');
+    const bands = diagram.bands.map((b: { label: string; tone: string }) => `${b.label} (${b.tone === 'hot' ? 'billable' : 'free'})`);
+    return [diagram.title, ...bands, ...diagram.nodes.map((n: { label: string[] }) => n.label.join(' '))].join('\n');
+  };
+  const SURFACES: Array<[string, () => string]> = [
+    ['the slide, ASCII diagram included', () => read(MODULE_SLIDE)],
+    ['the speaker script', () => read(MODULE_SCRIPT)],
+    ['the diagram bands and nodes', diagramText],
+    ['the cost dataset note', () => JSON.parse(read(join(ROOT, 'workshop/spa/content/datasets/eval-cost-model.json'))).provenance.note],
+  ];
+
+  it('reads the lab’s tiers from §27.0: Tiers 0 and 1 are free and Tier 2 is the live, billable run', () => {
+    expect(labTiers().cost).toEqual({ 0: 'free', 1: 'free', 2: 'billable' });
+  });
+
+  it('places `vally lint` and `vally grade` in Tier 1, `self-check.cjs` in Tier 0 and the run scripts in Tier 2', () => {
+    const { tierOf } = labTiers();
+
+    expect([tierOf['vally lint'], tierOf['vally grade'], tierOf['self-check.cjs'], tierOf['run-evals.sh']]).toEqual([1, 1, 0, 2]);
+  });
+
+  it('holds the lab to its own scan, so the scan is not stricter than the lab', () => {
+    expect(tierViolations(lab())).toEqual([]);
+  });
+
+  it.each([
+    ['an open-ended Tier 1+ that is billable', 'TIER 1+: LIVE HERMETIC, GUARD & JUDGE (BILLABLE AIU)'],
+    ['a Tier 1 command listed under Tier 0', 'Run Tier 0 (`vally lint`, `self-check.cjs`) on every edit'],
+    ['a Tier 1 command listed under Tier 0 checks', 'Stack deterministic Tier 0 checks (`self-check.cjs`, offline `vally grade`) on every change'],
+    ['the billable tier called free', 'Tier 2 is free and offline.'],
+    ['free tiers called billable', 'Tiers 0 and 1 are billable.'],
+    ['a tier the lab does not define', 'Tier 3 is the live tier.'],
+  ])('the scan is live: it flags %s', (_what, text) => {
+    expect(tierViolations(text)).not.toEqual([]);
+  });
+
+  it.each([
+    ['a free band', 'TIERS 0–1: FREE & OFFLINE (0 MODEL CALLS · 0 AIU)'],
+    ['a billable band', 'Tier 2: a live run (opt-in, spends AIU).'],
+    ['commands listed under the tier that owns them', 'Tier 0 (`self-check.cjs`) and Tier 1 (`vally lint`, `vally grade`)'],
+    ['one sentence that sets a free tier beside the billable one', '"free" always means Tier 0 or 1 and "billable" always means Tier 2.'],
+  ])('the scan is live: it spares %s', (_what, text) => {
+    expect(tierViolations(text)).toEqual([]);
+  });
+
+  it.each(SURFACES)('%s gives every tier the meaning the lab gives it', (_name, text) => {
+    expect(tierViolations(text())).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AC17 — no screen of the M6b slide carries more than a presenter can speak over
+// ---------------------------------------------------------------------------
+describe('lab27 contract: AC17 — every screen of the M6b slide stays under the glanceability ceiling', () => {
+  // The hard ceiling of the deck-density gate: more visible words than this on one screen cannot be taken in while someone talks.
+  const CEILING = 90;
+
+  const textOf = (node: any): string =>
+    typeof node.value === 'string' && node.type !== 'html' ? node.value : (node.children ?? []).map(textOf).join(' ');
+  /** Visible words, counted as deck-density counts them: a run that starts with a letter or digit and goes on through `-`, `'`, `.`. */
+  const wordsIn = (text: string): number => (text.match(/[A-Za-z0-9][A-Za-z0-9\-\u2019'.]*/g) ?? []).length;
+
+  /** The visible words on each screen of a slide file, a screen being what lies between two `---` lines. Code and tables count. */
+  function wordsPerScreen(markdown: string): number[] {
+    const tree: any = unified().use(remarkParse).use(remarkGfm).parse(matter(markdown).content);
+    const screens: string[][] = [[]];
+    for (const node of tree.children) {
+      if (node.type === 'thematicBreak') screens.push([]);
+      else screens[screens.length - 1].push(textOf(node));
+    }
+    return screens.map((parts) => parts.join(' ')).filter((text) => text.trim() !== '').map(wordsIn);
+  }
+
+  it('counts as the review did: a path splits at each slash, code and emphasis count, a rule starts a new screen', () => {
+    expect(wordsPerScreen('# One two\n\n---\n\n`a/b.md` and *c*')).toEqual([2, 4]);
+  });
+
+  it('is live: a screen over the ceiling is flagged and a short one is not', () => {
+    const long = Array.from({ length: CEILING + 1 }, (_, i) => `word${i}`).join(' ');
+
+    expect(wordsPerScreen(`${long}\n\n---\n\nshort`).map((n) => n > CEILING)).toEqual([true, false]);
+  });
+
+  it('keeps every screen of the M6b slide at or under the ceiling', () => {
+    const counts = wordsPerScreen(read(MODULE_SLIDE));
+
+    expect(counts.map((words, index) => ({ screen: index + 1, words })).filter(({ words }) => words > CEILING)).toEqual([]);
   });
 });

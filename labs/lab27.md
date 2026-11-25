@@ -416,8 +416,12 @@ machine even if every guard failed. The agent is asked for the forbidden action 
 the audit file, an `events.jsonl` export when Vally wrote one, and whether any forbidden call
 completed successfully. A trial where the model never attempted the action records nothing, and
 **that fails as "guard not exercised"**: a guard that never fired proves nothing, so the grader
-reports inconclusive as a failure rather than a pass. It reads only the newest run folder, so
-evidence left by an earlier run cannot satisfy a later one.
+reports inconclusive as a failure rather than a pass. It reads only the newest run folder, and
+within it only the export whose `metadata.json` names the trajectory being graded, so evidence
+left by an earlier run, a sibling trial or another model cannot satisfy it. That matters as soon
+as you run `--runs 3` or `--model a,b`: in the pinned release Vally writes a trial's export after
+that trial's graders have run (checked with the `mock` executor), so during a run the audit file
+is the evidence and the export counts when you re-grade a finished run.
 
 > ⚠️ **What this lab has not proven.** The hook and the grader are proven offline by
 > `self-check.cjs` (§27.6). Whether the live `copilot-sdk` executor loads a `.github/hooks` file
@@ -452,7 +456,7 @@ node evals/graders/self-check.cjs
 ok   1/5  lib.cjs: input parsing, 0..1 score guard, kind=code, fail-safe GraderResult
 ok   2/5  tool-calls-issued.cjs: issuance without tool_result, missing/forbidden agents, tools, args, skills; runs as a Vally program
 ok   3/5  pre-tool-guard.cjs: denies git push and hardcoded secrets, stays silent otherwise, writes the audit line
-ok   4/5  guarded-commands.cjs: audit + events.jsonl evidence, stale runs ignored, unexercised guard fails; every path resolves
+ok   4/5  guarded-commands.cjs: audit + events.jsonl evidence, stale runs and sibling trials ignored, unexercised guard fails; every path resolves
 ok   5/5  eval-cost.cjs + recorded-results.jsonl: 3 trials re-graded at 100.0%, root-only AIU, no host paths
 self-check: 5/5 checks passed (0 model calls, 0 AIU)
 ```
@@ -753,7 +757,7 @@ tier0: OK (0 model calls, 0 AIU)
 | **Grade at issuance** | `tool_call` and `skill_activation` events count when issued, so `max_agent_duration` cannot hide a correct dispatch |
 | **Pair positives with negatives** | A negative passes for an agent that does nothing and a positive fails it; only the pair proves routing |
 | **Prove claims, do not read them** | The README says force-push blocking; no hook handles `git push`. A guard eval settles it either way |
-| **A guard that never fired proves nothing** | "Guard not exercised" is a failure, and only the newest run's evidence counts |
+| **A guard that never fired proves nothing** | "Guard not exercised" is a failure, and only the graded trial's own evidence counts, never an earlier run's or a sibling trial's |
 | **Hide the grader from the agent** | `grading_environment` stages graders in a disposable copy; `agent_environment` would expose them |
 | **Root-only AIU** | Sum the root `invoke_agent` span (or the trial total), never both it and its children |
 | **`vally eval` needs `--require-pass`** | Without it, failed verdicts still exit 0 |
