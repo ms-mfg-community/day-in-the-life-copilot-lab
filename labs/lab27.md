@@ -578,9 +578,9 @@ Budget ceiling: 2 AIU (override with --max-aiu <number>)
 Total root-only AIU: 2.93 AIU | Budget status: FAIL
 ```
 
-The command now exits with code 1, so a pipeline can stop on it. A run that records no usage at
-all reports `Budget status: UNKNOWN` and exits with code 2: a run you cannot price is not one you
-can approve.
+The command now exits with code 1, so a pipeline can stop on it. A run with any trial it cannot
+fully price reports `Budget status: UNKNOWN` and exits with code 2 (unless the priced part alone
+already exceeds the ceiling, which is `FAIL`): a run you cannot price is not one you can approve.
 
 **Demo D (Tier 1): run the whole pipeline for free.** The `mock` executor produces a trajectory
 with no events, so no agent is ever dispatched. Run the PR-gate suite with it:

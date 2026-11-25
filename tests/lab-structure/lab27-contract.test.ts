@@ -302,6 +302,20 @@ describe('lab27 contract: AC8 — Demo A and Demo C run offline with zero model 
     expect(analyzeResultsJsonl('', { maxAiu: 5 }).status).toBe('UNKNOWN');
   });
 
+  it('eval-cost.cjs reports UNKNOWN, exiting 2, when only some trials are priced', () => {
+    const trial = (stimulus: string, metrics: object) =>
+      JSON.stringify({ type: 'trial-result', stimulus, trajectory: { events: [], metrics } });
+    const priced = trial('priced', { tokenUsage: { cost: { provider: 'github-copilot', unit: 'nano-aiu', amount: 1270000000 } } });
+    const results = join(scratch('lab27-cost-'), 'results.jsonl');
+    writeFileSync(results, `${priced}\n${trial('unpriced', {})}\n`);
+
+    const run = runNode([join(GRADERS, 'eval-cost.cjs'), results]);
+
+    expect(run.status, run.stderr).toBe(2);
+    expect(run.stdout).toMatch(/WARN: unpriced:/);
+    expect(run.stdout).toMatch(/Budget status: UNKNOWN/);
+  });
+
   it('the recorded fixture is synthesized, honest about its executor, and names only placeholders', () => {
     const records = read(RECORDED)
       .split('\n')

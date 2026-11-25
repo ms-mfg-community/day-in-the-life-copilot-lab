@@ -16,6 +16,17 @@
  * 1 AIU = 1e9 nano-AIU. Vally does not convert to AI Credits and does not include
  * the LLM judge's own usage: this is the cost of the agent's trial only.
  *
+ * A run is approved only when every trial is fully priced. A trial is priced from its
+ * total, tokenUsage.cost, which Vally sets only when every token_usage event carries a
+ * nano-AIU amount. Without a total, the token_usage events stand in for it only when
+ * there is at least one, every one is priced and no cost_unavailable event was recorded.
+ * Anything else is an unpriced trial: its partial subtotal is never reported as its cost.
+ * The verdict, in this order:
+ *   no trials                                UNKNOWN  exit 2
+ *   priced total already above the ceiling   FAIL     exit 1 (a partial sum over budget is a definite fail)
+ *   any trial not fully priced               UNKNOWN  exit 2 (a run you cannot price is not one you can approve)
+ *   otherwise                                PASS     exit 0
+ *
  * Root-only accounting. The per-trial total (tokenUsage.cost) is the root: it is
  * the sum of the per-call token_usage amounts, the same way an invoke_agent span
  * in a Copilot OpenTelemetry trace totals the chat spans beneath it (Lab 25,
@@ -49,21 +60,31 @@ function summarizeTrial(record) {
 
   let eventNano = 0;
   let eventCount = 0;
+  let usageEvents = 0;
+  let costUnavailable = false;
   events.forEach(function (event) {
-    if (event && event.type === "token_usage" && event.data && isNanoAiuCost(event.data.cost)) {
+    if (!event) return;
+    if (event.type === "cost_unavailable") costUnavailable = true;
+    if (event.type !== "token_usage") return;
+    usageEvents += 1;
+    if (event.data && isNanoAiuCost(event.data.cost)) {
       eventNano += event.data.cost.amount;
       eventCount += 1;
     }
   });
 
+  // Vally withholds tokenUsage.cost when any call is unpriced, so a sum of the remaining events is a subtotal,
+  // not the trial's cost: the events price a trial without a total only when every one of them is priced.
   let nano = 0;
   let source = "none";
   if (isNanoAiuCost(usage.cost)) {
     nano = usage.cost.amount;
     source = "metrics.tokenUsage.cost";
-  } else if (eventCount > 0) {
+  } else if (eventCount > 0 && eventCount === usageEvents && !costUnavailable) {
     nano = eventNano;
     source = "token_usage events";
+  } else if (eventCount > 0 || costUnavailable) {
+    source = "incomplete";
   }
 
   return {
@@ -86,6 +107,7 @@ function summarizeTrial(record) {
     eventNanoAiu: eventNano,
     eventCount: eventCount,
     costSource: source,
+    priced: source === "metrics.tokenUsage.cost" || source === "token_usage events",
   };
 }
 
@@ -119,14 +141,24 @@ function analyzeResultsJsonl(text, options) {
   const totalNano = trials.reduce(function (sum, row) {
     return sum + row.nanoAiu;
   }, 0);
+  // Only a priced trial has a root to add its children to: a partial subtotal is not part of the naive sum either.
   const eventNano = trials.reduce(function (sum, row) {
-    return sum + row.eventNanoAiu;
+    return sum + (row.priced ? row.eventNanoAiu : 0);
   }, 0);
   const priced = trials.filter(function (row) {
-    return row.costSource !== "none";
+    return row.priced;
   }).length;
 
   trials.forEach(function (row) {
+    if (!row.priced) {
+      warnings.push(
+        row.stimulus + ": " +
+          (row.costSource === "incomplete"
+            ? "not every model call carries a nano-AIU cost, or a cost_unavailable event was recorded"
+            : "no nano-AIU cost was recorded") +
+          ", so this trial is not priced and is left out of the total",
+      );
+    }
     if (row.eventCount > 0 && row.costSource === "metrics.tokenUsage.cost" && row.eventNanoAiu !== row.nanoAiu) {
       warnings.push(
         row.stimulus + ": per-call token_usage amounts (" + row.eventNanoAiu + " nano-AIU) do not add up to the trial total (" + row.nanoAiu + ")",
@@ -135,8 +167,9 @@ function analyzeResultsJsonl(text, options) {
   });
 
   let status = "PASS";
-  if (trials.length === 0 || priced === 0) status = "UNKNOWN";
+  if (trials.length === 0) status = "UNKNOWN";
   else if (totalNano / NANO_PER_AIU > maxAiu) status = "FAIL";
+  else if (priced < trials.length) status = "UNKNOWN";
 
   return {
     runId: runId,

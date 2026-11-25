@@ -407,6 +407,42 @@ function checkCostAndReplay() {
   assert.equal(cost.analyzeResultsJsonl(text, { maxAiu: 1 }).status, "FAIL");
   assert.equal(cost.analyzeResultsJsonl("", {}).status, "UNKNOWN");
   assert.deepEqual(analysis.warnings, [], "per-call token_usage amounts add up to every trial total");
+
+  // A run is approved only when every trial is fully priced. Vally sets metrics.tokenUsage.cost only when every
+  // token_usage event of the trial carries a nano-AIU amount (dist/trajectory/metrics-collector.js), so a trial
+  // without it is priced from its events only when every one of them is priced and none says cost_unavailable.
+  const nano = (amount) => ({ provider: "github-copilot", unit: "nano-aiu", amount });
+  const usageEvent = (amount) => ({
+    type: "token_usage",
+    data: Object.assign({ inputTokens: 10, outputTokens: 5, model: "gpt-5-mini" }, amount === undefined ? {} : { cost: nano(amount) }),
+  });
+  const unavailableEvent = { type: "cost_unavailable", data: { provider: "github-copilot", unit: "nano-aiu", model: "gpt-5-mini", reason: "malformed_usage" } };
+  const trialLine = (stimulus, total, events) =>
+    JSON.stringify({ type: "trial-result", stimulus, trajectory: { metrics: { tokenUsage: total === undefined ? {} : { cost: nano(total) } }, events: events || [] } });
+  const price = (lines, options) => cost.analyzeResultsJsonl(lines.join("\n"), options);
+
+  const mixed = price([trialLine("priced", 1000000000), trialLine("unpriced")]);
+  assert.equal(mixed.status, "UNKNOWN", "one priced trial plus one unpriced trial is not an approvable run");
+  assert.equal(mixed.pricedTrials, 1);
+  assert.equal(mixed.totalNanoAiu, 1000000000, "the total covers the priced trial only");
+  assert.ok(mixed.warnings.some((warning) => warning.indexOf("unpriced:") === 0), "the unpriced trial is named in a warning");
+  assert.ok(cost.renderReport(mixed, "mixed.jsonl").indexOf("WARN: unpriced:") >= 0, "the report prints that warning");
+
+  const halfPriced = price([trialLine("half-priced", undefined, [usageEvent(480000000), usageEvent()])]);
+  assert.equal(halfPriced.status, "UNKNOWN", "a trial whose events are one priced and one unpriced is not priced");
+  assert.equal(halfPriced.pricedTrials, 0);
+  assert.equal(halfPriced.trials[0].nanoAiu, 0, "the priced event's subtotal is never reported as the trial's cost");
+  assert.equal(halfPriced.totalNanoAiu, 0);
+
+  const unavailable = price([trialLine("cost-unavailable", undefined, [usageEvent(480000000), unavailableEvent])]);
+  assert.equal(unavailable.status, "UNKNOWN", "a cost_unavailable event makes the trial's events incomplete");
+
+  const eventsOnly = price([trialLine("events-only", undefined, [usageEvent(480000000), usageEvent(790000000)])]);
+  assert.equal(eventsOnly.status, "PASS", "control: a trial with no total whose every call is priced is still priced");
+  assert.equal(eventsOnly.totalNanoAiu, 1270000000);
+
+  const overBudget = price([trialLine("priced", 6000000000), trialLine("unpriced")], { maxAiu: 5 });
+  assert.equal(overBudget.status, "FAIL", "a priced part already above the ceiling is a definite fail, whatever the rest costs");
   return "eval-cost.cjs + recorded-results.jsonl: 3 trials re-graded at 100.0%, root-only AIU, no host paths";
 }
 
