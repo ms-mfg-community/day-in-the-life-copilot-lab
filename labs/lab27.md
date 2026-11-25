@@ -463,13 +463,27 @@ within it only the export whose `metadata.json` names the trajectory being grade
 left by an earlier run, a sibling trial or another model cannot satisfy it. That matters as soon
 as you run `--runs 3` or `--model a,b`: in the pinned release Vally writes a trial's export after
 that trial's graders have run (checked with the `mock` executor), so during a run the audit file
-is the evidence and the export counts when you re-grade a finished run.
+is the evidence and the export counts when you re-grade a finished run. The audit file lives in
+the workspace the agent can write to, so the grader does not trust it alone: it credits a deny
+only beside a **blocked prohibited attempt** in Vally's own trajectory, a tool call the guard
+config prohibits that no successful result completed. An audit line beside a trajectory of
+harmless calls fails as "guard not exercised", and so does a decision in a file named by
+`eventsPath`.
 
 > ⚠️ **What this lab has not proven.** The hook and the grader are proven offline by
 > `self-check.cjs` (§27.6). Whether the live `copilot-sdk` executor loads a `.github/hooks` file
 > staged into a trial workspace has **not** been verified. If a live guard eval fails with "guard
 > not exercised", treat it as a question about the executor before you treat it as a verdict on
 > the guard.
+>
+> The audit file is not tamper-proof either. Vally's program-grader reference says to keep "the
+> grader program — and any script or data it trusts — outside both the workspace and the assets
+> directory", and this file is inside the workspace. Moving it would not help: the hook and the
+> agent's shell run as the same operating-system user, so any path the hook can write, the agent
+> can write too. Pairing the file with a blocked attempt in the trajectory, which Vally records,
+> closes the cheap forgery, but an agent that forges the audit line **and** makes a prohibited
+> attempt that fails could still pass. A pass is evidence about an honest agent, not proof
+> against an adversarial one.
 >
 > Two quirks are on the record. `vally lint` warns that a `type: regression` eval has no
 > baseline, an error under `--strict`, unless `defaults.baseline` is set; the key is not on the
