@@ -36,7 +36,7 @@ References:
 - [Lab 09 — Copilot Coding Agent & Code Review](lab09.md) — the issue → PR flow this lab's dispatch action feeds into
 - [`docs/token-and-model-guide.md`](../docs/token-and-model-guide.md) — applies if you extend the canvas's exec probes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc. This lab
+**Part of:** Labs 21–27, the enterprise agentic SDLC harness arc. This lab
 is the operator surface for the stages and gates from Lab 23, the executable
 tasks from Lab 24, and the correlation/telemetry path from Lab 25.
 
@@ -307,6 +307,9 @@ asks every lab to address:
 
 </details>
 
-You have completed the Labs 21–26 enterprise agentic SDLC harness arc.
-Return to the [README](../README.md) for the full lab index, or revisit
+You have completed Lab 26 of the Labs 21–27 enterprise agentic SDLC harness arc.
+Continue to Lab 27 to evaluate the harness you have built, return to the
+[README](../README.md) for the full lab index, or revisit
 [Lab 21](lab21.md) to review the arc from its governance starting point.
+
+**Next:** [Lab 27 — Evaluating Agents, Skills, and Models with Vally and AgentEvals](lab27.md)

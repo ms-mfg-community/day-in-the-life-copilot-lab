@@ -98,7 +98,7 @@ function constBody(source: string, name: string): string {
 }
 
 const LAB_IDS = Array.from(
-  { length: 26 },
+  { length: 27 },
   (_, i) => `lab${String(i + 1).padStart(2, "0")}`,
 );
 
@@ -653,10 +653,10 @@ describe("home screen, rail and navigation present all 20 labs in four tracks", 
     omits(home, /The five labs/i, "Home.tsx");
   });
 
-  it("home.saysTwentySixLabsAndFiveTracks", () => {
+  it("home.saysTwentySevenLabsAndFiveTracks", () => {
     const home = flat(read("Home.tsx"));
 
-    mentions(home, /26 labs/i, "Home.tsx");
+    mentions(home, /27 labs/i, "Home.tsx");
     mentions(home, /five (learning )?tracks/i, "Home.tsx");
   });
 

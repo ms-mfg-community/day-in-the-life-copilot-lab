@@ -223,5 +223,5 @@ knowledge bases consistent across teams, not just within one repo.
 </details>
 
 **Modernization track complete.** Continue to [Lab 21](lab21.md) to start the
-enterprise agentic SDLC harness arc (Labs 21–26), or return to the
+enterprise agentic SDLC harness arc (Labs 21–27), or return to the
 [README](../README.md) for the full lab index.

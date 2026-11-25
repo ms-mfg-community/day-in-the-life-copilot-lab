@@ -1,5 +1,5 @@
 /**
- * The four learning tracks that group Labs 01-20.
+ * The five learning tracks that group Labs 01-27.
  *
  * Pure data with no imports, so the Rail, the Home screen, and the tests that
  * keep the repository README honest can all read it. Lab ids, lab numbers and
@@ -57,8 +57,8 @@ export const TRACKS: readonly Track[] = [
     number: 5,
     title: "Enterprise Agentic SDLC Harness",
     summary:
-      "Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and GitHub Copilot App canvases.",
-    labIds: ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26"],
+      "Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, GitHub Copilot App canvases, and Vally + AgentEvals evaluation gates.",
+    labIds: ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26", "lab27"],
   },
 ];
 

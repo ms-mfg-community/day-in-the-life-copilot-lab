@@ -4,6 +4,7 @@
 // store (2.3), told to the live region, and written out again in the long description that sits with the chart.
 
 import tokenCostModel from '../../content/datasets/token-cost-model.json';
+import evalCostModel from '../../content/datasets/eval-cost-model.json';
 import { NOTHING, create, elementsOf, hasModifier } from './dom';
 import { isRecord, readParameter, writeParameter } from './persist';
 import type { Mounter } from './types';
@@ -37,7 +38,10 @@ type Values = Readonly<Record<string, number>>;
 
 // ghcp-was-here: a dataset is imported by name, so a new one is one more line here. The upgrade path is `import.meta.glob`
 // over content/datasets, once more than one chart needs it.
-const DATASETS: Readonly<Record<string, Dataset>> = { [tokenCostModel.id]: tokenCostModel };
+const DATASETS: Readonly<Record<string, Dataset>> = {
+  [tokenCostModel.id]: tokenCostModel,
+  [evalCostModel.id]: evalCostModel,
+};
 
 const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 const say = (value: number): string => NUMBER.format(value);

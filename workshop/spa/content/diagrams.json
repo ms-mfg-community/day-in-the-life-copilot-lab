@@ -46,6 +46,34 @@
         { "from": "orchestrator", "to": "disk", "label": "writes" },
         { "from": "disk", "to": "worker", "label": "reads", "dashed": true }
       ]
+    },
+    {
+      "id": "m6b-eval-pipeline",
+      "segment": "m6b-agent-evals-vally",
+      "match": "Stimulus -> Executor -> Trajectory",
+      "title": "Vally & OTel evaluation pipeline across Tier 0 deterministic and live hermetic/guard bands",
+      "bands": [
+        { "label": "Tier 0: Deterministic & Offline (0 AIU)", "rows": [0, 1], "tone": "calm" },
+        { "label": "Tier 1+: Live Hermetic, Guard & Judge", "rows": [2, 3], "tone": "hot" }
+      ],
+      "steps": ["stimulus", "execute", "trajectory", "grade-issued", "guard-events", "score-veto", "otel-emit"],
+      "nodes": [
+        { "id": "stimulus", "kind": "actor", "col": 0, "row": 0, "label": ["Stimulus -> Executor -> Trajectory", "eval.yaml + EVAL.yaml", "positive & negative cases"] },
+        { "id": "grade-issued", "kind": "gate", "col": 1, "row": 0, "label": ["Issued-call program grader", "tool-calls-issued.cjs", "checks tool_call + skill"], "warn": "Grades tool_call at issuance before timeout" },
+        { "id": "score-veto", "kind": "box", "col": 2, "row": 0, "label": ["Score & veto threshold", "scoring.threshold: 1.0", "pass@k vs pass^k"] },
+        { "id": "otel-emit", "kind": "note", "col": 2, "row": 1, "label": ["OTel evaluation result", "gen_ai.evaluation.result", "root invoke_agent AIU"] },
+        { "id": "execute", "kind": "model", "col": 0, "row": 2, "label": ["Copilot SDK executor", "vally eval --suite", "isolated trial workspace"] },
+        { "id": "guard-events", "kind": "gate", "col": 1, "row": 2, "label": ["Trial preToolUse guard hook", "guarded-commands.cjs", "blocks git push & secrets"], "warn": "No execute_hook OTel span; grade audit log" },
+        { "id": "trajectory", "kind": "box", "col": 1, "row": 3, "label": ["Recorded trajectory JSONL", "results.jsonl + spans", "re-grade via vally grade"] }
+      ],
+      "edges": [
+        { "from": "stimulus", "to": "execute", "label": "live trial" },
+        { "from": "execute", "to": "guard-events", "label": "preToolUse payload" },
+        { "from": "guard-events", "to": "trajectory", "label": "events + audit JSONL" },
+        { "from": "trajectory", "to": "grade-issued", "label": "vally grade stdin", "dashed": true },
+        { "from": "grade-issued", "to": "score-veto", "label": "GraderResult (0..1)" },
+        { "from": "score-veto", "to": "otel-emit", "label": "pass | fail label" }
+      ]
     }
   ]
 }

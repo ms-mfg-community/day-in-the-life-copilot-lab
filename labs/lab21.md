@@ -16,7 +16,7 @@ centrally managed controls to the plugin marketplaces they may use. It extends
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 30 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — starts the arc. The
+**Part of:** Labs 21–27, the enterprise agentic SDLC harness arc — starts the arc. The
 funding decision, native-vs-DIY ledger and rollout order are in the
 [executive blueprint](../docs/enterprise-harness-blueprint.md).
 

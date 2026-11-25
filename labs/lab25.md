@@ -23,7 +23,7 @@ Everything runs offline. Azure is optional.
 
 > ⏱️ Presenter pace: 8 minutes | Self-paced: 45 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on
+**Part of:** Labs 21–27, the enterprise agentic SDLC harness arc — builds on
 [Lab 24](lab24.md), and chains forward to [Lab 26](lab26.md). The
 [executive blueprint](../docs/enterprise-harness-blueprint.md) frames the arc as unit U5.
 

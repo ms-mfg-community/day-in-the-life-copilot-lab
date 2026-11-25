@@ -24,6 +24,7 @@ import { lab23 } from "./lab23";
 import { lab24 } from "./lab24";
 import { lab25 } from "./lab25";
 import { lab26 } from "./lab26";
+import { lab27 } from "./lab27";
 import { nextLabId, previousLabId } from "./tracks";
 import type { Lab } from "./types";
 
@@ -59,6 +60,7 @@ export const labs: Lab[] = [
   lab24,
   lab25,
   lab26,
+  lab27,
 ];
 
 export {

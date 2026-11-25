@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node ./scripts/hooks/pre-tool-guard.cjs",
+        "powershell": "node ./scripts/hooks/pre-tool-guard.cjs",
+        "timeoutSec": 10,
+        "comment": "Deny unapproved git push commands and hardcoded secrets in a Vally trial workspace; write a structured audit line to .vally-guard-audit.jsonl"
+      }
+    ]
+  }
+}

@@ -131,7 +131,7 @@ health     → measure it like Lab 19 measures agent drift: stale refs,
             <strong>Track 4 complete.</strong> Twenty labs across Tracks 1–4:
             configuration → agents → skills → hooks → orchestration → the GitHub
             platform → memory → enterprise governance. Continue to{" "}
-            <strong>Track 5 (Labs 21–26)</strong> to build and operate the
+            <strong>Track 5 (Labs 21–27)</strong> to build and operate the
             end-to-end enterprise agentic SDLC harness.
           </Note>
         </>
