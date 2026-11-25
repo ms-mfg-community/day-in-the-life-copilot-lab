@@ -38,6 +38,7 @@ References:
 - [agentevals-dev/agentevals](https://github.com/agentevals-dev/agentevals) — a different, OpenTelemetry-native project with a similar name
 
 **Part of:** Labs 21–27, the enterprise agentic SDLC harness arc — builds on [Lab 25](lab25.md) and [Lab 26](lab26.md).
+(Lab 25's OpenTelemetry span tree and root-only AIU rule are technical prerequisites for §27.6 and §27.8; Lab 26 is arc continuity only.)
 The [executive blueprint](../docs/enterprise-harness-blueprint.md) maps Labs 21–26 to its units U1–U6;
 this lab adds the evaluation gate that sits on top of them and has no unit of its own.
 
@@ -45,10 +46,12 @@ this lab adds the evaluation gate that sits on top of them and has no unit of it
 > - **Tier 0 and Tier 1 are free.** `self-check.cjs`, `eval-cost.cjs`, `vally lint`,
 >   `vally grade` over the shipped fixture, and a `mock`-executor `vally eval` make
 >   **0 model calls and spend 0 AIU**. Every demo in §27.6 is free; only its final live-run step is not.
-> - **Tier 2 is opt-in and spends AIU.** A live `vally eval` calls a real model once per
->   stimulus and trial (the `MODEL` param, `gpt-5-mini`, from the `cheap` tier in
->   `docs/_meta/registry.yaml`). The cost scales with stimuli × trials × models, so
->   run `eval-cost.cjs` on the results before you raise any of the three.
+> - **Tier 2 is opt-in and spends AIU.** A live `vally eval` starts one agent trial for every
+>   stimulus, run and model combination, and one trial can make many model calls: the agent's
+>   tool-use loop, any subagents it dispatches and any retry of a failed trial each add some.
+>   The default `MODEL` param is `gpt-5-mini`, from the `cheap` tier in `docs/_meta/registry.yaml`.
+>   The number of trials is only a lower bound on the number of model calls, so run
+>   `eval-cost.cjs` on the results before you raise the stimuli, the runs or the models.
 > - See [docs/token-and-model-guide.md](../docs/token-and-model-guide.md) for model tier selection.
 
 ## 27.0 Prerequisites and currency
@@ -57,12 +60,20 @@ The lab has three tiers, so you can stop after the first and still learn the cor
 
 | Tier | What you run | Needs | Model calls | AIU |
 |------|--------------|-------|-------------|-----|
-| **0** | `self-check.cjs` and `eval-cost.cjs` | Node.js 18+ (already required by the repo's preflight) | 0 | 0 |
+| **0** | `self-check.cjs` and `eval-cost.cjs` | Node.js 18+ on your PATH | 0 | 0 |
 | **1** | Tier 0, plus `vally lint`, `vally grade` and a `mock`-executor `vally eval` | Node.js >=22.15.0 and the Vally CLI at the registry's pinned version | 0 | 0 |
 | **2** | A live `vally eval` through `run-evals.sh` or `run-evals.ps1` | Tier 1, plus a signed-in Copilot account | yes | yes |
 
-The Vally CLI declares `engines.node: ">=22.15.0"`, which is stricter than the Node 18+
-the rest of this repository needs, so check your version before you install it.
+> 🧭 **Choose your route by time and tier:**
+> - **8-minute presenter fly-by (0 AIU):** Show the tier table above → run **Demo A** (`self-check.cjs`) and **Demo C** (`eval-cost.cjs`) in §27.6 → show the Hook Governance Gap grep in §27.5 → run `tier0.sh` / `tier0.ps1` in §27.10.
+> - **Tier 0 self-paced route (Node 18+ only, no Vally CLI install, 0 AIU):** Read §§27.1–27.5 → run the hook grep and `pre-tool-guard.cjs` in §27.5 → run **Demo A** and **Demo C** in §27.6 → skim §§27.7–27.8 → run `tier0.sh` / `tier0.ps1` in §27.10.
+> - **Tier 1 full offline route (Node >=22.15 + pinned Vally CLI, 0 AIU):** Complete all Tier 0 steps plus the §27.4 `vally lint`, **Demo B** (`vally grade`), **Demo D** (`vally eval --executor mock`), and the `eval.broken.yaml` exercise in §27.6.
+
+Tier 0 needs Node.js 18 or newer, and the repository's scripts do not check that for you. The
+preflight scripts (`scripts/preflight.sh` and `scripts/preflight.ps1`) check only that `node` is
+on your PATH; "Install Node.js 18+" is the advice they print when it is missing. The Vally CLI
+declares `engines.node: ">=22.15.0"`, which is stricter, so check your version before you
+install it.
 
 Eval specs are version-specific: the pinned release rejects an unknown stimulus field and
 requires grader names made of lowercase letters, digits and hyphens, so a spec that lints
@@ -72,29 +83,21 @@ clean on one release can fail on another. A
 `tier0` scripts skip the CLI steps, with a note, when the installed `vally` differs.
 
 🐚 **In your OS Terminal**, from the repository root, move into the fixture folder. Every
-command in this lab runs from there:
+command in this lab runs from there unless its step names another folder:
 
 ```bash
 cd labs/fixtures/lab27
 node --version
 ```
 
-Expected: `v18` or newer for Tier 0, `v22.15` or newer for Tier 1 and 2. For those tiers,
-read `vally_cli_version` from the registry and install that exact release:
-
-```bash
-npm install -g @microsoft/vally-cli@<vally_cli_version>
-vally --version
-```
-
-`vally --version` must print the registry's value. The `tier0` scripts compare the two for you.
+Expected: `v18` or newer for Tier 0, `v22.15` or newer for Tier 1 and 2.
 
 **Telemetry opt-out.** The Vally CLI collects pseudonymous usage telemetry (command name,
 version, outcome, duration, a device identifier and coarse OS information; no prompts,
 file paths or arguments) and says so on stderr the first time it runs. Opt out with
 `VALLY_TELEMETRY_OPTOUT=1` or `DO_NOT_TRACK=1`; the scripts in this lab set the first one.
 It is unrelated to the evaluation spans Vally writes beside each run, which record what the
-agent under test did.
+agent under test did. Set it now, before the first `vally` command below.
 
 🐚 **In your OS Terminal** (macOS, Linux or Git Bash), opt out for this session:
 
@@ -107,6 +110,16 @@ export VALLY_TELEMETRY_OPTOUT=1
 ```powershell
 $env:VALLY_TELEMETRY_OPTOUT = "1"
 ```
+
+🐚 **In your OS Terminal**, for Tier 1 and 2, read `vally_cli_version` from the registry and
+install that exact release:
+
+```bash
+npm install -g @microsoft/vally-cli@<vally_cli_version>
+vally --version
+```
+
+`vally --version` must print the registry's value. The `tier0` scripts compare the two for you.
 
 ## 27.1 From eval-harness and Lab 19 to Vally's five-stage pipeline
 
@@ -187,22 +200,32 @@ suites:
 Four rules explain nearly every mistake people make with this file:
 
 - **The root accepts seven keys and no others:** `metadata`, `paths`, `environments`,
-  `suites`, `plugins`, `defaults` and `params`. A typo is a lint error, not a silent no-op.
+  `suites`, `plugins`, `defaults` and `params`. A typo stops `vally eval` with an
+  `unknown top-level key` error rather than being ignored; `vally lint` does not catch it.
 - **Customizing `evalFilenames` replaces the defaults,** which is why `eval.yaml` is listed
   again. Plain names match case-sensitively, so `labs/fixtures/lab27/evals/agentevals/EVAL.yaml` (an AgentEvals
   spec, §27.7) is never discovered as a Vally eval. Vally finds `.vally.yaml` by walking up from
-  the working directory, and resolves a suite's eval globs by walking down from the folder that
-  holds it (up to ten levels), skipping `node_modules`, `.git`, `dist` and a few other tool folders.
+  the working directory. It resolves each suite eval glob against the folder that holds
+  `.vally.yaml`, then walks down from the fixed folders at the start of that glob (`evals/hermetic`
+  in `evals/hermetic/*/eval.yaml`), skipping `node_modules`, `.git`, `dist` and a few other tool
+  folders. The walk reads no folder ten or more levels below that starting point, and warns when
+  it reaches one. The count starts at the glob's fixed base, not at `.vally.yaml`, so a glob with a
+  deep base still finds an eval more than ten levels below the project file.
 - **Two different base folders.** Getting this wrong fails at run time, because `vally lint`
   cannot resolve the paths of a *named* environment:
 
   | Setting | Resolved relative to | In this lab |
   |---------|----------------------|-------------|
-  | `paths.*` and the values of `params` | the folder holding `.vally.yaml` | three levels below the repository root, so `../../../.github/...` |
+  | `paths.*` | the folder holding `.vally.yaml` | three levels below the repository root, so `../../../.github/...` |
   | `files[].src` and `skills[]` of an environment, `agent_environment`, `grading_environment` | the folder holding the **`eval.yaml`** that uses them | the evals sit six levels below the root, so `../../../../../../.github/...`; the graders are `../../graders/...`; the guard hooks are `../hooks/...` |
 
-  `AGENTS_DIR` is declared as a project-relative pointer to the agent profiles; the evals
-  themselves stage agents with eval-relative paths and do not use it.
+  The values of `params` are in neither row, because Vally resolves no path in them. It
+  interpolates each value as literal text, so the guard grader receives `RUN_DIR` as
+  `vally-results`, unchanged, unless `--param` sets another value. Whether a relative value
+  means anything is up to the field or program that receives it, which is why the Tier 2 scripts
+  hand the graders an absolute `RUN_DIR` (§27.6). `AGENTS_DIR` holds the path to the agent
+  profiles as seen from this folder, but no eval uses it: they stage agents with eval-relative
+  paths. Only `self-check.cjs` reads it, to confirm that the path exists.
 - **`${KEY}` parameters have a precedence order** (highest wins):
 
   | Order | Source |
@@ -212,12 +235,18 @@ Four rules explain nearly every mistake people make with this file:
   | 3 | `params:` in `.vally.yaml` |
   | 4 | an inline `${KEY=fallback}` in the eval file, used only when nothing above sets the key |
 
-  Write `$${HOME}` for a literal `${HOME}`. An array-valued param runs the eval once per
-  combination (a product of arrays, or `!zip` to pair them), capped at 100 combinations.
+  Write `$${HOME}` for a literal `${HOME}`. An array-valued param that an eval references
+  expands that eval's stimuli into one copy per combination, each named with its values (a
+  product of the arrays, or `!zip` in an `eval.params.yaml` to pair them), capped at 100
+  combinations. It is still one eval, so only stimuli may differ between combinations: an
+  array-valued `MODEL` used in `defaults.model` is rejected when the eval loads. To compare
+  models, pass `--model a,b` to `vally eval` instead.
 
 Suites select evals, and a suite's `filter` selects stimuli by tag. A stimulus's effective tags
 are the eval's tags overlaid by its own, so `priority: "p0"` keeps every P0 stimulus.
-`pr-gate` therefore runs five of the six stimuli in this lab; the one P1 stimulus runs only in `full`.
+`pr-gate` therefore runs five of the six hermetic stimuli; the one P1 stimulus runs only in
+`full`. The two guard stimuli (§27.5) belong to the `-guards` suites, so the four eval files hold
+eight stimuli in all.
 
 ## 27.3 Custom program graders and grading_environment staging
 
@@ -277,10 +306,12 @@ not finished still passes. It takes eight optional settings:
 | `requiredAgents` / `forbiddenAgents` | a required subagent was never dispatched / a forbidden one was |
 | `requiredSkills` / `forbiddenSkills` | a required skill never activated / a forbidden one did |
 
-> ⚠️ Agent names are matched as a substring of the serialized call arguments, so a `view` of
-> `.github/agents/planner.agent.md` would trip `forbiddenAgents: ["planner"]`. That is good enough
-> for a lab and a reason to keep negative stimuli read-only on files that are not agent profiles.
-> A production gate would match the structured agent field instead.
+> 💡 **Match structured dispatch fields, not raw argument text.** `hasAgent` in
+> `tool-calls-issued.cjs` checks `data.launchedAgentIds`, `call.agentId`, or the target agent
+> argument (`agent`, `agent_type`, `subagent_type`, `agentName`) of a recognized dispatch tool
+> (`task`, `dispatch_agent`, `subagent`, `run_subagent`) — never a substring of arbitrary tool
+> arguments. That way, reading `.github/agents/planner.agent.md` with `view` neither satisfies
+> `requiredAgents: ["planner"]` nor falsely trips `forbiddenAgents: ["planner"]`.
 
 ## 27.4 Hermetic capability evals: reviewer-routing and skill-triggers
 
@@ -299,9 +330,9 @@ A threshold of 1.0 means any failed check fails the trial.
 | | `trigger-eval-harness-on-edd-gate` | p0 | positive | activates `eval-harness` |
 | | `negative-no-lab-studio-sync-on-ef-core-question` | p1 | negative | never activates `lab-studio-sync` and edits nothing |
 
-Validate a spec statically first. It is the fast gate: no execution, no model, no AIU.
+Validate a spec statically first (**Tier 1** — requires the pinned Vally CLI; Tier 0 learners can read the output below and continue to §27.5). It is the fast gate: no execution, no model, no AIU.
 
-🐚 **In your OS Terminal**, lint the routing eval the way CI would:
+🐚 **In your OS Terminal** (Tier 1), lint the routing eval the way CI would:
 
 ```bash
 vally lint -e evals/hermetic/reviewer-routing/eval.yaml --strict
@@ -316,14 +347,22 @@ Expected, with forward slashes on macOS and Linux (Windows prints backslashes):
 💬 **Discuss/answer:**
 
 ```
-Every positive stimulus here has a negative partner. A negative stimulus passes for an agent
-that does nothing at all, and you will watch that happen in section 27.6. So why keep it?
+Each eval here pairs its positive stimuli with one negative: four positives and two negatives in
+all. A negative stimulus passes for an agent that does nothing at all, and you will watch that
+happen in section 27.6. So why keep it?
 ```
 
 > 💡 **Expected answer:** the two halves catch opposite failures. A positive stimulus fails an
-> agent that never routes; a negative stimulus fails one that routes everything everywhere. A
-> router that sends every question to a reviewer passes all the positives, and only the negatives
-> expose it. Neither half proves anything alone, which is why they travel as a pair.
+> agent that never routes, and each one demands its own evidence: a router that sends every
+> question to `code-reviewer` passes only the code-reviewer positive, and fails the planner
+> positive and both skill positives. A negative stimulus fails an agent that routes when it should
+> not: one that handles all four positive prompts correctly but also dispatches `code-reviewer`
+> on the trivial question passes every positive and fails only the routing negative. Neither half
+> proves anything alone, which is why they travel as a pair.
+
+> ⚠️ **The pairing is per eval, not per agent or skill.** The routing negative forbids both
+> routing agents, but the skill negative forbids only `lab-studio-sync`, so nothing here checks
+> that `dotnet-testing` or `eval-harness` stays quiet on work it does not own.
 
 ## 27.5 Guard regression evals and the Hook Governance Gap
 
@@ -357,8 +396,7 @@ four events, and its secret scan and documentation blocker do deny calls. **Forc
 not one of them**, and no hook runs a build. That is the **Hook Governance Gap**: a documented
 control with nothing behind it.
 
-🤖 **In Copilot CLI (`copilot>`)**, ask the agent the same question and compare its answer with
-what you just measured:
+🤖 **In Copilot CLI (`copilot>`)** *(Optional Tier 2 comparison — calls a live model and needs a signed-in Copilot account; offline Tier 0 and Tier 1 learners can skip running this prompt and read the expected answer below)*, ask the agent the same question and compare its answer with what you just measured:
 
 ```
 Does .github/hooks/default.json block git push? Answer only from the file.
@@ -718,16 +756,18 @@ phases as the rest of the arc:
 
 ## 27.10 Validation and Final
 
-✅ `node evals/graders/self-check.cjs` prints `self-check: 5/5 checks passed (0 model calls, 0 AIU)`.
+✅ **(Tier 0 & Tier 1)** `node evals/graders/self-check.cjs` prints `self-check: 5/5 checks passed (0 model calls, 0 AIU)`.
 
-✅ `eval-cost.cjs` reports a root-only total and `Budget status: PASS`, then `FAIL` with a lower `--max-aiu`.
+✅ **(Tier 0 & Tier 1)** `eval-cost.cjs` reports a root-only total and `Budget status: PASS`, then `FAIL` with a lower `--max-aiu`.
 
-✅ The guard hook denies the recorded `git push` payload and stays silent on `git status`.
+✅ **(Tier 0 & Tier 1)** The guard hook denies the recorded `git push` payload and stays silent on `git status`.
 
-✅ Your edited `eval.broken.yaml` made one block fail and the command exit with code 1. You deleted it.
+✅ **(Tier 1 only)** Your edited `eval.broken.yaml` made one block fail and the command exit with code 1. You deleted it.
 
-One command runs every free check in order. It also lints all four evals and runs Demo B when your
-installed `vally` is the registry's pinned version, and otherwise skips those steps with a note.
+One command runs the offline checks in order: Demo A and Demo C, then, when your installed
+`vally` is the registry's pinned version, `vally lint --strict` on all four evals and Demo B. When
+it is not, the script skips those Vally steps with a note. It does not run Demo D: the
+`mock`-executor eval and its `--require-pass` exit-code check are commands you run yourself in §27.6.
 
 🐚 **In your OS Terminal** (macOS, Linux or Git Bash), from `labs/fixtures/lab27`:
 

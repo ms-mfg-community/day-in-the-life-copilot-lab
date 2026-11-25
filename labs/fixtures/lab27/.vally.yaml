@@ -5,12 +5,17 @@
 # environments, suites, plugins, defaults, params.
 #
 # Path bases differ, and getting them wrong fails at run time, not at lint time:
-#   - paths.* and the values of params.* are relative to THIS file
-#     (labs/fixtures/lab27), three levels below the repository root.
+#   - paths.* is relative to THIS file (labs/fixtures/lab27), three levels below
+#     the repository root.
 #   - the files[].src and skills[] entries of an environment, like those of an
 #     eval's own agent_environment and grading_environment, are relative to the
 #     directory of the eval.yaml that uses them. The guard evals sit six levels
 #     below the repository root; the hooks sit one level up from each of them.
+#   - the values of params.* are resolved against neither: Vally interpolates
+#     them as literal text, so a relative value means whatever the field or
+#     program that receives it makes of it. That is why the scripts in scripts/
+#     pass RUN_DIR as an absolute path. No eval uses AGENTS_DIR; only
+#     self-check.cjs reads it, to confirm that the path exists.
 #
 # params are the ${KEY} defaults an eval file can use. Precedence, highest first:
 #   --param KEY=value   >   the eval's own eval.params.yaml   >   .vally.yaml params

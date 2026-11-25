@@ -1,9 +1,11 @@
 # Capability eval: does ContosoUniversity work route to the right agent?
 #
 # Positive stimuli must dispatch the agent that owns the work; the negative
-# stimulus must dispatch neither and mutate nothing. A router that sends every
-# question to a reviewer would pass the positives alone, so the negative is the
-# half that proves the descriptions are selective.
+# stimulus must dispatch neither and mutate nothing. A router that routes both
+# positive prompts to their right agent (code-reviewer and planner) but also
+# unnecessarily dispatches a reviewer on a trivial lookup would pass the
+# positives alone, so the negative is the half that proves the descriptions are
+# selective.
 #
 # Graded with a Vally `program` grader: tool-calls-issued.cjs, staged into
 # .vally-grading/graders/ by grading_environment so the agent never sees it. It

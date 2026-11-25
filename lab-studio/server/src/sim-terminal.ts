@@ -1589,6 +1589,7 @@ export interface VallyGrader {
   type: string;
   script: string | undefined;
   config: Record<string, unknown>;
+  invalidConfigJson: string | undefined;
   unknownConfigKeys: string[];
   reservedEnvKeys: string[];
 }
@@ -1615,26 +1616,42 @@ export interface VallyEval {
 }
 
 /** The per-stimulus checks config: from ISSUED_CALL_CONFIG JSON, else inline lists. */
-function parseIssuedConfig(graderText: string): Record<string, unknown> {
+function parseIssuedConfig(graderText: string): {
+  config: Record<string, unknown>;
+  invalidConfigJson: string | undefined;
+} {
+  const hasIssuedKey = /\bISSUED_CALL_CONFIG\s*:/.test(graderText);
   const single = /ISSUED_CALL_CONFIG:\s*'((?:[^']|'')*)'/.exec(graderText)?.[1];
   const double = /ISSUED_CALL_CONFIG:\s*"((?:[^"\\]|\\.)*)"/.exec(graderText)?.[1];
-  let raw: string | undefined;
-  if (single !== undefined) raw = single.replace(/''/g, "'");
-  else if (double !== undefined) {
-    try {
-      raw = JSON.parse(`"${double}"`) as string;
-    } catch {
-      raw = undefined;
+  if (hasIssuedKey) {
+    let raw: string | undefined;
+    if (single !== undefined) raw = single.replace(/''/g, "'");
+    else if (double !== undefined) {
+      try {
+        raw = JSON.parse(`"${double}"`) as string;
+      } catch (err) {
+        return {
+          config: {},
+          invalidConfigJson: err instanceof Error ? err.message : String(err),
+        };
+      }
+    } else {
+      return {
+        config: {},
+        invalidConfigJson: "ISSUED_CALL_CONFIG must be a quoted JSON string",
+      };
     }
-  }
-  if (raw !== undefined) {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (parsed !== null && typeof parsed === "object") {
-        return parsed as Record<string, unknown>;
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return { config: parsed as Record<string, unknown>, invalidConfigJson: undefined };
       }
-    } catch {
-      // fall through to the inline lists
+      return { config: {}, invalidConfigJson: "ISSUED_CALL_CONFIG must be a JSON object" };
+    } catch (err) {
+      return {
+        config: {},
+        invalidConfigJson: err instanceof Error ? err.message : String(err),
+      };
     }
   }
   const out: Record<string, unknown> = {};
@@ -1653,18 +1670,20 @@ function parseIssuedConfig(graderText: string): Record<string, unknown> {
       // ignore a list that is not JSON-shaped
     }
   }
-  return out;
+  return { config: out, invalidConfigJson: undefined };
 }
 
 function parseGrader(item: string[]): VallyGrader {
   const text = item.join("\n");
   const configLines = childLines(item, /^\s*(?:-\s+)?config:\s*$/) ?? [];
   const envLines = childLines(configLines, /^\s*env:\s*$/) ?? [];
+  const issued = parseIssuedConfig(text);
   return {
     name: scalarOf(text, "name") ?? "(unnamed)",
     type: scalarOf(text, "type") ?? "",
     script: /\.vally-grading\/graders\/([\w.-]+)/.exec(text)?.[1],
-    config: parseIssuedConfig(text),
+    config: issued.config,
+    invalidConfigJson: issued.invalidConfigJson,
     unknownConfigKeys: mapKeys(configLines).filter(
       (k) => !PROGRAM_GRADER_CONFIG_KEYS.includes(k),
     ),
@@ -1760,6 +1779,13 @@ function lintDiagnostics(spec: VallyEval, modelParam: string): LintDiagnostic[] 
           code: "invalid-grader-config",
           message: `${grader.name}: 'env' cannot set reserved variable(s): ${grader.reservedEnvKeys.join(", ")}`,
           at: `stimuli[${si}].graders[${gi}].config.env`,
+        });
+      }
+      if (grader.invalidConfigJson !== undefined) {
+        out.push({
+          code: "invalid-grader-config",
+          message: `${grader.name}: ISSUED_CALL_CONFIG is not valid JSON (${grader.invalidConfigJson})`,
+          at: `stimuli[${si}].graders[${gi}].config.env.ISSUED_CALL_CONFIG`,
         });
       }
     });

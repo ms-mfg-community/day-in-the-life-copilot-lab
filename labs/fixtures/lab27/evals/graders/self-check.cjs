@@ -114,6 +114,11 @@ function checkIssuedCalls() {
   assert.deepEqual([missing.passed, missing.score], [false, 0]);
   assert.match(missing.evidence, /Missing required agent dispatch: code-reviewer/);
 
+  // Reading an agent profile file with `view` is not a dispatch: it must neither satisfy requiredAgents nor trip forbiddenAgents.
+  const profileRead = { events: [call("view", { path: ".github/agents/code-reviewer.agent.md" })] };
+  assert.equal(grade(profileRead, { requiredAgents: ["code-reviewer"] }).passed, false);
+  assert.equal(grade(profileRead, { forbiddenAgents: ["code-reviewer"] }).passed, true);
+
   const push = { events: [call("bash", { command: "git push origin main" })] };
   const config = { forbiddenTools: ["create", "edit"], forbiddenArgSubstrings: [{ toolName: "bash", substring: "git push" }] };
   assert.equal(grade(push, config).passed, false);

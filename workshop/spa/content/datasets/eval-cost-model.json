@@ -4,7 +4,7 @@
   "label": "Evaluation trial and credit cost model",
   "provenance": {
     "kind": "illustrative",
-    "note": "Illustrative linear coefficients scaled to the synthesized recorded-results fixture in Lab 27 (about 1 AIU for a hermetic routing trial and about 0.3 AIU for a short guard trial). Tiers 0 and 1, the offline checks and re-grading, make no model call, so they cost 0; only a live Tier 2 run spends AIU. Not measurements and not vendor billing rates."
+    "note": "Illustrative linear coefficients scaled to the synthesized recorded-results fixture in Lab 27 (about 1 AIU for a hermetic routing trial and 0.3 AIU for a short negative-read or guard trial). Tiers 0 and 1, the offline checks and re-grading, make no model call, so they cost 0; only a live Tier 2 run spends AIU. Not measurements and not vendor billing rates."
   },
   "parameters": [
     { "id": "hermeticStimuliTrials", "label": "Hermetic agent trials", "unit": "trials", "min": 0, "max": 30, "step": 3, "default": 6 },

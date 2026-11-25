@@ -157,7 +157,7 @@
   },
   "lab27": {
     "source": "labs/lab27.md",
-    "sourceHash": "68a2d09a8a01d864",
+    "sourceHash": "95d2ff0e833ce6b9",
     "studio": "client/src/labs/lab27.tsx",
     "studioExists": true
   }

@@ -10,7 +10,7 @@ phase: 3c
 
 ## The advanced problem
 
-`labs/lab19.md` scans `.github/agents/` and `.github/skills/` for qualitative file drift, and `.github/skills/eval-harness/SKILL.md` defines `[CAPABILITY EVAL]` and `[REGRESSION EVAL]` markdown checklists without an automated runner. Neither proves whether an edit to an agent prompt or hook actually routes to `code-reviewer`, activates `dotnet-testing`, blocks an unapproved `git push`, or stays inside token and AIU budgets across multi-trial runs (`pass@k` vs `pass^k`).
+`labs/lab19.md` scans `.github/agents/` and `.github/skills/` for qualitative file drift, and `.github/skills/eval-harness/SKILL.md` defines `[CAPABILITY EVAL]` and `[REGRESSION EVAL]` checklists without a runner. Neither proves whether an edit still routes to `code-reviewer`, activates `dotnet-testing`, blocks `git push`, or stays inside AIU budgets across trials (`pass@k` vs `pass^k`).
 
 Anchor labs: [`labs/lab27.md`](../../labs/lab27.md) · [`labs/lab19.md`](../../labs/lab19.md). Harness fixtures: `labs/fixtures/lab27/`.
 
@@ -21,23 +21,12 @@ Anchor labs: [`labs/lab27.md`](../../labs/lab27.md) · [`labs/lab19.md`](../../l
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ TIERS 0–1: FREE & OFFLINE (0 MODEL CALLS · 0 AIU)                       │
-│                                                                         │
-│  ┌────────────────────────────────────┐   ┌──────────────────────────┐  │
-│  │ Stimulus -> Executor -> Trajectory │   │ Issued-call & guard code │  │
-│  │ eval.yaml + EVAL.yaml specs        │──▶│ graders (vally grade)    │  │
-│  └────────────────────────────────────┘   └─────────────┬────────────┘  │
-│                                                         ▼               │
-│  ┌────────────────────────────────────┐   ┌──────────────────────────┐  │
-│  │ OTel gen_ai.evaluation.result      │◀──│ Score & veto threshold   │  │
-│  │ root invoke_agent AIU (no 2x sum)  │   │ threshold: 1.0 · pass^k  │  │
-│  └────────────────────────────────────┘   └──────────────────────────┘  │
+│  [Stimulus -> Executor -> Trajectory] ──▶ [Program Graders: vally grade]│
+│  (eval.yaml + EVAL.yaml specs)            ──▶ [Score: threshold 1.0]    │
+│                                           ──▶ [OTel root AIU & result]  │
 ├─────────────────────────────────────────────────────────▲───────────────┤
 │ TIER 2: LIVE HERMETIC & GUARD TRIALS (BILLABLE AIU)     │ results.jsonl │
-│                                                         │               │
-│  ┌──────────────────────┐  preToolUse   ┌───────────────┴────────────┐  │
-│  │ Copilot SDK executor │──────────────▶│ Trial preToolUse guard     │  │
-│  │ vally eval --suite   │               │ & recorded trajectory JSONL│  │
-│  └──────────────────────┘               └────────────────────────────┘  │
+│  [Copilot SDK: vally eval] ──preToolUse──▶ [Guard Hook & Trajectory Log]│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 

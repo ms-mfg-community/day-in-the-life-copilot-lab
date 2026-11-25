@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-  Lab 27 Tier 0: every check that needs no model call, no credentials and no global install.
+  Lab 27 offline checks: Tier 0, plus the Tier 1 Vally checks when the pinned CLI is installed.
+  None needs a model call, credentials or a global install.
 
 .DESCRIPTION
   Step 1  node evals/graders/self-check.cjs                      (Demo A)
@@ -11,6 +12,9 @@
           eval specs are version-specific (the pinned release rejects an unknown
           stimulus field and requires lowercase kebab-case grader names), so a lint
           result from the wrong CLI would mislead more than it would help.
+
+  It does not run Demo D, the mock-executor `vally eval` and its --require-pass exit-code
+  check: Lab 27 section 27.6 runs those by hand.
 
   Nothing here calls a model, so it spends 0 AIU. Works in Windows PowerShell 5.1
   and PowerShell 7. Run from anywhere:
@@ -49,7 +53,7 @@ try {
     if ($LASTEXITCODE -ne 0) { Fail "eval-cost.cjs exited with code $LASTEXITCODE." $LASTEXITCODE }
 
     Write-Host ""
-    Write-Host "== Tier 0, step 3 of 3: Vally CLI checks (only for the pinned version) =="
+    Write-Host "== Tier 1 (free), step 3 of 3: Vally CLI checks (only for the pinned version) =="
     $pinned = $null
     if (Test-Path $Registry) {
         $match = Select-String -Path $Registry -Pattern '^vally_cli_version:\s*"([^"]+)"' | Select-Object -First 1

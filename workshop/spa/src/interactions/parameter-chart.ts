@@ -36,8 +36,8 @@ interface Dataset {
 
 type Values = Readonly<Record<string, number>>;
 
-// ghcp-was-here: a dataset is imported by name, so a new one is one more line here. The upgrade path is `import.meta.glob`
-// over content/datasets, once more than one chart needs it.
+// ghcp-was-here: datasets are imported explicitly by name so the table is statically typed without a bundler glob.
+// The upgrade path is `import.meta.glob` over content/datasets if datasets grow dynamic.
 const DATASETS: Readonly<Record<string, Dataset>> = {
   [tokenCostModel.id]: tokenCostModel,
   [evalCostModel.id]: evalCostModel,

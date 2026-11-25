@@ -920,6 +920,12 @@ return { openIds, closedIds, escaped };
           forbiddenArgSubstrings: [{ toolName: "bash", substring: "git push" }],
         },
       },
+      {
+        trajectory: {
+          events: [{ type: "tool_call", data: { toolName: "view", toolCallId: "tc-4", arguments: { path: ".github/agents/code-reviewer.agent.md" } } }],
+        },
+        config: { requiredAgents: ["code-reviewer"] },
+      },
     ]);
     if (!run.ok) {
       if (run.timedOut) {
@@ -929,7 +935,7 @@ return { openIds, closedIds, escaped };
       }
       return fail(`Module execution error: ${run.message}`);
     }
-    const [a, b, c] = run.grades;
+    const [a, b, c, d] = run.grades;
     for (const g of run.grades) {
       if (
         g.name !== "tool-calls-issued" ||
@@ -947,8 +953,8 @@ return { openIds, closedIds, escaped };
     if (a?.passed !== true || a.score !== 1) {
       return fail("`gradeIssuedToolCalls(trajectory, config)` must pass (score: 1) when a tool_call launches requiredAgents (via launchedAgentIds) and skill_activation activates requiredSkills, even without a tool_result event.");
     }
-    if (b?.passed !== false || b.score !== 0) {
-      return fail("`gradeIssuedToolCalls(trajectory, config)` must fail (score: 0) when requiredAgents are not dispatched in any tool_call event.");
+    if (b?.passed !== false || b.score !== 0 || d?.passed !== false || d.score !== 0) {
+      return fail("`gradeIssuedToolCalls(trajectory, config)` must fail (score: 0) when requiredAgents are not dispatched in a subagent/dispatch call (reading `.github/agents/<name>.agent.md` with `view` is not a dispatch).");
     }
     if (c?.passed !== false || c.score !== 0) {
       return fail("`gradeIssuedToolCalls(trajectory, config)` must fail (score: 0) when a tool_call matches forbiddenArgSubstrings (such as bash git push).");
@@ -978,6 +984,9 @@ return { openIds, closedIds, escaped };
       return fail("Declare `grading_environment.files` in `evals/hermetic/reviewer-routing/eval.yaml` staging `.vally-grading/graders/tool-calls-issued`.");
     }
     const spec = parseVallyEval(evalPath, evalYaml);
+    if (spec.stimuli.some((s) => s.graders.some((g) => g.invalidConfigJson !== undefined))) {
+      return fail("Every `ISSUED_CALL_CONFIG` in `evals/hermetic/reviewer-routing/eval.yaml` must be valid JSON.");
+    }
     // Exactly 1, written 1, 1.0 or 1.00: a threshold such as 1.5 or 0.8 is not a veto gate.
     if (!/^scoring:/m.test(evalYaml) || spec.thresholdRaw === undefined || Number(spec.thresholdRaw) !== 1) {
       return fail("Set `scoring.threshold: 1.0` in `evals/hermetic/reviewer-routing/eval.yaml` so any failed veto check fails the trial.");

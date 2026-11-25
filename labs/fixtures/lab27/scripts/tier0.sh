@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Lab 27 Tier 0: every check that needs no model call, no credentials and no global install.
+# Lab 27 offline checks: Tier 0, plus the Tier 1 Vally checks when the pinned CLI is installed.
+# None needs a model call, credentials or a global install.
 #
 #   Step 1  node evals/graders/self-check.cjs                      (Demo A)
 #   Step 2  node evals/graders/eval-cost.cjs <recorded results>    (Demo C)
@@ -9,6 +10,9 @@
 #           eval specs are version-specific (the pinned release rejects an unknown
 #           stimulus field and requires lowercase kebab-case grader names), so a lint
 #           result from the wrong CLI would mislead more than it would help.
+#
+# It does not run Demo D, the mock-executor `vally eval` and its --require-pass exit-code
+# check: Lab 27 section 27.6 runs those by hand.
 #
 # Nothing here calls a model, so it spends 0 AIU. Run from anywhere:
 #
@@ -40,7 +44,7 @@ echo "== Tier 0, step 2 of 3: root-only AIU on the recorded fixture (Demo C) =="
 node evals/graders/eval-cost.cjs evals/fixtures/recorded-results.jsonl || fail "eval-cost.cjs failed." "$?"
 
 echo
-echo "== Tier 0, step 3 of 3: Vally CLI checks (only for the pinned version) =="
+echo "== Tier 1 (free), step 3 of 3: Vally CLI checks (only for the pinned version) =="
 PINNED=""
 if [ -f "$REGISTRY" ]; then
   PINNED="$(sed -n -E 's/^vally_cli_version:[[:space:]]*"([^"]+)".*/\1/p' "$REGISTRY" | head -n 1)"

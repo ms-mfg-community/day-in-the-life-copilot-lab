@@ -13,8 +13,13 @@ const ISSUED_GRADER_MJS = `export function gradeIssuedToolCalls(trajectory, conf
     const data = (call && call.data) ? call.data : {};
     if (Array.isArray(data.launchedAgentIds) && data.launchedAgentIds.indexOf(agent) !== -1) return true;
     if (call && call.agentId === agent) return true;
-    const argText = JSON.stringify(data.arguments || {});
-    return argText.indexOf(agent) !== -1;
+    const tool = String(data.toolName || "");
+    if (tool === "task" || tool === "dispatch_agent" || tool === "subagent" || tool === "run_subagent") {
+      const args = (data.arguments && typeof data.arguments === "object") ? data.arguments : {};
+      const target = args.agent || args.agent_type || args.subagent_type || args.agentName || "";
+      if (target === agent) return true;
+    }
+    return false;
   }
 
   (cfg.requiredTools || []).forEach(function (tool) {

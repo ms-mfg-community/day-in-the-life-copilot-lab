@@ -20,12 +20,15 @@
  *   requiredArgSubstrings, forbiddenArgSubstrings   [{ toolName, substring }], matched against
  *                                              JSON.stringify(data.arguments) of that tool's calls
  *   requiredAgents, forbiddenAgents            matched against data.launchedAgentIds[],
- *                                              event.agentId, or JSON.stringify(data.arguments)
+ *                                              event.agentId, or the target agent argument
+ *                                              (agent, agent_type, subagent_type, agentName)
+ *                                              of a dispatch tool (task, dispatch_agent,
+ *                                              subagent, run_subagent)
  *   requiredSkills, forbiddenSkills            matched against skill_activation data.name
  *
- * Agent matching is a substring match on the serialized arguments by design, so a
- * `view` of .github/agents/planner.agent.md would trip forbiddenAgents: ["planner"].
- * Keep negative stimuli read-only on files that are not agent profiles.
+ * Agent matching inspects only structured dispatch fields, so a `view` of
+ * .github/agents/planner.agent.md neither satisfies requiredAgents nor trips
+ * forbiddenAgents.
  *
  * As a Vally program grader the config arrives in the ISSUED_CALL_CONFIG
  * environment variable (a JSON string set through the grader's `env` block),
@@ -56,7 +59,13 @@ function gradeIssuedToolCalls(trajectory, config) {
     const data = call && call.data ? call.data : {};
     if (Array.isArray(data.launchedAgentIds) && data.launchedAgentIds.indexOf(agent) !== -1) return true;
     if (call && call.agentId === agent) return true;
-    return argText(call).indexOf(agent) !== -1;
+    const tool = String(data.toolName || "");
+    if (tool === "task" || tool === "dispatch_agent" || tool === "subagent" || tool === "run_subagent") {
+      const args = data.arguments && typeof data.arguments === "object" ? data.arguments : {};
+      const target = args.agent || args.agent_type || args.subagent_type || args.agentName || "";
+      if (target === agent) return true;
+    }
+    return false;
   }
 
   (cfg.requiredTools || []).forEach(function (tool) {

@@ -130,6 +130,21 @@ describe("lab27/graders verify", () => {
     expect(result.message).toContain('kind: "code"');
   });
 
+  it("graderThatCountsReadingAnAgentProfileAsDispatchingIt.fails", () => {
+    writeWorkspaceFile(
+      GRADER_PATH,
+      VALID_GRADER.replace(
+        'if (tool === "task" || tool === "dispatch_agent" || tool === "subagent" || tool === "run_subagent") {',
+        "if (JSON.stringify(data.arguments || {}).indexOf(agent) !== -1) return true;\n    if (false) {",
+      ),
+    );
+
+    const result = runVerify("lab27/graders");
+
+    expect(result.pass).toBe(false);
+    expect(result.message).toMatch(/reading `.github\/agents\/<name>\.agent\.md` with `view` is not a dispatch/);
+  });
+
   it("graderThatThrows.failsCleanlyNamingTheModuleError", () => {
     writeWorkspaceFile(
       GRADER_PATH,
@@ -303,6 +318,26 @@ describe("lab27/eval-spec verify", () => {
 
     expect(result.pass).toBe(false);
     expect(result.message).toMatch(/negative stimulus/);
+  });
+
+  it("malformedIssuedCallConfigJson.failsVerifyAndLint", () => {
+    writeWorkspaceFile(VALLY_PATH, VALID_VALLY);
+    writeWorkspaceFile(
+      EVAL_PATH,
+      VALID_EVAL.replace(
+        '"requiredAgents":["code-reviewer"],',
+        '"requiredAgents":["code-reviewer"] ',
+      ),
+    );
+
+    const verifyResult = runVerify("lab27/eval-spec");
+    const lintResult = run(`vally lint -e ${EVAL_PATH} --strict`);
+
+    expect(verifyResult.pass).toBe(false);
+    expect(verifyResult.message).toContain("ISSUED_CALL_CONFIG");
+    expect(lintResult.allSim).toBe(true);
+    expect(lintResult.text).toContain("✘ error [invalid-grader-config]");
+    expect(lintResult.text).toContain("ISSUED_CALL_CONFIG is not valid JSON");
   });
 
   it("shippedCards.pass", () => {
