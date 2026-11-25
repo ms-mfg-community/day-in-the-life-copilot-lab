@@ -1,0 +1,10 @@
+# Vally writes one timestamped directory per live run here (see scripts/run-evals.sh and scripts/run-evals.ps1).
+# Each run holds results.jsonl, events and spans from a real model: keep them local.
+vally-results/
+
+# The staged guard hook appends one line here each time it denies a call. Running the hook by hand
+# from this folder (Lab 27, section 27.5) creates it in this folder; it is evidence, not source.
+.vally-guard-audit.jsonl
+
+# The scratch copy a learner edits to watch a gate fail on purpose (Lab 27, section 27.6).
+evals/**/eval.broken.yaml

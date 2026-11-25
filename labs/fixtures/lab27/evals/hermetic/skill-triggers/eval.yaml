@@ -1,0 +1,107 @@
+# Capability eval: do ContosoUniversity skills trigger on the work they own,
+# and stay quiet on work they do not?
+#
+# Six skills are loaded so that a negative stimulus is a real test: an EF Core
+# question must NOT activate lab-studio-sync even though it is loaded and
+# available. Skills are activated by their frontmatter `name`, which is what a
+# skill_activation event carries in data.name.
+#
+# Graded by tool-calls-issued.cjs (see reviewer-routing/eval.yaml for why it
+# grades at issuance and why its configuration travels in ISSUED_CALL_CONFIG).
+#
+# All paths are relative to this file's directory:
+#   ../../../../../../  is the repository root (six levels up)
+#   ../../graders/      is labs/fixtures/lab27/evals/graders
+
+name: contoso-skill-triggers
+description: "ContosoUniversity skills activate on matching work (dotnet-testing, eval-harness) and an unrelated skill (lab-studio-sync) stays inactive on EF Core questions."
+version: "1.0.0"
+type: capability
+
+agent_environment:
+  skills:
+    - "../../../../../../.github/skills/coding-standards"
+    - "../../../../../../.github/skills/dotnet-testing"
+    - "../../../../../../.github/skills/eval-harness"
+    - "../../../../../../.github/skills/tdd-workflow"
+    - "../../../../../../.github/skills/verification-loop"
+    - "../../../../../../.github/skills/lab-studio-sync"
+  files:
+    - src: "../../../../../../dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
+      dest: "dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
+    - src: "../../../../../../dotnet/ContosoUniversity.Tests/Controllers/StudentsControllerTests.cs"
+      dest: "dotnet/ContosoUniversity.Tests/Controllers/StudentsControllerTests.cs"
+    - src: "../../../../../../dotnet/ContosoUniversity.Infrastructure/Data/SchoolContext.cs"
+      dest: "dotnet/ContosoUniversity.Infrastructure/Data/SchoolContext.cs"
+
+grading_environment:
+  files:
+    - src: "../../graders/lib.cjs"
+      dest: ".vally-grading/graders/lib.cjs"
+    - src: "../../graders/tool-calls-issued.cjs"
+      dest: ".vally-grading/graders/tool-calls-issued.cjs"
+
+defaults:
+  runs: 1
+  timeout: "2m"
+  model: "${MODEL}"
+
+scoring:
+  threshold: 1.0
+  weights:
+    program: 1.0
+
+stimuli:
+  - name: trigger-dotnet-testing-on-xunit-request
+    prompt: "Add xUnit unit tests for the Details action of StudentsController in dotnet/ContosoUniversity.Tests. Show the test code only and do not run any build or test command."
+    tags:
+      priority: "p0"
+      kind: "positive"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-dotnet-testing-skill
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"requiredSkills":["dotnet-testing"],"forbiddenSkills":["lab-studio-sync"]}'
+
+  - name: trigger-eval-harness-on-edd-gate
+    prompt: "Define a [CAPABILITY EVAL] and a [REGRESSION EVAL] for student enrollment in ContosoUniversity, with pass@3 and pass^3 targets. Write the eval definitions only and do not implement any feature."
+    tags:
+      priority: "p0"
+      kind: "positive"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-eval-harness-skill
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"requiredSkills":["eval-harness"]}'
+
+  - name: negative-no-lab-studio-sync-on-ef-core-question
+    prompt: "In ContosoUniversity.Infrastructure, how does SchoolContext configure the Enrollment entity? Explain from the source and do not edit any file."
+    tags:
+      priority: "p1"
+      kind: "negative"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-no-studio-sync-on-dotnet
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"forbiddenSkills":["lab-studio-sync"],"forbiddenTools":["create","edit"]}'

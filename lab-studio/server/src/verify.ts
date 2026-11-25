@@ -6,7 +6,11 @@ import {
   readMcpConfig,
   readWorkspaceFile,
 } from "./sandbox.js";
-import { commandHistory } from "./sim-terminal.js";
+import {
+  commandHistory,
+  parseVallyEval,
+  runIssuedGraderCases,
+} from "./sim-terminal.js";
 import { installedPlugins } from "./sim-registry.js";
 
 const LEARNER_CODE_TIMEOUT_MS = 2000;
@@ -852,6 +856,7 @@ return { openIds, closedIds, escaped };
     try {
       outcome = runInNewContext(runnable, Object.create(null), {
         timeout: LEARNER_CODE_TIMEOUT_MS,
+        microtaskMode: "afterEvaluate",
       }) as typeof outcome;
     } catch (err) {
       const errCode = (err as { code?: string } | null)?.code;
@@ -873,6 +878,158 @@ return { openIds, closedIds, escaped };
       return fail("`escapeHtml(value)` must escape all five characters (`<`, `>`, `&`, `\"`, and `'`) in untrusted issue titles.");
     }
     return pass("Canvas filter and HTML escaper executed and verified against open/closed issue fixtures and hostile HTML strings.");
+  },
+
+  // ---------------------------------------------------------------- Lab 27
+  "lab27/graders": () => {
+    const path = ".github/evals/graders/tool-calls-issued.mjs";
+    if (!fileExists(path)) return fail(`Create \`${path}\` from the step card.`);
+    const code = readWorkspaceFile(path);
+    if (!/export\s+function\s+gradeIssuedToolCalls\b/.test(code)) {
+      return fail("Export `gradeIssuedToolCalls(trajectory, config)` from `.github/evals/graders/tool-calls-issued.mjs`.");
+    }
+    // (a) A subagent dispatched and a skill activated, but the run was cut off by
+    //     max_agent_duration before any tool_result arrived: it must still pass.
+    // (b) The agent only read a file: the required agent was never dispatched.
+    // (c) The agent tried `git push`: a forbidden argument on a forbidden-by-config tool.
+    const run = runIssuedGraderCases(code, [
+      {
+        trajectory: {
+          events: [
+            { type: "tool_call", data: { toolName: "dispatch_agent", toolCallId: "tc-1", launchedAgentIds: ["code-reviewer"] } },
+            { type: "skill_activation", data: { name: "contoso-testing", path: ".github/skills/contoso-testing/SKILL.md" } },
+          ],
+        },
+        config: {
+          requiredAgents: ["code-reviewer"],
+          requiredSkills: ["contoso-testing"],
+          forbiddenArgSubstrings: [{ toolName: "bash", substring: "git push" }],
+        },
+      },
+      {
+        trajectory: {
+          events: [{ type: "tool_call", data: { toolName: "view", toolCallId: "tc-2", arguments: { path: "README.md" } } }],
+        },
+        config: { requiredAgents: ["code-reviewer"] },
+      },
+      {
+        trajectory: {
+          events: [{ type: "tool_call", data: { toolName: "bash", toolCallId: "tc-3", arguments: { command: "git push origin main" } } }],
+        },
+        config: {
+          forbiddenTools: ["create", "edit"],
+          forbiddenArgSubstrings: [{ toolName: "bash", substring: "git push" }],
+        },
+      },
+      {
+        trajectory: {
+          events: [{ type: "tool_call", data: { toolName: "view", toolCallId: "tc-4", arguments: { path: ".github/agents/code-reviewer.agent.md" } } }],
+        },
+        config: { requiredAgents: ["code-reviewer"] },
+      },
+    ]);
+    if (!run.ok) {
+      if (run.timedOut) {
+        return fail(
+          `Learner module execution timed out after ${LEARNER_CODE_TIMEOUT_MS}ms — check \`gradeIssuedToolCalls\` in \`.github/evals/graders/tool-calls-issued.mjs\` for non-terminating loops.`,
+        );
+      }
+      return fail(`Module execution error: ${run.message}`);
+    }
+    const [a, b, c, d] = run.grades;
+    for (const g of run.grades) {
+      if (
+        g.name !== "tool-calls-issued" ||
+        g.kind !== "code" ||
+        typeof g.passed !== "boolean" ||
+        typeof g.score !== "number" ||
+        typeof g.evidence !== "string" ||
+        g.evidence === ""
+      ) {
+        return fail(
+          '`gradeIssuedToolCalls(trajectory, config)` must return `{ name: "tool-calls-issued", kind: "code", passed, score, evidence }` with a boolean `passed`, a numeric `score`, and a non-empty `evidence` string.',
+        );
+      }
+    }
+    if (a?.passed !== true || a.score !== 1) {
+      return fail("`gradeIssuedToolCalls(trajectory, config)` must pass (score: 1) when a tool_call launches requiredAgents (via launchedAgentIds) and skill_activation activates requiredSkills, even without a tool_result event.");
+    }
+    if (b?.passed !== false || b.score !== 0 || d?.passed !== false || d.score !== 0) {
+      return fail("`gradeIssuedToolCalls(trajectory, config)` must fail (score: 0) when requiredAgents are not dispatched in a subagent/dispatch call (reading `.github/agents/<name>.agent.md` with `view` is not a dispatch).");
+    }
+    if (c?.passed !== false || c.score !== 0) {
+      return fail("`gradeIssuedToolCalls(trajectory, config)` must fail (score: 0) when a tool_call matches forbiddenArgSubstrings (such as bash git push).");
+    }
+    return pass("Issued tool-call and skill-activation program grader verified against timed-out subagent dispatch, missing-agent, and forbidden git-push trajectories.");
+  },
+
+  "lab27/eval-spec": () => {
+    const vallyPath = ".vally.yaml";
+    if (!fileExists(vallyPath)) return fail("Create `.vally.yaml` from the step card first.");
+    const vallyYaml = readWorkspaceFile(vallyPath);
+    for (const [pattern, key] of [
+      [/^paths:/m, "paths:"],
+      [/^suites:/m, "suites:"],
+      [/\bpr-gate:/m, "a `pr-gate` suite"],
+      [/^params:/m, "params:"],
+      [/\bMODEL:/m, "a `MODEL` param"],
+      [/\bRUN_DIR:/m, "a `RUN_DIR` param"],
+    ] as const) {
+      if (!pattern.test(vallyYaml)) return fail(`\`.vally.yaml\` is missing ${key}`);
+    }
+
+    const evalPath = "evals/hermetic/reviewer-routing/eval.yaml";
+    if (!fileExists(evalPath)) return fail("Create `evals/hermetic/reviewer-routing/eval.yaml` from the step card.");
+    const evalYaml = readWorkspaceFile(evalPath);
+    if (!/^grading_environment:/m.test(evalYaml) || !/\.vally-grading\/graders\/tool-calls-issued\b/.test(evalYaml)) {
+      return fail("Declare `grading_environment.files` in `evals/hermetic/reviewer-routing/eval.yaml` staging `.vally-grading/graders/tool-calls-issued`.");
+    }
+    const spec = parseVallyEval(evalPath, evalYaml);
+    if (spec.stimuli.some((s) => s.graders.some((g) => g.invalidConfigJson !== undefined))) {
+      return fail("Every `ISSUED_CALL_CONFIG` in `evals/hermetic/reviewer-routing/eval.yaml` must be valid JSON.");
+    }
+    // Exactly 1, written 1, 1.0 or 1.00: a threshold such as 1.5 or 0.8 is not a veto gate.
+    if (!/^scoring:/m.test(evalYaml) || spec.thresholdRaw === undefined || Number(spec.thresholdRaw) !== 1) {
+      return fail("Set `scoring.threshold: 1.0` in `evals/hermetic/reviewer-routing/eval.yaml` so any failed veto check fails the trial.");
+    }
+    if (
+      spec.stimuli.length === 0 ||
+      spec.stimuli.some((s) => !/max_agent_duration:\s*["']?\d+s["']?/.test(s.text))
+    ) {
+      return fail("Set `constraints.max_agent_duration` (for example `30s`) on every stimulus in `evals/hermetic/reviewer-routing/eval.yaml`.");
+    }
+
+    const listOf = (config: Record<string, unknown>, key: string): string[] =>
+      Array.isArray(config[key]) ? (config[key] as unknown[]).map(String) : [];
+    const substringsOf = (config: Record<string, unknown>, key: string): string[] =>
+      Array.isArray(config[key])
+        ? (config[key] as unknown[]).map((v) =>
+            v !== null && typeof v === "object" ? String((v as { substring?: unknown }).substring ?? "") : "",
+          )
+        : [];
+    const distinctNames =
+      spec.stimulusNames.length >= 2 && new Set(spec.stimulusNames).size === spec.stimulusNames.length;
+    const positive = spec.stimuli.some((s) =>
+      s.graders.some(
+        (g) => listOf(g.config, "requiredAgents").includes("code-reviewer") && listOf(g.config, "requiredSkills").includes("contoso-testing"),
+      ),
+    );
+    const negative = spec.stimuli.some(
+      (s) =>
+        /^negative$/i.test(s.tags.kind ?? "") &&
+        s.graders.length > 0 &&
+        s.graders.every(
+          (g) =>
+            listOf(g.config, "requiredAgents").length === 0 &&
+            listOf(g.config, "forbiddenAgents").includes("contoso-dev") &&
+            listOf(g.config, "forbiddenTools").length > 0 &&
+            substringsOf(g.config, "forbiddenArgSubstrings").some((x) => x.includes("git push")),
+        ),
+    );
+    if (!distinctNames || !positive || !negative) {
+      return fail('Include both a positive `code-reviewer` + `contoso-testing` routing stimulus and a distinct negative stimulus (with `kind: "negative"`, no `requiredAgents`, and `forbiddenAgents`/`forbiddenTools`/`forbiddenArgSubstrings`) in `evals/hermetic/reviewer-routing/eval.yaml`.');
+    }
+    return pass("Vally project config (.vally.yaml) and reviewer-routing eval.yaml verified with grading_environment staging, threshold 1.0 veto scoring, max_agent_duration cap, and positive/negative stimuli.");
   },
 };
 

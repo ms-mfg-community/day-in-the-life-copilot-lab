@@ -28,7 +28,7 @@ You'll build three things:
 
 > ⏱️ Presenter pace: 6 minutes | Self-paced: 30 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on
+**Part of:** Labs 21–27, the enterprise agentic SDLC harness arc — builds on
 [Lab 23](lab23.md), and chains forward to [Lab 25](lab25.md). The
 [executive blueprint](../docs/enterprise-harness-blueprint.md) frames the arc as unit U4.
 

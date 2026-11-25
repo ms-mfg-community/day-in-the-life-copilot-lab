@@ -23,14 +23,14 @@ import { formatLabRange } from "../../client/src/labs/tracks.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const client = resolve(here, "../../client/src");
 const NUMERIC_IDS = Array.from(
-  { length: 26 },
+  { length: 27 },
   (_, index) => `lab${String(index + 1).padStart(2, "0")}`,
 );
 const PATH_IDS = [
   "lab01", "lab02", "lab03", "lab04", "lab05", "lab06", "lab07",
   "lab08", "lab09", "lab10", "lab12", "lab15", "lab11", "lab13",
   "lab14", "lab16", "lab17", "lab18", "lab19", "lab20",
-  "lab21", "lab22", "lab23", "lab24", "lab25", "lab26",
+  "lab21", "lab22", "lab23", "lab24", "lab25", "lab26", "lab27",
 ];
 
 // Import the real client modules through Vite, not a text search or a mock.
@@ -155,7 +155,7 @@ describe("Phase 6 executable client contracts", () => {
   });
 
   it("labIndices.invalidSavedLocations.haveNoNeighbor", () => {
-    for (const index of [-1, 26, 999, 0.5, Number.NaN]) {
+    for (const index of [-1, 27, 999, 0.5, Number.NaN]) {
       expect(curriculum.nextLabIdx(index)).toBeUndefined();
       expect(curriculum.previousLabIdx(index)).toBeUndefined();
     }
@@ -211,7 +211,7 @@ describe("Phase 6 executable client contracts", () => {
     }
   });
 
-  it("homeAndRail.renderFiveAccessibleGroups.withAllTwentySixLabsInPathOrder", () => {
+  it("homeAndRail.renderFiveAccessibleGroups.withAllTwentySevenLabsInPathOrder", () => {
     const home = htmlOf(createElement(Home));
     const rail = htmlOf(createElement(Rail));
     expect(
@@ -231,7 +231,7 @@ describe("Phase 6 executable client contracts", () => {
     expect(headings.map((match) => plain(match[1] ?? "").slice(0, 2))).toEqual(
       PATH_IDS.map((id) => id.slice(3)),
     );
-    expect(plain(home)).toContain("26 labs · 5 tracks");
+    expect(plain(home)).toContain("27 labs · 5 tracks");
     expect(plain(home)).not.toMatch(/first five labs|The five labs|Labs 01–05/i);
   });
 });
@@ -420,6 +420,16 @@ describe("Phase 6 rendered lessons and their real writable artifacts", () => {
         stepKey: "lab26/canvas",
         verifyId: "lab26/canvas",
         files: [".github/extensions/sdlc-filter/filter.mjs"],
+      },
+      {
+        stepKey: "lab27/graders",
+        verifyId: "lab27/graders",
+        files: [".github/evals/graders/tool-calls-issued.mjs"],
+      },
+      {
+        stepKey: "lab27/eval-spec",
+        verifyId: "lab27/eval-spec",
+        files: [".vally.yaml", "evals/hermetic/reviewer-routing/eval.yaml"],
       },
     ];
 

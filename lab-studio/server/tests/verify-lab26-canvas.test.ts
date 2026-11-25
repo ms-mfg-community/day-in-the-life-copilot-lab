@@ -110,6 +110,10 @@ ${ESCAPE_HTML_DEC}
 while (Date.now() < deadline) {}
 ${CORRECT_FILTER}
 ${ESCAPE_HTML_DEC}`],
+    ["queuedPromiseCallback", `const deadline = Date.now() + 4000;
+Promise.resolve().then(() => { while (Date.now() < deadline) {} });
+${CORRECT_FILTER}
+${ESCAPE_HTML_DEC}`],
     ["escapeHtml", `${CORRECT_FILTER}
 export function escapeHtml(value) {
   const deadline = Date.now() + 4000;

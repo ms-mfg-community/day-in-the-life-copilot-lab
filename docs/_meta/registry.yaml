@@ -30,7 +30,7 @@ copilot_cli_version_floor: "1.0.82"
 gh_aw_schema_version: "0.86.2"
 
 # GitHub Spec Kit (`github/spec-kit`) release the enterprise-harness arc
-# (Labs 21-26) is authored and tested against. Labs MUST reference this key
+# (Labs 21-27) is authored and tested against. Labs MUST reference this key
 # rather than hardcoding a version — the install command is
 # `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<version>`.
 #
@@ -56,6 +56,30 @@ gh_aw_schema_version: "0.86.2"
 # the next cohort and at the start of any work that consumes this key.
 spec_kit_version: "1.0.12"
 spec_kit_version_last_verified: "2026-09-28"
+
+# Vally (`@microsoft/vally-cli`, `@microsoft/vally`) release Lab 27 and
+# labs/fixtures/lab27/ are authored and tested against. Labs MUST reference
+# this key rather than hardcoding a version — the install command is
+# `npm install -g @microsoft/vally-cli@<version>`. Vally 0.21.0 requires
+# Node.js >=22.15.0 (`engines.node` in both packages), which is stricter than
+# the Node floors the earlier labs state.
+#
+# RE-VERIFICATION OBLIGATION: Vally has shipped a minor release every one to
+# two weeks (seven minors, 0.15.0 on 2026-09-01 through 0.21.0 on 2026-11-03,
+# per `npm view @microsoft/vally-cli time`), and eval-spec rules are
+# release-specific: the pinned release rejects an unknown stimulus field and
+# requires grader names of lowercase letters, digits and hyphens, so a spec that
+# lints clean on one release can fail on another. Re-check the pinned version,
+# `vally lint` against
+# labs/fixtures/lab27/, and the `.vally.yaml` / eval-spec references before any
+# cohort, and at the start of any work that consumes this key — do not trust
+# last_verified without re-checking. Verified 2026-11-24 via
+# `npm view @microsoft/vally-cli dist-tags`: `latest` is 0.21.0, published
+# 2026-11-03T23:48:26Z (the previous release was 0.20.0 on 2026-10-22). The
+# tier0 scripts in labs/fixtures/lab27/scripts/ compare an installed `vally`
+# against this key and skip the CLI checks, with a note, on any other version.
+vally_cli_version: "0.21.0"
+vally_cli_version_last_verified: "2026-11-24"
 
 # MCP protocol revision this registry assumes labs teach against. The
 # 2026-07-28 spec is a breaking revision (stateless handshake, no
@@ -407,7 +431,7 @@ labs:
     pace_presenter_minutes: 6
     pace_workshop_minutes: 10
     pace_self_minutes: 25
-  # Labs 21-26 — EPIC-001 enterprise-harness arc. SELF-PACED ONLY: these labs
+  # Labs 21-27 — EPIC-001 enterprise-harness arc. SELF-PACED ONLY: these labs
   # are deliberately NOT in workshop/curriculum.md (the 4-hour / 240-minute
   # budget has no room without displacing M1-M6). pace_workshop_minutes is
   # still REQUIRED and must be >= pace_presenter_minutes — the registry
@@ -443,6 +467,11 @@ labs:
     pace_presenter_minutes: 7
     pace_workshop_minutes: 12
     pace_self_minutes: 35
+  lab27:
+    title: "Evaluating Agents, Skills, and Models with Vally and AgentEvals"
+    pace_presenter_minutes: 8
+    pace_workshop_minutes: 14
+    pace_self_minutes: 40
 
 audit:
   # Phase 4 weekly-audit workflow thresholds.

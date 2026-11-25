@@ -556,7 +556,7 @@ erDiagram
 
 > 💡 **Multi-Platform Support:** All lab command lines provide both **PowerShell** and **WSL/Bash** alternatives. Choose the commands that work best for your environment.
 
-The 26 labs are organized into **five learning tracks**. Lab numbers and file names never change, so every `labs/labNN.md` link keeps working — a track is a reading order, not a renumbering. **Start with [Setup](#choose-your-path)** (fork the repo, enable Actions, install tools): every track assumes it.
+The 27 labs are organized into **five learning tracks**. Lab numbers and file names never change, so every `labs/labNN.md` link keeps working — a track is a reading order, not a renumbering. **Start with [Setup](#choose-your-path)** (fork the repo, enable Actions, install tools): every track assumes it.
 
 ### Track 1: Core Customizations & Guardrails (Labs 01–07)
 
@@ -606,9 +606,9 @@ The 26 labs are organized into **five learning tracks**. Lab numbers and file na
 | [Lab 19](labs/lab19.md) | Self-Improving Agents & Skills (gh-aw Template) | Portable `self-improving-agents.md` gh-aw workflow, eval-harness-driven drift detection, bounded/draft-only PRs |
 | [Lab 20](labs/lab20.md) | Enterprise Token Optimization & Reporting | Org-level usage monitoring, prompt-management governance, cross-team knowledge-base consistency |
 
-### Track 5: Enterprise Agentic SDLC Harness (Labs 21–26)
+### Track 5: Enterprise Agentic SDLC Harness (Labs 21–27)
 
-*Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, and GitHub Copilot App canvases.*
+*Operate a centrally governed, end-to-end agentic SDLC across an enterprise: role-scoped plugin bundles, Spec Kit presets and stage overlays, notification routing and executable tasks, OpenTelemetry + Log Analytics observability, GitHub Copilot App canvases, and Vally + AgentEvals evaluation gates.*
 
 | Lab | Module | Focus |
 |-----|--------|-------|
@@ -618,8 +618,9 @@ The 26 labs are organized into **five learning tracks**. Lab numbers and file na
 | [Lab 24](labs/lab24.md) | The Notification Funnel & Executable Tasks | Stage-transition notification routing, tasks projected to issues, task-as-prompt format |
 | [Lab 25](labs/lab25.md) | Telemetry, Log Analytics & the Improvement Loop | Copilot OpenTelemetry export, offline file-exporter path, Logs Ingestion API, KQL pack and Workbook |
 | [Lab 26](labs/lab26.md) | Copilot App Canvases for Applied SDLC Operations | Project-scoped canvas extension, SDLC board, code-aware workbench, dry-run release composer |
+| [Lab 27](labs/lab27.md) | Evaluating Agents, Skills, and Models with Vally and AgentEvals | Vally eval specs, issued tool-call program graders, preToolUse hook guard evals, AgentEvals EVAL.yaml, OTel evaluation events |
 
-**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across the 20 live workshop modules, or ~16.5 hours of self-paced hands-on execution across all 26 labs)
+**Total: ~7 hours** for a 1-day workshop (Track 1 Labs 01–07 + selected modules from Tracks 2–4; ~2 hours for presenter demonstrations across the 20 live workshop modules, or ~17.1 hours of self-paced hands-on execution across all 27 labs)
 
 > 🧭 **Learning path.** Take the tracks in order: each one assumes the one before it. Because a track is a reading order, Track 2 runs Lab 10 → 12 → 15 and Lab 11 sits in Track 3.
 >
@@ -627,7 +628,7 @@ The 26 labs are organized into **five learning tracks**. Lab numbers and file na
 > - **Track 2 (Labs 08–10, 12, 15).** Labs 08 → 09 are sequential: the gh-aw workflow first, then the coding agent and code review. Lab 10 (memory) follows the `.copilot/lessons/` preview in Lab 05. Lab 12 (Fabric MCP) and Lab 15 (LSP) are standalone.
 > - **Track 3 (Labs 11, 13–14, 16).** Lab 11 is standalone (plugin distribution). Labs 13 → 14 are sequential — Lab 13 introduces A2A concepts and Lab 14 operationalises them with tmux. Lab 16 → Lab 11 are companions (marketplace governance).
 > - **Track 4 (Labs 17–20).** Lab 17 (admin controls) is standalone. Lab 18 builds on Labs 08-09 (spec-driven PRD + stacked-PR code review); Lab 19 builds on Lab 08's gh-aw fundamentals; Lab 20 extends [`docs/token-and-model-guide.md`](docs/token-and-model-guide.md) to enterprise scale and should be read after Lab 17.
-> - **Track 5 (Labs 21–26).** Labs 21 → 26 are the sequential **enterprise agentic SDLC harness** arc (~3.5 hours), framed by the [executive blueprint](docs/enterprise-harness-blueprint.md). The arc is **self-paced only** — it is not part of the 4-hour [workshop curriculum](workshop/curriculum.md).
+> - **Track 5 (Labs 21–27).** Labs 21 → 27 are the sequential **enterprise agentic SDLC harness** arc (~4.2 hours), framed by the [executive blueprint](docs/enterprise-harness-blueprint.md). The arc is **self-paced only** — it is not part of the 4-hour [workshop curriculum](workshop/curriculum.md).
 
 ---
 
@@ -716,7 +717,7 @@ day-in-the-life-copilot-lab/
 │   └── tests/                         # Unit + integration tests (Vitest)
 ├── plugin-template/               # Lab 11 — private Copilot plugin scaffold
 ├── modernization-bundle/          # Lab 19 — packaged self-improving-agents plugin
-├── labs/                          # 26 hands-on lab modules + per-track appendices
+├── labs/                          # 27 hands-on lab modules + per-track appendices
 ├── solutions/                     # Reference solutions
 ├── docs/                          # Reference docs + token & model guide
 │   ├── _meta/                         # registry.yaml — single source of truth for versions
@@ -751,8 +752,8 @@ This lab uses [GitHub Agentic Workflows](https://github.com/github/gh-aw) (gh-aw
 | Resource                              | Description                                                                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Setup](#choose-your-path)            | Fork, prerequisites, environment setup                                                                                                                                                   |
-| [Lab Modules](labs/)                  | 26 hands-on labs — start here                                                                                                                                                            |
-| [Lab Studio](lab-studio/)             | Browser-based guided runner for all 26 labs — live Copilot sessions via the Copilot SDK, a simulated GitHub surface (Actions/PRs/rulesets) with real AI inside it, per-step verification |
+| [Lab Modules](labs/)                  | 27 hands-on labs — start here                                                                                                                                                            |
+| [Lab Studio](lab-studio/)             | Browser-based guided runner for all 27 labs — live Copilot sessions via the Copilot SDK, a simulated GitHub surface (Actions/PRs/rulesets) with real AI inside it, per-step verification |
 | [Reference Solutions](solutions/)     | Completed solutions for each lab                                                                                                                                                         |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common issues and fixes                                                                                                                                                                  |
 | [AGENTS.md](AGENTS.md)                | Full project context document                                                                                                                                                            |

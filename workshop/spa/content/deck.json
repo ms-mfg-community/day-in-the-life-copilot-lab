@@ -57,6 +57,13 @@
       "scriptSource": "workshop/speaker-scripts/module-06-a2a-tmux.md",
       "labRefs": ["labs/lab13.md", "labs/lab14.md"],
       "minutes": 25
+    },
+    {
+      "id": "m6b-agent-evals-vally",
+      "slideSource": "workshop/slides/65-module-6b-agent-evals-vally.md",
+      "scriptSource": "workshop/speaker-scripts/module-06b-agent-evals-vally.md",
+      "labRefs": ["labs/lab27.md", "labs/lab19.md"],
+      "minutes": 15
     }
   ]
 }

@@ -77,6 +77,16 @@
       "label": "Segment labs and timing",
       "keys": ["Tab", "Escape"],
       "statusRegion": false
+    },
+    {
+      "id": "m6b-eval-cost-chart",
+      "pattern": "parameter-chart",
+      "segment": "m6b-agent-evals-vally",
+      "label": "Evaluation trial and credit cost model",
+      "keys": ["Tab", "ArrowLeft", "ArrowRight", "Home", "End"],
+      "statusRegion": true,
+      "longDescriptionId": "m6b-eval-cost-description",
+      "dataset": "eval-cost-model"
     }
   ]
 }

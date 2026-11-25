@@ -1,0 +1,113 @@
+# Capability eval: does ContosoUniversity work route to the right agent?
+#
+# Positive stimuli must dispatch the agent that owns the work; the negative
+# stimulus must dispatch neither and mutate nothing. A router that routes both
+# positive prompts to their right agent (code-reviewer and planner) but also
+# unnecessarily dispatches a reviewer on a trivial lookup would pass the
+# positives alone, so the negative is the half that proves the descriptions are
+# selective.
+#
+# Graded with a Vally `program` grader: tool-calls-issued.cjs, staged into
+# .vally-grading/graders/ by grading_environment so the agent never sees it. It
+# judges tool_call events at issuance, so constraints.max_agent_duration (which
+# stops the agent and grades the partial work as a completed run) cannot hide a
+# correct dispatch. Its configuration travels in the ISSUED_CALL_CONFIG variable
+# because Vally rejects unknown keys in a program grader's own `config`.
+#
+# All paths are relative to this file's directory:
+#   ../../../../../../  is the repository root (six levels up)
+#   ../../graders/      is labs/fixtures/lab27/evals/graders
+
+name: contoso-reviewer-routing
+description: "ContosoUniversity pull request review routes to code-reviewer and architecture planning routes to planner; a trivial read-only question dispatches neither."
+version: "1.0.0"
+type: capability
+
+agent_environment:
+  files:
+    - src: "../../../../../../.github/agents/code-reviewer.agent.md"
+      dest: ".github/agents/code-reviewer.agent.md"
+    - src: "../../../../../../.github/agents/planner.agent.md"
+      dest: ".github/agents/planner.agent.md"
+    - src: "../../../../../../.github/agents/agentic-workflows.agent.md"
+      dest: ".github/agents/agentic-workflows.agent.md"
+    - src: "../../../../../../.github/agents/lab-studio-maintainer.agent.md"
+      dest: ".github/agents/lab-studio-maintainer.agent.md"
+    - src: "../../../../../../dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
+      dest: "dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs"
+    - src: "../../../../../../dotnet/ContosoUniversity.Core/Models/Department.cs"
+      dest: "dotnet/ContosoUniversity.Core/Models/Department.cs"
+    - src: "../../../../../../dotnet/ContosoUniversity.Core/ContosoUniversity.Core.csproj"
+      dest: "dotnet/ContosoUniversity.Core/ContosoUniversity.Core.csproj"
+
+grading_environment:
+  files:
+    - src: "../../graders/lib.cjs"
+      dest: ".vally-grading/graders/lib.cjs"
+    - src: "../../graders/tool-calls-issued.cjs"
+      dest: ".vally-grading/graders/tool-calls-issued.cjs"
+
+defaults:
+  runs: 1
+  timeout: "2m"
+  model: "${MODEL}"
+
+scoring:
+  threshold: 1.0
+  weights:
+    program: 1.0
+
+stimuli:
+  - name: route-pr-diff-to-code-reviewer
+    prompt: "Review dotnet/ContosoUniversity.Web/Controllers/StudentsController.cs for bugs, security vulnerabilities and logic errors. Report findings only: do not edit any file."
+    tags:
+      priority: "p0"
+      kind: "positive"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-code-reviewer-dispatch
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"requiredAgents":["code-reviewer"],"forbiddenAgents":["planner"],"forbiddenTools":["create","edit"]}'
+
+  - name: route-architecture-plan-to-planner
+    prompt: "Break a new Department budget-tracking feature into an implementation plan across ContosoUniversity.Core, ContosoUniversity.Infrastructure and ContosoUniversity.Web. Plan only: do not write any code and do not edit any file."
+    tags:
+      priority: "p0"
+      kind: "positive"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-planner-dispatch
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"requiredAgents":["planner"],"forbiddenTools":["create","edit"]}'
+
+  - name: negative-direct-read-no-reviewer-on-trivial-question
+    prompt: "What target framework does dotnet/ContosoUniversity.Core/ContosoUniversity.Core.csproj use? Answer from the file and do not edit anything."
+    tags:
+      priority: "p0"
+      kind: "negative"
+    constraints:
+      max_agent_duration: "45s"
+      max_turns: 6
+    graders:
+      - type: program
+        name: check-no-unnecessary-reviewer
+        config:
+          program: "node"
+          args:
+            - ".vally-grading/graders/tool-calls-issued.cjs"
+          env:
+            ISSUED_CALL_CONFIG: '{"forbiddenAgents":["code-reviewer","planner"],"forbiddenTools":["create","edit"]}'

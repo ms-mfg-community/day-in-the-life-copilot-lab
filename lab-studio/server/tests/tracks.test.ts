@@ -9,7 +9,7 @@ import {
 } from "../../client/src/labs/tracks.js";
 
 const ALL_LAB_IDS = Array.from(
-  { length: 26 },
+  { length: 27 },
   (_, i) => `lab${String(i + 1).padStart(2, "0")}`,
 );
 
@@ -25,7 +25,7 @@ describe("learning tracks", () => {
     ]);
   });
 
-  it("tracks.everyLab01To26.appearsInExactlyOneTrack", () => {
+  it("tracks.everyLab01To27.appearsInExactlyOneTrack", () => {
     const placed = TRACKS.flatMap((t) => [...t.labIds]);
 
     expect([...placed].sort()).toEqual(ALL_LAB_IDS);
@@ -37,7 +37,7 @@ describe("learning tracks", () => {
       ["lab08", "lab09", "lab10", "lab12", "lab15"],
       ["lab11", "lab13", "lab14", "lab16"],
       ["lab17", "lab18", "lab19", "lab20"],
-      ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26"],
+      ["lab21", "lab22", "lab23", "lab24", "lab25", "lab26", "lab27"],
     ]);
   });
 
@@ -87,6 +87,7 @@ describe("learning path", () => {
       "lab24",
       "lab25",
       "lab26",
+      "lab27",
     ]);
   });
 
@@ -107,7 +108,8 @@ describe("learning path", () => {
 
   it("nextLabId.lastLab.isUndefined", () => {
     expect(nextLabId("lab20")).toBe("lab21");
-    expect(nextLabId("lab26")).toBeUndefined();
+    expect(nextLabId("lab26")).toBe("lab27");
+    expect(nextLabId("lab27")).toBeUndefined();
   });
 
   it("previousLabId.mirrorsNextLabId", () => {

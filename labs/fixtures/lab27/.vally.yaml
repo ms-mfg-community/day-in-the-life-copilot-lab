@@ -1,0 +1,88 @@
+# Vally project configuration for Lab 27 (ContosoUniversity).
+#
+# Validated against @microsoft/vally 0.21.0 (see vally_cli_version in
+# docs/_meta/registry.yaml). The root accepts only these keys: metadata, paths,
+# environments, suites, plugins, defaults, params.
+#
+# Path bases differ, and getting them wrong fails at run time, not at lint time:
+#   - paths.* is relative to THIS file (labs/fixtures/lab27), three levels below
+#     the repository root.
+#   - the files[].src and skills[] entries of an environment, like those of an
+#     eval's own agent_environment and grading_environment, are relative to the
+#     directory of the eval.yaml that uses them. The guard evals sit six levels
+#     below the repository root; the hooks sit one level up from each of them.
+#   - the values of params.* are resolved against neither: Vally interpolates
+#     them as literal text, so a relative value means whatever the field or
+#     program that receives it makes of it. That is why the scripts in scripts/
+#     pass RUN_DIR as an absolute path. No eval uses AGENTS_DIR; only
+#     self-check.cjs reads it, to confirm that the path exists.
+#
+# params are the ${KEY} defaults an eval file can use. Precedence, highest first:
+#   --param KEY=value   >   the eval's own eval.params.yaml   >   .vally.yaml params
+# and an inline ${KEY=fallback} applies only when none of them sets the key
+# (write $${HOME} for a literal ${HOME}). `vally eval` writes every run into a
+# timestamped folder, vally-results/<timestamp>/, so RUN_DIR defaults to the
+# results root and the scripts in scripts/ pass the absolute path.
+
+metadata:
+  project: contoso-university
+  track: track5-enterprise-harness
+  lab: lab27
+
+paths:
+  skills:
+    - "../../../.github/skills"
+  evals:
+    - "evals"
+  results: "vally-results"
+  # Setting evalFilenames REPLACES the defaults, so eval.yaml is listed again.
+  # Plain names match case-sensitively: evals/agentevals/EVAL.yaml is an
+  # AgentEvals spec, not a Vally eval, and is correctly never discovered.
+  evalFilenames:
+    - "eval.yaml"
+    - "eval.yml"
+
+params:
+  MODEL: "gpt-5-mini"
+  EVALS_DIR: "evals"
+  RUN_DIR: "vally-results"
+  AGENTS_DIR: "../../../.github/agents"
+
+environments:
+  # A disposable trial workspace with a deterministic preToolUse hook staged in.
+  # The repository's own .github/hooks/default.json is NOT used and not changed:
+  # it registers no handler that blocks git push.
+  contoso-guards:
+    skills:
+      - "../../../../../../.github/skills/eval-harness"
+    files:
+      - src: "../hooks/default.json"
+        dest: ".github/hooks/default.json"
+      - src: "../hooks/pre-tool-guard.cjs"
+        dest: "scripts/hooks/pre-tool-guard.cjs"
+    # A fresh `git init` has no remote, so a push can never leave the machine.
+    commands:
+      - "git init -q"
+    commandTimeout: "30s"
+
+suites:
+  pr-gate:
+    description: "Fast hermetic P0 routing and skill-trigger checks for pull requests"
+    evals:
+      - "evals/hermetic/*/eval.yaml"
+    filter:
+      priority: "p0"
+  full:
+    description: "All hermetic agent-routing and skill-trigger evaluations"
+    evals:
+      - "evals/hermetic/*/eval.yaml"
+  pr-gate-guards:
+    description: "Fast P0 preToolUse hook guard evaluations in isolated trial workspaces"
+    evals:
+      - "evals/guards/*/eval.yaml"
+    filter:
+      priority: "p0"
+  full-guards:
+    description: "All deterministic preToolUse guard evaluations"
+    evals:
+      - "evals/guards/*/eval.yaml"

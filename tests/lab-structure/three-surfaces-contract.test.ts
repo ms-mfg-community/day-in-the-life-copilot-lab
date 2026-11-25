@@ -39,7 +39,7 @@ function walkMarkdown(dir: string): string[] {
 // ---------------------------------------------------------------------------
 const LAB_NAMES = [
   'setup',
-  ...Array.from({ length: 26 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`),
+  ...Array.from({ length: 27 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`),
   'lab-hardening',
   'lab-copilot-cli-extensions',
   'lab-gh-extensions',

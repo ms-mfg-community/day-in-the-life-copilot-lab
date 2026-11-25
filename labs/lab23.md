@@ -20,7 +20,7 @@ than it looks.
 
 > ⏱️ Presenter pace: 7 minutes | Self-paced: 35 minutes
 
-**Part of:** Labs 21–26, the enterprise agentic SDLC harness arc — builds on [Lab 22](lab22.md).
+**Part of:** Labs 21–27, the enterprise agentic SDLC harness arc — builds on [Lab 22](lab22.md).
 The [executive blueprint](../docs/enterprise-harness-blueprint.md) explains why the arc exists.
 
 > ⚠️ **Spec Kit moves fast.** Nothing in this lab hardcodes a version: every

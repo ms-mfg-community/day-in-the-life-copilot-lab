@@ -123,10 +123,14 @@ export const lab26: Lab = {
             explain="Separating save_draft from publish keeps local iteration safe (just like git commit vs git push), and the per-instance capability token binds mutating actions to the open canvas instance."
           />
           <Note>
-            <strong>Track 5 &amp; Series Complete!</strong> All 26 labs across 5
-            learning tracks — from core customizations and cloud agents to
-            multi-agent orchestration, enterprise governance, and the end-to-end
-            agentic SDLC harness.
+            <strong>Lab 26 Complete!</strong> Continue to{" "}
+            <strong>
+              Lab 27 — Evaluating Agents, Skills, and Models with Vally and
+              AgentEvals
+            </strong>{" "}
+            to close the Track 5 (Labs 21–27) enterprise agentic SDLC harness
+            with deterministic Vally program graders, hook guard evaluations,
+            AgentEvals specs, and OpenTelemetry evaluation events.
           </Note>
         </>
       ),

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { TRACKS, formatLabRange } from '../../lab-studio/client/src/labs/tracks';
 
 // Phase 6 — the README's "Lab Modules" section and Lab Studio's rail group the
-// same 20 labs into the same four learning tracks. The README is the
+// same 27 labs into the same five learning tracks. The README is the
 // authoritative curriculum; Lab Studio's tracks.ts must say the same thing, and
 // the labs' numbers and file names (labs/labNN.md) must never move.
 
@@ -42,7 +42,7 @@ function readmeTracks(): ReadmeTrack[] {
   });
 }
 
-describe('README Lab Modules groups the 26 labs into five learning tracks', () => {
+describe('README Lab Modules groups the 27 labs into five learning tracks', () => {
   it('has exactly five numbered track headings, in order', () => {
     const tracks = readmeTracks();
 
@@ -65,7 +65,7 @@ describe('README Lab Modules groups the 26 labs into five learning tracks', () =
   it('links every lab exactly once across the whole section', () => {
     const links = [...labModules().matchAll(/\]\(labs\/(lab\d{2})\.md\)/g)].map((m) => m[1]);
 
-    const expected = Array.from({ length: 26 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`);
+    const expected = Array.from({ length: 27 }, (_, i) => `lab${String(i + 1).padStart(2, '0')}`);
     expect([...links].sort()).toEqual(expected);
   });
 

@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { bridge } from "./copilot-bridge.js";
 import {
@@ -107,6 +108,10 @@ function runShellLine(line: string): TermResult {
             '  copilot -p "…"   one-shot prompt       copilot plugin …  marketplace (simulated)',
             "dim",
           ),
+          text(
+            "  vally --version | lint | eval | grade  Vally evaluation CLI (Lab 27, simulated)",
+            "dim",
+          ),
         ],
       };
     case "pwd":
@@ -132,6 +137,8 @@ function runShellLine(line: string): TermResult {
       return gitCommand(args);
     case "policy":
       return policyCommand(args);
+    case "vally":
+      return vallyCommand(args);
     case "cd":
       return {
         blocks: [
@@ -1367,4 +1374,1020 @@ function createPullFromTerminal(input: {
     });
     return number;
   });
+}
+
+// ---------------------------------------------------- simulated vally CLI (lab 27)
+//
+// `vally` is simulated, but nothing it prints is canned: `lint` reads the learner's
+// eval.yaml, and `eval` / `grade` execute the learner's OWN grader module in a
+// bounded VM against trajectories built from the stimuli the learner wrote, so a
+// broken grader fails here the way it would fail in a real run. Every block goes
+// through `vtext`, which sets `sim: true`, so the terminal badges all of it as
+// SIMULATED. Output shapes follow what the real CLI printed when the lab was
+// written (the lint diagnostic layout, `Score: 100.0% | PASSED (threshold:
+// 100.0%)`, `Saved  <dir>`); only the diagnostic codes the real linter has are used.
+
+const VALLY_VERSION = "0.21.0";
+const VALLY_DEFAULT_SPEC = "evals/hermetic/reviewer-routing/eval.yaml";
+const VALLY_GRADER_FILE = ".github/evals/graders/tool-calls-issued.mjs";
+const VALLY_RUN_DIR = "vally-results/2026-11-24T15-00-00Z";
+const VALLY_RESULTS_FILE = `${VALLY_RUN_DIR}/results.jsonl`;
+const VALLY_GRADER_TIMEOUT_MS = 2000;
+const VALLY_USAGE =
+  "vally (simulated) — supported: --version, lint [-e <eval.yaml>] [--strict], eval (--suite <name> | -e <eval.yaml>), grade -e <eval.yaml> [--workspace <dir>] [< results.jsonl]";
+/** The only keys a `program` grader's `config` accepts. */
+const PROGRAM_GRADER_CONFIG_KEYS = [
+  "program",
+  "args",
+  "shell",
+  "sub_path",
+  "timeout",
+  "env",
+];
+/** Names Vally reserves for itself in a program grader's environment. */
+const RESERVED_GRADER_ENV = [
+  "EVALUATE_WORKSPACE",
+  "EVALUATE_GRADER_INPUT",
+  "EVALUATE_ASSETS",
+  "EVALUATE_ARTIFACT_DIR",
+  "EVALUATE_ARTIFACT_DIR_STRICT",
+];
+const ISSUED_CONFIG_LIST_KEYS = [
+  "requiredTools",
+  "forbiddenTools",
+  "requiredAgents",
+  "forbiddenAgents",
+  "requiredSkills",
+  "forbiddenSkills",
+];
+
+/** A simulated block: the only way `vally` builds output, so `sim` is never forgotten. */
+const vtext = (t: string, tone?: TermBlock["tone"]): TermBlock =>
+  text(t, tone, true);
+const vresult = (...blocks: TermBlock[]): TermResult => ({ blocks });
+const vlines = (
+  lines: string[],
+  tone?: TermBlock["tone"],
+): TermBlock[] => lines.map((l) => vtext(l, tone));
+
+// ---- the learner's grader, run in a bounded VM
+
+export interface IssuedGradeCase {
+  trajectory: unknown;
+  config: unknown;
+}
+
+/** A grader's return value reduced to plain data, so nothing from the VM realm escapes. */
+export interface IssuedGrade {
+  name: string | null;
+  kind: string | null;
+  passed: boolean | null;
+  score: number | null;
+  evidence: string | null;
+}
+
+export type IssuedGraderRun =
+  | { ok: true; grades: IssuedGrade[] }
+  | { ok: false; timedOut: boolean; message: string };
+
+/**
+ * Run the learner's `gradeIssuedToolCalls(trajectory, config)` once per case inside
+ * `runInNewContext`, with no host globals and a hard timeout, after stripping `export `
+ * from its function declarations. One VM run, so one timeout budget covers every case.
+ * `microtaskMode: "afterEvaluate"` makes the timeout cover promise callbacks the grader
+ * queued too, so a loop inside `Promise.resolve().then(...)` cannot outlive it.
+ */
+export function runIssuedGraderCases(
+  code: string,
+  cases: IssuedGradeCase[],
+  timeoutMs: number = VALLY_GRADER_TIMEOUT_MS,
+): IssuedGraderRun {
+  const runnable = `(function () {
+${code.replace(/\bexport\s+function\s+/g, "function ")}
+function __norm(r) {
+  if (r === null || typeof r !== "object") {
+    return { name: null, kind: null, passed: null, score: null, evidence: null };
+  }
+  return {
+    name: typeof r.name === "string" ? r.name : null,
+    kind: typeof r.kind === "string" ? r.kind : null,
+    passed: typeof r.passed === "boolean" ? r.passed : null,
+    score: typeof r.score === "number" && isFinite(r.score) ? r.score : null,
+    evidence: typeof r.evidence === "string" ? r.evidence : null,
+  };
+}
+const __cases = ${JSON.stringify(cases)};
+return JSON.stringify(__cases.map(function (c) {
+  return __norm(gradeIssuedToolCalls(c.trajectory, c.config));
+}));
+})()`;
+  try {
+    const out = runInNewContext(runnable, Object.create(null), {
+      timeout: timeoutMs,
+      microtaskMode: "afterEvaluate",
+    });
+    return { ok: true, grades: JSON.parse(String(out)) as IssuedGrade[] };
+  } catch (err) {
+    const errCode = (err as { code?: string } | null)?.code;
+    const message = err instanceof Error ? err.message : String(err);
+    const timedOut =
+      errCode === "ERR_SCRIPT_EXECUTION_TIMEOUT" ||
+      /Script execution timed out/i.test(message);
+    return { ok: false, timedOut, message };
+  }
+}
+
+/** A grader result is usable only when it has the shape Vally requires. */
+function validGrade(
+  g: IssuedGrade | undefined,
+): g is IssuedGrade & {
+  passed: boolean;
+  score: number;
+  evidence: string;
+} {
+  return (
+    g !== undefined &&
+    g.kind === "code" &&
+    typeof g.passed === "boolean" &&
+    typeof g.score === "number" &&
+    g.score >= 0 &&
+    g.score <= 1 &&
+    typeof g.evidence === "string"
+  );
+}
+
+// ---- reading the learner's YAML (indentation-aware, no YAML library)
+
+const indentOf = (line: string): number => line.length - line.trimStart().length;
+const isBlank = (line: string): boolean =>
+  line.trim() === "" || line.trim().startsWith("#");
+
+/** The lines nested under the first line matching `header`, or undefined when absent. */
+function childLines(lines: string[], header: RegExp): string[] | undefined {
+  const at = lines.findIndex((l) => header.test(l));
+  if (at === -1) return undefined;
+  const base = indentOf(lines[at] ?? "");
+  const out: string[] = [];
+  for (const line of lines.slice(at + 1)) {
+    if (isBlank(line)) {
+      out.push(line);
+      continue;
+    }
+    if (indentOf(line) <= base) break;
+    out.push(line);
+  }
+  return out;
+}
+
+/** The body under a top-level `key:`; stops at the next top-level key. */
+function topLevelBlock(yaml: string, key: string): string[] | undefined {
+  const lines = yaml.replace(/\r\n/g, "\n").split("\n");
+  const at = lines.findIndex((l) => new RegExp(`^${key}:\\s*(?:#.*)?$`).test(l));
+  if (at === -1) return undefined;
+  const out: string[] = [];
+  for (const line of lines.slice(at + 1)) {
+    if (!isBlank(line) && indentOf(line) === 0) break;
+    out.push(line);
+  }
+  return out;
+}
+
+/** Split nested lines into list items at the indent of the first `- ` entry. */
+function listItems(lines: string[]): string[][] {
+  const first = lines.find((l) => /^\s*-\s/.test(l));
+  if (first === undefined) return [];
+  const itemStart = new RegExp(`^ {${indentOf(first)}}-\\s`);
+  const items: string[][] = [];
+  let current: string[] | undefined;
+  for (const line of lines) {
+    if (itemStart.test(line)) {
+      current = [line];
+      items.push(current);
+    } else if (current) {
+      current.push(line);
+    }
+  }
+  return items;
+}
+
+/** The keys directly under a block of nested lines (the block's own indent level). */
+function mapKeys(lines: string[]): string[] {
+  const first = lines.find((l) => !isBlank(l));
+  if (first === undefined) return [];
+  const level = indentOf(first);
+  const keys: string[] = [];
+  for (const line of lines) {
+    if (isBlank(line) || indentOf(line) !== level) continue;
+    const key = /^\s*-?\s*([A-Za-z_][\w.-]*)\s*:/.exec(line)?.[1];
+    if (key) keys.push(key);
+  }
+  return keys;
+}
+
+const scalarOf = (text: string, key: string): string | undefined =>
+  new RegExp(`\\b${key}:\\s*["']?([^\\s"'#]+)`).exec(text)?.[1];
+
+export interface VallyGrader {
+  name: string;
+  type: string;
+  script: string | undefined;
+  config: Record<string, unknown>;
+  invalidConfigJson: string | undefined;
+  unknownConfigKeys: string[];
+  reservedEnvKeys: string[];
+}
+
+export interface VallyStimulus {
+  name: string;
+  /** The stimulus's own `tags:`; a suite `filter` matches against these. */
+  tags: Record<string, string>;
+  graders: VallyGrader[];
+  /** The stimulus's raw YAML, for checks that need a setting anywhere inside it. */
+  text: string;
+}
+
+export interface VallyEval {
+  path: string;
+  name: string;
+  threshold: number;
+  thresholdRaw: string | undefined;
+  weights: Record<string, number>;
+  stimuli: VallyStimulus[];
+  /** Every `name:` of a stimulus, in order, so duplicates can be reported by index. */
+  stimulusNames: string[];
+  maxTurns: { index: number; raw: string }[];
+}
+
+/** The per-stimulus checks config: from ISSUED_CALL_CONFIG JSON, else inline lists. */
+function parseIssuedConfig(graderText: string): {
+  config: Record<string, unknown>;
+  invalidConfigJson: string | undefined;
+} {
+  const hasIssuedKey = /\bISSUED_CALL_CONFIG\s*:/.test(graderText);
+  const single = /ISSUED_CALL_CONFIG:\s*'((?:[^']|'')*)'/.exec(graderText)?.[1];
+  const double = /ISSUED_CALL_CONFIG:\s*"((?:[^"\\]|\\.)*)"/.exec(graderText)?.[1];
+  if (hasIssuedKey) {
+    let raw: string | undefined;
+    if (single !== undefined) raw = single.replace(/''/g, "'");
+    else if (double !== undefined) {
+      try {
+        raw = JSON.parse(`"${double}"`) as string;
+      } catch (err) {
+        return {
+          config: {},
+          invalidConfigJson: err instanceof Error ? err.message : String(err),
+        };
+      }
+    } else {
+      return {
+        config: {},
+        invalidConfigJson: "ISSUED_CALL_CONFIG must be a quoted JSON string",
+      };
+    }
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return { config: parsed as Record<string, unknown>, invalidConfigJson: undefined };
+      }
+      return { config: {}, invalidConfigJson: "ISSUED_CALL_CONFIG must be a JSON object" };
+    } catch (err) {
+      return {
+        config: {},
+        invalidConfigJson: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+  const out: Record<string, unknown> = {};
+  for (const key of [
+    ...ISSUED_CONFIG_LIST_KEYS,
+    "requiredArgSubstrings",
+    "forbiddenArgSubstrings",
+  ]) {
+    const list = new RegExp(`"?${key}"?\\s*:\\s*(\\[[^\\]]*\\])`).exec(
+      graderText,
+    )?.[1];
+    if (list === undefined) continue;
+    try {
+      out[key] = JSON.parse(list);
+    } catch {
+      // ignore a list that is not JSON-shaped
+    }
+  }
+  return { config: out, invalidConfigJson: undefined };
+}
+
+function parseGrader(item: string[]): VallyGrader {
+  const text = item.join("\n");
+  const configLines = childLines(item, /^\s*(?:-\s+)?config:\s*$/) ?? [];
+  const envLines = childLines(configLines, /^\s*env:\s*$/) ?? [];
+  const issued = parseIssuedConfig(text);
+  return {
+    name: scalarOf(text, "name") ?? "(unnamed)",
+    type: scalarOf(text, "type") ?? "",
+    script: /\.vally-grading\/graders\/([\w.-]+)/.exec(text)?.[1],
+    config: issued.config,
+    invalidConfigJson: issued.invalidConfigJson,
+    unknownConfigKeys: mapKeys(configLines).filter(
+      (k) => !PROGRAM_GRADER_CONFIG_KEYS.includes(k),
+    ),
+    reservedEnvKeys: mapKeys(envLines).filter((k) =>
+      RESERVED_GRADER_ENV.includes(k.toUpperCase()),
+    ),
+  };
+}
+
+/** Read a Vally eval spec's stimuli, graders and scoring from its YAML text. */
+export function parseVallyEval(path: string, yaml: string): VallyEval {
+  const lines = yaml.replace(/\r\n/g, "\n").split("\n");
+  const stimulusItems = listItems(topLevelBlock(yaml, "stimuli") ?? []);
+  const scoring = topLevelBlock(yaml, "scoring") ?? [];
+  const thresholdRaw = /^\s*threshold:\s*([^\s#]+)/m.exec(scoring.join("\n"))?.[1];
+  const weights: Record<string, number> = {};
+  for (const line of childLines(scoring, /^\s*weights:\s*$/) ?? []) {
+    const m = /^\s*([A-Za-z_][\w-]*)\s*:\s*([^\s#]+)/.exec(line);
+    if (m?.[1] !== undefined && m[2] !== undefined) weights[m[1]] = Number(m[2]);
+  }
+  const stimuli = stimulusItems.map((item): VallyStimulus => {
+    const graderLines = childLines(item, /^\s*graders:\s*$/) ?? [];
+    const tags: Record<string, string> = {};
+    for (const line of childLines(item, /^\s*tags:\s*$/) ?? []) {
+      const m = /^\s*([A-Za-z_][\w-]*)\s*:\s*["']?([^"'#\s]+)/.exec(line);
+      if (m?.[1] !== undefined && m[2] !== undefined) tags[m[1]] = m[2];
+    }
+    return {
+      name: scalarOf(item.join("\n"), "name") ?? "(unnamed)",
+      tags,
+      graders: listItems(graderLines).map(parseGrader),
+      text: item.join("\n"),
+    };
+  });
+  const maxTurns: { index: number; raw: string }[] = [];
+  stimulusItems.forEach((item, index) => {
+    const raw = /^\s*max_turns:\s*([^\s#]+)/m.exec(item.join("\n"))?.[1];
+    if (raw !== undefined) maxTurns.push({ index, raw });
+  });
+  return {
+    path,
+    name: scalarOf(lines.join("\n"), "name") ?? path,
+    threshold: thresholdRaw !== undefined ? Number(thresholdRaw) : 1,
+    thresholdRaw,
+    weights,
+    stimuli,
+    stimulusNames: stimuli.map((s) => s.name),
+    maxTurns,
+  };
+}
+
+const pct1 = (n: number): string => `${(n * 100).toFixed(1)}%`;
+/** `100%`, `0%`, `33.3%`: the compact form the run summary uses. */
+const pctCompact = (n: number): string => {
+  const p = n * 100;
+  return Number.isInteger(p) ? `${p}%` : `${p.toFixed(1)}%`;
+};
+
+// ---- vally lint
+
+interface LintDiagnostic {
+  code: string;
+  message: string;
+  at: string;
+}
+
+function lintDiagnostics(spec: VallyEval, modelParam: string): LintDiagnostic[] {
+  const out: LintDiagnostic[] = [];
+  const seen = new Map<string, number>();
+  spec.stimulusNames.forEach((name, index) => {
+    if (seen.has(name)) {
+      out.push({
+        code: "eval-load-error",
+        message: `${spec.path.split("/").pop() ?? spec.path}: stimuli[${index}]: duplicate name "${name}" (combination: MODEL=${modelParam})`,
+        at: spec.path,
+      });
+    } else {
+      seen.set(name, index);
+    }
+  });
+  spec.stimuli.forEach((stimulus, si) => {
+    stimulus.graders.forEach((grader, gi) => {
+      if (grader.type !== "program") return;
+      for (const key of grader.unknownConfigKeys) {
+        out.push({
+          code: "invalid-grader-config",
+          message: `${grader.name}: Unrecognized config field '${key}'`,
+          at: `stimuli[${si}].graders[${gi}].config.${key}`,
+        });
+      }
+      if (grader.reservedEnvKeys.length > 0) {
+        out.push({
+          code: "invalid-grader-config",
+          message: `${grader.name}: 'env' cannot set reserved variable(s): ${grader.reservedEnvKeys.join(", ")}`,
+          at: `stimuli[${si}].graders[${gi}].config.env`,
+        });
+      }
+      if (grader.invalidConfigJson !== undefined) {
+        out.push({
+          code: "invalid-grader-config",
+          message: `${grader.name}: ISSUED_CALL_CONFIG is not valid JSON (${grader.invalidConfigJson})`,
+          at: `stimuli[${si}].graders[${gi}].config.env.ISSUED_CALL_CONFIG`,
+        });
+      }
+    });
+  });
+  for (const { index, raw } of spec.maxTurns) {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) {
+      out.push({
+        code: "invalid-constraint-value",
+        message: `max_turns must be a finite positive number, got ${JSON.stringify(raw)}`,
+        at: `stimuli[${index}].constraints.max_turns`,
+      });
+    }
+  }
+  if (spec.thresholdRaw !== undefined) {
+    const t = Number(spec.thresholdRaw);
+    if (!Number.isFinite(t) || t < 0 || t > 1) {
+      out.push({
+        code: "scoring-threshold-range",
+        message: `scoring.threshold must be between 0 and 1 (got ${spec.thresholdRaw})`,
+        at: "scoring.threshold",
+      });
+    }
+  }
+  const weightValues = Object.values(spec.weights);
+  if (weightValues.length > 0) {
+    const sum = Math.round(weightValues.reduce((a, b) => a + b, 0) * 100) / 100;
+    if (!Number.isFinite(sum) || Math.abs(Math.round(sum * 100) - 100) > 1) {
+      out.push({
+        code: "scoring-weight-sum",
+        message: `scoring.weights must sum to 1.0 (got ${Number.isFinite(sum) ? sum.toFixed(2) : "NaN"})`,
+        at: "scoring.weights",
+      });
+    }
+  }
+  return out;
+}
+
+function modelParamOf(): string {
+  if (!fileExists(".vally.yaml")) return "gpt-5-mini";
+  const params = topLevelBlock(readWorkspaceFile(".vally.yaml"), "params") ?? [];
+  return scalarOf(params.join("\n"), "MODEL") ?? "gpt-5-mini";
+}
+
+function vallyLint(args: string[]): TermResult {
+  const specPath =
+    flagValue(args, "-e", "--eval-spec") ??
+    args.find((a) => !a.startsWith("-")) ??
+    VALLY_DEFAULT_SPEC;
+  if (!fileExists(specPath)) {
+    return vresult(
+      vtext(`Error: --eval-spec path does not exist: ${specPath}`, "error"),
+    );
+  }
+  const spec = parseVallyEval(specPath, readWorkspaceFile(specPath));
+  const diagnostics = lintDiagnostics(spec, modelParamOf());
+  if (diagnostics.length === 0) {
+    return vresult(vtext(`✔ ${specPath} is valid`, "success"));
+  }
+  const blocks: TermBlock[] = [vtext(`Eval: ${specPath}`, "accent")];
+  for (const d of diagnostics) {
+    blocks.push(vtext(`✘ error [${d.code}] ${d.message}`, "error"));
+    blocks.push(vtext(`  at ${d.at}`, "dim"));
+  }
+  blocks.push(vtext(""), vtext(`  ${diagnostics.length} error(s)`, "error"));
+  return vresult(...blocks);
+}
+
+// ---- trajectories the simulated agent "produces"
+
+/**
+ * The simulated agent behaves ideally: it does exactly what the stimulus's required
+ * checks ask for and nothing the forbidden checks list. So a stimulus passes if and
+ * only if the learner's grader judges that ideal trajectory correctly, which makes the
+ * grader the thing under test. A stimulus with no required checks gets one harmless read.
+ */
+function buildTrajectory(
+  stimulus: VallyStimulus,
+  config: Record<string, unknown>,
+  model: string,
+  evalName: string,
+): unknown {
+  const events: unknown[] = [];
+  let n = 0;
+  const stamp = (): string =>
+    new Date(Date.parse("2026-11-24T15:00:00.000Z") + ++n * 100).toISOString();
+  const list = (key: string): string[] =>
+    Array.isArray(config[key])
+      ? (config[key] as unknown[]).filter((v): v is string => typeof v === "string")
+      : [];
+  const argRules = (key: string): { toolName: string; substring: string }[] =>
+    Array.isArray(config[key])
+      ? (config[key] as unknown[]).filter(
+          (v): v is { toolName: string; substring: string } =>
+            v !== null &&
+            typeof v === "object" &&
+            typeof (v as { toolName?: unknown }).toolName === "string" &&
+            typeof (v as { substring?: unknown }).substring === "string",
+        )
+      : [];
+  const skills = list("requiredSkills");
+  for (const agent of list("requiredAgents")) {
+    events.push({
+      type: "tool_call",
+      timestamp: stamp(),
+      data: {
+        toolName: "dispatch_agent",
+        toolCallId: `tc-sim-${n}`,
+        launchedAgentIds: [agent],
+        arguments: { agent },
+      },
+    });
+  }
+  for (const toolName of list("requiredTools")) {
+    events.push({
+      type: "tool_call",
+      timestamp: stamp(),
+      data: { toolName, toolCallId: `tc-sim-${n}`, arguments: {} },
+    });
+  }
+  for (const rule of argRules("requiredArgSubstrings")) {
+    events.push({
+      type: "tool_call",
+      timestamp: stamp(),
+      data: {
+        toolName: rule.toolName,
+        toolCallId: `tc-sim-${n}`,
+        arguments: { value: rule.substring },
+      },
+    });
+  }
+  for (const name of skills) {
+    events.push({
+      type: "skill_activation",
+      timestamp: stamp(),
+      data: { name, path: `.github/skills/${name}/SKILL.md` },
+    });
+  }
+  if (events.length === 0) {
+    events.push({
+      type: "tool_call",
+      timestamp: stamp(),
+      data: {
+        toolName: "view",
+        toolCallId: `tc-sim-${n}`,
+        arguments: { path: "src/entities/course.ts" },
+      },
+    });
+  }
+  return {
+    id: `trajectory-${stimulus.name}`,
+    stimulus: { name: stimulus.name, prompt: "(simulated)" },
+    events,
+    metrics: { turns: 1, toolCalls: events.length },
+    output: "(simulated agent output)",
+    workDir: ".",
+    metadata: {
+      model,
+      executor: "simulated",
+      skillsLoaded: skills,
+      evalName,
+      startedAt: "2026-11-24T15:00:00.000Z",
+      completedAt: stamp(),
+      sessionID: "session-sim-001",
+    },
+  };
+}
+
+// ---- running graders over (eval, stimulus) pairs
+
+interface GradedStimulus {
+  evalName: string;
+  stimulus: string;
+  threshold: number;
+  score: number;
+  passed: boolean;
+  graders: { name: string; passed: boolean; evidence: string }[];
+  trajectory: unknown;
+}
+
+const UNSUPPORTED_GRADER =
+  "simulated vally runs only program graders that stage tool-calls-issued; this grader was not run";
+
+/** The one grader the simulator can run: a program that stages the learner's `tool-calls-issued.mjs`. */
+const stagesIssuedGrader = (grader: VallyGrader): boolean =>
+  grader.type === "program" && grader.script === "tool-calls-issued.mjs";
+
+type GradeOutcome =
+  | { ok: true; graded: GradedStimulus[] }
+  | { ok: false; blocks: TermBlock[] };
+
+/** Run every grader of every given stimulus against the supplied trajectory. */
+function gradeStimuli(
+  spec: VallyEval,
+  items: { stimulus: VallyStimulus; trajectory: unknown }[],
+  graderCode: string,
+): GradeOutcome {
+  const cases: IssuedGradeCase[] = [];
+  const slots: { item: number; grader: number }[] = [];
+  items.forEach(({ stimulus, trajectory }, ii) => {
+    stimulus.graders.forEach((grader, gi) => {
+      // A config that is not valid JSON never reaches the learner's grader: real Vally's program
+      // throws on `JSON.parse` first, so running it with `{}` would grade a spec Vally would fail.
+      if (stagesIssuedGrader(grader) && grader.invalidConfigJson === undefined) {
+        cases.push({ trajectory, config: grader.config });
+        slots.push({ item: ii, grader: gi });
+      }
+    });
+  });
+  const run = runIssuedGraderCases(graderCode, cases);
+  if (!run.ok) {
+    return {
+      ok: false,
+      blocks: [
+        vtext(
+          run.timedOut
+            ? `Error: grader timed out after ${VALLY_GRADER_TIMEOUT_MS}ms — check ${VALLY_GRADER_FILE} for a non-terminating loop.`
+            : `Error: grader failed to run: ${run.message}`,
+          "error",
+        ),
+      ],
+    };
+  }
+  const graded = items.map(({ stimulus, trajectory }, ii): GradedStimulus => {
+    const results = stimulus.graders.map((grader, gi) => {
+      const slot = slots.findIndex((s) => s.item === ii && s.grader === gi);
+      if (slot === -1) {
+        const badConfig = stagesIssuedGrader(grader) ? grader.invalidConfigJson : undefined;
+        return {
+          name: grader.name,
+          passed: false,
+          score: 0,
+          evidence:
+            badConfig === undefined
+              ? UNSUPPORTED_GRADER
+              : `Grader exited with exit code 1 (ISSUED_CALL_CONFIG is not valid JSON: ${badConfig})`,
+        };
+      }
+      const g = run.grades[slot];
+      if (!validGrade(g)) {
+        return {
+          name: grader.name,
+          passed: false,
+          score: 0,
+          evidence:
+            'grader returned an invalid result: expected { name, kind: "code", passed, score, evidence } with 0 <= score <= 1',
+        };
+      }
+      return { name: grader.name, passed: g.passed, score: g.score, evidence: g.evidence };
+    });
+    const score =
+      results.length === 0
+        ? 0
+        : results.reduce((sum, r) => sum + r.score, 0) / results.length;
+    return {
+      evalName: spec.name,
+      stimulus: stimulus.name,
+      threshold: spec.threshold,
+      score,
+      passed: results.length > 0 && results.every((r) => r.passed) && score >= spec.threshold,
+      graders: results.map(({ name, passed, evidence }) => ({ name, passed, evidence })),
+      trajectory,
+    };
+  });
+  return { ok: true, graded };
+}
+
+// ---- vally eval
+
+/** Expand an eval glob of the form `<dir>/<any folder>/<file>`, or an exact path, against the workspace. */
+function expandEvalGlob(pattern: string): string[] {
+  if (!pattern.includes("*")) return fileExists(pattern) ? [pattern] : [];
+  const m = /^(.*?)\/\*\/(.+)$/.exec(pattern);
+  if (!m || m[1] === undefined || m[2] === undefined) return [];
+  try {
+    return readdirSync(safePath(m[1]), { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => `${m[1]}/${e.name}/${m[2]}`)
+      .filter((p) => fileExists(p))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+interface VallySuite {
+  evals: string[];
+  filter: Record<string, string>;
+}
+
+function readSuite(name: string): VallySuite | string {
+  const suites = topLevelBlock(readWorkspaceFile(".vally.yaml"), "suites");
+  if (!suites) return "no `suites:` section in .vally.yaml";
+  const names = mapKeys(suites);
+  const body = childLines(suites, new RegExp(`^\\s*${name}:\\s*$`));
+  if (!body) {
+    return `unknown suite '${name}' (available: ${names.join(", ") || "none"})`;
+  }
+  const evals = (childLines(body, /^\s*evals:\s*$/) ?? [])
+    .map((l) => /^\s*-\s*["']?([^"'#\s]+)/.exec(l)?.[1])
+    .filter((v): v is string => v !== undefined);
+  const filter: Record<string, string> = {};
+  for (const line of childLines(body, /^\s*filter:\s*$/) ?? []) {
+    const m = /^\s*([A-Za-z_][\w-]*)\s*:\s*["']?([^"'#\s]+)/.exec(line);
+    if (m?.[1] !== undefined && m[2] !== undefined) filter[m[1]] = m[2];
+  }
+  return { evals, filter };
+}
+
+function vallyEval(args: string[]): TermResult {
+  const suiteName = flagValue(args, "--suite");
+  const specFlag = flagValue(args, "-e", "--eval-spec");
+  if (suiteName !== undefined && specFlag !== undefined) {
+    return vresult(
+      vtext("Error: --suite cannot be combined with --eval-spec", "error"),
+    );
+  }
+  if (args.includes("--suite") && suiteName === undefined) {
+    return vresult(vtext("Error: --suite needs a suite name", "error"));
+  }
+  if (!fileExists(".vally.yaml")) {
+    return vresult(
+      vtext("Error: .vally.yaml not found — create it from the step card first.", "error"),
+    );
+  }
+  if (!fileExists(VALLY_GRADER_FILE)) {
+    return vresult(
+      vtext(
+        `Error: ${VALLY_GRADER_FILE} not found — create the grader from the first step first.`,
+        "error",
+      ),
+    );
+  }
+
+  let specPaths: string[];
+  let filter: Record<string, string> = {};
+  if (suiteName !== undefined) {
+    const suite = readSuite(suiteName);
+    if (typeof suite === "string") return vresult(vtext(`Error: ${suite}`, "error"));
+    specPaths = suite.evals.flatMap(expandEvalGlob);
+    filter = suite.filter;
+    if (specPaths.length === 0) {
+      return vresult(
+        vtext(`Error: suite '${suiteName}' matched no eval files`, "error"),
+      );
+    }
+  } else {
+    specPaths = [specFlag ?? VALLY_DEFAULT_SPEC];
+    if (!fileExists(specPaths[0] ?? "")) {
+      return vresult(
+        vtext(`Error: --eval-spec path does not exist: ${specPaths[0] ?? ""}`, "error"),
+      );
+    }
+  }
+
+  const model = modelParamOf();
+  const graderCode = readWorkspaceFile(VALLY_GRADER_FILE);
+  const specs = specPaths.map((p) => parseVallyEval(p, readWorkspaceFile(p)));
+  const blocks: TermBlock[] = [];
+  const records: unknown[] = [];
+  const perEval: { spec: VallyEval; graded: GradedStimulus[] }[] = [];
+  let loaded = 0;
+
+  for (const spec of specs) {
+    const selected = spec.stimuli.filter((s) =>
+      Object.entries(filter).every(([key, value]) => s.tags[key] === value),
+    );
+    loaded += spec.stimuli.length;
+    if (selected.length === 0) continue;
+    const items = selected.map((stimulus) => ({
+      stimulus,
+      trajectory: buildTrajectory(
+        stimulus,
+        stimulus.graders[0]?.config ?? {},
+        model,
+        spec.name,
+      ),
+    }));
+    const outcome = gradeStimuli(spec, items, graderCode);
+    if (!outcome.ok) return vresult(...outcome.blocks);
+    perEval.push({ spec, graded: outcome.graded });
+    if (selected.length < spec.stimuli.length) {
+      blocks.push(
+        vtext(
+          `  WARN ${spec.name} · stimuli-filtered  Running ${selected.length} of ${spec.stimuli.length} stimuli (${spec.stimuli.length - selected.length} filtered by tags)`,
+          "dim",
+        ),
+      );
+    }
+  }
+  if (perEval.length === 0) {
+    return vresult(vtext("Error: no stimuli matched the suite filter", "error"));
+  }
+
+  const ran = perEval.reduce((n, e) => n + e.graded.length, 0);
+  blocks.unshift(
+    vtext(
+      perEval.length === 1 && specs.length === 1
+        ? `Loaded ${ran} stimul${ran === 1 ? "us" : "i"} from ${perEval[0]?.spec.name ?? ""}`
+        : `Loaded ${loaded} stimuli from ${specs.length} evals`,
+      "dim",
+    ),
+  );
+  const failedEvals: typeof perEval = [];
+  for (const { spec, graded } of perEval) {
+    const failures = graded.filter((g) => !g.passed);
+    if (failures.length > 0) failedEvals.push({ spec, graded });
+    if (failures.length > 0) blocks.push(vtext(""), vtext(spec.name, "accent"));
+    for (const g of failures) {
+      const failedGraders = g.graders.filter((x) => !x.passed);
+      blocks.push(
+        vtext(
+          `  FAIL  ${g.stimulus} · ${g.graders.length - failedGraders.length}/${g.graders.length} graders · 0.0s`,
+          "error",
+        ),
+      );
+      for (const x of failedGraders) {
+        blocks.push(vtext(`   ✘ ${x.name}  ${x.evidence}`, "error"));
+      }
+      blocks.push(
+        vtext(`   · score ${pct1(g.score)} < threshold ${pct1(g.threshold)} · trial 1`, "dim"),
+        vtext(`   score: ${pct1(g.score)} · threshold: ${pct1(g.threshold)}`, "dim"),
+      );
+    }
+    for (const g of graded) {
+      records.push({
+        type: "trial-result",
+        runId: "run-lab27-sim-001",
+        evalName: spec.name,
+        evalFilePath: spec.path,
+        variant: "main",
+        stimulus: g.stimulus,
+        status: "success",
+        passed: g.passed,
+        score: g.score,
+        graderResult: g.graders,
+        trajectory: g.trajectory,
+      });
+    }
+  }
+  blocks.push(vtext(""), vtext("─".repeat(56), "dim"), vtext(""));
+  blocks.push(
+    vtext(
+      failedEvals.length > 0
+        ? `Summary   ${failedEvals.length} failed · ${perEval.length} evals`
+        : "Summary",
+      failedEvals.length > 0 ? "error" : "accent",
+    ),
+  );
+  for (const { spec, graded } of perEval) {
+    const passedCount = graded.filter((g) => g.passed).length;
+    const mean = graded.reduce((s, g) => s + g.score, 0) / graded.length;
+    const ok = passedCount === graded.length;
+    blocks.push(
+      vtext(
+        `  ${spec.name}  ${ok ? "✓" : "✘"} ${passedCount}/${graded.length} (score ${pctCompact(mean)} ${ok ? "≥" : "<"} ${pctCompact(spec.threshold)})`,
+        ok ? "success" : "error",
+      ),
+    );
+  }
+  const allPassed = failedEvals.length === 0;
+  records.push({
+    type: "run-summary",
+    runId: "run-lab27-sim-001",
+    passed: allPassed,
+    total: ran,
+    failed: perEval.reduce(
+      (n, e) => n + e.graded.filter((g) => !g.passed).length,
+      0,
+    ),
+  });
+  writeWorkspaceFile(
+    VALLY_RESULTS_FILE,
+    `${records.map((r) => JSON.stringify(r)).join("\n")}\n`,
+  );
+  blocks.push(vtext(""), vtext(`Saved  ./${VALLY_RUN_DIR}/`, "dim"));
+  return vresult(...blocks);
+}
+
+// ---- vally grade
+
+function vallyGrade(args: string[]): TermResult {
+  const specPath = flagValue(args, "-e", "--eval-spec") ?? VALLY_DEFAULT_SPEC;
+  const lt = args.indexOf("<");
+  const redirected =
+    lt !== -1
+      ? args[lt + 1]
+      : args.find((a) => a.startsWith("<") && a.length > 1)?.slice(1);
+  const resultsPath = redirected ?? VALLY_RESULTS_FILE;
+
+  if (!fileExists(specPath)) {
+    return vresult(
+      vtext(`Error: --eval-spec path does not exist: ${specPath}`, "error"),
+    );
+  }
+  if (!fileExists(VALLY_GRADER_FILE)) {
+    return vresult(
+      vtext(
+        `Error: ${VALLY_GRADER_FILE} not found — create the grader from the first step first.`,
+        "error",
+      ),
+    );
+  }
+  if (!fileExists(resultsPath)) {
+    return vresult(
+      vtext(
+        `Error: ${resultsPath} not found — run \`vally eval --suite pr-gate\` first to write it.`,
+        "error",
+      ),
+    );
+  }
+
+  const spec = parseVallyEval(specPath, readWorkspaceFile(specPath));
+  const trials = readWorkspaceFile(resultsPath)
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "")
+    .flatMap((l): { stimulus: string; trajectory: unknown }[] => {
+      try {
+        const r = JSON.parse(l) as {
+          type?: string;
+          stimulus?: unknown;
+          trajectory?: { stimulus?: { name?: string } };
+        };
+        if (r.type !== "trial-result" || r.trajectory === undefined) return [];
+        const name =
+          typeof r.stimulus === "string" ? r.stimulus : r.trajectory.stimulus?.name;
+        return name === undefined ? [] : [{ stimulus: name, trajectory: r.trajectory }];
+      } catch {
+        return [];
+      }
+    });
+  if (trials.length === 0) {
+    return vresult(vtext(`Error: no trial-result records in ${resultsPath}`, "error"));
+  }
+
+  const blocks: TermBlock[] = [];
+  if (args.includes("--workspace") && trials.length > 1) {
+    blocks.push(
+      vtext(
+        `Warning: --workspace applied to all ${trials.length} input trajectories; each is graded against the same value. Pass a single trajectory for offline re-grade.`,
+        "dim",
+      ),
+    );
+  }
+  const matched: { stimulus: VallyStimulus; trajectory: unknown }[] = [];
+  const unmatched: string[] = [];
+  for (const t of trials) {
+    const stimulus = spec.stimuli.find((s) => s.name === t.stimulus);
+    if (stimulus) matched.push({ stimulus, trajectory: t.trajectory });
+    else unmatched.push(t.stimulus);
+  }
+  const outcome = gradeStimuli(spec, matched, readWorkspaceFile(VALLY_GRADER_FILE));
+  if (!outcome.ok) return vresult(...outcome.blocks);
+  for (const g of outcome.graded) {
+    const failed = g.graders.filter((x) => !x.passed);
+    blocks.push(vtext(""), vtext(`━━━ ${g.stimulus} ━━━`, "accent"));
+    if (g.passed) {
+      blocks.push(
+        vtext(`✅ ${g.stimulus} (${g.graders.length}/${g.graders.length} graders passed)`, "success"),
+        vtext(""),
+        vtext(`Score: ${pct1(g.score)} | PASSED (threshold: ${pct1(g.threshold)})`, "success"),
+      );
+    } else {
+      blocks.push(
+        vtext(
+          `❌ ${g.stimulus} (${g.graders.length - failed.length}/${g.graders.length} graders passed, ${failed.length} failed)`,
+          "error",
+        ),
+      );
+      for (const x of failed) blocks.push(vtext(`  ✗ [${x.name}] ${x.evidence}`, "error"));
+      blocks.push(
+        vtext(""),
+        vtext(`Score: ${pct1(g.score)} | FAILED (threshold: ${pct1(g.threshold)})`, "error"),
+      );
+    }
+  }
+  for (const name of unmatched) {
+    blocks.push(
+      vtext(`Warning: no stimulus named '${name}' in ${specPath}; its trajectory was skipped.`, "dim"),
+    );
+  }
+  return vresult(...blocks);
+}
+
+function vallyCommand(args: string[]): TermResult {
+  const sub = args[0];
+  if (sub === "--version" || sub === "-V" || sub === "version") {
+    return vresult(
+      vtext(`${VALLY_VERSION} (simulated — @microsoft/vally-cli)`, "normal"),
+    );
+  }
+  switch (sub) {
+    case "lint":
+      return vallyLint(args.slice(1));
+    case "eval":
+      return vallyEval(args.slice(1));
+    case "grade":
+      return vallyGrade(args.slice(1));
+    default:
+      return vresult(...vlines([VALLY_USAGE], "dim"));
+  }
 }
