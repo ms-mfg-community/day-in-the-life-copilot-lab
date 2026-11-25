@@ -1205,3 +1205,36 @@ describe('lab27 contract: AC17 — every screen of the M6b slide stays under the
   });
 });
 
+// ---------------------------------------------------------------------------
+// The M6b slide's ASCII diagram and its SPA diagram say the same about OTel
+// ---------------------------------------------------------------------------
+describe('lab27 contract: the M6b slide diagram labels the OTel step as the SPA diagram does', () => {
+  const otelNode = () =>
+    JSON.parse(read(join(ROOT, 'workshop/spa/content/diagrams.json')))
+      .diagrams.find((d: { id: string }) => d.id === 'm6b-eval-pipeline')
+      .nodes.find((n: { id: string }) => n.id === 'otel-emit');
+  /** The ASCII box on the slide, from its top border to its bottom border. */
+  const asciiBox = (): string[] => {
+    const lines = read(MODULE_SLIDE).split('\n');
+    const top = lines.findIndex((line) => line.startsWith('┌'));
+    return lines.slice(top, lines.findIndex((line, i) => i > top && line.startsWith('└')) + 1);
+  };
+
+  it('names the OTel step as the external bridge the SPA diagram names, not as a step the lab runs', () => {
+    const [name] = otelNode().label;
+
+    expect(asciiBox().join('\n')).toContain(`[${name}]`);
+  });
+
+  it('draws that step with a dotted arrow, as the SPA diagram dashes its edge', () => {
+    const [name] = otelNode().label;
+
+    expect(asciiBox().find((line) => line.includes(`[${name}]`)) ?? '').toContain(`··▶ [${name}]`);
+  });
+
+  it('keeps every line of the ASCII box 75 columns wide', () => {
+    const box = asciiBox();
+
+    expect(box.map((line) => [...line].length)).toEqual(box.map(() => 75));
+  });
+});

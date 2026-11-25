@@ -23,7 +23,7 @@ Anchor labs: [`labs/lab27.md`](../../labs/lab27.md) · [`labs/lab19.md`](../../l
 │ TIERS 0–1: FREE & OFFLINE (0 MODEL CALLS · 0 AIU)                       │
 │  [Stimulus -> Executor -> Trajectory] ──▶ [Program Graders: vally grade]│
 │  (eval.yaml + EVAL.yaml specs)            ──▶ [Score: threshold 1.0]    │
-│                                           ──▶ [OTel root AIU & result]  │
+│                                           ··▶ [OTel bridge (external)]  │
 ├─────────────────────────────────────────────────────────▲───────────────┤
 │ TIER 2: LIVE HERMETIC & GUARD TRIALS (BILLABLE AIU)     │ results.jsonl │
 │  [Copilot SDK: vally eval] ──preToolUse──▶ [Guard Hook & Trajectory Log]│
